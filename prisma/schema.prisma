@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String      @id @default(uuid()) @db.Uuid
+  handle      String      @unique
+  displayName String      @map("display_name")
+  email       String
+  isAdmin     Boolean     @default(false) @map("is_admin")
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  sshKeys     SshKey[]
+  ownedRepos  Repo[]      @relation("RepoOwner")
+  grants      RepoGrant[]
+
+  @@map("users")
+}
+
+model SshKey {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  name        String
+  publicKey   String    @map("public_key")
+  fingerprint String    @unique
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastUsedAt  DateTime? @map("last_used_at") @db.Timestamptz(3)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ssh_keys")
+}
+
+model Repo {
+  id            String      @id @default(uuid()) @db.Uuid
+  ownerId       String      @map("owner_id") @db.Uuid
+  name          String
+  description   String?
+  defaultBranch String      @default("main") @map("default_branch")
+  nextNumber    Int         @default(1) @map("next_number")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  owner         User        @relation("RepoOwner", fields: [ownerId], references: [id])
+  grants        RepoGrant[]
+
+  @@map("repos")
+}
+
+model RepoGrant {
+  repoId String     @map("repo_id") @db.Uuid
+  userId String     @map("user_id") @db.Uuid
+  level  GrantLevel
+  repo   Repo       @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([repoId, userId])
+  @@map("repo_grants")
+}
+
+enum GrantLevel {
+  write
+  admin
+
+  @@map("grant_level")
+}

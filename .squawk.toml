@@ -1,0 +1,13 @@
+pg_version = "18.0"
+
+# prisma migrate wraps each migration file in a transaction
+assume_in_transaction = true
+
+excluded_rules = [
+  # nothing to lock: the init migration creates every table it touches
+  "require-lock-timeout",
+  # same, and an empty table's DDL cannot run long enough to time out
+  "require-statement-timeout",
+  # next_number counts issues and prs in one repo; int32 is four orders too big
+  "prefer-bigint-over-int",
+]
