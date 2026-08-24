@@ -231,7 +231,7 @@ _One box, one database, four listeners_
            │  Caddy  │  TLS, static assets       │
            └────┬────┘                           │
      ┌──────────┼──────────┬──────────┐          │
-  /:owner    /info/refs   /*.json   raw.*      ssh2
+  /r/:repo   /info/refs   /*.json   raw.*      ssh2
   (web UI)   (smart HTTP)  (read API) (blobs)  (exec → git-*-pack
      │          │          │          │         + CLI commands)
      └──────────┴─────┬────┴──────────┴──────────┘
@@ -244,14 +244,14 @@ _One box, one database, four listeners_
              └───┬─────────┬───┘
                  │         │
          ┌───────▼──┐  ┌───▼──────────────┐
-         │ Postgres │  │ /var/lib/forge/  │
+         │ Postgres │  │ /var/lib/carn/   │
          │ metadata │  │ repos/<uuid>.git │
          └──────────┘  └──────────────────┘
 ```
 
 ### Repo storage — path traversal, designed out
 
-Store repos at `/var/lib/forge/repos/<uuid[0:2]>/<uuid>.git`, where the UUID is the primary key. URLs and SSH commands carry `owner/name`, which is a _database lookup_ returning a UUID. No user-controlled string ever reaches a filesystem path.
+Store repos at `/var/lib/carn/repos/<uuid[0:2]>/<uuid>.git`, where the UUID is the primary key. URLs and SSH commands carry the bare repo `name`, which is a _database lookup_ returning a UUID. No user-controlled string ever reaches a filesystem path.
 
 Path traversal is empirically the number-one bug class in real forges — several CVEs across 2025–26, including a CVSS 9.5 arbitrary-write-to-RCE. Note that `filepath.Join`-style joining _resolves_ `..`, it doesn't contain you. Deriving the path from a UUID means the check never has to be right, because the dangerous input never gets there. It also makes rename a single `UPDATE`, which is the fix for push-to-create typos.
 
@@ -596,7 +596,7 @@ Everything is public, so reads need no authentication at all. Content-negotiate 
 
 > **ONE THING TO DESIGN DELIBERATELY**
 >
-> Make the **commit status endpoint** the exception, and shape it like GitHub's: `POST /api/repos/:owner/:repo/statuses/:sha` taking `state`, `context`, `description`, `target_url`. It's the one write endpoint that genuinely needs to be callable by a machine that has no SSH key — an external CI job. That schema is universally understood, so every future CI backend becomes a drop-in. See [§10](#mirror); it's the seam the whole CI story hangs on.
+> Make the **commit status endpoint** the exception, and shape it like GitHub's: `POST /api/r/:repo/statuses/:sha` taking `state`, `context`, `description`, `target_url`. It's the one write endpoint that genuinely needs to be callable by a machine that has no SSH key — an external CI job. That schema is universally understood, so every future CI backend becomes a drop-in. See [§10](#mirror); it's the seam the whole CI story hangs on.
 
 ### Where comments come from
 
@@ -668,7 +668,7 @@ Separately, spawn `git merge-tree --write-tree` on two divergent branches and co
 2–3 evenings · the irreducible thing
 
 - `users`, `ssh_keys`, `repos`, `repo_grants`. Seed yourself as admin from a migration.
-- SSH listener authenticating against `ssh_keys`, resolving `owner/name` → UUID → disk path.
+- SSH listener authenticating against `ssh_keys`, resolving the repo `name` → UUID → disk path.
 - Anonymous smart-HTTP read, with the three corrections in §03.
 - Repo list, file tree, blob view with highlighting, commit log, single-commit diff, branch and tag lists, rendered README.
 - **Push-to-create** — ~10 lines in the SSH path.
