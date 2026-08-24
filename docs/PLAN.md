@@ -84,12 +84,12 @@ Run all of them across your four breakpoints. The layout leans on `clamp()` for 
 
 These aren't a second test suite so much as four assertions that a screenshot is structurally unable to make:
 
-| Contract         | Assertion                                                                                                   | How                                                                                                                                                                                                |
-| ---------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Weight**       | Page < 100 KB · zero client JS on the critical path                                                         | `size-limit` against the rendered HTML plus assets. A page can double in weight and look identical.                                                                                                |
-| **Subprocesses** | < 12 `spawn` calls per render                                                                               | A counter in the git layer, asserted per route. **The most valuable test in the plan** — see below.                                                                                                |
-| **Headers**      | Blob origin always returns `sandbox` CSP · never `Set-Cookie` · `javascript:` in markdown renders no anchor | Plain request assertions. Four of them, covering the three vulnerability classes in §11.                                                                                                           |
-| **a11y rules**   | Zero axe violations, both themes                                                                            | `axe-core` — complementary to the a11y tree, not redundant. The tree snapshot catches _structural_ drift; axe catches _rule_ violations like contrast and ARIA misuse, which a tree can't express. |
+| Contract | Assertion | How |
+|---|---|---|
+| **Weight** | Page < 100 KB · zero client JS on the critical path | `size-limit` against the rendered HTML plus assets. A page can double in weight and look identical. |
+| **Subprocesses** | < 12 `spawn` calls per render | A counter in the git layer, asserted per route. **The most valuable test in the plan** — see below. |
+| **Headers** | Blob origin always returns `sandbox` CSP · never `Set-Cookie` · `javascript:` in markdown renders no anchor | Plain request assertions. Four of them, covering the three vulnerability classes in §11. |
+| **a11y rules** | Zero axe violations, both themes | `axe-core` — complementary to the a11y tree, not redundant. The tree snapshot catches _structural_ drift; axe catches _rule_ violations like contrast and ARIA misuse, which a tree can't express. |
 
 The subprocess counter deserves the emphasis: it's the only test that catches the specific way this codebase will get slow. A well-meaning refactor that renders a file list by calling `cat-file` once per row passes every other check — the screenshots are pixel-identical, the HTML is byte-identical — and quietly turns a 40 ms page into a 400 ms one. Nothing else in the suite would notice.
 
@@ -139,6 +139,7 @@ _Settled — everything downstream assumes these_
 - **Highlighting:** highlight.js — Settled. Alternatives dropped from the doc.
 - **Themes:** Both, dark-first — Dark is the default and the one that's designed first.
 - **Method:** YAGNI — Nothing gets built before it's wanted. Web comments included.
+- **Licence:** AGPL-3.0-or-later — Server and CLI both. Closes the network loophole plain GPL leaves open.
 - **Testing:** Tuffgal stories — Visual regression as the primary suite, plus four contract tests. No unit tests.
 - **Write path:** CLI only — The web UI is read-only at MLP. Comments come over SSH.
 - **Rate limiting:** At the edge — Caddy, three tiers, tightest on clone and archive.
@@ -327,11 +328,11 @@ The shape differs from Linklater's because the expensive requests aren't the fre
 
 Do the coarse limiting **at the edge, in Caddy**, so an abusive request never reaches Node and never forks a git process. That needs `mholt/caddy-ratelimit` via `xcaddy` — it's not in standard builds and the README says plainly "this is not an official repository of the Caddy Web Server organization," but it's written by Caddy's author, it's stable, and it gives you a true sliding window (a ring buffer), which neither Node library does. Three tiers:
 
-| Zone               | Budget    | Why                                                                                                                                                                     |
-| ------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pages, assets      | ~300/min  | Cheap and cacheable. Generous.                                                                                                                                          |
-| `git-upload-pack`  | 10–20/min | Each forks a process and can pack the whole history. Partial-clone flags make individual cost wildly variable, so limit _count_, don't try to price them.               |
-| Archive generation | 5/min     | Tightest. Fully CPU-bound, trivially amplified, and the classic crawler trap — a bot walking every tag × every format will pin the box. GitLab uses exactly 5/min here. |
+| Zone | Budget | Why |
+|---|---|---|
+| Pages, assets | ~300/min | Cheap and cacheable. Generous. |
+| `git-upload-pack` | 10–20/min | Each forks a process and can pack the whole history. Partial-clone flags make individual cost wildly variable, so limit _count_, don't try to price them. |
+| Archive generation | 5/min | Tightest. Fully CPU-bound, trivially amplified, and the classic crawler trap — a bot walking every tag × every format will pin the box. GitLab uses exactly 5/min here. |
 
 > **TWO DETAILS**
 >
@@ -514,35 +515,35 @@ File rows carry three constants: **directories in the accent with a trailing sla
 
 #### The nine views
 
-| Route                   | View       | Notes                                                    |
-| ----------------------- | ---------- | -------------------------------------------------------- |
-| `/`                     | Repo list  | The whole site index. Name, description, last push.      |
-| `/r/:repo`              | Repo       | File tree + rendered README. The page that sells it.     |
-| `/r/:repo/blob/:rev/*`  | Blob       | Highlighted source. Raw link points at the blob origin.  |
-| `/r/:repo/commits`      | Log        | `?ref=` to scope. Paginated by SHA cursor, not `--skip`. |
-| `/r/:repo/commits/:sha` | Commit     | Diff + cross-refs resolved. Immutable — cache forever.   |
-| `/r/:repo/issues`       | Issue list | Open/closed filter. Epics show children nested.          |
-| `/r/:repo/issues/:n`    | Issue      | Body, thread, timeline, "create branch" action.          |
-| `/r/:repo/prs`          | PR list    | Same shell as the issue list — same table underneath.    |
-| `/r/:repo/prs/:n`       | PR         | Diff, thread, mergeability, merge button.                |
+| Route | View | Notes |
+|---|---|---|
+| `/` | Repo list | The whole site index. Name, description, last push. |
+| `/r/:repo` | Repo | File tree + rendered README. The page that sells it. |
+| `/r/:repo/blob/:rev/*` | Blob | Highlighted source. Raw link points at the blob origin. |
+| `/r/:repo/commits` | Log | `?ref=` to scope. Paginated by SHA cursor, not `--skip`. |
+| `/r/:repo/commits/:sha` | Commit | Diff + cross-refs resolved. Immutable — cache forever. |
+| `/r/:repo/issues` | Issue list | Open/closed filter. Epics show children nested. |
+| `/r/:repo/issues/:n` | Issue | Body, thread, timeline, "create branch" action. |
+| `/r/:repo/prs` | PR list | Same shell as the issue list — same table underneath. |
+| `/r/:repo/prs/:n` | PR | Diff, thread, mergeability, merge button. |
 
 #### Everything else on the wire
 
 The complete surface outside the nine:
 
-| Route                                                  | Kind  | Note                                                                          |
-| ------------------------------------------------------ | ----- | ----------------------------------------------------------------------------- |
-| `/new` · `/settings` · `/r/:repo/settings`             | Web   | Admin forms. See the settings split below.                                    |
-| `/r/:repo/releases` · `/r/:repo/releases/:tag`         | Web   | Phase 5.                                                                      |
-| `/r/:repo/info/refs` · `POST /r/:repo/git-upload-pack` | Git   | Anonymous read only. No `git-receive-pack` over HTTP, ever — push is SSH.     |
-| `/r/:repo/archive/:rev.tar.gz`                         | Git   | `git archive` on demand. The tightest rate-limit zone.                        |
-| Any view + `.json`                                     | API   | Read API — the same view model, serialized. No separate route tree.           |
-| `POST /api/r/:repo/statuses/:sha`                      | API   | The one machine-callable write. GitHub-shaped. See §07.                       |
-| `/health`                                              | Ops   | What Caddy health-checks and what the SIGTERM handler flips.                  |
-| `/robots.txt` · `/sitemap.xml`                         | Ops   | See below — both matter more here than on a normal site.                      |
-| `/r/:repo/commits.atom` and friends                    | Feeds | Atom per repo for commits, releases, and issues, plus a global activity feed. |
-| `cube./r/:repo/raw/:rev/*`                             | Blobs | Separate origin. `text/plain` + `sandbox` CSP.                                |
-| `cube./`                                               | Blobs | The easter egg. See §12.                                                      |
+| Route | Kind | Note |
+|---|---|---|
+| `/new` · `/settings` · `/r/:repo/settings` | Web | Admin forms. See the settings split below. |
+| `/r/:repo/releases` · `/r/:repo/releases/:tag` | Web | Phase 5. |
+| `/r/:repo/info/refs` · `POST /r/:repo/git-upload-pack` | Git | Anonymous read only. No `git-receive-pack` over HTTP, ever — push is SSH. |
+| `/r/:repo/archive/:rev.tar.gz` | Git | `git archive` on demand. The tightest rate-limit zone. |
+| Any view + `.json` | API | Read API — the same view model, serialized. No separate route tree. |
+| `POST /api/r/:repo/statuses/:sha` | API | The one machine-callable write. GitHub-shaped. See §07. |
+| `/health` | Ops | What Caddy health-checks and what the SIGTERM handler flips. |
+| `/robots.txt` · `/sitemap.xml` | Ops | See below — both matter more here than on a normal site. |
+| `/r/:repo/commits.atom` and friends | Feeds | Atom per repo for commits, releases, and issues, plus a global activity feed. |
+| `cube./r/:repo/raw/:rev/*` | Blobs | Separate origin. `text/plain` + `sandbox` CSP. |
+| `cube./` | Blobs | The easter egg. See §12. |
 
 #### Sitemap and robots.txt
 
@@ -735,15 +736,15 @@ _The VPS playbook, applied — plus two questions answered_
 
 **A second InterServer VPS at 2 slices — 4 GB, 80 GB, ~$6/month.** The reason is CPU, not RAM: InterServer allocates roughly one core per two slices on a fair-share basis, and `pack-objects` during a clone is exactly the spiky single-core workload fair-share scheduling handles worst. Co-locating means a clone makes Linklater visibly slow. It also buys independent blast radius, which matters when you're redeploying constantly during the build.
 
-| Component               | Steady state      | Note                                                     |
-| ----------------------- | ----------------- | -------------------------------------------------------- |
-| OS (minimal Debian)     | ~150 MB           |                                                          |
-| Docker + containerd     | ~150 MB           |                                                          |
-| Postgres                | ~350 MB           | Metadata only — small                                    |
-| Node app + SSH listener | ~400 MB           | Cap heap at 768 MB                                       |
-| Caddy                   | ~30 MB            |                                                          |
-| `git` subprocesses      | burst, 100–400 MB | **The new variable** — bounded by §04 config + semaphore |
-| Page cache              | ~2.5 GB           | Comfortable                                              |
+| Component | Steady state | Note |
+|---|---|---|
+| OS (minimal Debian) | ~150 MB |  |
+| Docker + containerd | ~150 MB |  |
+| Postgres | ~350 MB | Metadata only — small |
+| Node app + SSH listener | ~400 MB | Cap heap at 768 MB |
+| Caddy | ~30 MB |  |
+| `git` subprocesses | burst, 100–400 MB | **The new variable** — bounded by §04 config + semaphore |
+| Page cache | ~2.5 GB | Comfortable |
 
 4 GB is the tier — the one workload where the playbook's "2 GB is genuinely enough" doesn't hold, because git's memory use is bursty and hard to bound. Re-check the price on InterServer's own page before buying.
 
@@ -819,12 +820,12 @@ The spool doubles as the CI trigger below, which is the reason to build it that 
 
 Since the repos already mirror, the mirror _is_ the CI host.
 
-|       | Stage                                                                          | Cost       | What it gets you                                                                                                                                                          |
-| ----- | ------------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Now   | Client-side `pre-push` hook running lint, typecheck, and `tuffgal run --local` | 30 min     | ~95% of the value, and the only stage with _instant_ feedback. Local mode is advisory and self-diffs against a gitignored cache, so it never touches committed baselines. |
-| Next  | GitHub Actions on the mirror — lint, typecheck, and `tuffgal-action`           | A weekend  | Zero new infrastructure on your VPS, and this is where Tuffgal earns its keep: CI is the sole writer of baselines, so visual review becomes a real PR gate.               |
-| Then  | Report status back to your forge                                               | 1 evening  | **The architectural step.** A final `if: always()` step curls your commit-status endpoint (§07).                                                                          |
-| Later | `forgejo-runner exec` on your own box                                          | 2 evenings | Runs GitHub-Actions-compatible YAML with _no forge at all_ — you invoke it, read the exit code. Same YAML, so both paths coexist.                                         |
+|  | Stage | Cost | What it gets you |
+|---|---|---|---|
+| Now | Client-side `pre-push` hook running lint, typecheck, and `tuffgal run --local` | 30 min | ~95% of the value, and the only stage with _instant_ feedback. Local mode is advisory and self-diffs against a gitignored cache, so it never touches committed baselines. |
+| Next | GitHub Actions on the mirror — lint, typecheck, and `tuffgal-action` | A weekend | Zero new infrastructure on your VPS, and this is where Tuffgal earns its keep: CI is the sole writer of baselines, so visual review becomes a real PR gate. |
+| Then | Report status back to your forge | 1 evening | **The architectural step.** A final `if: always()` step curls your commit-status endpoint (§07). |
+| Later | `forgejo-runner exec` on your own box | 2 evenings | Runs GitHub-Actions-compatible YAML with _no forge at all_ — you invoke it, read the exit code. Same YAML, so both paths coexist. |
 
 Two things worth knowing before you build on this. **Mirror pushes do trigger GitHub Actions** — the famous "pushes with a token don't trigger workflows" restriction is scoped to pushes made _from inside an Actions run_ using the automatic `GITHUB_TOKEN`, to prevent recursion. A push from your VPS with a deploy key is an ordinary external push. Confirm it empirically in five minutes before you rely on it.
 
@@ -858,13 +859,13 @@ Read `.carn/workflows/` first, fall back to `.github/workflows/` — the same fa
 
 But every one of those primitives has a Càrn-shaped substitute that already exists:
 
-| What Tuffgal needs       | On GitHub                                | On Càrn                                                                                                                                                       | New work        |
-| ------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| Publish the report       | Artifact + `gh-pages` branch             | Push it to `refs/carn/reports/<sha>`. It's static HTML and PNGs — **that's a git tree**, served from the blob origin you already built.                       | none            |
-| Show diffs in review     | Sticky bot comment with thumbnails       | The PR page renders a before/after/diff triptych from the status payload. Read-only, no bot, no comment.                                                      | ~50 lines       |
-| Approve baselines        | Checkbox, `@tuffgal approve`, bot pushes | `carn tuffgal approve <repo> <n>` — fetches candidates, runs `tuffgal approve --from`, commits, pushes. Authenticated by the same SSH key as everything else. | one CLI verb    |
-| Report the outcome       | Check run + job status                   | The commit status endpoint from §07, with `action_required` as a first-class state.                                                                           | already planned |
-| Skip on approval commits | Short-circuit detection                  | Identical logic, nothing forge-specific about it.                                                                                                             | none            |
+| What Tuffgal needs | On GitHub | On Càrn | New work |
+|---|---|---|---|
+| Publish the report | Artifact + `gh-pages` branch | Push it to `refs/carn/reports/<sha>`. It's static HTML and PNGs — **that's a git tree**, served from the blob origin you already built. | none |
+| Show diffs in review | Sticky bot comment with thumbnails | The PR page renders a before/after/diff triptych from the status payload. Read-only, no bot, no comment. | ~50 lines |
+| Approve baselines | Checkbox, `@tuffgal approve`, bot pushes | `carn tuffgal approve <repo> <n>` — fetches candidates, runs `tuffgal approve --from`, commits, pushes. Authenticated by the same SSH key as everything else. | one CLI verb |
+| Report the outcome | Check run + job status | The commit status endpoint from §07, with `action_required` as a first-class state. | already planned |
+| Skip on approval commits | Short-circuit detection | Identical logic, nothing forge-specific about it. | none |
 
 **Zero new architectural primitives.** The report is a git tree; the approval is a push; the review is a page. Each substitution is _more_ in keeping with tenet 1 than the thing it replaces — a baseline set living in refs is inspectable with plain `git`, which an S3 artifact never is.
 
@@ -916,16 +917,16 @@ Verified correct both immediately after a squash and after `main` moved on with 
 
 _Ranked by what actually costs you something_
 
-|          | Risk                                                                                                                               | Mitigation                                                                                                                                                                                                     |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Critical | **It becomes the only home of your code before it's trustworthy.** A bad force-push, a disk failure, a bug in your own merge path. | The §10 mirror, in **Phase 2** — before the box holds anything you'd miss. Plus `core.logAllRefUpdates = true`: reflogs are _off by default in bare repos_ and are your only undo after a bad force-push.      |
-| Critical | **You lose the laptop.** One SSH key is the only credential for the only forge holding all your code.                              | See below — this needs a paragraph, not a cell.                                                                                                                                                                |
-| High     | Subprocess resource exhaustion — abandoned clones piling up `pack-objects`, or one big clone pinning the shared core.              | Global semaphore, hard timeouts, kill-on-disconnect, plus the §04 config. Git's memory knobs bound one process; nothing but a semaphore bounds ten.                                                            |
-| Medium   | Content-injection through rendered markdown or a committed `.html`/`.svg` blob.                                                    | Largely designed out by `html: false` (§04). The residue is a URL policy, not a sanitizer: scheme allowlist, `rel="nofollow ugc"`, CSP `img-src`, and blobs on a separate origin.                              |
-| Medium   | You build 70% and stall — the classic fate of a side project with no external forcing function.                                    | The phase gates exist for this. Phase 0 is one evening to "I pushed to my own server," Phase 2 puts it on the internet, and if Phase 4 stalls you still have a repo browser with issues that you'd keep using. |
-| Medium   | `ssh2` is bus-factor 1 at roughly one release a year.                                                                              | Fine for personal use. The escape hatch is OpenSSH with `AuthorizedKeysCommand` — a contained change, since authorization already lives in your app.                                                           |
-| Low      | Path traversal via repo or ref names.                                                                                              | Designed out by UUID-derived paths. Still reject refs beginning with `-` and always pass `--`.                                                                                                                 |
-| Low      | Scope creep back toward re-implementing GitHub.                                                                                    | §13 makes each addition a decision rather than a drift. The "never" column is load-bearing.                                                                                                                    |
+|  | Risk | Mitigation |
+|---|---|---|
+| Critical | **It becomes the only home of your code before it's trustworthy.** A bad force-push, a disk failure, a bug in your own merge path. | The §10 mirror, in **Phase 2** — before the box holds anything you'd miss. Plus `core.logAllRefUpdates = true`: reflogs are _off by default in bare repos_ and are your only undo after a bad force-push. |
+| Critical | **You lose the laptop.** One SSH key is the only credential for the only forge holding all your code. | See below — this needs a paragraph, not a cell. |
+| High | Subprocess resource exhaustion — abandoned clones piling up `pack-objects`, or one big clone pinning the shared core. | Global semaphore, hard timeouts, kill-on-disconnect, plus the §04 config. Git's memory knobs bound one process; nothing but a semaphore bounds ten. |
+| Medium | Content-injection through rendered markdown or a committed `.html`/`.svg` blob. | Largely designed out by `html: false` (§04). The residue is a URL policy, not a sanitizer: scheme allowlist, `rel="nofollow ugc"`, CSP `img-src`, and blobs on a separate origin. |
+| Medium | You build 70% and stall — the classic fate of a side project with no external forcing function. | The phase gates exist for this. Phase 0 is one evening to "I pushed to my own server," Phase 2 puts it on the internet, and if Phase 4 stalls you still have a repo browser with issues that you'd keep using. |
+| Medium | `ssh2` is bus-factor 1 at roughly one release a year. | Fine for personal use. The escape hatch is OpenSSH with `AuthorizedKeysCommand` — a contained change, since authorization already lives in your app. |
+| Low | Path traversal via repo or ref names. | Designed out by UUID-derived paths. Still reject refs beginning with `-` and always pass `--`. |
+| Low | Scope creep back toward re-implementing GitHub. | §13 makes each addition a decision rather than a drift. The "never" column is load-bearing. |
 
 ### Losing the key — the answer is more of the same mechanism
 
@@ -967,12 +968,12 @@ Masculine noun, genitive and plural _cùirn_. A heap that _many passers-by each 
 
 ### Where each spelling goes
 
-| Surface                                   | Form     | Why                                                                                                                              |
-| ----------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Page titles, nav, footer, README, docs    | **Càrn** | The real word. Nothing here is parsed by a machine.                                                                              |
-| Hostname, clone URLs, TLS cert, Caddyfile | `carn.`  | OpenSSH can't resolve IDN; Caddy fails silently on Unicode addresses.                                                            |
-| npm package and binary                    | `carn`   | npm forbids non-ASCII names outright. `cairn` and `cairn-cli` are both taken; the latter already claims the `cairn` binary name. |
-| Repo, database, container names           | `carn`   | Anywhere a shell or a config file has to type it.                                                                                |
+| Surface | Form | Why |
+|---|---|---|
+| Page titles, nav, footer, README, docs | **Càrn** | The real word. Nothing here is parsed by a machine. |
+| Hostname, clone URLs, TLS cert, Caddyfile | `carn.` | OpenSSH can't resolve IDN; Caddy fails silently on Unicode addresses. |
+| npm package and binary | `carn` | npm forbids non-ASCII names outright. `cairn` and `cairn-cli` are both taken; the latter already claims the `cairn` binary name. |
+| Repo, database, container names | `carn` | Anywhere a shell or a config file has to type it. |
 
 Grave accents in Gaelic are meaning-bearing, not decorative — `obair` is "work," `òbair` is "retch." Only grave accents exist in modern Gaelic; acutes are pre-1981 and appear only in older dictionaries.
 
