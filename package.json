@@ -1,0 +1,24 @@
+{
+  "name": "@nschneble/carn",
+  "version": "0.0.0",
+  "description": "A self-hosted git forge. Repos, issues, and pull requests.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test \"dist/test/**/*.js\""
+  },
+  "dependencies": {
+    "@prisma/client": "^7.9.1",
+    "fastify": "^5.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.3.0",
+    "prisma": "^7.9.1",
+    "squawk-cli": "^2.62.0",
+    "typescript": "^7.0.2"
+  }
+}
