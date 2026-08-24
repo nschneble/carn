@@ -13,9 +13,13 @@ Three registers. Always use the right one:
 
 1. Visual: **Càrn** (UI copy, page titles, docs prose, the landing page)
 2. ASCII prose: **Carn** (commit messages, config comments)
-3. Identifier: `carn` (hostname, npm, binary, db, containers, class names)
+3. Identifier: `carn` (hostname, binary, db, containers, class names)
 
 Never `cairn`; that's the English loanword, not the name. Never `CARN`.
+
+The npm package is **scoped**: `@nschneble/carn`, installing a `carn`
+binary. Unscoped `carn` was rejected by npm's similarity guard for being
+too close to `yarn`, `cron`, and `acorn`. Don't "fix" it back.
 
 ## Licensing
 

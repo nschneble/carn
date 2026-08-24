@@ -621,9 +621,9 @@ Shipped on npm. Three constraints shape the naming:
 
 - **npm forbids non-ASCII package names.** `càrn` is rejected — "name can only contain URL-friendly characters," since the name becomes part of a URL. So does any capital letter.
 - **`cairn` is taken** (an abandoned React Native styling package, last published 2022), and — more awkwardly — **`cairn-cli` was published in May 2026** and already claims `cairn` as its _binary_ name. The whole `cairn-*` namespace has filled up this year.
-- **`carn` is free.**
+- **Unscoped `carn` is rejected at publish time.** The registry returns 404 for it — but npm also runs a server-side similarity guard that only fires on publish, and it refuses `carn` as too close to `yarn`, `cron`, and `acorn`. A 404 means unregistered, not publishable.
 
-Package `carn`, binary `carn`, with `@carn/cli` as a scoped hedge — scoped packages default to private, so publish with `--access public`.
+So: package **`@nschneble/carn`**, binary **`carn`**. Scoped names skip the similarity check entirely, and the `bin` key is independent of the package name, so the command you type is unaffected. Scoped packages default to _restricted_ — set `publishConfig.access` to `public` in `package.json` rather than remembering `--access public` on every publish.
 
 ### One command that earns the CLI on its own
 
