@@ -161,7 +161,7 @@ Decisions, not options. Do not substitute.
 ### Dependency budget
 
 Runtime: `fastify`, `@prisma/client`, `@prisma/adapter-pg`. Dev: `prisma`,
-`typescript`, `@types/node`, `squawk-cli`.
+`typescript`, `@types/node`, `squawk-cli`, `@biomejs/biome`.
 
 `pg` is a transitive dependency of the adapter. Do not add it directly —
 the adapter owns the `Pool`, and a second copy in `package.json` invites a
