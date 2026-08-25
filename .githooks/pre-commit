@@ -1,37 +1,29 @@
 #!/bin/sh
 
-# Welcome to Le salon Code, where source code goes for a glow-up. These are
-# consultations, so don't worry about surprise bangs. You can bypass this
-# deliberately with: `git commit --no-verify`, but it's kinda rude.
+# Automatically runs a Biome check on staged files as a pre-commit hook
+# Bypass with: `git commit --no-verify`
 
-quips() {
-  cat <<'EOF'
-Bad bad bad.
-Clearly personal hygiene is not a priority.
-Did a cat walk across your keyboard?
-It's like Jackson Pollock cloned your repo.
-Next time you should actually try.
-EOF
-}
+biome=./node_modules/.bin/biome
+[ -x "$biome" ] || biome="npx --no-install biome"
 
-quip() {
-  count=$(quips | wc -l | tr -d ' ')
-  n=$(od -An -tu2 -N2 /dev/urandom 2>/dev/null | tr -d ' ')
-  [ -n "$n" ] || n=$$
-  quips | sed -n "$((n % count + 1))p"
-}
+# A disabled linter and a clean codebase produce the same output: nothing
+if git diff --cached --name-only | grep -qE '^(biome\.json|package(-lock)?\.json)$'
+then
+  d=$(mktemp -d)
+  printf 'export function f(x: any) { return x }\n' > "$d/bad.ts"
+  if ! $biome lint --config-path=. "$d/bad.ts" 2>&1 | grep -q noExplicitAny
+  then
+    rm -rf "$d"
+    echo
+    echo "Linter ignored a deliberately bad file. Check \`biome.json\`."
+    exit 1
+  fi
+  rm -rf "$d"
+fi
 
-prettier=./node_modules/.bin/prettier
-[ -x "$prettier" ] || prettier="npx --no-install prettier"
-
-files=$(git diff --cached --name-only --diff-filter=ACMR)
-[ -z "$files" ] && exit 0
-
-if ! printf '%s\n' "$files" | tr '\n' '\0' |
-  xargs -0 $prettier --check --ignore-unknown --log-level warn
+if ! $biome check --staged --reporter=summary
 then
   echo
-  quip
-  echo "Formatting check failed. Fix by running \`npm run format\`."
+  echo "Check failed. Fix by running \`npm run format\`."
   exit 1
 fi

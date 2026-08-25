@@ -474,8 +474,27 @@ double-encoded: `&` → `&amp;`, `<` → `&lt;`, `>` → `&gt;`, `"` → `&quot;
 `'` → `&#39;`.
 
 `html` returns `Raw`, which is what makes nesting work without double
-escaping. Escaping both `"` and `'` is what makes it safe in an unquoted-
-adjacent attribute position; do not "optimize" either away.
+escaping. Escaping both `"` and `'` is what closes off both quoting styles
+for attribute values; do not "optimize" either away.
+
+> **Correction.** An earlier revision of this brief claimed the five-
+> character set made interpolation safe in an *unquoted* attribute
+> position. It does not, and no five-character set could. An unquoted value
+> is also terminated by a space, a tab, a newline, `=`, or a backtick, none
+> of which are escaped — so `foo onmouseover=alert(1)` interpolated into
+> `<a href=${x}>` renders as a live event handler.
+>
+> The escape set is correct and stays as it is. The missing half is the
+> invariant it depends on: **every attribute value in every template is
+> quoted.** Expanding the set instead would mean escaping spaces in body
+> text, bloating every page against the 100 KB budget to buy nothing that
+> a quote mark does not already buy. No mainstream templating system does
+> it that way either.
+>
+> That invariant is enforced in 1d, where templates first exist, by a
+> contract test that scans template source for an interpolation landing in
+> an unquoted attribute position. Until then there are no templates and
+> nothing to enforce.
 
 > **On the no-unit-tests rule.** CLAUDE.md forbids unit tests, and this is
 > not one. `escaping.contract.ts` asserts a security contract — the same

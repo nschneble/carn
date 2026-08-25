@@ -8,9 +8,10 @@
     "node": ">=24"
   },
   "scripts": {
+    "biome:migrate": "biome migrate --write",
     "build": "prisma generate && tsc",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "biome check --write .",
+    "format:check": "biome check .",
     "migrate": "set -a && . ./.env && set +a && prisma migrate deploy",
     "prepare": "git config core.hooksPath .githooks || true",
     "test": "node --test \"dist/test/**/*.js\""
@@ -25,8 +26,8 @@
     "fastify": "^5.12.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.10",
     "@types/node": "^26.3.0",
-    "prettier": "^3.9.6",
     "prisma": "^7.9.1",
     "squawk-cli": "^2.62.0",
     "typescript": "^7.0.2"

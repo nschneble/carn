@@ -1,9 +1,6 @@
 -- Note: This migration has been hand-tuned. A regeneration must preserve
 -- all of it. Don't f*ck it up.
 
--- We're doing this in one big ol' transaction, so any failures midway roll
--- the whole thing back. This rules out creating indices concurrently,
--- because Postgres rejects doing so inside a block.
 BEGIN;
 
 -- CreateEnum

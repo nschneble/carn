@@ -17,7 +17,7 @@ const entities = {
   "'": "&#39;",
 } as const;
 
-function escape(value: string): string {
+function escapeHtml(value: string): string {
   return value.replace(
     entitiesRegex,
     (char) => entities[char as keyof typeof entities],
@@ -27,7 +27,7 @@ function escape(value: string): string {
 function render(value: unknown): string {
   if (value instanceof Raw) return value.value;
 
-  if (typeof value === "string") return escape(value);
+  if (typeof value === "string") return escapeHtml(value);
   if (typeof value === "number" || typeof value === "bigint")
     return String(value);
 
@@ -37,7 +37,7 @@ function render(value: unknown): string {
   if (Array.isArray(value))
     return value.map((element) => render(element)).join("");
 
-  return escape(String(value));
+  return escapeHtml(String(value));
 }
 
 function cooked(strings: TemplateStringsArray, index: number): string {
