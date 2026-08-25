@@ -21,7 +21,7 @@ then
   rm -rf "$d"
 fi
 
-if ! $biome check --staged --reporter=summary
+if ! $biome check --staged --reporter=summary --no-errors-on-unmatched
 then
   echo
   echo "Check failed. Fix by running \`npm run format\`."
