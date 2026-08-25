@@ -6,17 +6,17 @@ This is the first of four briefs that together make up Phase 1 of
 `docs/PLAN.md` §08. The split exists so each handoff has a mechanical exit
 check and a human review before the next one starts.
 
-| Sub-phase | Scope | Exit |
-|---|---|---|
-| **1a** | Schema, Fastify skeleton, `html` tag | This document |
-| 1b | SSH listener, auth against `ssh_keys`, push-to-create | Push a real repo |
-| 1c | Anonymous smart-HTTP read | Anonymous clone |
-| 1d | Browsing views + the design system | The page looks good |
+| Sub-phase | Scope                                                 | Exit                |
+| --------- | ----------------------------------------------------- | ------------------- |
+| **1a**    | Schema, Fastify skeleton, `html` tag                  | This document       |
+| 1b        | SSH listener, auth against `ssh_keys`, push-to-create | Push a real repo    |
+| 1c        | Anonymous smart-HTTP read                             | Anonymous clone     |
+| 1d        | Browsing views + the design system                    | The page looks good |
 
 > **Amendment 1 — Prisma 7.** The first draft of this brief assumed the
 > Prisma 6 schema shape. Prisma 7 removed `url` from the `datasource`
-> block: the CLI hard-errors with P1012, *"The datasource property `url` is
-> no longer supported in schema files."* The connection string moves to
+> block: the CLI hard-errors with P1012, _"The datasource property `url` is
+> no longer supported in schema files."_ The connection string moves to
 > `prisma.config.ts`, and `PrismaClient` now requires a driver adapter.
 >
 > Resolution: **stay on Prisma 7.** The budget gains exactly one direct
@@ -44,7 +44,7 @@ check and a human review before the next one starts.
 > ```
 >
 > Check 4 has already replayed every migration into an empty database, so
-> the live database *is* the migration history's output. Diffing it against
+> the live database _is_ the migration history's output. Diffing it against
 > the schema tests the same property with no second database, no
 > `CREATEDB` dependency, and nothing extra for Phase 2's CI to provision.
 > Note `--to-schema`, not v6's `--to-schema-datamodel`.
@@ -59,8 +59,8 @@ check and a human review before the next one starts.
 > `repos.next_number` is excludable **inline**; `Int` is correct.
 
 > **Amendment 5 — `.squawk.toml` stays, for facts.** Amendment 4 banned the
-> file outright. That was wrong: it conflated *configuration* with
-> *exclusion*. `pg_version` and `assume_in_transaction` are environmental
+> file outright. That was wrong: it conflated _configuration_ with
+> _exclusion_. `pg_version` and `assume_in_transaction` are environmental
 > facts, and deleting them makes squawk lint against assumptions that are
 > not true of this project — raising more findings, not fewer. Keep the
 > file; it must contain no `excluded_rules`. A new step 0 in the squawk
@@ -82,17 +82,18 @@ check and a human review before the next one starts.
 >    where a half-applied migration means manual recovery.
 >
 >    Note that this does **not** make `assume_in_transaction = true`. That
->    flag describes what *Prisma* does, which is still nothing — it splits
+>    flag describes what _Prisma_ does, which is still nothing — it splits
 >    the file on `;` and autocommits each statement. An explicit `BEGIN` is
 >    something squawk reads straight out of the SQL, so the flag stays
 >    `false` and is simply not needed. Setting it `true` would trade one
 >    false claim for another.
+>
 > 2. **If that does not work, make the config honest.** Set
 >    `assume_in_transaction = false`, re-run, and triage what returns
 >    through the three categories below. Expect
 >    `require-concurrent-index-creation` to land in category 1 (empty tables
 >    created in the same migration) and `prefer-robust-stmts` to be a
->    *genuine* finding — non-atomic migrations really do need idempotent
+>    _genuine_ finding — non-atomic migrations really do need idempotent
 >    statements, because a partial failure is now a state you can reach.
 >
 > Report which path you took and the evidence for it. Either way, whether
@@ -395,11 +396,11 @@ correctly for the first time.
 
 ### Which findings may be silenced
 
-Sort every *remaining* finding into one of three categories. The category
+Sort every _remaining_ finding into one of three categories. The category
 decides, not a list of named rules — a list can only ever be incomplete.
 
 **1 · Lifecycle artefact.** The rule guards against a hazard that applies
-to a *populated* table, and this table is being created empty in the same
+to a _populated_ table, and this table is being created empty in the same
 migration. **Excludable**, with the reason stated. Expect this category to
 be nearly empty once step 0 is done.
 
@@ -416,8 +417,8 @@ one, not at row N — a scale that never arrives does not rescue it.
 are here, and so is anything else of that shape. **Never excludable.** A
 finding means the schema is wrong; fix the schema.
 
-The line between 2 and 3 is the one that matters: *is this wrong now, or
-only wrong past a threshold?* A naive timestamp is wrong on the first row.
+The line between 2 and 3 is the one that matters: _is this wrong now, or
+only wrong past a threshold?_ A naive timestamp is wrong on the first row.
 An `int4` counter is correct until it isn't, and here it never isn't.
 
 ### How to silence one
@@ -445,26 +446,28 @@ the statement, or not at all.
 ## The `html` tag
 
 The single most security-critical function in the codebase. CLAUDE.md:
-*"The `html` tag escapes every interpolation by default; `raw()` is the
-explicit opt-out for pre-rendered markdown. Never interpolate unescaped."*
+_"The `html` tag escapes every interpolation by default; `raw()` is the
+explicit opt-out for pre-rendered markdown. Never interpolate unescaped."_
 
 ```ts
-export class Raw { constructor(readonly value: string) {} }
-export function raw(s: string): Raw
-export function html(strings: TemplateStringsArray, ...values: unknown[]): Raw
+export class Raw {
+  constructor(readonly value: string) {}
+}
+export function raw(s: string): Raw;
+export function html(strings: TemplateStringsArray, ...values: unknown[]): Raw;
 ```
 
 Interpolation rules, exhaustively:
 
-| Value | Renders as |
-|---|---|
-| `Raw` | its `.value`, unescaped |
-| `string` | escaped |
-| `number`, `bigint` | `String(v)`, no escaping needed |
-| `null`, `undefined`, `false` | empty string |
-| `true` | empty string |
-| array | each element by these same rules, joined with `""` |
-| anything else | `String(v)`, then escaped |
+| Value                        | Renders as                                         |
+| ---------------------------- | -------------------------------------------------- |
+| `Raw`                        | its `.value`, unescaped                            |
+| `string`                     | escaped                                            |
+| `number`, `bigint`           | `String(v)`, no escaping needed                    |
+| `null`, `undefined`, `false` | empty string                                       |
+| `true`                       | empty string                                       |
+| array                        | each element by these same rules, joined with `""` |
+| anything else                | `String(v)`, then escaped                          |
 
 Escape exactly these five, and do it in one pass so `&` cannot be
 double-encoded: `&` → `&amp;`, `<` → `&lt;`, `>` → `&gt;`, `"` → `&quot;`,
@@ -482,7 +485,7 @@ adjacent attribute position; do not "optimize" either away.
 
 Required assertions:
 
-- `html\`<p>${'<script>alert(1)</script>'}</p>\`` contains no literal `<script`
+- `html\`<p>${'<script>alert(1)</script>'}</p>\``contains no literal`<script`
 - `&` in input becomes `&amp;` exactly once, not `&amp;amp;`
 - `raw('<b>x</b>')` passes through unescaped
 - a nested `html` result is not double-escaped
@@ -496,12 +499,12 @@ Required assertions:
 
 `config.ts` — hand-rolled, ~20 lines, no dependency:
 
-| Var | Required | Default |
-|---|---|---|
-| `DATABASE_URL` | yes | — |
-| `PORT` | no | `3000` |
-| `HOST` | no | `127.0.0.1` |
-| `NODE_ENV` | no | `development` |
+| Var            | Required | Default       |
+| -------------- | -------- | ------------- |
+| `DATABASE_URL` | yes      | —             |
+| `PORT`         | no       | `3000`        |
+| `HOST`         | no       | `127.0.0.1`   |
+| `NODE_ENV`     | no       | `development` |
 
 Missing `DATABASE_URL` exits non-zero with a message naming the variable.
 Read it once at startup into a frozen object; do not touch `process.env`
@@ -511,9 +514,9 @@ outside the app. Fastify's built-in pino covers logging; do not add one.
 `db.ts` wires the adapter rather than passing a URL:
 
 ```ts
-import { PrismaPg } from '@prisma/adapter-pg'
-const adapter = new PrismaPg({ connectionString: config.databaseUrl })
-export const db = new PrismaClient({ adapter })
+import { PrismaPg } from "@prisma/adapter-pg";
+const adapter = new PrismaPg({ connectionString: config.databaseUrl });
+export const db = new PrismaClient({ adapter });
 ```
 
 One `PrismaClient` for the process, created once at module load. The
@@ -555,7 +558,7 @@ check and exiting non-zero if any fail. Each must be mechanically decidable
 3. `docker compose up -d` brings Postgres up healthy
 4. `npx prisma migrate deploy` applies cleanly to an **empty** database
 5. `npx prisma migrate diff --from-config-datasource --to-schema
-   prisma/schema.prisma --exit-code` reports no drift. **Must run after
+prisma/schema.prisma --exit-code` reports no drift. **Must run after
    check 4** — it diffs the migrated database against the schema file.
    See "Expected drift" below before implementing this one.
 6. Exactly one user row exists, `handle = 'nschneble'`, `is_admin = true`
@@ -594,7 +597,7 @@ Run the diff and follow whichever case you land in:
   written. Nothing further to do.
 - **Diff contains only the functional index and/or the CHECK constraint** —
   this is drift by design. Change check 5 to assert the diff output
-  mentions *nothing but* those two objects, name them explicitly in the
+  mentions _nothing but_ those two objects, name them explicitly in the
   assertion, and put a comment in the script explaining that they are
   intentional and unrepresentable. A bare "ignore drift" is not acceptable.
 - **Diff contains anything else** — real drift. Fix the schema or the

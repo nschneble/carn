@@ -19,16 +19,16 @@ House rules:
 
 **Added:**
 
--
+- first item placeholder
 
 **Changed:**
 
--
+- first item placeholder
 
 **Fixed:**
 
--
+- first item placeholder
 
 **Removed:**
 
--
+- first item placeholder
