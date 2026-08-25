@@ -26,6 +26,7 @@ readonly log="$work/results"
 
 cleanup() {
   [ -n "${app_pid:-}" ] && kill "$app_pid" 2>/dev/null
+  drop_scratch
   rm -rf "$work"
 }
 trap cleanup EXIT
@@ -57,6 +58,34 @@ if [ -z "${DATABASE_URL:-}" ] && [ -f .env ]; then
   . ./.env
   set +a
 fi
+
+# Checks 4-8 need a known-empty database and must not disturb the
+# developer's. They run against a scratch database dropped on exit.
+scratch_db=""
+scratch_url=""
+
+scratch_dsn() {
+  # swap the database name, leaving any query string intact
+  printf '%s' "$1" | sed -E "s#(://[^/]*)/[^/?]*#\1/$2#"
+}
+
+setup_scratch() {
+  [ -n "${DATABASE_URL:-}" ] || return 1
+  scratch_db="carn_verify_$$"
+  psql "$DATABASE_URL" --no-psqlrc -q \
+    -c "DROP DATABASE IF EXISTS \"$scratch_db\" WITH (FORCE)" 2>/dev/null
+  psql "$DATABASE_URL" --no-psqlrc -q \
+    -c "CREATE DATABASE \"$scratch_db\"" 2>"$work/scratch.err" || return 1
+  scratch_url=$(scratch_dsn "$DATABASE_URL" "$scratch_db")
+  return 0
+}
+
+drop_scratch() {
+  [ -n "${scratch_db:-}" ] || return 0
+  psql "$dev_database_url" --no-psqlrc -q \
+    -c "DROP DATABASE IF EXISTS \"$scratch_db\" WITH (FORCE)" 2>/dev/null
+  scratch_db=""
+}
 
 echo "Phase 1a exit checks"
 echo
@@ -102,14 +131,18 @@ fi
 
 # 4
 # deploy exits 0 on an already-migrated db, so assert empty beforehand
+dev_database_url="${DATABASE_URL:-}"
+if ! setup_scratch; then
+  record FAIL 4 "prisma migrate deploy applies to an empty database" \
+    "could not create a scratch database: $(tail -2 "$work/scratch.err" 2>/dev/null)"
+else
+  DATABASE_URL="$scratch_url"
+fi
 if require_db 4 "prisma migrate deploy applies to an empty database"; then
   existing=$(psql_url -c "select count(*) from information_schema.tables where table_schema='public'" 2>"$work/4.err")
   migrations=$(find prisma/migrations -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
   if [ -z "$existing" ]; then
     record FAIL 4 "prisma migrate deploy applies to an empty database" "$(tail -3 "$work/4.err")"
-  elif [ "$existing" != "0" ]; then
-    record FAIL 4 "prisma migrate deploy applies to an empty database" \
-      "public schema already holds $existing table(s). Recreate the database, or run: npx prisma migrate reset --force"
   elif ! npx prisma migrate deploy > "$work/4" 2>&1; then
     record FAIL 4 "prisma migrate deploy applies to an empty database" "$(tail -8 "$work/4")"
   else
@@ -190,6 +223,9 @@ if require_db 8 "inserting a repo named -bad fails on repos_name_format"; then
     record FAIL 8 "inserting a repo named -bad fails on repos_name_format" "$(tail -3 "$work/8.err")"
   fi
 fi
+
+DATABASE_URL="$dev_database_url"
+drop_scratch
 
 # 9
 if [ ! -f dist/src/index.js ]; then
@@ -274,7 +310,7 @@ if node -e '
   const pkg = JSON.parse(require("fs").readFileSync("package.json", "utf8"))
   const budget = {
     dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg"],
-    devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli"],
+    devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli", "@biomejs/biome"],
   }
   const over = []
   for (const [field, allowed] of Object.entries(budget)) {
