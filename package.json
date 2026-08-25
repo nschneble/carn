@@ -10,10 +10,12 @@
   "scripts": {
     "biome:migrate": "biome migrate --write",
     "build": "prisma generate && tsc",
+    "db:reset": "set -a && . ./.env && set +a && prisma migrate reset --force",
     "format": "biome check --write .",
     "format:check": "biome check .",
     "migrate": "set -a && . ./.env && set +a && prisma migrate deploy",
     "prepare": "git config core.hooksPath .githooks || true",
+    "pretest": "npm run build",
     "test": "node --test \"dist/test/**/*.js\""
   },
   "allowScripts": {
