@@ -1,7 +1,4 @@
--- prisma generated this file; four hand-added parts must survive a
--- regenerate: begin/commit wrapping the whole file, the squawk-ignore
--- pair above create type, the squawk-ignore above repos.next_number,
--- and the last two statements (repos_name_lower_key, repos_name_format)
+-- hand-edited below and inline; a regenerate must preserve all of it
 
 -- one transaction, so a mid-file failure rolls back; this rules out
 -- create index concurrently, which postgres rejects inside a block
