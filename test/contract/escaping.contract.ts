@@ -44,11 +44,14 @@ test("null, undefined and booleans render as nothing", () => {
 
 test("an attribute value cannot break out of its quotes", () => {
   const double = html`<a href="${'" onmouseover="alert(1)'}"></a>`.value;
-  const single = html`<a href="${"' onmouseover='alert(1)"}"></a>`.value;
+  const single = html`<a href='${"' onmouseover='alert(1)"}'></a>`.value;
 
-  assert.strictEqual(double, '<a href="&quot; onmouseover=&quot;alert(1)">');
+  assert.strictEqual(
+    double,
+    '<a href="&quot; onmouseover=&quot;alert(1)"></a>',
+  );
   assert.strictEqual(double.split('"').length - 1, 2);
-  assert.strictEqual(single, "<a href='&#39; onmouseover=&#39;alert(1)'>");
+  assert.strictEqual(single, "<a href='&#39; onmouseover=&#39;alert(1)'></a>");
   assert.strictEqual(single.split("'").length - 1, 2);
 });
 
