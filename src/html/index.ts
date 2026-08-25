@@ -5,44 +5,53 @@ export class Raw {
 }
 
 export function raw(value: string): Raw {
-  return new Raw(value)
+  return new Raw(value);
 }
 
+const entitiesRegex = /[&<>"']/g;
 const entities = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;',
-} as const
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+} as const;
 
 function escape(value: string): string {
-  return value.replace(/[&<>"']/g, (char) => entities[char as keyof typeof entities])
+  return value.replace(
+    entitiesRegex,
+    (char) => entities[char as keyof typeof entities],
+  );
 }
 
 function render(value: unknown): string {
-  if (value instanceof Raw) return value.value
-  if (typeof value === 'string') return escape(value)
-  if (typeof value === 'number' || typeof value === 'bigint') return String(value)
-  if (value === null || value === undefined || typeof value === 'boolean') return ''
-  if (Array.isArray(value)) return value.map((element) => render(element)).join('')
-  return escape(String(value))
+  if (value instanceof Raw) return value.value;
+
+  if (typeof value === "string") return escape(value);
+  if (typeof value === "number" || typeof value === "bigint")
+    return String(value);
+
+  if (value === null || value === undefined || typeof value === "boolean")
+    return "";
+
+  if (Array.isArray(value))
+    return value.map((element) => render(element)).join("");
+
+  return escape(String(value));
 }
 
 function cooked(strings: TemplateStringsArray, index: number): string {
-  const chunk: string | undefined = strings[index]
+  const chunk: string | undefined = strings[index];
   if (chunk === undefined) {
-    throw new Error(
-      `html: chunk ${index} has an invalid escape sequence; fix it or double the backslash`,
-    )
+    throw new Error(`Html: chunk ${index} has an invalid escape sequence.`);
   }
-  return chunk
+  return chunk;
 }
 
 export function html(strings: TemplateStringsArray, ...values: unknown[]): Raw {
-  let out = cooked(strings, 0)
+  let out = cooked(strings, 0);
   for (const [index, value] of values.entries()) {
-    out += render(value) + cooked(strings, index + 1)
+    out += render(value) + cooked(strings, index + 1);
   }
-  return new Raw(out)
+  return new Raw(out);
 }
