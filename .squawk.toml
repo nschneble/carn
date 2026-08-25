@@ -3,5 +3,5 @@
 # needs to match the image in compose.yaml
 pg_version = "18.0"
 
-# Prisma doesn't open any transactions on its own
+# prisma doesn't open any transactions on its own
 assume_in_transaction = false

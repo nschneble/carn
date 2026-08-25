@@ -1,4 +1,5 @@
 -- SPDX-License-Identifier: AGPL-3.0-or-later
+
 -- Note: This migration has been hand-tuned. A regeneration must preserve
 -- all of it. Don't f*ck it up.
 
