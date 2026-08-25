@@ -1,2 +1,5 @@
 pg_version = "18.0"            # must match the image in compose.yaml
-assume_in_transaction = true   # Prisma wraps each migration in one
+
+# prisma opens no transaction of its own, so this is false; each migration
+# carries an explicit BEGIN/COMMIT that squawk reads straight from the sql
+assume_in_transaction = false

@@ -4,7 +4,7 @@ function read(name: string, fallback?: string): string {
   const value = process.env[name] || fallback
 
   if (value === undefined) {
-    console.error(`${name} is not set. Copy .env.example to .env, or export ${name}.`)
+    console.error(`${name} is not set. Pass --env-file=.env to node, or export ${name}.`)
     process.exit(1)
   }
 

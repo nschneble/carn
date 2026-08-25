@@ -1,4 +1,11 @@
--- hand-added below prisma's output: functional unique index + format check
+-- prisma generated this file; four hand-added parts must survive a
+-- regenerate: begin/commit wrapping the whole file, the squawk-ignore
+-- pair above create type, the squawk-ignore above repos.next_number,
+-- and the last two statements (repos_name_lower_key, repos_name_format)
+
+-- one transaction, so a mid-file failure rolls back; this rules out
+-- create index concurrently, which postgres rejects inside a block
+BEGIN;
 
 -- CreateEnum
 -- nothing to lock: this migration creates every table it touches
@@ -76,3 +83,5 @@ CREATE UNIQUE INDEX repos_name_lower_key ON repos (lower(name));
 
 ALTER TABLE repos ADD CONSTRAINT repos_name_format
   CHECK (name ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$');
+
+COMMIT;
