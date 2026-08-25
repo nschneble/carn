@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# needs to match the image in compose.yaml
+pg_version = "18.0"
+
+# prisma doesn't open any transactions on its own
+assume_in_transaction = false

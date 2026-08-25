@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: carn
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: carn
+      POSTGRES_USER: carn
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-carn}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      # Postgres 18 moved its volume up a level; /data is silently ignored
+      - carn-postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carn -d carn"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  carn-postgres:

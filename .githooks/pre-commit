@@ -1,0 +1,30 @@
+#!/bin/sh
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Automatically runs a Biome check on staged files as a pre-commit hook
+# Bypass with: `git commit --no-verify`
+
+biome=./node_modules/.bin/biome
+[ -x "$biome" ] || biome="npx --no-install biome"
+
+# A disabled linter and a clean codebase produce the same output: nothing
+if git diff --cached --name-only | grep -qE '^(biome\.json|package(-lock)?\.json)$'
+then
+  d=$(mktemp -d)
+  printf 'export function f(x: any) { return x }\n' > "$d/bad.ts"
+  if ! $biome lint --config-path=. "$d/bad.ts" 2>&1 | grep -q noExplicitAny
+  then
+    rm -rf "$d"
+    echo
+    echo "Linter ignored a deliberately bad file. Check \`biome.json\`."
+    exit 1
+  fi
+  rm -rf "$d"
+fi
+
+if ! $biome check --staged --reporter=summary --no-errors-on-unmatched
+then
+  echo
+  echo "Check failed. Fix by running \`npm run format\`."
+  exit 1
+fi
