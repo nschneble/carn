@@ -13,7 +13,7 @@ services:
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
-      # postgres 18 moved its volume up a level; /data is silently ignored
+      # Postgres 18 moved its volume up a level; /data is silently ignored
       - carn-postgres:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U carn -d carn"]
