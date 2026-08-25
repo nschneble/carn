@@ -13,6 +13,92 @@ check and a human review before the next one starts.
 | 1c | Anonymous smart-HTTP read | Anonymous clone |
 | 1d | Browsing views + the design system | The page looks good |
 
+> **Amendment 1 — Prisma 7.** The first draft of this brief assumed the
+> Prisma 6 schema shape. Prisma 7 removed `url` from the `datasource`
+> block: the CLI hard-errors with P1012, *"The datasource property `url` is
+> no longer supported in schema files."* The connection string moves to
+> `prisma.config.ts`, and `PrismaClient` now requires a driver adapter.
+>
+> Resolution: **stay on Prisma 7.** The budget gains exactly one direct
+> dependency, `@prisma/adapter-pg` (`pg` arrives transitively — do not add
+> it to `package.json` unless you import it directly, which you should not
+> need to). The generator, config, and `db.ts` sections below are updated.
+
+> **Amendment 2 — timestamps are `timestamptz`.** The first draft's schema
+> used bare `DateTime`, which Prisma maps to `TIMESTAMP(3)` — no time zone.
+> Squawk's `prefer-timestamp-tz` is correct to flag it and **must not be
+> excluded**. Every timestamp column in Càrn records an instant, so all of
+> them are `@db.Timestamptz(3)`. This is a standing rule for every later
+> phase, not a fix for these four columns.
+
+> **Amendment 3 — no shadow database.** Exit check 5 originally used
+> `--from-migrations`, which replays migration history and therefore needs
+> somewhere to replay it into. Do not add one. Prisma 7 removed the
+> `--from-url` / `--to-url` / `--shadow-database-url` flags and replaced
+> them with `--from-config-datasource` / `--to-config-datasource`, which is
+> the simpler instrument here:
+>
+> ```
+> prisma migrate diff --from-config-datasource \
+>   --to-schema prisma/schema.prisma --exit-code
+> ```
+>
+> Check 4 has already replayed every migration into an empty database, so
+> the live database *is* the migration history's output. Diffing it against
+> the schema tests the same property with no second database, no
+> `CREATEDB` dependency, and nothing extra for Phase 2's CI to provision.
+> Note `--to-schema`, not v6's `--to-schema-datamodel`.
+
+> **Amendment 4 — `next_number` stays `Int`.** Amendment 2 said the squawk
+> pre-authorization covers "empty-table false positives and nothing else,"
+> then named three never-excludable rules. That wording supports two
+> readings, and the two-way split it implied was wrong: it has no slot for
+> a rule that flags a capacity ceiling you will never reach. The squawk
+> section below now sorts findings into three categories by principle
+> rather than by a list of rule names. `prefer-bigint-over-int` on
+> `repos.next_number` is excludable **inline**; `Int` is correct.
+
+> **Amendment 5 — `.squawk.toml` stays, for facts.** Amendment 4 banned the
+> file outright. That was wrong: it conflated *configuration* with
+> *exclusion*. `pg_version` and `assume_in_transaction` are environmental
+> facts, and deleting them makes squawk lint against assumptions that are
+> not true of this project — raising more findings, not fewer. Keep the
+> file; it must contain no `excluded_rules`. A new step 0 in the squawk
+> section below comes before the three categories.
+
+> **Amendment 6 — `assume_in_transaction` must be measured, not asserted.**
+> Amendment 5 stated as fact that Prisma wraps each migration in a
+> transaction. Measurement on this codebase says otherwise: no
+> `BEGIN`/`COMMIT` in the Postgres log, and a mid-file failure left partial
+> commits rather than rolling back. Setting the flag `true` on that false
+> premise silenced 24 findings — configuration used as concealed exclusion,
+> which is precisely what Amendment 5 forbade.
+>
+> Resolve in this order:
+>
+> 1. **Try to make the fact true.** Add explicit `BEGIN;` / `COMMIT;` to
+>    the migration file and re-measure. Postgres has transactional DDL, and
+>    atomic migrations are worth having before Phase 2 puts this on a VPS
+>    where a half-applied migration means manual recovery.
+>
+>    Note that this does **not** make `assume_in_transaction = true`. That
+>    flag describes what *Prisma* does, which is still nothing — it splits
+>    the file on `;` and autocommits each statement. An explicit `BEGIN` is
+>    something squawk reads straight out of the SQL, so the flag stays
+>    `false` and is simply not needed. Setting it `true` would trade one
+>    false claim for another.
+> 2. **If that does not work, make the config honest.** Set
+>    `assume_in_transaction = false`, re-run, and triage what returns
+>    through the three categories below. Expect
+>    `require-concurrent-index-creation` to land in category 1 (empty tables
+>    created in the same migration) and `prefer-robust-stmts` to be a
+>    *genuine* finding — non-atomic migrations really do need idempotent
+>    statements, because a partial failure is now a state you can reach.
+>
+> Report which path you took and the evidence for it. Either way, whether
+> migrations are atomic is a deploy-safety property that Phase 2 inherits,
+> so it gets decided here rather than discovered there.
+
 **Read `.claude/CLAUDE.md` first, in full.** It holds the constraints,
 the stack, the naming registers, and the verified gotchas. This brief does
 not repeat them. Where the two disagree, CLAUDE.md wins and you should say
@@ -73,13 +159,31 @@ Decisions, not options. Do not substitute.
 
 ### Dependency budget
 
-Runtime: `fastify`, `@prisma/client`. Dev: `prisma`, `typescript`,
-`@types/node`, `squawk-cli`.
+Runtime: `fastify`, `@prisma/client`, `@prisma/adapter-pg`. Dev: `prisma`,
+`typescript`, `@types/node`, `squawk-cli`.
+
+`pg` is a transitive dependency of the adapter. Do not add it directly —
+the adapter owns the `Pool`, and a second copy in `package.json` invites a
+version skew that only shows up under load.
+
+Licenses check out for AGPL: `pg` is MIT, the Prisma packages Apache-2.0.
 
 That is the entire list for 1a. CLAUDE.md's rule applies: **stop and ask**
 before adding anything else, including anything that looks obviously
-harmless like `dotenv` (Node has `--env-file`) or `zod` (the config parser
-below is twenty lines).
+harmless like `zod` (the config parser below is twenty lines).
+
+**On `dotenv`:** Prisma 7 no longer auto-loads `.env`, and the official
+`prisma init` template papers over this with `import 'dotenv/config'`. Do
+not add `dotenv`. Have `prisma.config.ts` read `process.env.DATABASE_URL`
+directly, and have the npm scripts that invoke the Prisma CLI source the
+file first:
+
+```json
+"migrate": "set -a && . ./.env && set +a && prisma migrate deploy"
+```
+
+The app itself uses Node's built-in `--env-file=.env`. If this turns out
+not to work, say so rather than reaching for the package.
 
 ---
 
@@ -98,6 +202,7 @@ src/
     health.ts               GET /health
   html/
     index.ts                html`` tag, raw(), escape()
+prisma.config.ts            datasource URL for the CLI (Prisma 7)
 prisma/
   schema.prisma
   migrations/               generated, then hand-edited (see below)
@@ -109,7 +214,7 @@ scripts/
   verify-phase-1a.sh        the exit checks below, as a script
 compose.yaml                Postgres only
 .env.example                every var, with safe defaults
-.squawk.toml                only if squawk needs exclusions
+.squawk.toml                environmental facts only — no excluded_rules
 tsconfig.json
 ```
 
@@ -123,6 +228,25 @@ not ceremony — the contract tests need to boot the app in-process.
 Four tables. Field names follow `docs/PLAN.md` §05 exactly. Postgres names
 are `snake_case` via `@map`; TypeScript sees `camelCase`.
 
+The `datasource` block carries **`provider` only** — no `url`, no
+`directUrl`, no `shadowDatabaseUrl`. The generator is `prisma-client`, not
+the deprecated `prisma-client-js`; it emits into a path you specify with
+`output`, and the import in `db.ts` changes accordingly. Check the
+generated import path rather than assuming `@prisma/client`.
+
+```prisma
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+```
+
+Add `src/generated/` to `.gitignore` and generate on build.
+
 ```prisma
 model User {
   id          String      @id @default(uuid()) @db.Uuid
@@ -130,7 +254,7 @@ model User {
   displayName String      @map("display_name")
   email       String
   isAdmin     Boolean     @default(false) @map("is_admin")
-  createdAt   DateTime    @default(now()) @map("created_at")
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   sshKeys     SshKey[]
   ownedRepos  Repo[]      @relation("RepoOwner")
   grants      RepoGrant[]
@@ -143,8 +267,8 @@ model SshKey {
   name        String
   publicKey   String    @map("public_key")
   fingerprint String    @unique
-  createdAt   DateTime  @default(now()) @map("created_at")
-  lastUsedAt  DateTime? @map("last_used_at")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastUsedAt  DateTime? @map("last_used_at") @db.Timestamptz(3)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@map("ssh_keys")
 }
@@ -156,7 +280,7 @@ model Repo {
   description   String?
   defaultBranch String      @default("main") @map("default_branch")
   nextNumber    Int         @default(1) @map("next_number")
-  createdAt     DateTime    @default(now()) @map("created_at")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   owner         User        @relation("RepoOwner", fields: [ownerId], references: [id])
   grants        RepoGrant[]
   @@map("repos")
@@ -239,12 +363,82 @@ with no keys simply cannot authenticate yet, which is correct for 1a.
 
 Run `npx squawk prisma/migrations/**/*.sql` as part of the exit checks.
 
-Expect findings on an initial migration that are false positives against
-empty tables — index creation without `CONCURRENTLY` is the usual one. If
-so, add `.squawk.toml` excluding **only** those specific rules, each with a
-comment saying why it does not apply to a table created in the same
-migration. Do not silence squawk globally, and do not exclude
-`ban-drop-column` or `disallowed-unique-constraint`.
+### Step 0 — give squawk its facts before silencing anything
+
+A rule that fires because squawk is missing an environmental fact is not a
+false positive. It is a correct inference from wrong inputs, and the fix is
+the input, not an exclusion. `.squawk.toml` carries two such facts and
+**should exist for exactly these**:
+
+```toml
+pg_version = "18.0"            # must match the image in compose.yaml
+assume_in_transaction = <see Amendment 6 — verify, do not assume>
+```
+
+`pg_version` is straightforward: several rules are hazards only on older
+majors, and squawk assumes an old default until told otherwise.
+
+`assume_in_transaction` must state what Prisma **actually** does in this
+project, which is not what Prisma's documentation implies and has changed
+between versions. Determine it empirically — check the Postgres log for
+`BEGIN`/`COMMIT` around a migration, and force a mid-file failure to see
+whether earlier statements roll back — then set the value to match. A
+config fact that is false is worse than no config file at all: it silences
+findings on a premise that does not hold, which is the exact failure this
+section exists to prevent.
+
+Set both, re-run, and only then triage what remains. Findings that
+disappear at this step were never suppressed — they were evaluated
+correctly for the first time.
+
+`excluded_rules` must not appear in this file. See "How to silence one".
+
+### Which findings may be silenced
+
+Sort every *remaining* finding into one of three categories. The category
+decides, not a list of named rules — a list can only ever be incomplete.
+
+**1 · Lifecycle artefact.** The rule guards against a hazard that applies
+to a *populated* table, and this table is being created empty in the same
+migration. **Excludable**, with the reason stated. Expect this category to
+be nearly empty once step 0 is done.
+
+**2 · Capacity ceiling.** The rule guards against exceeding a limit.
+**Excludable only when the ceiling is unreachable by construction** — and
+the exclusion comment must contain the arithmetic, not an assurance.
+`prefer-bigint-over-int` on `repos.next_number` is this case: it is a
+per-repo counter of issues plus PRs, against an `int4` ceiling of
+2,147,483,647, on a single-person forge. Keep `Int`.
+
+**3 · Correctness.** The rule is catching something that is wrong at row
+one, not at row N — a scale that never arrives does not rescue it.
+`prefer-timestamp-tz`, `ban-drop-column`, and `disallowed-unique-constraint`
+are here, and so is anything else of that shape. **Never excludable.** A
+finding means the schema is wrong; fix the schema.
+
+The line between 2 and 3 is the one that matters: *is this wrong now, or
+only wrong past a threshold?* A naive timestamp is wrong on the first row.
+An `int4` counter is correct until it isn't, and here it never isn't.
+
+### How to silence one
+
+**Inline, at the statement**, never in `.squawk.toml`:
+
+```sql
+-- squawk-ignore prefer-bigint-over-int
+-- int4 ceiling 2,147,483,647 issues+PRs in one repo; unreachable here
+ALTER TABLE repos ...
+```
+
+An `excluded_rules` entry is inherited by every migration in the project's
+future. Silencing `prefer-timestamp-tz` there in 1a would quietly land
+`issues.closed_at`, `pull_requests.merged_at`, `releases.created_at`, and
+all of `events` as naive timestamps in later phases — the finding would
+never fire again to warn you. Inline ignores are scoped to the statement
+that earned them and carry their own justification.
+
+So: `.squawk.toml` holds facts and only facts. Silencing happens inline, at
+the statement, or not at all.
 
 ---
 
@@ -311,7 +505,19 @@ Required assertions:
 
 Missing `DATABASE_URL` exits non-zero with a message naming the variable.
 Read it once at startup into a frozen object; do not touch `process.env`
-elsewhere. Fastify's built-in pino covers logging — do not add a logger.
+elsewhere — `prisma.config.ts` is the one exception, since the CLI loads it
+outside the app. Fastify's built-in pino covers logging; do not add one.
+
+`db.ts` wires the adapter rather than passing a URL:
+
+```ts
+import { PrismaPg } from '@prisma/adapter-pg'
+const adapter = new PrismaPg({ connectionString: config.databaseUrl })
+export const db = new PrismaClient({ adapter })
+```
+
+One `PrismaClient` for the process, created once at module load. The
+adapter owns connection pooling, so do not construct a `Pool` yourself.
 
 `GET /health` returns `200` and `{"status":"ok"}` as
 `application/json`. It does **not** check the database: Phase 2 flips this
@@ -348,8 +554,10 @@ check and exiting non-zero if any fail. Each must be mechanically decidable
 2. `npm run build` exits 0 with zero TypeScript errors under `strict: true`
 3. `docker compose up -d` brings Postgres up healthy
 4. `npx prisma migrate deploy` applies cleanly to an **empty** database
-5. `npx prisma migrate diff --from-migrations ... --exit-code` reports no
-   drift between schema and migrations
+5. `npx prisma migrate diff --from-config-datasource --to-schema
+   prisma/schema.prisma --exit-code` reports no drift. **Must run after
+   check 4** — it diffs the migrated database against the schema file.
+   See "Expected drift" below before implementing this one.
 6. Exactly one user row exists, `handle = 'nschneble'`, `is_admin = true`
 7. Inserting repo `Foo` then repo `foo` fails on
    `repos_name_lower_key` — proves the functional index is real
@@ -358,9 +566,41 @@ check and exiting non-zero if any fail. Each must be mechanically decidable
    three security headers present with the exact values above
 10. `node --test dist/test/` passes with zero failures
 11. Every `.ts` file under `src/` and `test/` has the SPDX line first
-12. `package.json` dependencies are a subset of the budget above
-13. `git grep -n "shell: true"` returns nothing
-14. `npx squawk prisma/migrations/**/*.sql` exits 0
+12. `package.json` dependencies are a subset of the budget above — and
+    `pg` is **not** among the direct dependencies
+13. `prisma/schema.prisma` contains no `url =` line, and
+    `npx prisma validate` exits 0
+14. `git grep -n "shell: true"` returns nothing
+15. `npx squawk prisma/migrations/**/*.sql` exits 0
+16. Every timestamp column is `timestamp with time zone`. Query
+    `information_schema.columns` for `data_type` across all four tables and
+    assert zero rows of type `timestamp without time zone`
+17. `.squawk.toml` contains no `excluded_rules` key, and its `pg_version`
+    major matches the Postgres image tag in `compose.yaml` — these drift
+    silently, and squawk lints against the wrong version when they do
+
+### Expected drift — resolve this empirically
+
+Check 5 is in tension with a decision made elsewhere in this brief. The
+functional unique index on `lower(name)` and the `repos_name_format` CHECK
+constraint are deliberately hand-written SQL that the Prisma schema
+language cannot express. Whether `migrate diff` reports them as drift
+depends on whether its engine models those object types at all, and that is
+a question to answer by running it rather than reasoning about it.
+
+Run the diff and follow whichever case you land in:
+
+- **Empty diff** — the engine does not model them. Check 5 stands as
+  written. Nothing further to do.
+- **Diff contains only the functional index and/or the CHECK constraint** —
+  this is drift by design. Change check 5 to assert the diff output
+  mentions *nothing but* those two objects, name them explicitly in the
+  assertion, and put a comment in the script explaining that they are
+  intentional and unrepresentable. A bare "ignore drift" is not acceptable.
+- **Diff contains anything else** — real drift. Fix the schema or the
+  migration; do not adjust the check.
+
+Report which case occurred in your handoff notes.
 
 Check 7 is the one worth being careful about — it is easy to write a
 migration that looks right and produces an index on `name`. Prove it with
