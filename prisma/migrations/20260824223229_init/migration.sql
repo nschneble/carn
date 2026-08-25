@@ -1,10 +1,11 @@
+-- SPDX-License-Identifier: AGPL-3.0-or-later
 -- Note: This migration has been hand-tuned. A regeneration must preserve
 -- all of it. Don't f*ck it up.
 
 BEGIN;
 
 -- CreateEnum
--- This migration creates every table it touches so there's nothing to lock
+-- this migration creates every table it touches so there's nothing to lock
 -- squawk-ignore require-lock-timeout, require-statement-timeout
 CREATE TYPE "grant_level" AS ENUM ('write', 'admin');
 
@@ -40,7 +41,7 @@ CREATE TABLE "repos" (
   "name" TEXT NOT NULL,
   "description" TEXT,
   "default_branch" TEXT NOT NULL DEFAULT 'main',
-  -- I think a ~2b ceiling is plenty of room for issues and PRs
+  -- int4 ceiling is 2,147,483,647 and issues/PRs are per repo; unreachable
   -- squawk-ignore prefer-bigint-over-int
   "next_number" INTEGER NOT NULL DEFAULT 1,
   "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

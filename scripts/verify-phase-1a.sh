@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # Phase 1a exit checks, from docs/phases/1a-foundation.md.
 # Prints PASS or FAIL for each of the 17 checks and exits non-zero if any
@@ -53,6 +54,14 @@ require_db() {
   return 0
 }
 
+require_scratch() {
+  if [ "$scratch_ok" != 1 ]; then
+    record FAIL "$1" "$2" "scratch database unavailable, see check 4"
+    return 1
+  fi
+  return 0
+}
+
 if [ -z "${DATABASE_URL:-}" ] && [ -f .env ]; then
   set -a
   . ./.env
@@ -63,6 +72,7 @@ fi
 # developer's. They run against a scratch database dropped on exit.
 scratch_db=""
 scratch_url=""
+scratch_ok=0
 
 scratch_dsn() {
   # swap the database name, leaving any query string intact
@@ -132,13 +142,14 @@ fi
 # 4
 # deploy exits 0 on an already-migrated db, so assert empty beforehand
 dev_database_url="${DATABASE_URL:-}"
-if ! setup_scratch; then
+if setup_scratch; then
+  scratch_ok=1
+  DATABASE_URL="$scratch_url"
+else
   record FAIL 4 "prisma migrate deploy applies to an empty database" \
     "could not create a scratch database: $(tail -2 "$work/scratch.err" 2>/dev/null)"
-else
-  DATABASE_URL="$scratch_url"
 fi
-if require_db 4 "prisma migrate deploy applies to an empty database"; then
+if [ "$scratch_ok" = 1 ] && require_db 4 "prisma migrate deploy applies to an empty database"; then
   existing=$(psql_url -c "select count(*) from information_schema.tables where table_schema='public'" 2>"$work/4.err")
   migrations=$(find prisma/migrations -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
   if [ -z "$existing" ]; then
@@ -157,7 +168,7 @@ fi
 
 # 5
 # the index and the CHECK are SQL prisma cannot express, so drift by design
-if require_db 5 "prisma migrate diff reports no unexpected drift"; then
+if require_scratch 5 "prisma migrate diff reports no unexpected drift" && require_db 5 "prisma migrate diff reports no unexpected drift"; then
   npx prisma migrate diff --from-config-datasource \
     --to-schema prisma/schema.prisma --exit-code > "$work/5" 2>&1
   diff_status=$?
@@ -181,7 +192,7 @@ if require_db 5 "prisma migrate diff reports no unexpected drift"; then
 fi
 
 # 6
-if require_db 6 "exactly one user, handle nschneble, is_admin true"; then
+if require_scratch 6 "exactly one user, handle nschneble, is_admin true" && require_db 6 "exactly one user, handle nschneble, is_admin true"; then
   users=$(psql_url -c "select (select count(*) from users) || ':' || (select count(*) from users where handle='nschneble' and is_admin)" 2>&1)
   if [ "$users" = "1:1" ]; then
     record PASS 6 "exactly one user, handle nschneble, is_admin true"
@@ -191,7 +202,7 @@ if require_db 6 "exactly one user, handle nschneble, is_admin true"; then
 fi
 
 # 7
-if require_db 7 "inserting Foo then foo fails on repos_name_lower_key"; then
+if require_scratch 7 "inserting Foo then foo fails on repos_name_lower_key" && require_db 7 "inserting Foo then foo fails on repos_name_lower_key"; then
   owner="(select id from users where handle='nschneble')"
   psql -v ON_ERROR_STOP=1 "$DATABASE_URL" --no-psqlrc -c \
     "INSERT INTO repos (id, owner_id, name) VALUES (gen_random_uuid(), $owner, 'Foo');
@@ -210,7 +221,7 @@ if require_db 7 "inserting Foo then foo fails on repos_name_lower_key"; then
 fi
 
 # 8
-if require_db 8 "inserting a repo named -bad fails on repos_name_format"; then
+if require_scratch 8 "inserting a repo named -bad fails on repos_name_format" && require_db 8 "inserting a repo named -bad fails on repos_name_format"; then
   psql -v ON_ERROR_STOP=1 "$DATABASE_URL" --no-psqlrc -c \
     "INSERT INTO repos (id, owner_id, name) VALUES (gen_random_uuid(), (select id from users where handle='nschneble'), '-bad');" \
     > /dev/null 2> "$work/8.err"

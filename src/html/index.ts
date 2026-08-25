@@ -43,7 +43,7 @@ function render(value: unknown): string {
 function cooked(strings: TemplateStringsArray, index: number): string {
   const chunk: string | undefined = strings[index];
   if (chunk === undefined) {
-    throw new Error(`Html: chunk ${index} has an invalid escape sequence.`);
+    throw new Error(`html: chunk ${index} has an invalid escape sequence.`);
   }
   return chunk;
 }

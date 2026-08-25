@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Automatically runs a Biome check on staged files as a pre-commit hook
 # Bypass with: `git commit --no-verify`

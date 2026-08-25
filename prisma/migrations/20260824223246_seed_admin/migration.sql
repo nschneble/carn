@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: AGPL-3.0-or-later
+
 BEGIN;
 
 INSERT INTO users (id, handle, display_name, email, is_admin, created_at)

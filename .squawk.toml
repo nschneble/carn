@@ -1,6 +1,7 @@
-# This needs to match the image in compose.yaml
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# needs to match the image in compose.yaml
 pg_version = "18.0"
 
-# Prisma doesn't open any transactions on its own. Each migration carries
-# an explicit BEGIN/COMMIT that Squawk reads straight from the SQL.
+# Prisma doesn't open any transactions on its own
 assume_in_transaction = false
