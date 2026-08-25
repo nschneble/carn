@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Welcome to Le salon Code, where source code goes for a glow-up. These are
+# consultations, so don't worry about surprise bangs. You can bypass this
+# deliberately with: `git commit --no-verify`, but it's kinda rude.
+
+quips() {
+  cat <<'EOF'
+Bad bad bad.
+Clearly personal hygiene is not a priority.
+Did a cat walk across your keyboard?
+It's like Jackson Pollock cloned your repo.
+Next time you should actually try.
+EOF
+}
+
+quip() {
+  count=$(quips | wc -l | tr -d ' ')
+  n=$(od -An -tu2 -N2 /dev/urandom 2>/dev/null | tr -d ' ')
+  [ -n "$n" ] || n=$$
+  quips | sed -n "$((n % count + 1))p"
+}
+
+prettier=./node_modules/.bin/prettier
+[ -x "$prettier" ] || prettier="npx --no-install prettier"
+
+files=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$files" ] && exit 0
+
+if ! printf '%s\n' "$files" | tr '\n' '\0' |
+  xargs -0 $prettier --check --ignore-unknown --log-level warn
+then
+  echo
+  quip
+  echo "Formatting check failed. Fix by running \`npm run format\`."
+  exit 1
+fi
