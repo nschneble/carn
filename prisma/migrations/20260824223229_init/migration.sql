@@ -1,6 +1,8 @@
 -- hand-added below prisma's output: functional unique index + format check
 
 -- CreateEnum
+-- nothing to lock: this migration creates every table it touches
+-- squawk-ignore require-lock-timeout, require-statement-timeout
 CREATE TYPE "grant_level" AS ENUM ('write', 'admin');
 
 -- CreateTable
@@ -35,6 +37,8 @@ CREATE TABLE "repos" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "default_branch" TEXT NOT NULL DEFAULT 'main',
+    -- int4 ceiling 2,147,483,647 issues+PRs in one repo; unreachable here
+    -- squawk-ignore prefer-bigint-over-int
     "next_number" INTEGER NOT NULL DEFAULT 1,
     "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
