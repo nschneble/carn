@@ -4,8 +4,8 @@ export class Raw {
   constructor(readonly value: string) {}
 }
 
-export function raw(s: string): Raw {
-  return new Raw(s)
+export function raw(value: string): Raw {
+  return new Raw(value)
 }
 
 const entities = {
@@ -29,10 +29,20 @@ function render(value: unknown): string {
   return escape(String(value))
 }
 
+function cooked(strings: TemplateStringsArray, index: number): string {
+  const chunk: string | undefined = strings[index]
+  if (chunk === undefined) {
+    throw new Error(
+      `html: chunk ${index} has an invalid escape sequence; fix it or double the backslash`,
+    )
+  }
+  return chunk
+}
+
 export function html(strings: TemplateStringsArray, ...values: unknown[]): Raw {
-  let out = strings[0]
+  let out = cooked(strings, 0)
   for (const [index, value] of values.entries()) {
-    out += render(value) + strings[index + 1]
+    out += render(value) + cooked(strings, index + 1)
   }
   return new Raw(out)
 }

@@ -52,8 +52,27 @@ test('an attribute value cannot break out of its quotes', () => {
   assert.strictEqual(single.split("'").length - 1, 2)
 })
 
-test('a raw value and a hostile string in one template take different paths', () => {
-  const out = html`${raw('<b>bold</b>')}${'<script>'}`.value
+test('an object is stringified and then escaped', () => {
+  const withToString = { toString: () => '<b>x</b>' }
 
-  assert.strictEqual(out, '<b>bold</b>&lt;script&gt;')
+  assert.strictEqual(html`${withToString}`.value, '&lt;b&gt;x&lt;/b&gt;')
+  assert.strictEqual(
+    html`${new Error('<script>alert(1)</script>')}`.value,
+    'Error: &lt;script&gt;alert(1)&lt;/script&gt;',
+  )
+})
+
+test('numbers and bigints interpolate as their digits', () => {
+  assert.strictEqual(html`[${42}]`.value, '[42]')
+  assert.strictEqual(html`[${-5}]`.value, '[-5]')
+  assert.strictEqual(html`[${10n}]`.value, '[10]')
+  assert.strictEqual(html`[${0}]`.value, '[0]')
+})
+
+test('an invalid escape sequence is refused, not rendered', () => {
+  const firstChunk = (strings: TemplateStringsArray): unknown => strings[0]
+
+  assert.strictEqual(firstChunk`a\uZZb`, undefined)
+  assert.throws(() => html`a\uZZb${1}c`, /invalid escape sequence/)
+  assert.throws(() => html`ok${1}then\x2y`, /chunk 1 has an invalid escape/)
 })
