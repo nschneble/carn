@@ -577,23 +577,32 @@ fi
 
 # 18
 # a git pathspec * crosses /, so src/**/*.ts would skip src/config.ts
-sources=$(git ls-files --cached --others --exclude-standard -- src test \
-  | grep '\.ts$' | grep -v '^src/generated/')
-source_count=$(printf '%s\n' "$sources" | grep -c . )
-found_count=$(find src test -name '*.ts' -not -path 'src/generated/*' 2>/dev/null | wc -l | tr -d ' ')
-unstamped=""
-while IFS= read -r file; do
-  [ -n "$file" ] || continue
-  [ "$(head -1 "$file")" = "// SPDX-License-Identifier: AGPL-3.0-or-later" ] || unstamped="$unstamped $file"
-done <<< "$sources"
-if [ "$source_count" -eq 0 ]; then
-  record FAIL 18 "every .ts under src and test opens with the SPDX line" "no source files enumerated"
-elif [ "$source_count" != "$found_count" ]; then
-  record FAIL 18 "every .ts under src and test opens with the SPDX line" "git listed $source_count files, find listed $found_count"
-elif [ -n "$unstamped" ]; then
-  record FAIL 18 "every .ts under src and test opens with the SPDX line" "missing on:$unstamped"
+readonly TITLE_18="every .ts under src, test and scripts opens with the SPDX line"
+spdx_line='// SPDX-License-Identifier: AGPL-3.0-or-later'
+# positive control: prove the comparison below can tell a header from none
+printf '%s\n' "$spdx_line" > "$work/18.good"
+printf 'no header\n' > "$work/18.bad"
+if [ "$(head -1 "$work/18.good")" != "$spdx_line" ] || [ "$(head -1 "$work/18.bad")" = "$spdx_line" ]; then
+  record FAIL 18 "$TITLE_18" "the header comparison does not discriminate; it cannot gate"
 else
-  record PASS 18 "every .ts under src and test opens with the SPDX line" "$source_count files checked"
+  sources=$(git ls-files --cached --others --exclude-standard -- src test scripts \
+    | grep '\.ts$' | grep -v '^src/generated/')
+  source_count=$(printf '%s\n' "$sources" | grep -c . )
+  found_count=$(find src test scripts -name '*.ts' -not -path 'src/generated/*' 2>/dev/null | wc -l | tr -d ' ')
+  unstamped=""
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    [ "$(head -1 "$file")" = "$spdx_line" ] || unstamped="$unstamped $file"
+  done <<< "$sources"
+  if [ "$source_count" -eq 0 ]; then
+    record FAIL 18 "$TITLE_18" "no source files enumerated"
+  elif [ "$source_count" != "$found_count" ]; then
+    record FAIL 18 "$TITLE_18" "git listed $source_count files, find listed $found_count"
+  elif [ -n "$unstamped" ]; then
+    record FAIL 18 "$TITLE_18" "missing on:$unstamped"
+  else
+    record PASS 18 "$TITLE_18" "$source_count files checked"
+  fi
 fi
 
 # 19
