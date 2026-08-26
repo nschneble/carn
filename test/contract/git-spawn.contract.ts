@@ -160,6 +160,47 @@ test(
 );
 
 test(
+  "a call aborted while queued hands its slot to the queue",
+  bounded,
+  async () => {
+    const running: GitChild[] = [];
+
+    for (let i = 0; i < gitConcurrency; i += 1) {
+      running.push(await blocker(generous));
+    }
+
+    const abandoned = new AbortController();
+    const aborting = assert.rejects(blocker(generous, abandoned.signal), {
+      name: "AbortError",
+    });
+
+    let spawned = false;
+    const queued = blocker(generous).then((child) => {
+      spawned = true;
+
+      return child;
+    });
+
+    await delay(50);
+    abandoned.abort();
+
+    const first = running.shift();
+    assert.ok(first);
+    await release(first);
+    await aborting;
+
+    await delay(250);
+    assert.strictEqual(spawned, true, "the aborted waiter leaked its slot");
+
+    running.push(await queued);
+
+    for (const child of running) {
+      await release(child);
+    }
+  },
+);
+
+test(
   "a synchronous spawn failure hands its slot to the queue",
   bounded,
   async () => {

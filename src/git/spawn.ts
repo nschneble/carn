@@ -76,6 +76,7 @@ export async function spawnGit(options: GitOptions): Promise<GitChild> {
   options.signal?.throwIfAborted();
   await semaphore.acquire();
 
+  // a waiter aborted in the queue is still handed a slot, so give it back
   if (options.signal?.aborted === true) {
     semaphore.release();
 

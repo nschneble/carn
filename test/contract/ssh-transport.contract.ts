@@ -26,10 +26,10 @@ const fresh = `carn-e2e-fresh-${run}`;
 process.env.CARN_REPO_ROOT = repoRoot;
 process.env.CARN_SSH_HOST_KEY = join(root, "host_key");
 
-// config freezes on first import, so it must not be loaded above this
-const { db } = await import("../../src/db.js");
-const { repoPath } = await import("../../src/repos/resolve.js");
-const { buildSshServer } = await import("../../src/ssh/server.js");
+// config exits on an unset DATABASE_URL; a skipped before() never runs
+let db: typeof import("../../src/db.js")["db"];
+let repoPath: typeof import("../../src/repos/resolve.js")["repoPath"];
+let buildSshServer: typeof import("../../src/ssh/server.js")["buildSshServer"];
 
 type Actor = { id: string; keyPath: string };
 type Run = { code: number; stdout: string; stderr: string };
@@ -172,6 +172,10 @@ describe("ssh transport", {
     process.env.DATABASE_URL === undefined ? "DATABASE_URL is unset" : false,
 }, () => {
   before(async () => {
+    ({ db } = await import("../../src/db.js"));
+    ({ repoPath } = await import("../../src/repos/resolve.js"));
+    ({ buildSshServer } = await import("../../src/ssh/server.js"));
+
     const listener = buildSshServer();
     server = listener;
 

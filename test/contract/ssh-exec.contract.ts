@@ -7,7 +7,10 @@
 import assert from "node:assert";
 import { test } from "node:test";
 
-import { parseCommand, refusals } from "../../src/ssh/exec.js";
+// nothing below queries; exec.ts only has to clear config.ts's fail-fast
+process.env.DATABASE_URL ??= "postgresql://unused/unused";
+
+const { parseCommand, refusals } = await import("../../src/ssh/exec.js");
 
 const captured: [string, string, string][] = [
   ["ssh://git@h:2222/myrepo", "git-upload-pack '/myrepo'", "/myrepo"],
