@@ -1,6 +1,8 @@
 # Stack currency
 
-_Verified 2026-08-25. Re-verify before writing each phase brief._
+_Latest-on-npm column verified 2026-08-25. Re-verify before writing each
+phase brief. **Pinned here** is what `package.json` declares — the two
+columns are allowed to differ, and a gap is not a defect._
 
 Every version-sensitive claim in a phase brief is written against the
 majors below. **"Install latest stable" means latest within the pinned
@@ -8,20 +10,20 @@ major here** — not whatever `npm install` resolves to on the day. A brief
 written against a version that had moved was the repeated failure mode in
 Phase 1a, costing six amendments.
 
-| Package | Verified | Major | Risk | Note |
-|---|---|---|---|---|
-| `prisma` | 7.9.1 | **7** | **see below** | Pinned `^7.9.1`; the installed tree is 7.9.1. The `latest` dist-tag points at an 8.0 release candidate. Never install by tag. |
-| `@prisma/client` | 7.10.0 | **7** | low | `latest` is still 7.10.0 — it does *not* track the CLI's tag. |
-| `@prisma/adapter-pg` | 7.10.0 | **7** | low | Tracks the Prisma major. Owns `pg` transitively; never add `pg` directly. |
-| `fastify` | 5.12.1 | **5** | low | The raw content-type parser for `application/x-git-*-request` (1c) is a v5 API. |
-| `ssh2` | 1.17.0 | **1** | none | Verified end-to-end on the dev laptop in Phase 0. CLAUDE.md's three gotchas are confirmed against this exact version. |
-| `@types/ssh2` | 1.15.5 | **1** | low | `ssh2` ships no types of its own. |
-| `@biomejs/biome` | 2.5.10 | **2** | low | Formatter and linter. Replaced Prettier; see below. |
-| `typescript` | 7.0.2 | **7** | medium | The Go-native compiler. Fast, but much of the ecosystem has not caught up — see the Biome note. |
-| `@types/node` | 26.3.0 | **26** | low | |
-| `squawk-cli` | 2.63.0 | **2** | low | |
-| `highlight.js` | 11.12.0 | **11** | low | Major unchanged since 2021. Class-based output as assumed. |
-| `markdown-it` | 15.0.0 | **15** | **see below** | New major. Blocks Phase 3 until spiked. |
+| Package | Pinned here | Latest on npm | Major | Risk | Note |
+|---|---|---|---|---|---|
+| `prisma` | `^7.9.1` | 7.9.1 | **7** | **see below** | The `latest` dist-tag points at an 8.0 release candidate. Never install by tag. |
+| `@prisma/client` | `^7.9.1` | 7.10.0 | **7** | low | `latest` is still 7.10.0 — it does *not* track the CLI's tag. |
+| `@prisma/adapter-pg` | `^7.9.1` | 7.10.0 | **7** | low | Tracks the Prisma major. Owns `pg` transitively; never add `pg` directly. |
+| `fastify` | `^5.12.1` | 5.12.1 | **5** | low | The raw content-type parser for `application/x-git-*-request` (1c) is a v5 API. |
+| `ssh2` | `^1.17.0` | 1.17.0 | **1** | none | Verified end-to-end on the dev laptop in Phase 0. CLAUDE.md's three gotchas are confirmed against this exact version. |
+| `@types/ssh2` | `^1.15.5` | 1.15.5 | **1** | low | `ssh2` ships no types of its own. |
+| `@biomejs/biome` | `^2.5.10` | 2.5.10 | **2** | low | Formatter and linter. Replaced Prettier; see below. |
+| `typescript` | `^7.0.2` | 7.0.2 | **7** | medium | The Go-native compiler. Fast, but much of the ecosystem has not caught up — see the Biome note. |
+| `@types/node` | `^26.3.0` | 26.3.0 | **26** | low | |
+| `squawk-cli` | `^2.62.0` | 2.63.0 | **2** | low | |
+| `highlight.js` | `—` | 11.12.0 | **11** | low | Major unchanged since 2021. Class-based output as assumed. |
+| `markdown-it` | `—` | 15.0.0 | **15** | **see below** | New major. Blocks Phase 3 until spiked. |
 
 ## Prisma's `latest` tag points at a release candidate
 
