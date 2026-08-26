@@ -13,7 +13,7 @@ function read(name: string, fallback?: string): string {
   return value;
 }
 
-function readNumber(name: string, fallback: string): number {
+function readPort(name: string, fallback: string): number {
   const raw = read(name, fallback);
   const value = Number(raw);
 
@@ -31,9 +31,9 @@ export const config = Object.freeze({
   databaseUrl: read("DATABASE_URL"),
   host: read("HOST", "127.0.0.1"),
   nodeEnv: read("NODE_ENV", "development"),
-  port: readNumber("PORT", "3000"),
+  port: readPort("PORT", "3000"),
   repoRoot: read("CARN_REPO_ROOT", "./local/repos"),
   sshHost: read("CARN_SSH_HOST", "127.0.0.1"),
   sshHostKey: read("CARN_SSH_HOST_KEY", "./local/ssh_host_ed25519_key"),
-  sshPort: readNumber("CARN_SSH_PORT", "2222"),
+  sshPort: readPort("CARN_SSH_PORT", "2222"),
 });
