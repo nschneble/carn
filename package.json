@@ -13,6 +13,7 @@
     "db:reset": "set -a && . ./.env && set +a && prisma migrate reset --force",
     "format": "biome check --write .",
     "format:check": "biome check .",
+    "key:add": "node --env-file-if-exists=.env dist/scripts/add-key.js",
     "migrate": "set -a && . ./.env && set +a && prisma migrate deploy",
     "prepare": "git config core.hooksPath .githooks || true",
     "pretest": "npm run build",
