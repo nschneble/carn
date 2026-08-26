@@ -92,3 +92,46 @@ test(
     }
   },
 );
+
+test(
+  "a synchronous spawn failure hands its slot to the queue",
+  bounded,
+  async () => {
+    const running: GitChild[] = [];
+
+    for (let i = 0; i < gitConcurrency; i += 1) {
+      running.push(await blocker(generous));
+    }
+
+    const failing = assert.rejects(
+      spawnGit({
+        args: ["--version"],
+        cwd,
+        gitProtocol: "version=2\0",
+        timeoutMs: generous,
+      }),
+      { code: "ERR_INVALID_ARG_VALUE" },
+    );
+
+    let spawned = false;
+    const queued = blocker(generous).then((child) => {
+      spawned = true;
+
+      return child;
+    });
+
+    const first = running.shift();
+    assert.ok(first);
+    await release(first);
+    await failing;
+
+    await delay(250);
+    assert.strictEqual(spawned, true, "the failed spawn leaked its slot");
+
+    running.push(await queued);
+
+    for (const child of running) {
+      await release(child);
+    }
+  },
+);

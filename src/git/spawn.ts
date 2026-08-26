@@ -82,15 +82,20 @@ export async function spawnGit(options: GitOptions): Promise<GitChild> {
     throw options.signal.reason;
   }
 
-  const child: ChildProcessByStdio<Writable, Readable, Readable> = spawn(
-    "git",
-    options.args,
-    {
+  let child: ChildProcessByStdio<Writable, Readable, Readable>;
+
+  // spawn() throws on a NUL in args, cwd, or env before any handler exists
+  try {
+    child = spawn("git", options.args, {
       cwd: options.cwd,
       env: childEnv(options.gitProtocol),
       stdio: ["pipe", "pipe", "pipe"],
-    },
-  );
+    });
+  } catch (error) {
+    semaphore.release();
+
+    throw error;
+  }
 
   let outcome: GitOutcome = "exited";
   let settled = false;
