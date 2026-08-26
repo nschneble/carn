@@ -2,6 +2,7 @@ dist/
 local/
 node_modules/
 src/generated/
+.claude/worktrees/
 
 .DS_Store
 .env
