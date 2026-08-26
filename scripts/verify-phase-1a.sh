@@ -320,8 +320,8 @@ fi
 if node -e '
   const pkg = JSON.parse(require("fs").readFileSync("package.json", "utf8"))
   const budget = {
-    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg"],
-    devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli", "@biomejs/biome"],
+    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2"],
+    devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli", "@biomejs/biome", "@types/ssh2"],
   }
   const over = []
   for (const [field, allowed] of Object.entries(budget)) {
