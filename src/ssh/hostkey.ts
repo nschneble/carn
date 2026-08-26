@@ -92,7 +92,7 @@ export function loadHostKey(path: string): string {
   mkdirSync(dirname(path), { recursive: true });
   // wx: a host key replaced behind a client's back is unrecoverable
   writeFileSync(path, key, { flag: "wx", mode: 0o600 });
-  console.log(`Generated an ed25519 host key at ${path}`);
+  console.log(`ssh: generated an ed25519 host key at ${path}`);
 
   return key;
 }

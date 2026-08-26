@@ -115,7 +115,7 @@ export async function checkAuth(
   }
 
   void store.touch(row.id).catch((error: unknown) => {
-    console.error(`Could not record use of ssh key ${row.id}: ${error}`);
+    console.error(`ssh: could not record use of key ${row.id}: ${error}`);
   });
 
   return { status: "accept", key: row };
