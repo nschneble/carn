@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//
-// Real git over real ssh against a real listener. No ssh2 client and no
-// mocked channel: every assertion below is downstream of bytes a stock
-// git and a stock ssh actually put on a socket.
+
+// git over ssh against a real listener; every assertion below is
+// downstream of bytes a stock git and ssh actually put on a socket
 
 import assert from "node:assert";
 import { execFileSync, spawn } from "node:child_process";
@@ -83,7 +82,6 @@ function exec(
 
 function keygen(path: string): string {
   execFileSync("ssh-keygen", ["-q", "-t", "ed25519", "-N", "", "-f", path]);
-
   return readFileSync(`${path}.pub`, "utf8").trim();
 }
 
@@ -197,7 +195,6 @@ describe("ssh transport", {
     server?.close();
 
     const ids = [owner.id, stranger.id].filter((id) => id !== "");
-
     if (ids.length > 0) {
       await db.repo.deleteMany({ where: { ownerId: { in: ids } } });
       await db.user.deleteMany({ where: { id: { in: ids } } });
@@ -316,7 +313,7 @@ describe("ssh transport", {
     assert.strictEqual(existsSync(join(into, "README.md")), true);
   });
 
-  it("lets a write grant push where ownership did not", async () => {
+  it("lets a write grant push regardless of ownership", async () => {
     const row = await db.repo.findFirstOrThrow({ where: { name: fresh } });
 
     await db.repoGrant.create({
@@ -334,7 +331,7 @@ describe("ssh transport", {
     assert.strictEqual(existsSync(refPath(row.id, "granted")), true);
   });
 
-  it("refuses upload-pack on a missing name and creates nothing", async () => {
+  it("refuses upload-pack on a missing name", async () => {
     const name = `carn-e2e-absent-${run}`;
     const into = join(root, "absent");
     const cloned = await git(owner, ["clone", "-q", url(name), into]);
@@ -350,7 +347,7 @@ describe("ssh transport", {
     assert.strictEqual(existsSync(into), false);
   });
 
-  it("refuses a name failing the format rule, creating nothing", async () => {
+  it("refuses a name failing the format rule", async () => {
     const started = await db.repo.count();
 
     for (const bad of ["../etc", "-x", ".hidden", "a".repeat(65)]) {
@@ -396,7 +393,7 @@ describe("ssh transport", {
     );
   });
 
-  it("refuses shell, pty and the sftp subsystem", async () => {
+  it("refuses shell, pty, and the sftp subsystem", async () => {
     assert.notStrictEqual(
       (await ssh([], [])).code,
       0,
@@ -414,7 +411,7 @@ describe("ssh transport", {
     );
   });
 
-  it("refuses an exec that is not one of the two git services", async () => {
+  it("refuses an exec that isn't one of the two git services", async () => {
     const other = await ssh([], ["id"]);
 
     assert.notStrictEqual(other.code, 0, "an arbitrary command ran");

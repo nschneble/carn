@@ -70,7 +70,7 @@ async function release(child: GitChild): Promise<void> {
   await child.done;
 }
 
-test("a git call inside the timeout is untouched", bounded, async () => {
+test("a git call inside the timeout is left alone", bounded, async () => {
   const child = await spawnGit({
     args: ["--version"],
     cwd,
@@ -83,20 +83,24 @@ test("a git call inside the timeout is untouched", bounded, async () => {
   assert.deepStrictEqual(await child.done, { code: 0, outcome: "exited" });
 });
 
-test("a git call past the timeout is killed and says so", bounded, async () => {
-  const result = await (await blocker(impatient)).done;
+test(
+  "a git call past the timeout is killed and acknowledged",
+  bounded,
+  async () => {
+    const result = await (await blocker(impatient)).done;
 
-  assert.strictEqual(result.outcome, "timed-out");
-  assert.strictEqual(result.code, null);
+    assert.strictEqual(result.outcome, "timed-out");
+    assert.strictEqual(result.code, null);
 
-  await assert.rejects(
-    runGit({ args: ["hash-object", "--stdin"], cwd, timeoutMs: impatient }),
-    /timed out after 200ms/,
-  );
-});
+    await assert.rejects(
+      runGit({ args: ["hash-object", "--stdin"], cwd, timeoutMs: impatient }),
+      /timed out after 200ms/,
+    );
+  },
+);
 
 test(
-  "an abandoned git call is killed and says it was cancelled",
+  "an abandoned git call is killed and acknowledged as cancelled",
   bounded,
   async () => {
     const abandoned = new AbortController();
@@ -122,12 +126,12 @@ test("the git protocol reaches the child's environment", bounded, async () => {
   );
   assert.ok(
     !unset.startsWith(version2),
-    "git answered version 2 with no GIT_PROTOCOL asked for",
+    "git returned protocol version 2 without a GIT_PROTOCOL request",
   );
 });
 
 test(
-  "the concurrency cap queues the next call until a slot frees",
+  "the concurrency cap queues the next call until a slot frees up",
   bounded,
   async () => {
     const running: GitChild[] = [];
@@ -139,7 +143,6 @@ test(
     let spawned = false;
     const queued = blocker(generous).then((child) => {
       spawned = true;
-
       return child;
     });
 
@@ -177,7 +180,6 @@ test(
     let spawned = false;
     const queued = blocker(generous).then((child) => {
       spawned = true;
-
       return child;
     });
 
@@ -223,7 +225,6 @@ test(
     let spawned = false;
     const queued = blocker(generous).then((child) => {
       spawned = true;
-
       return child;
     });
 

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//
-// The command strings below were captured from git 2.50.1 itself, by
-// pointing GIT_SSH_COMMAND at a script that logged its argv. They are
-// transcriptions of real wire traffic, not guesses at its shape.
+
+// command strings below were captured from git 2.50.1, by pointing
+// GIT_SSH_COMMAND at a script that logged its argv. They're transcriptions
+// of real wire traffic
 
 import assert from "node:assert";
 import { test } from "node:test";
@@ -54,7 +54,7 @@ test("git's sq-escaped forms do not parse", () => {
   assert.strictEqual(parseCommand(`git-upload-pack '/a'\\!'b'`), null);
 });
 
-test("anything that is not one of the two services does not parse", () => {
+test("anything that isn't one of the two services doesn't parse", () => {
   for (const command of [
     "id",
     "",
@@ -77,14 +77,13 @@ test("anything that is not one of the two services does not parse", () => {
 });
 
 test("a traversal attempt parses, then fails the name format", () => {
-  // the parser's job is the wire shape; resolveRepo owns the name rule
   assert.deepStrictEqual(parseCommand("git-upload-pack '/../etc'"), {
     service: "upload-pack",
     target: "/../etc",
   });
 });
 
-test("the refusals say what happened and what to do, in the house voice", () => {
+test("the refusals explain what happened and what to do", () => {
   const lines = [
     refusals.badCommand,
     refusals.badName,

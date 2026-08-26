@@ -45,7 +45,6 @@ function keygen(
 
 function parsed(text: string): ParsedKey {
   const key = ssh2.utils.parseKey(text);
-
   assert.ok(!(key instanceof Error), "ssh-keygen produced an unparseable key");
 
   return key;
@@ -76,12 +75,10 @@ function store(
     touched,
     findByFingerprint: (value: string) => {
       looked.push(value);
-
       return Promise.resolve(found);
     },
     touch: (id: string) => {
       touched.push(id);
-
       return Promise.resolve();
     },
   };
@@ -139,7 +136,6 @@ test("a username other than git is rejected before any lookup", async () => {
 
 test("a fingerprint with no row is rejected", async () => {
   const outcome = await checkAuth(signed(), store(null));
-
   assert.deepStrictEqual(outcome, { status: "reject", reason: "unknown-key" });
 });
 
@@ -280,7 +276,6 @@ test("an ssh-rsa key signing with SHA-2 gets past the guard", async () => {
 
 test("an ed25519 key is unaffected by the ssh-rsa guard", async () => {
   const outcome = await checkAuth(request(), store(row));
-
   assert.deepStrictEqual(outcome, { status: "probe" });
 });
 
