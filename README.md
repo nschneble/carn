@@ -1,11 +1,11 @@
+<img src="carn.jpg" width="200" height="200" alt="A stack of stones with neon colors on a hot pink background" />
+
 # Càrn
 
 [![License: AGPL-3.0]](LICENSE)
 
 **A self-hosted git forge.** Repos, issues, and pull requests.
 Server-rendered HTML, public by default, no passwords.
-
-<img src="carn.jpg" width="100" height="100" alt="Càrn" />
 
 ## Documentation
 
