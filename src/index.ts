@@ -15,9 +15,9 @@ try {
 
 const sshServer = buildSshServer();
 
-sshServer.on("error", (error: unknown) => {
+sshServer.on("error", (error: NodeJS.ErrnoException) => {
   app.log.error(error);
-  process.exit(1);
+  if (error.code === "EADDRINUSE" || error.code === "EACCES") process.exit(1);
 });
 
 sshServer.listen(config.sshPort, config.sshHost, () => {
