@@ -2,6 +2,7 @@
 
 import Fastify, { type FastifyInstance } from "fastify";
 
+import { gitHttpRoutes } from "./routes/git-http.js";
 import { healthRoute } from "./routes/health.js";
 
 const contentSecurityPolicy =
@@ -16,6 +17,7 @@ export function buildApp(): FastifyInstance {
     reply.header("Referrer-Policy", "no-referrer");
   });
 
+  gitHttpRoutes(app);
   healthRoute(app);
 
   return app;

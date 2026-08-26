@@ -84,8 +84,12 @@ the wrapper 1b already built.
   validator; do not join a name into a path.
 - Mirror `exec.ts`'s child lifecycle: an `AbortController` aborted on
   client disconnect, passed as `signal`. On HTTP that is
-  `request.raw.on("close", ...)`, and it matters more here than over SSH
-  — a browser or crawler abandoning a clone is routine.
+  `reply.raw.on("close", ...)` **guarded by `!reply.raw.writableFinished`**.
+  Not `request.raw`: its `close` fires as soon as the request body is
+  consumed — measured at 16ms against 315ms for the response — and
+  `req.destroyed` is true whether the client left or not, so it cannot
+  tell the two apart. It matters more here than over SSH; a browser or
+  crawler abandoning a clone is routine.
 
 ## The three corrections
 
