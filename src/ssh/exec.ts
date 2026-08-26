@@ -28,12 +28,12 @@ export const refusals = {
     "This server runs git-upload-pack and git-receive-pack only. Use git clone or git push.",
   // the raw target is never echoed: it would carry terminal escapes
   badName:
-    "That is not a valid repo name. Names start with a letter or digit and use only letters, digits, dot, dash, and underscore.",
+    "That's not a valid repo name. Names are up to 64 characters, starting with a letter or digit, then letters, digits, dot, dash, and underscore.",
   noRepo: (name: string) =>
     `There is no repo named ${name}. Push to it to create it.`,
   noWrite: (name: string) =>
     `You don't have write access to ${name}. Ask the owner for a grant.`,
-  unavailable: "The repo is not reachable right now. Try again shortly.",
+  unavailable: "That request failed on the server. Try again shortly.",
 };
 
 export function parseCommand(command: string): ParsedCommand | null {

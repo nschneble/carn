@@ -19,7 +19,7 @@ readonly SSH_FLAGS="-o IdentitiesOnly=yes -o IdentityAgent=none -o StrictHostKey
 readonly NO_WRITE="You don't have write access to $REPO_NAME. Ask the owner for a grant."
 readonly NO_REPO="There is no repo named absent1b. Push to it to create it."
 readonly BAD_COMMAND="This server runs git-upload-pack and git-receive-pack only. Use git clone or git push."
-readonly BAD_NAME="That is not a valid repo name. Names start with a letter or digit and use only letters, digits, dot, dash, and underscore."
+readonly BAD_NAME="That's not a valid repo name. Names are up to 64 characters, starting with a letter or digit, then letters, digits, dot, dash, and underscore."
 
 work=$(mktemp -d) || work=""
 if [ -z "$work" ]; then
