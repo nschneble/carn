@@ -2,6 +2,7 @@
 
 import { createHash, timingSafeEqual } from "node:crypto";
 
+import type { AuthenticationType } from "ssh2";
 // default import: node's cjs lexer does not detect ssh2's named exports
 import ssh2 from "ssh2";
 
@@ -27,10 +28,27 @@ export type AuthRequest = {
   hashAlgo?: string;
 };
 
+export type RejectReason =
+  | "bad-method"
+  | "bad-username"
+  | "no-key"
+  | "sha1-rsa"
+  | "unknown-key"
+  | "unsigned-blob"
+  | "unparseable-row"
+  | "key-mismatch"
+  | "bad-signature";
+
+// reason is for the server's log; message is the only client-facing text
 export type AuthOutcome =
   | { status: "probe" }
   | { status: "accept"; key: StoredKey }
-  | { status: "reject"; methods?: string[]; message?: string };
+  | {
+      status: "reject";
+      reason: RejectReason;
+      methods?: AuthenticationType[];
+      message?: string;
+    };
 
 export function fingerprint(blob: Buffer): string {
   const digest = createHash("sha256").update(blob).digest("base64");
@@ -48,12 +66,13 @@ export async function checkAuth(
   store: KeyStore,
 ): Promise<AuthOutcome> {
   if (request.method !== "publickey") {
-    return { status: "reject", methods: ["publickey"] };
+    return { status: "reject", reason: "bad-method", methods: ["publickey"] };
   }
 
   if (request.username !== sshUser) {
     return {
       status: "reject",
+      reason: "bad-username",
       message: `The SSH user must be ${sshUser}. Reconnect as ${sshUser}; your key is what identifies you.`,
     };
   }
@@ -61,13 +80,23 @@ export async function checkAuth(
   const offered = request.key;
 
   if (offered === undefined) {
-    return { status: "reject" };
+    return { status: "reject", reason: "no-key" };
+  }
+
+  // ssh2 leaves hashAlgo unset only for a legacy SHA-1 ssh-rsa signature
+  if (offered.algo === "ssh-rsa" && request.hashAlgo === undefined) {
+    return {
+      status: "reject",
+      reason: "sha1-rsa",
+      message:
+        "An ssh-rsa key signing with SHA-1 isn't accepted. Use rsa-sha2-256, rsa-sha2-512, or an ed25519 key.",
+    };
   }
 
   const row = await store.findByFingerprint(fingerprint(offered.data));
 
   if (row === null) {
-    return { status: "reject" };
+    return { status: "reject", reason: "unknown-key" };
   }
 
   if (request.signature === undefined) {
@@ -76,24 +105,24 @@ export async function checkAuth(
 
   // a probe on a signed request would accept it unverified
   if (request.blob === undefined) {
-    return { status: "reject" };
+    return { status: "reject", reason: "unsigned-blob" };
   }
 
   const stored = ssh2.utils.parseKey(row.publicKey);
 
   if (stored instanceof Error) {
-    return { status: "reject" };
+    return { status: "reject", reason: "unparseable-row" };
   }
 
   if (!sameBlob(stored.getPublicSSH(), offered.data)) {
-    return { status: "reject" };
+    return { status: "reject", reason: "key-mismatch" };
   }
 
   // verify returns Error as well as boolean, and an Error is truthy
   if (
     stored.verify(request.blob, request.signature, request.hashAlgo) !== true
   ) {
-    return { status: "reject" };
+    return { status: "reject", reason: "bad-signature" };
   }
 
   void store.touch(row.id).catch((error: unknown) => {

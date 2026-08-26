@@ -22,13 +22,16 @@ after(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-function keygen(name: string): { path: string; publicKey: string } {
+function keygen(
+  name: string,
+  type = "ed25519",
+): { path: string; publicKey: string } {
   const path = join(dir, name);
 
   execFileSync("ssh-keygen", [
     "-q",
     "-t",
-    "ed25519",
+    type,
     "-N",
     "",
     "-C",
@@ -50,6 +53,8 @@ function parsed(text: string): ParsedKey {
 
 const mine = keygen("mine");
 const theirs = keygen("theirs");
+const rsa = keygen("rsa", "rsa");
+const rsaKey = parsed(rsa.publicKey);
 const myKey = parsed(mine.publicKey);
 const myPrivateKey = parsed(readFileSync(mine.path, "utf8"));
 const blob = Buffer.from("session id and userauth request");
@@ -63,10 +68,17 @@ const row: StoredKey = {
 function store(
   found: StoredKey | null,
   touched: string[] = [],
-): KeyStore & { touched: string[] } {
+): KeyStore & { looked: string[]; touched: string[] } {
+  const looked: string[] = [];
+
   return {
+    looked,
     touched,
-    findByFingerprint: () => Promise.resolve(found),
+    findByFingerprint: (value: string) => {
+      looked.push(value);
+
+      return Promise.resolve(found);
+    },
     touch: (id: string) => {
       touched.push(id);
 
@@ -105,6 +117,7 @@ test("a method other than publickey is rejected, offering publickey", async () =
 
   assert.deepStrictEqual(outcome, {
     status: "reject",
+    reason: "bad-method",
     methods: ["publickey"],
   });
 });
@@ -122,7 +135,7 @@ test("a username other than git is rejected, and the message says git", async ()
 test("a fingerprint with no row is rejected", async () => {
   const outcome = await checkAuth(signed(), store(null));
 
-  assert.deepStrictEqual(outcome, { status: "reject" });
+  assert.deepStrictEqual(outcome, { status: "reject", reason: "unknown-key" });
 });
 
 test("the first callback carries no signature and is accepted", async () => {
@@ -136,7 +149,10 @@ test("the first callback carries no signature and is accepted", async () => {
 test("a signature with nothing to verify it against is rejected", async () => {
   const outcome = await checkAuth(signed({ blob: undefined }), store(row));
 
-  assert.deepStrictEqual(outcome, { status: "reject" });
+  assert.deepStrictEqual(outcome, {
+    status: "reject",
+    reason: "unsigned-blob",
+  });
 });
 
 test("a wrong signature is rejected though the fingerprint matched", async () => {
@@ -146,7 +162,10 @@ test("a wrong signature is rejected though the fingerprint matched", async () =>
   const keys = store(row);
   const outcome = await checkAuth(signed({ signature }), keys);
 
-  assert.deepStrictEqual(outcome, { status: "reject" });
+  assert.deepStrictEqual(outcome, {
+    status: "reject",
+    reason: "bad-signature",
+  });
   assert.deepStrictEqual(keys.touched, []);
 });
 
@@ -156,7 +175,10 @@ test("a signature over other data is rejected", async () => {
     store(row),
   );
 
-  assert.deepStrictEqual(outcome, { status: "reject" });
+  assert.deepStrictEqual(outcome, {
+    status: "reject",
+    reason: "bad-signature",
+  });
 });
 
 test("a row whose stored key is not the offered key is rejected", async () => {
@@ -165,7 +187,10 @@ test("a row whose stored key is not the offered key is rejected", async () => {
     store({ ...row, publicKey: theirs.publicKey }),
   );
 
-  assert.deepStrictEqual(outcome, { status: "reject" });
+  assert.deepStrictEqual(outcome, {
+    status: "reject",
+    reason: "key-mismatch",
+  });
 });
 
 test("a stored key of another length is rejected, not thrown on", async () => {
@@ -175,7 +200,10 @@ test("a stored key of another length is rejected, not thrown on", async () => {
     store(row),
   );
 
-  assert.deepStrictEqual(outcome, { status: "reject" });
+  assert.deepStrictEqual(outcome, {
+    status: "reject",
+    reason: "key-mismatch",
+  });
 });
 
 test("a hash algorithm verify cannot use is rejected", async () => {
@@ -184,7 +212,10 @@ test("a hash algorithm verify cannot use is rejected", async () => {
     store(row),
   );
 
-  assert.deepStrictEqual(outcome, { status: "reject" });
+  assert.deepStrictEqual(outcome, {
+    status: "reject",
+    reason: "bad-signature",
+  });
 });
 
 test("a row that will not parse is rejected", async () => {
@@ -193,7 +224,47 @@ test("a row that will not parse is rejected", async () => {
     store({ ...row, publicKey: "ssh-ed25519 not-a-key" }),
   );
 
-  assert.deepStrictEqual(outcome, { status: "reject" });
+  assert.deepStrictEqual(outcome, {
+    status: "reject",
+    reason: "unparseable-row",
+  });
+});
+
+test("an ssh-rsa key signing with SHA-1 is rejected before any lookup", async () => {
+  const keys = store(row);
+  const outcome = await checkAuth(
+    request({ key: { algo: "ssh-rsa", data: rsaKey.getPublicSSH() } }),
+    keys,
+  );
+
+  assert.strictEqual(outcome.status, "reject");
+  assert.strictEqual(
+    outcome.status === "reject" ? outcome.reason : "",
+    "sha1-rsa",
+  );
+  assert.deepStrictEqual(
+    keys.looked,
+    [],
+    "a doomed key still hit the database",
+  );
+});
+
+test("an ssh-rsa key signing with SHA-2 gets past the guard", async () => {
+  const outcome = await checkAuth(
+    request({
+      key: { algo: "ssh-rsa", data: rsaKey.getPublicSSH() },
+      hashAlgo: "sha256",
+    }),
+    store(null),
+  );
+
+  assert.deepStrictEqual(outcome, { status: "reject", reason: "unknown-key" });
+});
+
+test("an ed25519 key is unaffected by the ssh-rsa guard", async () => {
+  const outcome = await checkAuth(request(), store(row));
+
+  assert.deepStrictEqual(outcome, { status: "probe" });
 });
 
 test("a good signature is accepted and records the use", async () => {

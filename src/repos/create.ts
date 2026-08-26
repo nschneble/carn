@@ -7,6 +7,8 @@ import { runGit } from "../git/spawn.js";
 import { type ResolvedRepo, repoPath } from "./resolve.js";
 
 const timeoutMs = 10_000;
+// git init queues on the semaphore; prisma's 5s default rolls it back
+const transactionMs = 60_000;
 
 const gitConfig: [string, string][] = [
   ["core.logAllRefUpdates", "true"],
@@ -20,24 +22,27 @@ export async function createRepo(
   name: string,
   ownerId: string,
 ): Promise<ResolvedRepo> {
-  return db.$transaction(async (tx) => {
-    const row = await tx.repo.create({
-      data: { name, ownerId },
-      select: { id: true, name: true, ownerId: true, defaultBranch: true },
-    });
-    const path = repoPath(row.id);
+  return db.$transaction(
+    async (tx) => {
+      const row = await tx.repo.create({
+        data: { name, ownerId },
+        select: { id: true, name: true, ownerId: true, defaultBranch: true },
+      });
+      const path = repoPath(row.id);
 
-    mkdirSync(path, { recursive: true });
-    await runGit({
-      args: ["init", "--bare", `--initial-branch=${row.defaultBranch}`],
-      cwd: path,
-      timeoutMs,
-    });
+      mkdirSync(path, { recursive: true });
+      await runGit({
+        args: ["init", "--bare", `--initial-branch=${row.defaultBranch}`],
+        cwd: path,
+        timeoutMs,
+      });
 
-    for (const [key, value] of gitConfig) {
-      await runGit({ args: ["config", key, value], cwd: path, timeoutMs });
-    }
+      for (const [key, value] of gitConfig) {
+        await runGit({ args: ["config", key, value], cwd: path, timeoutMs });
+      }
 
-    return { ...row, path };
-  });
+      return { ...row, path };
+    },
+    { timeout: transactionMs },
+  );
 }
