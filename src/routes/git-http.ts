@@ -117,9 +117,10 @@ async function serve(
     child.stdin.end();
   } else {
     // pipeline, not pipe: a gunzip error with no handler ends the process
+    const feed = new PassThrough();
     const stages = job.gunzip
-      ? [job.stdin, createGunzip(), child.stdin]
-      : [job.stdin, child.stdin];
+      ? [job.stdin, createGunzip(), feed]
+      : [job.stdin, feed];
 
     pipeline(stages, (error) => {
       if (error !== null && error !== undefined) {
@@ -130,6 +131,9 @@ async function serve(
         abandoned.abort();
       }
     });
+
+    // git closing stdin is normal, so it never joins the pipeline
+    feed.pipe(child.stdin);
   }
 
   // an unread stderr pipe deadlocks the child once it fills
