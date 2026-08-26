@@ -187,7 +187,9 @@ ephemeral port, all cleaned up through one trap. Read
 13. A client disconnecting mid-clone kills the git child — assert no
     surviving `upload-pack` process for the scratch repo root
 14. The concurrency limit is shared: `gitConcurrency` has exactly one
-    definition and both transports import it
+    definition, neither transport builds a second `Semaphore`, and both
+    reach the one limit through `spawnGit` rather than the constant, which
+    stays module-private to `src/git/spawn.ts`
 15. `git grep` finds no shell-enabled spawn — **use 1a's scoped form**,
     path-limited to `src test scripts prisma`, with a positive control.
     The literal string appears in CLAUDE.md and in these briefs, so an

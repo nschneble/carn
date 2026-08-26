@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Refusals answer as text/plain because git's show_http_message()
-// drops a server message sent as any other type.
+// drops a server message sent as any other type
 
 import { PassThrough, pipeline, Readable } from "node:stream";
 import { createGunzip } from "node:zlib";
@@ -13,6 +13,9 @@ import { type ResolvedRepo, resolveRepo } from "../repos/resolve.js";
 
 const timeoutMs = 600_000;
 
+// only here so a pathological child cannot grow the heap
+const stderrBudget = 8192;
+
 const requestTypes = [
   "application/x-git-upload-pack-request",
   "application/x-git-receive-pack-request",
@@ -20,7 +23,7 @@ const requestTypes = [
 
 const serviceHeader = Buffer.from("001e# service=git-upload-pack\n0000");
 
-const refusals = {
+export const refusals = {
   badName: "That's not a valid repo name. Check the URL and try again.",
   noRepo: (name: string) =>
     `There's no repo named ${name}. Push to it over SSH to create it.`,
@@ -134,12 +137,25 @@ async function serve(
 
     // git closing stdin is normal, so it never joins the pipeline
     feed.pipe(child.stdin);
+
+    // git is done reading, so discard the rest instead of stalling on it
+    child.stdin.on("close", () => {
+      feed.resume();
+    });
   }
 
   // an unread stderr pipe deadlocks the child once it fills
   const errors: Buffer[] = [];
+  let keptBytes = 0;
   child.stderr.on("data", (chunk: Buffer) => {
-    errors.push(chunk);
+    const room = stderrBudget - keptBytes;
+    if (room <= 0) {
+      return;
+    }
+
+    const slice = chunk.length <= room ? chunk : chunk.subarray(0, room);
+    errors.push(slice);
+    keptBytes += slice.length;
   });
 
   const body = new PassThrough();
@@ -158,7 +174,17 @@ async function serve(
 
   reply.raw.removeListener("close", abort);
 
-  if (result !== null && result.outcome === "exited" && result.code !== 0) {
+  if (result === null) {
+    return;
+  }
+
+  // the response is already streaming, so this can only be said in the log
+  if (result.outcome === "timed-out") {
+    request.log.warn(
+      { repo: job.repo.name },
+      `git ${job.args[0]} was killed after ${timeoutMs}ms`,
+    );
+  } else if (result.outcome === "exited" && result.code !== 0) {
     request.log.error(
       {
         repo: job.repo.name,
@@ -236,7 +262,12 @@ function unavailable(
   reply: FastifyReply,
   error: unknown,
 ): void {
-  request.log.error({ err: error }, "git http: the request failed");
+  // the client leaving while spawnGit is queued is routine, not a failure
+  if (error instanceof Error && error.name === "AbortError") {
+    request.log.warn("git http: the client left before git could start");
+  } else {
+    request.log.error({ err: error }, "git http: the request failed");
+  }
 
   if (!reply.sent) {
     refuse(reply, 503, refusals.unavailable);
