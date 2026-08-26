@@ -143,11 +143,27 @@ All of these are non-negotiable:
 - **Public-key auth is two-phase.** The first callback arrives with
   `ctx.signature === undefined`; that's the client probing. `ctx.accept()`
   it. Only the second call carries a signature to verify.
+- **`verify()` takes `ctx.hashAlgo`, not `ctx.key.algo`.** Passing the key
+  algorithm throws inside `createVerify`; ssh2 catches and rejects it, so a
+  valid signature fails quietly. Ed25519 hides this; its key and hash
+  algorithm are the same string. RSA doesn't.
+- **`verify()` can return `Error` or `boolean`, and `Error` is truthy.**
+  Compare `!== true`, never `!verify(...)`.
+- **`ctx.accept` + `ctx.reject` only exist when the request sets
+  `wantReply`.** Call them with a client that omits it crashes the handler.
+- **A rejection carries no text.** `ctx.reject()` takes methods and a
+  partial flag, and 1.17 has no `authBanner`. Anything a human should read
+  can only be delivered at the exec stage, on the channel's stderr.
 - **The `env` request object is `{key, val}`, not `{key, value}`**, despite
   the README. Reading `.value` yields undefined, `GIT_PROTOCOL` never
   reaches the child, and every clone silently downgrades to protocol v0.
+- **Pipe with `{ end: false }`.** `pipe()` closes its destination when the
+  source ends, so w/out it the channel's shut before exit status is sent.
 - Reject `shell`, `pty`, and `subsystem` requests. Call `stream.exit(code)`
   then `stream.end()` or client hangs. Persist host key across restarts.
+- **Upstream bug, 1.17.0:** `server-sig-algs` is missing a comma between
+  `nistp521` and `rsa-sha2-512`, fusing them into one junk token, so RSA
+  clients negotiate rsa-sha2-256 rather than 512. Nothing to do.
 
 **Smart HTTP**
 
