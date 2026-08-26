@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import type { AuthContext, Connection, ServerChannel, Session } from "ssh2";
-// default import: node's cjs lexer does not detect ssh2's named exports
+// default import: node's cjs lexer doesn't detect ssh2's named exports
 import ssh2 from "ssh2";
 
 import { config } from "../config.js";
@@ -49,13 +49,12 @@ async function authenticate(
   );
 
   if (outcome.status === "reject") {
-    // every client opens with a none probe; logging it buries real signal
+    // every client opens with a none probe
     if (ctx.method !== "none") {
       console.warn(`ssh: ${ip} rejected, ${outcome.reason}`);
     }
 
     ctx.reject(outcome.methods);
-
     return;
   }
 
@@ -69,6 +68,7 @@ async function authenticate(
 
 function onSession(session: Session, userId: string, ip: string): void {
   let gitProtocol: string | undefined;
+
   // an unhandled stream error would take the whole daemon down with it
   const onError = (error: unknown) => {
     console.warn(`ssh: ${ip} channel error, ${error}`);
@@ -78,7 +78,6 @@ function onSession(session: Session, userId: string, ip: string): void {
   session.on("env", (accept, reject, info) => {
     if (info.key !== "GIT_PROTOCOL") {
       reply(reject);
-
       return;
     }
 
@@ -97,12 +96,10 @@ function onSession(session: Session, userId: string, ip: string): void {
   session.on("exec", (accept, reject, info) => {
     if (userId === "") {
       reply(reject);
-
       return;
     }
 
     const channel: ServerChannel | undefined = accept();
-
     if (channel === undefined) {
       return;
     }
@@ -138,7 +135,6 @@ function onConnection(client: Connection, ip: string): void {
   });
   client.on("session", (accept) => {
     const session: Session | undefined = accept();
-
     if (session !== undefined) {
       onSession(session, userId, ip);
     }

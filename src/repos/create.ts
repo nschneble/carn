@@ -6,9 +6,9 @@ import { db } from "../db.js";
 import { runGit } from "../git/spawn.js";
 import { type ResolvedRepo, repoPath } from "./resolve.js";
 
-const timeoutMs = 10_000;
 // git init queues on the semaphore; prisma's 5s default rolls it back
 const transactionMs = 60_000;
+const timeoutMs = 10_000;
 
 const gitConfig: [string, string][] = [
   ["core.logAllRefUpdates", "true"],

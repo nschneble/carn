@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { createHash, timingSafeEqual } from "node:crypto";
-
 import type { AuthenticationType } from "ssh2";
-// default import: node's cjs lexer does not detect ssh2's named exports
+// default import: node's cjs lexer doesn't detect ssh2's named exports
 import ssh2 from "ssh2";
 
 const sshUser = "git";
@@ -50,7 +49,6 @@ export type AuthOutcome =
 
 export function fingerprint(blob: Buffer): string {
   const digest = createHash("sha256").update(blob).digest("base64");
-
   return `SHA256:${digest.replace(/=+$/, "")}`;
 }
 
@@ -72,7 +70,6 @@ export async function checkAuth(
   }
 
   const offered = request.key;
-
   if (offered === undefined) {
     return { status: "reject", reason: "no-key" };
   }
@@ -83,7 +80,6 @@ export async function checkAuth(
   }
 
   const row = await store.findByFingerprint(fingerprint(offered.data));
-
   if (row === null) {
     return { status: "reject", reason: "unknown-key" };
   }
@@ -98,7 +94,6 @@ export async function checkAuth(
   }
 
   const stored = ssh2.utils.parseKey(row.publicKey);
-
   if (stored instanceof Error) {
     return { status: "reject", reason: "unparseable-row" };
   }

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//
-// ssh2 parses OpenSSH, PEM and PuTTY private keys, but not the PKCS#8
+
+// ssh2 parses OpenSSH, PEM, and PuTTY private keys, but not PKCS#8
 // node:crypto emits for ed25519, so the OpenSSH container below is built
-// by hand from the raw seed and public key.
+// by hand from the raw seed and public key
 
 import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -19,7 +19,6 @@ function uint32(value: number): Buffer {
 
 function sshString(value: Buffer | string): Buffer {
   const body = Buffer.isBuffer(value) ? value : Buffer.from(value, "utf8");
-
   return Buffer.concat([uint32(body.length), body]);
 }
 
@@ -67,7 +66,6 @@ function generateKey(): string {
 /** @throws if the file exists with permissions looser than 0600 */
 export function loadHostKey(path: string): string {
   let mode: number | undefined;
-
   try {
     mode = statSync(path).mode & 0o777;
   } catch (error) {
@@ -79,7 +77,6 @@ export function loadHostKey(path: string): string {
   if (mode !== undefined) {
     if (mode & 0o077) {
       const octal = mode.toString(8).padStart(4, "0");
-
       throw new Error(
         `Host key ${path} is mode ${octal}, looser than 0600. Run: chmod 600 ${path}`,
       );
@@ -90,6 +87,7 @@ export function loadHostKey(path: string): string {
 
   const key = generateKey();
   mkdirSync(dirname(path), { recursive: true });
+
   // wx: a host key replaced behind a client's back is unrecoverable
   writeFileSync(path, key, { flag: "wx", mode: 0o600 });
   console.log(`ssh: generated an ed25519 host key at ${path}`);

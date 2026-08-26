@@ -23,7 +23,6 @@ function fail(message: string): never {
 
 function readPublicKey(path: string): PublicKey {
   let text: string;
-
   try {
     text = readFileSync(path, "utf8");
   } catch {
@@ -31,13 +30,11 @@ function readPublicKey(path: string): PublicKey {
   }
 
   const lines = text.split("\n").filter((line) => line.trim() !== "");
-
   if (lines.length !== 1) {
     fail(`${path} isn't a single-line public key. Pass the .pub file.`);
   }
 
   const fields = lines[0].trim().split(/\s+/);
-
   if (fields.length < 2) {
     fail(
       `${path} isn't a public key. A line reads "<type> <base64> [comment]".`,
@@ -60,7 +57,6 @@ function readPublicKey(path: string): PublicKey {
 }
 
 const args = process.argv.slice(2);
-
 if (args.length < 1 || args.length > 2) {
   fail(usage);
 }
@@ -98,7 +94,6 @@ await db.sshKey.upsert({
 });
 
 const verb = existing === null ? "Added" : "Updated";
-
 console.log(`${verb} ${key.fingerprint} as "${name}" for ${admin.handle}.`);
 
 await db.$disconnect();

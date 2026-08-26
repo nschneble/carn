@@ -4,6 +4,8 @@ import { type ChildProcessByStdio, spawn } from "node:child_process";
 import { availableParallelism } from "node:os";
 import type { Readable, Writable } from "node:stream";
 
+import { Semaphore } from "./semaphore.js";
+
 export const gitConcurrency = availableParallelism();
 
 export type GitOutcome = "exited" | "timed-out" | "cancelled";
@@ -28,39 +30,6 @@ export type GitChild = {
   done: Promise<GitResult>;
 };
 
-class Semaphore {
-  #free: number;
-  #waiting: (() => void)[] = [];
-
-  constructor(limit: number) {
-    this.#free = limit;
-  }
-
-  acquire(): Promise<void> {
-    if (this.#free > 0) {
-      this.#free -= 1;
-
-      return Promise.resolve();
-    }
-
-    return new Promise((resolve) => {
-      this.#waiting.push(resolve);
-    });
-  }
-
-  release(): void {
-    const next = this.#waiting.shift();
-
-    if (next === undefined) {
-      this.#free += 1;
-
-      return;
-    }
-
-    next();
-  }
-}
-
 const semaphore = new Semaphore(gitConcurrency);
 
 function childEnv(gitProtocol: string | undefined): NodeJS.ProcessEnv {
@@ -79,13 +48,11 @@ export async function spawnGit(options: GitOptions): Promise<GitChild> {
   // a waiter aborted in the queue is still handed a slot, so give it back
   if (options.signal?.aborted === true) {
     semaphore.release();
-
     throw options.signal.reason;
   }
 
+  // spawn() throws on a NULL in args, cwd, or env before a handler exists
   let child: ChildProcessByStdio<Writable, Readable, Readable>;
-
-  // spawn() throws on a NUL in args, cwd, or env before any handler exists
   try {
     child = spawn("git", options.args, {
       cwd: options.cwd,
@@ -94,7 +61,6 @@ export async function spawnGit(options: GitOptions): Promise<GitChild> {
     });
   } catch (error) {
     semaphore.release();
-
     throw error;
   }
 
@@ -109,6 +75,7 @@ export async function spawnGit(options: GitOptions): Promise<GitChild> {
   const timer = setTimeout(() => {
     kill("timed-out");
   }, options.timeoutMs);
+
   const cancel = () => {
     kill("cancelled");
   };
@@ -133,6 +100,7 @@ export async function spawnGit(options: GitOptions): Promise<GitChild> {
         reject(error);
       });
     });
+
     child.on("close", (code) => {
       finish(() => {
         resolve({ code, outcome });

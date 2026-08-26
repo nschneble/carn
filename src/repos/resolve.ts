@@ -26,7 +26,6 @@ export function repoPath(id: string): string {
 
 export async function resolveRepo(target: string): Promise<RepoLookup> {
   const name = target.replace(/^\//, "").replace(/\.git$/, "");
-
   if (!namePattern.test(name)) {
     return { status: "invalid" };
   }
@@ -37,8 +36,8 @@ export async function resolveRepo(target: string): Promise<RepoLookup> {
     FROM repos
     WHERE lower(name) = lower(${name})
   `;
-  const row = rows[0];
 
+  const row = rows[0];
   if (row === undefined) {
     return { status: "missing", name };
   }

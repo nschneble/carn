@@ -23,14 +23,17 @@ export type ExecRequest = {
   userId: string;
 };
 
+// raw target isn't echoed in `badName` since it'd carry terminal escapes
 export const refusals = {
   badCommand:
-    "This server runs git-upload-pack and git-receive-pack only. Use git clone or git push.",
-  // the raw target is never echoed: it would carry terminal escapes
+    "This server runs git-upload-pack and git-receive-pack only. " +
+    "Use git clone or git push.",
   badName:
-    "That's not a valid repo name. Names are up to 64 characters, starting with a letter or digit, then letters, digits, dot, dash, and underscore.",
+    "That's not a valid repo name. Names are up to 64 characters, " +
+    "starting with a letter or number, and containing only letters, " +
+    "numbers, dots, dashs, and underscores.",
   noRepo: (name: string) =>
-    `There is no repo named ${name}. Push to it to create it.`,
+    `There's no repo named ${name}. Push to it to create it.`,
   noWrite: (name: string) =>
     `You don't have write access to ${name}. Ask the owner for a grant.`,
   unavailable: "That request failed on the server. Try again shortly.",
@@ -38,12 +41,14 @@ export const refusals = {
 
 export function parseCommand(command: string): ParsedCommand | null {
   const match = commandPattern.exec(command);
-
   if (match === null) {
     return null;
   }
 
-  return { service: `${match[1]}-pack` as GitService, target: match[2] ?? "" };
+  return {
+    service: `${match[1]}-pack` as GitService,
+    target: match[2] ?? "",
+  };
 }
 
 async function mayWrite(repo: ResolvedRepo, userId: string): Promise<boolean> {
@@ -93,14 +98,12 @@ async function resolveTarget(
 
   if (lookup.status === "invalid") {
     refuse(channel, refusals.badName);
-
     return null;
   }
 
   if (lookup.status === "missing") {
     if (parsed.service === "upload-pack") {
       refuse(channel, refusals.noRepo(lookup.name));
-
       return null;
     }
 
@@ -112,7 +115,6 @@ async function resolveTarget(
     !(await mayWrite(lookup.repo, userId))
   ) {
     refuse(channel, refusals.noWrite(lookup.repo.name));
-
     return null;
   }
 
@@ -143,27 +145,24 @@ async function serve(
   // git exiting first makes its stdin EPIPE, which is fatal unhandled
   child.stdin.on("error", () => {});
   channel.pipe(child.stdin);
+
   // without { end: false } ssh loses the exit status and a good push fails
   child.stdout.pipe(channel, { end: false });
   child.stderr.pipe(channel.stderr, { end: false });
 
   const result = await child.done;
-
   channel.removeListener("close", abort);
   finish(channel, result.code ?? 1);
 }
 
 export async function handleExec(request: ExecRequest): Promise<void> {
   const parsed = parseCommand(request.command);
-
   if (parsed === null) {
     refuse(request.channel, refusals.badCommand);
-
     return;
   }
 
   const repo = await resolveTarget(request, parsed);
-
   if (repo === null) {
     return;
   }

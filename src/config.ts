@@ -19,7 +19,7 @@ function readPort(name: string, fallback: string): number {
 
   if (!Number.isInteger(value) || value < 1 || value > 65535) {
     console.error(
-      `${name} must be an integer between 1 and 65535, got "${raw}".`,
+      `${name} must be an integer between 1 and 65535 (got ${raw}).`,
     );
     process.exit(1);
   }
