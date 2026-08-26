@@ -122,13 +122,18 @@ test("a method other than publickey is rejected, offering publickey", async () =
   });
 });
 
-test("a username other than git is rejected, and the message says git", async () => {
-  const outcome = await checkAuth(request({ username: "nick" }), store(row));
+test("a username other than git is rejected before any lookup", async () => {
+  const keys = store(row);
+  const outcome = await checkAuth(request({ username: "nick" }), keys);
 
-  assert.strictEqual(outcome.status, "reject");
-  assert.match(
-    outcome.status === "reject" ? (outcome.message ?? "") : "",
-    /\bgit\b/,
+  assert.deepStrictEqual(outcome, {
+    status: "reject",
+    reason: "bad-username",
+  });
+  assert.deepStrictEqual(
+    keys.looked,
+    [],
+    "a bad username still hit the database",
   );
 });
 
@@ -144,6 +149,18 @@ test("the first callback carries no signature and is accepted", async () => {
 
   assert.deepStrictEqual(outcome, { status: "probe" });
   assert.deepStrictEqual(keys.touched, [], "the probe recorded a use");
+});
+
+test("a probe for a fingerprint with no row is rejected, not probed", async () => {
+  const keys = store(null);
+  const outcome = await checkAuth(request(), keys);
+
+  assert.deepStrictEqual(outcome, { status: "reject", reason: "unknown-key" });
+  assert.deepStrictEqual(
+    keys.looked,
+    [fingerprint(myKey.getPublicSSH())],
+    "the probe answered before the row was looked up",
+  );
 });
 
 test("a signature with nothing to verify it against is rejected", async () => {

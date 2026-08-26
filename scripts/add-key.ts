@@ -68,7 +68,8 @@ if (args.length < 1 || args.length > 2) {
 const path = args[0];
 const key = readPublicKey(path);
 const fallback = key.comment === "" ? basename(path) : key.comment;
-const name = args.length === 2 ? args[1] : fallback;
+const given = args.length === 2 ? args[1].trim() : "";
+const name = given === "" ? fallback : given;
 
 const admin = await db.user.findFirst({
   where: { isAdmin: true },

@@ -7,7 +7,7 @@ import ssh2 from "ssh2";
 import { config } from "../config.js";
 import { db } from "../db.js";
 import { checkAuth, type KeyStore } from "./auth.js";
-import { handleExec, refusals, refuse } from "./exec.js";
+import { handleExec, parseCommand, refusals, refuse } from "./exec.js";
 import { loadHostKey } from "./hostkey.js";
 
 const { Server } = ssh2;
@@ -112,7 +112,10 @@ function onSession(session: Session, userId: string, ip: string): void {
 
     handleExec({ channel, command: info.command, gitProtocol, userId }).catch(
       (error: unknown) => {
-        console.error(`ssh: ${ip} running "${info.command}" failed, ${error}`);
+        const service =
+          parseCommand(info.command)?.service ?? "an unparseable command";
+
+        console.error(`ssh: ${ip} running ${service} failed, ${error}`);
         refuse(channel, refusals.unavailable);
       },
     );

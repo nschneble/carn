@@ -39,7 +39,6 @@ export type RejectReason =
   | "key-mismatch"
   | "bad-signature";
 
-// reason is for the server's log; message is the only client-facing text
 export type AuthOutcome =
   | { status: "probe" }
   | { status: "accept"; key: StoredKey }
@@ -47,7 +46,6 @@ export type AuthOutcome =
       status: "reject";
       reason: RejectReason;
       methods?: AuthenticationType[];
-      message?: string;
     };
 
 export function fingerprint(blob: Buffer): string {
@@ -70,11 +68,7 @@ export async function checkAuth(
   }
 
   if (request.username !== sshUser) {
-    return {
-      status: "reject",
-      reason: "bad-username",
-      message: `The SSH user must be ${sshUser}. Reconnect as ${sshUser}; your key is what identifies you.`,
-    };
+    return { status: "reject", reason: "bad-username" };
   }
 
   const offered = request.key;
@@ -85,12 +79,7 @@ export async function checkAuth(
 
   // ssh2 leaves hashAlgo unset only for a legacy SHA-1 ssh-rsa signature
   if (offered.algo === "ssh-rsa" && request.hashAlgo === undefined) {
-    return {
-      status: "reject",
-      reason: "sha1-rsa",
-      message:
-        "An ssh-rsa key signing with SHA-1 isn't accepted. Use rsa-sha2-256, rsa-sha2-512, or an ed25519 key.",
-    };
+    return { status: "reject", reason: "sha1-rsa" };
   }
 
   const row = await store.findByFingerprint(fingerprint(offered.data));

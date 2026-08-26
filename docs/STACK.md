@@ -10,7 +10,7 @@ Phase 1a, costing six amendments.
 
 | Package | Verified | Major | Risk | Note |
 |---|---|---|---|---|
-| `prisma` | 7.10.0 | **7** | **see below** | The `latest` dist-tag points at an 8.0 release candidate. Never install by tag. |
+| `prisma` | 7.9.1 | **7** | **see below** | Pinned `^7.9.1`; the installed tree is 7.9.1. The `latest` dist-tag points at an 8.0 release candidate. Never install by tag. |
 | `@prisma/client` | 7.10.0 | **7** | low | `latest` is still 7.10.0 — it does *not* track the CLI's tag. |
 | `@prisma/adapter-pg` | 7.10.0 | **7** | low | Tracks the Prisma major. Owns `pg` transitively; never add `pg` directly. |
 | `fastify` | 5.12.1 | **5** | low | The raw content-type parser for `application/x-git-*-request` (1c) is a v5 API. |
@@ -106,5 +106,5 @@ undoing the Prisma 7 migration entirely. Tracked in `local/TODOs.md`.
 Node, Postgres, Caddy, and Docker Compose are pinned by `compose.yaml` and
 the Phase 2 Dockerfile rather than by npm, and move on their own schedule.
 Check them when Phase 2 writes those files. Note that `.squawk.toml`'s
-`pg_version` must match `compose.yaml`'s image tag; exit check 17 asserts
-it, because they drift silently.
+`pg_version` must match `compose.yaml`'s image tag; Phase 1a's exit check
+17 asserts it, because they drift silently.

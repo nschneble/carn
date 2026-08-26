@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import assert from "node:assert";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { test } from "node:test";
+import { join } from "node:path";
+import { after, test } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 
 import {
@@ -16,11 +19,25 @@ const cwd = tmpdir();
 const generous = 30_000;
 const impatient = 200;
 const bounded = { timeout: 10_000 };
+const version2 = "000eversion 2\n";
 
-async function blocker(timeoutMs: number): Promise<GitChild> {
+const dir = mkdtempSync(join(tmpdir(), "carn-git-spawn-"));
+const repo = join(dir, "empty.git");
+
+execFileSync("git", ["init", "--bare", "-q", "--", repo]);
+
+after(() => {
+  rmSync(dir, { recursive: true, force: true });
+});
+
+async function blocker(
+  timeoutMs: number,
+  signal?: AbortSignal,
+): Promise<GitChild> {
   const child = await spawnGit({
     args: ["hash-object", "--stdin"],
     cwd,
+    signal,
     timeoutMs,
   });
 
@@ -28,6 +45,24 @@ async function blocker(timeoutMs: number): Promise<GitChild> {
   child.stderr.resume();
 
   return child;
+}
+
+async function advertise(gitProtocol?: string): Promise<string> {
+  const child = await spawnGit({
+    args: ["upload-pack", "--advertise-refs", "--", "."],
+    cwd: repo,
+    gitProtocol,
+    timeoutMs: generous,
+  });
+  const chunks: Buffer[] = [];
+
+  child.stdout.on("data", (chunk: Buffer) => {
+    chunks.push(chunk);
+  });
+  child.stderr.resume();
+  await child.done;
+
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 async function release(child: GitChild): Promise<void> {
@@ -57,6 +92,37 @@ test("a git call past the timeout is killed and says so", bounded, async () => {
   await assert.rejects(
     runGit({ args: ["hash-object", "--stdin"], cwd, timeoutMs: impatient }),
     /timed out after 200ms/,
+  );
+});
+
+test(
+  "an abandoned git call is killed and says it was cancelled",
+  bounded,
+  async () => {
+    const abandoned = new AbortController();
+    const child = await blocker(generous, abandoned.signal);
+
+    await delay(50);
+    abandoned.abort();
+
+    assert.deepStrictEqual(await child.done, {
+      code: null,
+      outcome: "cancelled",
+    });
+  },
+);
+
+test("the git protocol reaches the child's environment", bounded, async () => {
+  const asked = await advertise("version=2");
+  const unset = await advertise();
+
+  assert.ok(
+    asked.startsWith(version2),
+    `GIT_PROTOCOL did not reach git: ${JSON.stringify(asked.slice(0, 40))}`,
+  );
+  assert.ok(
+    !unset.startsWith(version2),
+    "git answered version 2 with no GIT_PROTOCOL asked for",
   );
 });
 
