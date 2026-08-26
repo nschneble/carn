@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { spawnSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 
 import { db } from "../db.js";
+import { runGit } from "../git/spawn.js";
 import { type ResolvedRepo, repoPath } from "./resolve.js";
 
 const timeoutMs = 10_000;
@@ -15,25 +15,6 @@ const gitConfig: [string, string][] = [
   ["receive.autogc", "false"],
   ["receive.maxInputSize", "100m"],
 ];
-
-// temporary: git/spawn.ts is not written yet and owns every other call
-function git(args: string[], cwd: string): void {
-  const result = spawnSync("git", args, {
-    cwd,
-    encoding: "utf8",
-    timeout: timeoutMs,
-  });
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  if (result.status !== 0) {
-    throw new Error(
-      `git ${args.join(" ")} exited ${result.status}: ${result.stderr.trim()}`,
-    );
-  }
-}
 
 export async function createRepo(
   name: string,
@@ -47,10 +28,14 @@ export async function createRepo(
     const path = repoPath(row.id);
 
     mkdirSync(path, { recursive: true });
-    git(["init", "--bare", `--initial-branch=${row.defaultBranch}`], path);
+    await runGit({
+      args: ["init", "--bare", `--initial-branch=${row.defaultBranch}`],
+      cwd: path,
+      timeoutMs,
+    });
 
     for (const [key, value] of gitConfig) {
-      git(["config", key, value], path);
+      await runGit({ args: ["config", key, value], cwd: path, timeoutMs });
     }
 
     return { ...row, path };
