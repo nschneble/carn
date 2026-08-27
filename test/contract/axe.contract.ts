@@ -9,10 +9,12 @@ import { createRequire } from "node:module";
 import { after, before, test } from "node:test";
 import type { AxeResults, Result } from "axe-core";
 import { type Browser, chromium } from "playwright";
+import { errorPage, noSuchRepo } from "../../src/html/error-page.js";
 import { stylesheet } from "../../src/html/styles.js";
 import { renderMarkdown } from "../../src/markdown/render.js";
 import { galleryDocument } from "../gallery/document.js";
 import { hoverSimulation, indexDocument } from "../gallery/repo-index.js";
+import { showDocument, view } from "../gallery/repo-show.js";
 import { renderPaths } from "../support/render-paths.js";
 import { type Served, serve } from "../support/serve.js";
 
@@ -127,11 +129,31 @@ ${renderedTable}</main>
 
 const fixtures: Record<string, string> = {};
 
+const emptyRepo = view({ tip: null, entries: [], readme: null });
+
 for (const path of renderPaths) {
   const key = `${path.palette}-${path.theme ?? "unstamped"}`;
   fixtures[`/populated-${key}`] = indexDocument({ theme: path.theme });
   fixtures[`/hover-${key}`] = indexDocument({ theme: path.theme, hover: true });
   fixtures[`/empty-${key}`] = indexDocument({ theme: path.theme, repos: [] });
+
+  fixtures[`/show-${key}`] = showDocument({ theme: path.theme });
+  fixtures[`/show-all-${key}`] = showDocument({
+    theme: path.theme,
+    showAll: true,
+  });
+  fixtures[`/show-bare-${key}`] = showDocument({
+    theme: path.theme,
+    repo: view({ readme: null }),
+  });
+  fixtures[`/show-new-${key}`] = showDocument({
+    theme: path.theme,
+    repo: emptyRepo,
+  });
+  fixtures[`/not-found-${key}`] = errorPage({
+    failure: noSuchRepo("linklater"),
+    theme: path.theme,
+  });
 }
 
 let browser: Browser;
@@ -249,8 +271,17 @@ for (const path of renderPaths) {
 for (const path of renderPaths) {
   const key = `${path.palette}-${path.theme ?? "unstamped"}`;
 
-  for (const state of ["populated", "hover", "empty"]) {
-    test(`no axe violations on the ${state} index, ${path.name}`, async () => {
+  for (const state of [
+    "populated",
+    "hover",
+    "empty",
+    "show",
+    "show-all",
+    "show-bare",
+    "show-new",
+    "not-found",
+  ]) {
+    test(`no axe violations on the ${state} page, ${path.name}`, async () => {
       const { results } = await fetched(`/${state}-${key}`, path.colorScheme);
 
       assert.deepStrictEqual(

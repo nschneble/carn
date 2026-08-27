@@ -533,6 +533,122 @@ main > h1 {
 }
 .empty code {
   overflow-wrap: anywhere;
+}
+.home {
+  color: var(--ink);
+  text-decoration: none;
+}
+.home:hover {
+  text-decoration: underline;
+}
+
+/* --- repo show --- */
+.tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--ink);
+}
+/* no blob view yet, so the row overlay would only block selection */
+.tree .nm::after {
+  content: none;
+}
+.tree .row {
+  grid-template-columns: minmax(0, 1fr);
+}
+.showall {
+  margin: var(--s3) 0 0;
+}
+
+/* --- rendered readme --- */
+.readme {
+  margin-top: var(--s7);
+  border-top: 1px solid var(--rule);
+  padding-top: var(--s5);
+}
+.readme > :first-child {
+  margin-top: 0;
+}
+.readme p,
+.readme li,
+.readme blockquote {
+  max-width: var(--measure);
+}
+.readme h1,
+.readme h2,
+.readme h3,
+.readme h4,
+.readme h5,
+.readme h6 {
+  font-variation-settings:
+    "wdth" 110,
+    "wght" 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: var(--s6) 0 var(--s3);
+}
+.readme h1 {
+  font-size: 1.6rem;
+}
+.readme h2 {
+  font-size: 1.32rem;
+}
+.readme h3 {
+  font-size: 1.14rem;
+}
+.readme h4,
+.readme h5,
+.readme h6 {
+  font-size: 1rem;
+}
+.readme code {
+  font-family: var(--f-mono);
+  font-size: 0.86em;
+}
+.readme pre {
+  background: var(--sunk);
+  border: 1px solid var(--rule);
+  padding: var(--s3) var(--s4);
+  overflow-x: auto;
+}
+.readme pre code {
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.readme blockquote {
+  margin: var(--s4) 0;
+  padding-left: var(--s4);
+  border-left: 2px solid var(--rule);
+  color: var(--ink-soft);
+}
+.readme img {
+  max-width: 100%;
+  height: auto;
+}
+.readme hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: var(--s6) 0;
+}
+.readme table {
+  border-collapse: collapse;
+  margin: var(--s4) 0;
+}
+.readme th,
+.readme td {
+  text-align: left;
+  padding: var(--s2) var(--s4) var(--s2) 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 14.5px;
+}
+.readme th {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  border-bottom-color: var(--ink);
 }`;
 
 export const stylesheet = `${faces}\n${tokens}\n${components}\n${identity}\n${pages}\n`;

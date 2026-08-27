@@ -21,7 +21,7 @@ const head = (title: string) => html`<head>
 const body = (main: Raw) => html`<body>
 <header>
 <a class="skip" href="#main">Skip to content</a>
-<p class="t-mono">Càrn</p>
+<p class="t-mono"><a class="home" href="/">Càrn</a></p>
 </header>
 <main id="main" tabindex="-1">
 ${main}</main>

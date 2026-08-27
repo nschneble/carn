@@ -375,8 +375,8 @@ test("no rendered markdown lands in an attribute position", () => {
   assert.deepStrictEqual(reported, []);
   assert.deepStrictEqual(
     [...new Set(bearing)].sort(),
-    ["test/contract/escaping.contract.ts"],
-    "the set of files interpolating raw() or renderMarkdown() changed. No src/ file does yet — the repo pages arrive later — so this list is what stops the sweep going blind. Add the new file deliberately",
+    ["src/html/repo-show.ts", "test/contract/escaping.contract.ts"],
+    "the set of files interpolating raw() or renderMarkdown() changed. src/html/repo-show.ts is the repo page, and it is the only src/ file that may — this list is what stops the sweep going blind. Add a new file deliberately",
   );
 });
 

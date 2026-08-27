@@ -6,6 +6,7 @@ import { assetRoutes } from "./routes/assets.js";
 import { gitHttpRoutes } from "./routes/git-http.js";
 import { healthRoute } from "./routes/health.js";
 import { indexRoute } from "./routes/index-page.js";
+import { repoPageRoutes } from "./routes/repo-page.js";
 
 export const contentSecurityPolicy =
   "default-src 'none'; img-src 'self' data:; style-src 'self'; font-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
@@ -23,6 +24,7 @@ export function buildApp(): FastifyInstance {
   gitHttpRoutes(app);
   healthRoute(app);
   indexRoute(app);
+  repoPageRoutes(app);
 
   return app;
 }
