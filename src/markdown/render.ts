@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// Remote https: image URLs are permitted here and blocked by CSP
-// (img-src 'self' data:, src/app.ts). Deliberate: the markdown layer
-// parses, the response header enforces. A README's remote image
-// degrades to its alt text. See PLAN.md §04 and the image-proxy note.
+// remote https: image urls are permitted here and blocked by csp
+// (img-src 'self' data:, src/app.ts). deliberate: the markdown layer
+// parses, the response header enforces. a readme's remote image
+// degrades to its alt text. see plan.md §04 and the image-proxy note
 
 import MarkdownIt from "markdown-it";
 import { type Raw, raw } from "../html/index.js";
