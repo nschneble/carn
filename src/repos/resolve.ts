@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { config } from "../config.js";
 import { db } from "../db.js";
 
-const namePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+export const namePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 
 export type ResolvedRepo = {
   id: string;

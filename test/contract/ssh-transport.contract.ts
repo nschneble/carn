@@ -339,7 +339,7 @@ describe("ssh transport", {
     assert.notStrictEqual(cloned.code, 0, "a missing repo cloned");
     assert.ok(
       cloned.stderr.includes(
-        `There is no repo named ${name}. Push to it to create it.`,
+        `There's no repo named ${name}. Push to it to create it.`,
       ),
       cloned.stderr,
     );
