@@ -4,6 +4,23 @@ import assert from "node:assert";
 import { test } from "node:test";
 
 import { html, raw } from "../../src/html/index.js";
+import type { Position } from "../../src/html/position.js";
+
+const unescaped = raw;
+
+function chunks(...parts: string[]): TemplateStringsArray {
+  return Object.assign([...parts], { raw: [...parts] });
+}
+
+const attributeSites: [Position, string, string][] = [
+  ["doubleQuoted", '<a title="', '">t</a>'],
+  ["singleQuoted", "<a title='", "'>t</a>"],
+  ["beforeAttrValue", "<a title=", ">t</a>"],
+  ["unquoted", "<a title=r-", ">t</a>"],
+  ["beforeAttrName", "<a ", ">t</a>"],
+  ["attrName", "<a data-", '="y">t</a>'],
+  ["tagName", "<", ">t</a>"],
+];
 
 test("a script payload cannot open a tag", () => {
   const out = html`<p>${"<script>alert(1)</script>"}</p>`.value;
@@ -85,6 +102,62 @@ test("numbers and bigints interpolate as their digits", () => {
   assert.strictEqual(html`[${-5}]`.value, "[-5]");
   assert.strictEqual(html`[${10n}]`.value, "[10]");
   assert.strictEqual(html`[${0}]`.value, "[0]");
+});
+
+test("a raw value renders in text position and nowhere else", () => {
+  assert.strictEqual(
+    html`<p>${unescaped("<b>x</b>")}</p>`.value,
+    "<p><b>x</b></p>",
+  );
+  assert.strictEqual(
+    html(chunks("<p>", "</p>"), unescaped("<b>x</b>")).value,
+    "<p><b>x</b></p>",
+  );
+
+  for (const [position, before, after] of attributeSites) {
+    assert.throws(
+      () => html(chunks(before, after), unescaped("<b>x</b>")),
+      new RegExp(`raw value in ${position} position`),
+      `${before}\${raw}${after}`,
+    );
+  }
+});
+
+test("a raw value is refused however it reaches the interpolation", () => {
+  const value = unescaped("<b>x</b>");
+  const aliased = unescaped;
+
+  function wrapper(source: string) {
+    return unescaped(source);
+  }
+
+  const shapes: [string, unknown][] = [
+    ["direct", unescaped("<b>x</b>")],
+    ["intermediate const", value],
+    ["aliased function", aliased("<b>x</b>")],
+    ["point-free map", ["<b>x</b>"].map(aliased)],
+    ["wrapper component", wrapper("<b>x</b>")],
+    ["nested html result", html`<b>${"x"}</b>`],
+    ["array member", ["a", value]],
+  ];
+
+  for (const [shape, carried] of shapes) {
+    assert.throws(
+      () => html`<a title="${carried}">t</a>`,
+      /raw value in doubleQuoted position/,
+      shape,
+    );
+    assert.doesNotThrow(() => html`<p>${carried}</p>`, shape);
+  }
+});
+
+test("the classification is memoised without changing what it decides", () => {
+  const render = (value: unknown) => html`<a title="${value}">t</a>`.value;
+
+  assert.strictEqual(render("a"), '<a title="a">t</a>');
+  assert.strictEqual(render("b"), '<a title="b">t</a>');
+  assert.throws(() => render(unescaped("<b>")), /doubleQuoted/);
+  assert.strictEqual(render("c"), '<a title="c">t</a>');
 });
 
 test("an invalid escape sequence is refused, not rendered", () => {

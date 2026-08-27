@@ -7,7 +7,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 import MarkdownIt from "markdown-it";
 
-import { html } from "../../src/html/index.js";
+import { buildApp } from "../../src/app.js";
+import { html, type Raw } from "../../src/html/index.js";
 import { renderMarkdown } from "../../src/markdown/render.js";
 import {
   type Interpolation,
@@ -57,6 +58,26 @@ function link(destination: string): string {
 function href(markup: string): string | null {
   return /<a href="([^"]*)"/.exec(markup)?.[1] ?? null;
 }
+
+function rel(markup: string): string | null {
+  return /<a [^>]*\brel="([^"]*)"/.exec(markup)?.[1] ?? null;
+}
+
+const externalForms: [string, string][] = [
+  ["inline", "[x](https://example.com/a)"],
+  ["autolink", "<https://example.com/a>"],
+  ["reference", "[x][r]\n\n[r]: https://example.com/a"],
+  ["http", "[x](http://example.com/a)"],
+  ["uppercase scheme", "[x](HTTPS://example.com/a)"],
+];
+
+const localForms: [string, string][] = [
+  ["relative", "[x](docs/BRAND.md)"],
+  ["root-relative", "[x](/r/carn)"],
+  ["anchor", "[x](#section)"],
+  ["query", "[x](?ref=main)"],
+  ["mailto", "[x](mailto:nick@example.com)"],
+];
 
 function misplaced(source: string): Interpolation[] {
   return scan(source).filter(
@@ -138,6 +159,73 @@ test("an image destination is held to the same allowlist", () => {
   assert.strictEqual(svg, "<p>![a](data:image/svg+xml;base64,AAA)</p>\n");
 });
 
+test("an external link carries the rel, in all three link forms", () => {
+  for (const [form, source] of externalForms) {
+    const out = renderMarkdown(source).value;
+
+    assert.strictEqual(rel(out), "nofollow ugc", `${form}: ${out}`);
+  }
+});
+
+test("a link that is not external carries no rel at all", () => {
+  for (const [form, source] of localForms) {
+    const out = renderMarkdown(source).value;
+
+    assert.ok(out.includes("<a href="), `${form} rendered no link: ${out}`);
+    assert.strictEqual(rel(out), null, `${form}: ${out}`);
+    assert.ok(!out.includes("nofollow"), `${form}: ${out}`);
+  }
+});
+
+test("the rel rule renders through a fallback, keeping other attributes", () => {
+  assert.strictEqual(
+    stock.renderer.rules.link_open,
+    undefined,
+    "link_open gained a default rule, so the renderToken fallback is no longer the branch that runs — re-derive which one does before trusting the rel rule",
+  );
+
+  const titled = renderMarkdown('[x](https://example.com/a "t")').value;
+
+  assert.strictEqual(
+    titled,
+    '<p><a href="https://example.com/a" title="t" rel="nofollow ugc">x</a></p>\n',
+  );
+});
+
+test("a remote image survives the markdown layer for CSP to stop", async () => {
+  const out = renderMarkdown("![a](https://example.com/x.png)").value;
+
+  assert.strictEqual(
+    out,
+    '<p><img src="https://example.com/x.png" alt="a" /></p>\n',
+  );
+
+  const app = buildApp();
+  const response = await app.inject({ method: "GET", url: "/health" });
+  await app.close();
+
+  assert.strictEqual(
+    response.headers["content-security-policy"],
+    "default-src 'none'; img-src 'self' data:; style-src 'self'; font-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+  );
+});
+
+test("the data-image branch is anchored to the start of the url", () => {
+  const evasions = [
+    "javascript:alert(1)#data:image/gif;x",
+    "javascript:alert(1)?data:image/png;",
+    " vbscript:x#data:image/webp;",
+  ];
+
+  for (const destination of evasions) {
+    const out = link(destination);
+    const image = renderMarkdown(`![a](${destination})`).value;
+
+    assert.strictEqual(href(out), null, out);
+    assert.ok(!image.includes("<img"), image);
+  }
+});
+
 test("an entity-encoded scheme is decoded before the allowlist sees it", () => {
   const encoded = link("java&#115;cript:alert(1)");
 
@@ -209,6 +297,48 @@ test("rendered markdown outside text position is a violation", () => {
   }
 });
 
+test("rendered markdown in an attribute is refused at render time", () => {
+  const readme = "# hi\n";
+  const value = renderMarkdown(readme);
+  const aliased = renderMarkdown;
+
+  function readmeBody(source: string): Raw {
+    return renderMarkdown(source);
+  }
+
+  const shapes: [string, unknown][] = [
+    ["direct", renderMarkdown(readme)],
+    ["intermediate const", value],
+    ["aliased function", aliased(readme)],
+    ["point-free map", [readme].map(aliased)],
+    ["wrapper component", readmeBody(readme)],
+  ];
+
+  for (const [shape, carried] of shapes) {
+    assert.throws(
+      () => html`<article data-readme="${carried}"></article>`,
+      /raw value in doubleQuoted position/,
+      shape,
+    );
+    assert.doesNotThrow(() => html`<article>${carried}</article>`, shape);
+  }
+});
+
+test("the lexical scan sees only the shape written literally", () => {
+  const direct = template(`<a title="\${renderMarkdown(readme)}"></a>`);
+  const wrapped = template(`<a title="\${readmeBody(readme)}"></a>`);
+
+  assert.deepStrictEqual(
+    misplaced(direct).map((found) => found.position),
+    ["doubleQuoted"],
+  );
+  assert.deepStrictEqual(
+    misplaced(wrapped),
+    [],
+    "the scanner started matching an indirect shape, so the render-time refusal is no longer the only thing covering it — widen this test rather than delete it",
+  );
+});
+
 test("the planted fixture is caught", () => {
   const source = readFileSync(join(root, fixture), "utf8");
 
@@ -227,21 +357,26 @@ test("the planted fixture is caught", () => {
 test("no rendered markdown lands in an attribute position", () => {
   const files = templateSources();
   const reported: string[] = [];
-  let bearing = 0;
+  const bearing: string[] = [];
+  let classified = 0;
 
   for (const { path, source } of files) {
     for (const found of scan(source)) {
+      classified += 1;
       if (!bearsMarkdown.test(substitution(source, found))) continue;
-      bearing += 1;
+      bearing.push(path);
       if (found.position === "text") continue;
       reported.push(`${path}:${lineOf(source, found.index)} ${found.position}`);
     }
   }
 
+  assert.ok(files.length > 0, "found no template source to check");
+  assert.ok(classified > 0, "found no interpolations to classify");
   assert.deepStrictEqual(reported, []);
-  assert.ok(
-    bearing > 0,
-    "no interpolation carries raw() or renderMarkdown(), so this sweep classified nothing and the fixture above is the only thing holding the rule",
+  assert.deepStrictEqual(
+    [...new Set(bearing)].sort(),
+    ["test/contract/escaping.contract.ts"],
+    "the set of files interpolating raw() or renderMarkdown() changed. No src/ file does yet — the repo pages arrive later — so this list is what stops the sweep going blind. Add the new file deliberately",
   );
 });
 

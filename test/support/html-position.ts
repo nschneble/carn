@@ -4,16 +4,9 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-export type Position =
-  | "text"
-  | "tagName"
-  | "beforeAttrName"
-  | "attrName"
-  | "afterAttrName"
-  | "beforeAttrValue"
-  | "doubleQuoted"
-  | "singleQuoted"
-  | "unquoted";
+import { type Position, step } from "../../src/html/position.js";
+
+export type { Position };
 
 export type Interpolation = { index: number; end: number; position: Position };
 
@@ -22,41 +15,6 @@ export const root = resolve(import.meta.dirname, "../../..");
 // spelled, never written, so this file is not a template of its own
 const backtick = "`";
 export const opener = `html${backtick}`;
-
-const asciiWhitespace = new Set(["\t", "\n", "\f", "\r", " "]);
-
-function step(position: Position, char: string): Position {
-  switch (position) {
-    case "text":
-      return char === "<" ? "tagName" : "text";
-    case "tagName":
-      if (char === ">") return "text";
-      return asciiWhitespace.has(char) ? "beforeAttrName" : "tagName";
-    case "beforeAttrName":
-      if (char === ">") return "text";
-      if (char === "/" || asciiWhitespace.has(char)) return "beforeAttrName";
-      return "attrName";
-    case "attrName":
-    case "afterAttrName":
-      if (char === "=") return "beforeAttrValue";
-      if (char === ">") return "text";
-      if (char === "/") return "beforeAttrName";
-      return asciiWhitespace.has(char) ? "afterAttrName" : "attrName";
-    case "beforeAttrValue":
-      if (asciiWhitespace.has(char)) return "beforeAttrValue";
-      if (char === '"') return "doubleQuoted";
-      if (char === "'") return "singleQuoted";
-      if (char === ">") return "text";
-      return "unquoted";
-    case "doubleQuoted":
-      return char === '"' ? "beforeAttrName" : "doubleQuoted";
-    case "singleQuoted":
-      return char === "'" ? "beforeAttrName" : "singleQuoted";
-    case "unquoted":
-      if (char === ">") return "text";
-      return asciiWhitespace.has(char) ? "beforeAttrName" : "unquoted";
-  }
-}
 
 function endOfString(source: string, start: number, quote: string): number {
   let index = start;

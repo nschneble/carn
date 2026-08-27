@@ -242,7 +242,10 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
    scan, with a positive control proving the scanner catches a planted one
 7. A repo named with an escape sequence never reaches a response body
 8. A README containing `<script>`, `javascript:`, and `<img onerror=>`
-   renders inert — assert the output, not the absence of an error
+   renders inert — assert the output, not the absence of an error. A README
+   containing a remote `https:` image renders as an `<img>` with its `alt`
+   intact: the markdown layer does not strip it, and CSP is what stops the
+   request. Assert the tag is present and the CSP header is unchanged.
 9. `validateLink` rejects `javascript:` — the allowlist, proven, not the
    assignment
 10. In all four render paths, enumerate every custom property named in
@@ -275,6 +278,15 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
 22. Running this script twice gives the same result, leaving no
     `carn_verify_%` database, no rows beyond the admin seed, and no
     directory under the temporary repo root
+23. External links in rendered markdown carry `rel="nofollow ugc"`, and
+    relative links, root-relative links, anchors, and `mailto:` links do
+    not. Assert both halves. The negative half is the one that matters: an
+    over-broad match nofollows the site's own navigation, which is
+    invisible in rendering and wrong. Cover inline, autolink, and reference
+    link forms — all three reach `link_open` by different paths.
+
+Check 23 joins 6 through 9 as part of the phase's real gate, despite its
+number. It was appended rather than inserted, so nothing renumbers.
 
 Checks 6 through 9 are the phase's real gate. Each covers a failure that
 is invisible when it happens: a page renders, looks right, and is wrong.

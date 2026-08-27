@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { type Position, step } from "./position.js";
+
 export class Raw {
   constructor(readonly value: string) {}
 }
@@ -24,8 +26,13 @@ function escapeHtml(value: string): string {
   );
 }
 
-function render(value: unknown): string {
-  if (value instanceof Raw) return value.value;
+function render(value: unknown, position: Position): string {
+  if (value instanceof Raw) {
+    if (position !== "text") {
+      throw new Error(`html: raw value in ${position} position.`);
+    }
+    return value.value;
+  }
 
   if (typeof value === "string") return escapeHtml(value);
   if (typeof value === "number" || typeof value === "bigint")
@@ -35,7 +42,7 @@ function render(value: unknown): string {
     return "";
 
   if (Array.isArray(value))
-    return value.map((element) => render(element)).join("");
+    return value.map((element) => render(element, position)).join("");
 
   return escapeHtml(String(value));
 }
@@ -48,10 +55,29 @@ function cooked(strings: TemplateStringsArray, index: number): string {
   return chunk;
 }
 
+const classified = new WeakMap<TemplateStringsArray, Position[]>();
+
+function positions(strings: TemplateStringsArray): Position[] {
+  const cached = classified.get(strings);
+  if (cached !== undefined) return cached;
+
+  const found: Position[] = [];
+  let position: Position = "text";
+
+  for (let index = 0; index < strings.length - 1; index += 1) {
+    for (const char of cooked(strings, index)) position = step(position, char);
+    found.push(position);
+  }
+
+  classified.set(strings, found);
+  return found;
+}
+
 export function html(strings: TemplateStringsArray, ...values: unknown[]): Raw {
+  const sites = positions(strings);
   let out = cooked(strings, 0);
   for (const [index, value] of values.entries()) {
-    out += render(value) + cooked(strings, index + 1);
+    out += render(value, sites[index]) + cooked(strings, index + 1);
   }
   return new Raw(out);
 }
