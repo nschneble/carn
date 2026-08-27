@@ -10,7 +10,13 @@ import { renderPaths } from "../support/render-paths.js";
 
 declare const document: object;
 declare const axe: {
-  run(context: object, options: { runOnly: string[] }): Promise<AxeResults>;
+  run(
+    context: object,
+    options: {
+      runOnly: string[];
+      rules: Record<string, { enabled: boolean }>;
+    },
+  ): Promise<AxeResults>;
 };
 
 const axeSource = createRequire(import.meta.url).resolve("axe-core");
@@ -21,10 +27,11 @@ const beyondWcag20 = [
   "avoid-inline-spacing",
   "target-size",
 ];
-const skippedAsExperimental = [
-  "css-orientation-lock",
-  "label-content-name-mismatch",
-];
+
+const forcedExperimental = {
+  "css-orientation-lock": { enabled: true },
+  "label-content-name-mismatch": { enabled: true },
+};
 
 const plantedFailures = `<!doctype html>
 <html>
@@ -37,6 +44,21 @@ const plantedFailures = `<!doctype html>
 <h1>Three defects</h1>
 <p style="color: #d3d3d3; background: #ffffff">This pair measures 1.5 to 1</p>
 <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="40" height="40" />
+</main>
+</body>
+</html>
+`;
+
+const plantedNameMismatch = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Planted name mismatch</title>
+</head>
+<body>
+<main>
+<h1>One defect</h1>
+<button type="button" aria-label="Close">Save changes</button>
 </main>
 </body>
 </html>
@@ -64,8 +86,9 @@ async function run(
     await page.addScriptTag({ path: axeSource });
 
     return await page.evaluate(
-      async (tags) => await axe.run(document, { runOnly: tags }),
-      ruleset,
+      async ([tags, rules]) =>
+        await axe.run(document, { runOnly: tags, rules }),
+      [ruleset, forcedExperimental] as const,
     );
   } finally {
     await page.close();
@@ -122,13 +145,15 @@ test("the rules above WCAG 2.0 report which of them found anything", async (t) =
     t.diagnostic(`${name}: ${landed}`);
   }
 
-  for (const name of skippedAsExperimental) {
-    assert.strictEqual(
-      bucketOf(name),
-      undefined,
-      `${name} now runs; axe skips every rule tagged experimental, so this ruleset covers more than it used to and the reporting here is stale`,
+  for (const name of Object.keys(forcedExperimental)) {
+    const landed = bucketOf(name);
+
+    assert.ok(
+      landed,
+      `${name} is in no bucket, so the rules override stopped forcing it on — axe leaves every experimental rule out of tag selection, and without the override this gate silently shrinks`,
     );
-    t.diagnostic(`${name}: never runs, tagged experimental`);
+    assert.notStrictEqual(landed, "violations", `${name} is violated`);
+    t.diagnostic(`${name}: ${landed}`);
   }
 
   const hitAreas = results.passes.find((rule) => rule.id === "target-size");
@@ -148,6 +173,15 @@ test("axe reports a planted failure", async () => {
       `axe did not report ${rule}, so a clean gallery run proves nothing:\n${report(found)}`,
     );
   }
+});
+
+test("axe reports a planted accessible name mismatch", async () => {
+  const found = await violations(plantedNameMismatch);
+
+  assert.ok(
+    found.some((violation) => violation.id === "label-content-name-mismatch"),
+    `a button labelled Close over the words Save changes went unreported, so the rules override is not reaching axe:\n${report(found)}`,
+  );
 });
 
 test("axe reads the gallery's own stylesheet, not a bare document", async () => {
