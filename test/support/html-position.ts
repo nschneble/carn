@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// Position scanner for the html tag's templates. Three shapes it leaves to
+// position scanner for the html tag's templates. three shapes it leaves to
 // other gates: raw() in an attribute (src/html/index.ts refuses it), one
 // inside <style> or <script> (the CSP refuses it), and a URL scheme in a
-// quoted href (the markdown allowlist). No html-comment state either.
+// quoted href (the markdown allowlist). no html-comment state either
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";

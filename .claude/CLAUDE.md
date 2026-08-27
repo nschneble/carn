@@ -254,8 +254,9 @@ Full system in `docs/BRAND.md`. The rules a coding session needs:
   Plex Mono; OFL reserves the name "Plex"). Two families, eight roles.
 - One accent. `--accent` for large type, `--accent-text` for inline links
   and small text, and `--accent-fill` for fills — which resolves to
-  `--accent` in dark and `--accent-text` in light. Light-mode pink is
-  4.10:1, which misses AA for body copy and is why the fill splits.
+  `--accent` in dark and `--accent-text` in light, because a button or
+  tag label owes 4.5:1 against its fill and light-mode `--accent` only
+  clears it as `--accent-text`.
 - **No color-only signals.** Dirs get trailing `/`, diffs get `+`/`−`, and
   states get a word.
 - Radius 0 except the chip. No shadows. **No motion at all.**
