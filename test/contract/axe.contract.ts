@@ -260,8 +260,9 @@ function report(found: Result[]): string {
     .join("\n");
 }
 
-// these two reach no verdict on any page; incomplete is all they report
-const alwaysIncomplete = new Set(["css-orientation-lock", "hidden-content"]);
+// hiddenContentEvaluate only ever returns undefined or true, so this rule
+// can never violate; its incomplete is not a deferred verdict
+const alwaysIncomplete = new Set(["hidden-content"]);
 
 // axe declines contrast on the decorative arrow's non-text glyph
 function nonText(node: NodeResult): boolean {
@@ -272,14 +273,25 @@ function nonText(node: NodeResult): boolean {
   );
 }
 
+// the exemption above is only safe while the arrow inherits its parent's
+// colour; pin that a passing ancestor still covers each exempted node
+function coveredByAPass(results: AxeResults, node: NodeResult): boolean {
+  const contrast = results.passes.find((rule) => rule.id === "color-contrast");
+  return (
+    contrast?.nodes.some((passed) => passed.html.includes(node.html)) ?? false
+  );
+}
+
 function decided(results: AxeResults): void {
-  const undecided = results.incomplete
-    .filter((rule) => !alwaysIncomplete.has(rule.id))
-    .flatMap((rule) =>
-      rule.nodes
-        .filter((node) => !nonText(node))
-        .map((node) => `${rule.id} ${node.html}`),
-    );
+  const undecided = results.incomplete.flatMap((rule) =>
+    rule.nodes
+      .filter(
+        (node) =>
+          !alwaysIncomplete.has(rule.id) &&
+          !(nonText(node) && coveredByAPass(results, node)),
+      )
+      .map((node) => `${rule.id} ${node.html}`),
+  );
 
   assert.deepStrictEqual(
     undecided,
