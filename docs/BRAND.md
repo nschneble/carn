@@ -36,7 +36,7 @@ states — explicit dark, explicit light, and unstamped system default — resol
 
   /* type */
   --f-display: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --f-mono: "Carn Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   /* spacing — 4px base */
   --s1: 4px;
@@ -438,9 +438,9 @@ No green-for-good, red-for-bad palette. A merged PR reads Merged and a closed on
 
 ## 03 · Type
 
-_Archivo variable · IBM Plex Mono · self-hosted_
+_Archivo variable · Carn Mono · self-hosted_
 
-Two families, six roles. Archivo carries identity; Plex Mono carries anything a machine produced.
+Two families, six roles. Archivo carries identity; Carn Mono carries anything a machine produced.
 
 - **t-xl · identity** — Linklater
 - **t-l · section** — Merge button

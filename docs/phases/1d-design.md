@@ -33,10 +33,11 @@ Verified 2026-08-27. If `npm install` resolves outside these majors,
 | `highlight.js` | 11.12.0 | **11** | Not needed until 1e. Do not install it yet. |
 | `tuffgal` | 0.2.0-alpha.8 | **0** | Pre-1.0, unstable API by its own README. Pin the exact version. |
 
-New dependencies this phase: `markdown-it`, `tuffgal`. Nothing else. The
-fonts are already in `fonts/`. `@types/markdown-it` was installed and then
-dropped, because 15 is self-typed. `docs/STACK.md` records why; don't add
-it back.
+New dependencies this phase: `markdown-it`, `tuffgal`. Nothing else.
+Archivo was already in `fonts/`; the mono face was not, and this phase
+builds it — see `fonts/README.md`. `@types/markdown-it` was installed and
+then dropped, because 15 is self-typed. `docs/STACK.md` records why; don't
+add it back.
 
 ## Before anything else: the markdown-it spike
 

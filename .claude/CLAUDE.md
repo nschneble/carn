@@ -240,7 +240,8 @@ Full system in `docs/BRAND.md`. The rules a coding session needs:
 - **The display face is worn by whatever the page is about.** On a list,
   it's the items. On a show page, the single title. On a create page, the
   question. Everything else is mono, small, and quiet.
-- Self-hosted Archivo and IBM Plex Mono. Two families, six roles.
+- Self-hosted Archivo and Carn Mono (a renamed IBM Plex Mono subset; OFL
+  reserves the name "Plex"). Two families, six roles.
 - One accent. `--accent` for large type + fills; `--accent-text` for inline
   links + small text. Light-mode pink is 4.11:1, misses AA for body copy.
 - **No color-only signals.** Dirs get trailing `/`, diffs get `+`/`−`, and
