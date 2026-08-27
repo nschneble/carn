@@ -31,11 +31,12 @@ Verified 2026-08-27. If `npm install` resolves outside these majors,
 |---|---|---|---|
 | `markdown-it` | 15.0.0 | **15** | **New major. Spike it first — see below.** |
 | `highlight.js` | 11.12.0 | **11** | Not needed until 1e. Do not install it yet. |
-| `@types/markdown-it` | 14.2.0 | **14** | Trails the runtime by a major. Check whether the types match 15's API before trusting them; report what you find. |
 | `tuffgal` | 0.2.0-alpha.8 | **0** | Pre-1.0, unstable API by its own README. Pin the exact version. |
 
-New dependencies this phase: `markdown-it`, `tuffgal`, `@types/markdown-it`.
-Nothing else. The fonts are already in `fonts/`.
+New dependencies this phase: `markdown-it`, `tuffgal`. Nothing else. The
+fonts are already in `fonts/`. `@types/markdown-it` was installed and then
+dropped, because 15 is self-typed. `docs/STACK.md` records why; don't add
+it back.
 
 ## Before anything else: the markdown-it spike
 
@@ -234,7 +235,7 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
     fixture and a frozen clock
 17. `git grep` finds no shell-enabled spawn — scoped form, positive control
 18. Every `.ts` under `src`, `test`, and `scripts` opens with the SPDX line
-19. `package.json` adds only `markdown-it`, `@types/markdown-it`, `tuffgal`
+19. `package.json` adds only `markdown-it` and `tuffgal`
 20. `npx squawk prisma/migrations/**/*.sql` exits 0
 21. 1a, 1b, and 1c verify scripts all still pass in full
 22. Running this script twice gives the same result, leaving no
@@ -259,7 +260,8 @@ Not screenshots — the running thing.
 
 - All four answers from the markdown-it spike, and what you amended in
   CLAUDE.md
-- Whether `@types/markdown-it@14` matched the 15.0.0 runtime API
+- Whether `@types/markdown-it@14` matched the 15.0.0 runtime API. Answered
+  ahead of the handoff: it did not, and the dependency was dropped
 - Any place Tuffgal's README and behaviour disagreed
 - Any place CLAUDE.md, `BRAND.md`, `docs/STACK.md`, and this brief
   disagreed

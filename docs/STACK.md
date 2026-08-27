@@ -23,8 +23,7 @@ Phase 1a, costing six amendments.
 | `@types/node` | `^26.3.0` | 26.3.0 | **26** | low | |
 | `squawk-cli` | `^2.62.0` | 2.63.0 | **2** | low | |
 | `highlight.js` | `—` | 11.12.0 | **11** | low | Major unchanged since 2021. Class-based output as assumed. |
-| `markdown-it` | `^15.0.0` | 15.0.0 | **15** | low | Spiked in Phase 1d; see below. Ships its own TypeScript declarations. |
-| `@types/markdown-it` | `^14.2.0` | 14.2.0 | **14** | **see below** | Redundant against 15's bundled types, and its `./*` export makes a removed subpath type-check. |
+| `markdown-it` | `^15.0.0` | 15.0.0 | **15** | low | Spiked in Phase 1d. Self-typed, so `@types/markdown-it` is not installed and must not be. Both below. |
 
 ## Prisma's `latest` tag points at a release candidate
 
@@ -68,7 +67,8 @@ Two things that bit us and will bite again:
 Version 15 shipped 2026-07-30. CLAUDE.md's gotchas were written against
 14.x; Phase 1d spiked the installed 15.0.0 and CLAUDE.md now carries the
 measured behaviour. Every API question below is answered by measurement.
-The one thing still open is the `@types` dependency, in the next section.
+The `@types` dependency was the last open question; it is settled in the
+next section.
 
 **Confirmed changed in 15.0.0:**
 
@@ -82,6 +82,11 @@ The one thing still open is the `@types` dependency, in the next section.
 - `text_join` now also processes image alt text.
 - `StateBlock#ddIndent` removed.
 - A `strip_references` core rule was added after `block`.
+- The bundled declarations export the class **as a type only**. The default
+  export is a callable wrapper, so `const md: MarkdownIt` — legal under
+  `@types/markdown-it@14`, which declared a class — is now `TS2749`. Import
+  the type by name:
+  `import MarkdownIt, { type MarkdownIt as MarkdownItInstance }`.
 
 **Confirmed unchanged, measured against 15.0.0:**
 
@@ -95,29 +100,30 @@ The one thing still open is the `@types` dependency, in the next section.
 - The default `validateLink` is a four-scheme blocklist,
   `/^(vbscript|javascript|file|data):/`, so it still fails open.
 
-## `@types/markdown-it` is redundant and actively misleading
+## Why `@types/markdown-it` is not installed
+
+**Settled in Phase 1d. Do not add it back.** It was installed briefly
+because the 1d brief called for it, and removed once measurement showed the
+brief was wrong. `docs/PLAN.md` §"markdown-it 15.0.0 is the pick" had it
+right from the start.
 
 15 bundles `dist/markdown-it.d.mts`, and the 15.0.0 changelog says to remove
 `@types/markdown-it`. TypeScript resolves a bare `import` to the bundled
 declarations and never consults `@types` — verified with `--traceResolution`.
 
 The hazard is subpaths. 15's `exports` map has no `./lib/*`, but
-`@types/markdown-it@14.2.0` exports `./*`, so TypeScript falls through to it:
+`@types/markdown-it@14.2.0` exports `./*`, so TypeScript falls through to it
+and a subpath that does not exist at runtime type-checks clean:
 
 ```
 import StateBlock from "markdown-it/lib/rules_block/state_block.mjs";
-  tsc --strict   exit 0
-  node           ERR_PACKAGE_PATH_NOT_EXPORTED
+  with @types/markdown-it@14   tsc --strict exit 0, node ERR_PACKAGE_PATH_NOT_EXPORTED
+  without it                   tsc --strict exit 1, TS2307
 ```
 
-It also still declares `StateBlock#ddIndent`, which 15 removed.
-
-**Open decision.** `docs/PLAN.md` §"markdown-it 15.0.0 is the pick" already
-records that v15 ships first-party types and `@types/markdown-it` is
-obsolete. The 1d brief requires it anyway — line 37, and exit criterion 19.
-Those two disagree, and PLAN.md is the one that matches the measurement.
-Dropping the dependency removes the trap and loses nothing, but it changes a
-stated exit criterion, so it is Nick's call, not the phase's.
+Both rows are measured, the second after the uninstall — the failing compile
+is what proves the trap is gone rather than merely unused. `@types` 14 also
+still declares `StateBlock#ddIndent`, which 15 removed.
 
 ## Known advisories
 
