@@ -55,6 +55,21 @@ test("an attribute value cannot break out of its quotes", () => {
   assert.strictEqual(single.split("'").length - 1, 2);
 });
 
+test("all five escaped characters survive every quoted position", () => {
+  const payload = "&<>\"'";
+  const escaped = "&amp;&lt;&gt;&quot;&#39;";
+
+  assert.strictEqual(html`<p>${payload}</p>`.value, `<p>${escaped}</p>`);
+  assert.strictEqual(
+    html`<a title="${payload}"></a>`.value,
+    `<a title="${escaped}"></a>`,
+  );
+  assert.strictEqual(
+    html`<a title='${payload}'></a>`.value,
+    `<a title='${escaped}'></a>`,
+  );
+});
+
 test("an object is stringified and then escaped", () => {
   const withToString = { toString: () => "<b>x</b>" };
 
