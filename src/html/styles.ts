@@ -538,7 +538,8 @@ main > h1 {
   color: var(--ink);
   text-decoration: none;
 }
-.home:hover {
+.home:hover,
+.home:focus-visible {
   text-decoration: underline;
 }
 
@@ -555,6 +556,10 @@ main > h1 {
 }
 .tree .row {
   grid-template-columns: minmax(0, 1fr);
+}
+/* no click target yet, so the hover wash would be a false affordance */
+.tree .row:hover {
+  background: none;
 }
 .showall {
   margin: var(--s3) 0 0;
