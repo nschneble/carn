@@ -49,6 +49,11 @@ test("BRAND.md's token block is in the stylesheet verbatim", () => {
   assert.ok(componentFence, "BRAND.md has no component fence");
 
   assert.strictEqual(tokenFence, tokens);
+  assert.strictEqual(
+    componentFence,
+    components,
+    "a rule was added inside the component block instead of after it",
+  );
   assert.ok(
     stylesheet.includes(tokenFence),
     "the stylesheet has drifted from BRAND.md's token block",

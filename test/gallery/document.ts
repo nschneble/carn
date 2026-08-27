@@ -3,9 +3,16 @@
 import { html } from "../../src/html/index.js";
 import { stylesheet } from "../../src/html/styles.js";
 import type { Theme } from "../../src/html/theme.js";
+import { type HeaderImage, headerMarkup } from "../../src/repos/header.js";
+import { wordmark } from "../../src/repos/wordmark.js";
 
 const hoverSimulation = `.row.is-hover {
   background: var(--sunk);
+}`;
+
+const figureFit = `figure {
+  max-width: 360px;
+  margin: var(--s4) 0;
 }`;
 
 const chevron = html`<svg
@@ -133,6 +140,48 @@ const tags = html`<section>
   <p><span class="tag">Open</span> <span class="tag tag--quiet">Merged</span></p>
 </section>`;
 
+function swatch(fill: string): string {
+  const art = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 400"><rect width="1600" height="400" fill="${fill}"/><circle cx="1400" cy="200" r="150" fill="black" fill-opacity="0.35"/></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(art)}`;
+}
+
+const committed: HeaderImage = {
+  path: ".carn/header.png",
+  oid: "0".repeat(40),
+  bytes: 4096,
+};
+const darkOnly: HeaderImage = {
+  path: ".carn/header-dark.png",
+  oid: "1".repeat(40),
+  bytes: 4096,
+};
+
+const source = (image: HeaderImage) =>
+  swatch(image.path === ".carn/header-dark.png" ? "#2f2140" : "#f0c8dc");
+
+const identity = html`<section>
+  <h2 class="t-l">Repo identity</h2>
+  <p class="t-label">Generated wordmark</p>
+  ${["linklater", "carn", "gelatinous-cube", "a-very-long-repo-name", "wm"].map(
+    (name) =>
+      html`<figure>${wordmark(name)}<figcaption class="t-micro">${name}</figcaption></figure>`,
+  )}
+  <p class="t-label">Committed header, both slots</p>
+  ${headerMarkup({
+    name: "linklater",
+    header: { light: committed, dark: committed },
+    theme: null,
+    src: source,
+  })}
+  <p class="t-label">Dark header only, wordmark in light</p>
+  ${headerMarkup({
+    name: "linklater",
+    header: { light: "wordmark", dark: darkOnly },
+    theme: null,
+    src: source,
+  })}
+</section>`;
+
 const body = html`<body>
   <header>
     <a class="skip" href="#main">Skip to content</a>
@@ -140,7 +189,7 @@ const body = html`<body>
   </header>
   <main id="main" tabindex="-1">
     <h1 class="t-xl">Linklater</h1>
-    ${type}${buttons}${chips}${rows}${fields}${meta}${tags}
+    ${type}${buttons}${chips}${rows}${fields}${meta}${tags}${identity}
   </main>
 </body>`;
 
@@ -159,6 +208,7 @@ ${open.value}
 <style>
 ${stylesheet}
 ${hoverSimulation}
+${figureFit}
 </style>
 </head>
 ${body.value}

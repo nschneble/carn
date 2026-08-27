@@ -459,4 +459,30 @@ export const components = `body {
   }
 }`;
 
-export const stylesheet = `${faces}\n${tokens}\n${components}\n`;
+export const identity = `.hdr {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 1;
+  object-fit: cover;
+}
+.mark {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hdr-light {
+  display: none;
+}
+.hdr-dark {
+  display: block;
+}
+@media (prefers-color-scheme: light) {
+  .hdr-light {
+    display: block;
+  }
+  .hdr-dark {
+    display: none;
+  }
+}`;
+
+export const stylesheet = `${faces}\n${tokens}\n${components}\n${identity}\n`;
