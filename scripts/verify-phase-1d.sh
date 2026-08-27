@@ -237,7 +237,7 @@ check_runner() {
 contract() {
   local number=$1 title=$2 expected=$3 lead=$4
   shift 4
-  local files=() args=() item patterns=0
+  local files=() args=() titles=() item patterns=0
   for item in "$@"; do
     if [ "$item" = "--" ]; then
       patterns=1
@@ -247,11 +247,23 @@ contract() {
       files+=("dist/test/contract/$item.contract.js")
     else
       args+=(--test-name-pattern "^$item\$")
+      titles+=("$item")
     fi
   done
 
   if ! check_runner; then
     record FAIL "$number" "$title" "the test runner control did not report one pass and one failure; it cannot gate"
+    return 1
+  fi
+
+  # a name-pattern matching nothing still reports the file itself as one
+  # passing subtest, so a renamed or deleted test would pass silently
+  local missing=()
+  for item in "${titles[@]+"${titles[@]}"}"; do
+    grep -qF "$item" "${files[@]}" || missing+=("$item")
+  done
+  if [ "${#missing[@]}" -gt 0 ]; then
+    record FAIL "$number" "$title" "named test no longer exists: ${missing[*]}"
     return 1
   fi
 
