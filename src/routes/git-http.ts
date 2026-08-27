@@ -27,12 +27,15 @@ export const refusals = {
   badName: "That's not a valid repo name. Check the URL and try again.",
   noRepo: (name: string) =>
     `There's no repo named ${name}. Push to it over SSH to create it.`,
-  noHttpPush:
+  noHttpPush: (host: string, repo: string) =>
     "This server takes pushes over SSH, not HTTP. " +
-    "Set your remote to git@<host>:<repo> and push again.",
+    `Set your remote to git@${host}:${repo} and push again.`,
   smartOnly:
     "This server speaks the smart HTTP protocol only. " +
     "Clone with a git client rather than a browser.",
+  wrongBody:
+    "This request's body isn't a git-upload-pack request. " +
+    "Use git fetch or git clone to reach this endpoint.",
   unavailable: "That request failed on the server. Try again shortly.",
 };
 
@@ -208,7 +211,11 @@ async function advertise(
   const service = request.query.service;
 
   if (service === "git-receive-pack") {
-    refuse(reply, 403, refusals.noHttpPush);
+    refuse(
+      reply,
+      403,
+      refusals.noHttpPush(request.hostname, request.params.repo),
+    );
     return;
   }
 
@@ -238,7 +245,7 @@ async function uploadPack(
 ): Promise<void> {
   const stdin = bodyStream(request);
   if (stdin === null) {
-    refuse(reply, 415, refusals.smartOnly);
+    refuse(reply, 415, refusals.wrongBody);
     return;
   }
 
@@ -292,7 +299,11 @@ export function gitHttpRoutes(app: FastifyInstance): void {
     });
   });
 
-  app.post("/r/:repo/git-receive-pack", (_request, reply) => {
-    refuse(reply, 403, refusals.noHttpPush);
+  app.post<RepoRoute>("/r/:repo/git-receive-pack", (request, reply) => {
+    refuse(
+      reply,
+      403,
+      refusals.noHttpPush(request.hostname, request.params.repo),
+    );
   });
 }

@@ -50,27 +50,33 @@ function assertRefusal(
   }
 }
 
-test("the advertisement refuses receive-pack and names SSH", async () => {
+test("the advertisement refuses receive-pack, names SSH, and interpolates the real remote", async () => {
   const response = await inject({
     method: "GET",
     url: "/r/demo/info/refs?service=git-receive-pack",
+    headers: { host: "carn.example" },
   });
 
-  assertRefusal(response, 403, refusals.noHttpPush);
+  assertRefusal(response, 403, refusals.noHttpPush("carn.example", "demo"));
   assert.match(response.body, /SSH/);
+  assert.match(response.body, /git@carn\.example:demo/);
 });
 
 // a stock git push stops at the GET above, so nothing else reaches this
-test("the receive-pack POST refuses and names SSH", async () => {
+test("the receive-pack POST refuses, names SSH, and interpolates the real remote", async () => {
   const response = await inject({
     method: "POST",
     url: "/r/demo/git-receive-pack",
-    headers: { "content-type": "application/x-git-receive-pack-request" },
+    headers: {
+      host: "carn.example",
+      "content-type": "application/x-git-receive-pack-request",
+    },
     payload: "0000",
   });
 
-  assertRefusal(response, 403, refusals.noHttpPush);
+  assertRefusal(response, 403, refusals.noHttpPush("carn.example", "demo"));
   assert.match(response.body, /SSH/);
+  assert.match(response.body, /git@carn\.example:demo/);
 });
 
 test("the advertisement refuses a missing or unknown service", async () => {
@@ -98,7 +104,7 @@ test("upload-pack refuses a body that is not a git request", async () => {
       payload,
     });
 
-    assertRefusal(response, 415, refusals.smartOnly);
+    assertRefusal(response, 415, refusals.wrongBody);
   }
 });
 
@@ -106,8 +112,9 @@ test("the refusals explain what happened and what to do", () => {
   const lines = [
     refusals.badName,
     refusals.noRepo("demo"),
-    refusals.noHttpPush,
+    refusals.noHttpPush("carn.example", "demo"),
     refusals.smartOnly,
+    refusals.wrongBody,
     refusals.unavailable,
   ];
 
@@ -117,5 +124,9 @@ test("the refusals explain what happened and what to do", () => {
   }
 
   assert.match(refusals.noRepo("demo"), /no repo named demo/);
-  assert.match(refusals.noHttpPush, /git@<host>:<repo>/);
+  assert.match(
+    refusals.noHttpPush("carn.example", "demo"),
+    /git@carn\.example:demo/,
+  );
+  assert.match(refusals.wrongBody, /git-upload-pack/);
 });

@@ -188,8 +188,7 @@ ephemeral port, all cleaned up through one trap. Read
     surviving `upload-pack` process for the scratch repo root
 14. The concurrency limit is shared: `gitConcurrency` has exactly one
     exported definition, neither transport builds a second `Semaphore`, and
-    both reach the one limit only through `spawnGit`, never by importing
-    the constant directly
+    both reach the one limit through `spawnGit`
 15. `git grep` finds no shell-enabled spawn — **use 1a's scoped form**,
     path-limited to `src test scripts prisma`, with a positive control.
     The literal string appears in CLAUDE.md and in these briefs, so an
