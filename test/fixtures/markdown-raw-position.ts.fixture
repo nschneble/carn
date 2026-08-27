@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Positive control for test/contract/markdown.contract.ts. The first three
+// functions put rendered markdown in an attribute; leave them wrong. Not a
+// .ts file: tsconfig compiles test/**/*.ts into dist, which npm publishes.
+
+import { html, raw } from "../../src/html/index.js";
+import { renderMarkdown } from "../../src/markdown/render.js";
+
+export function plantedDoubleQuoted(readme: string) {
+  return html`<article data-readme="${renderMarkdown(readme)}"></article>`;
+}
+
+export function plantedSingleQuoted(readme: string) {
+  return html`<article data-readme='${raw(readme)}'></article>`;
+}
+
+export function plantedBareValue(readme: string) {
+  return html`<article title=${renderMarkdown(readme)}></article>`;
+}
+
+export function safeAlongside(readme: string, name: string) {
+  return html`<article><h1>${name}</h1>${renderMarkdown(readme)}</article>`;
+}

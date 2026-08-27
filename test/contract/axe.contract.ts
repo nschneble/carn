@@ -9,9 +9,9 @@ import assert from "node:assert";
 import { createRequire } from "node:module";
 import { after, before, test } from "node:test";
 import type { AxeResults, Result } from "axe-core";
-import MarkdownIt from "markdown-it";
 import { type Browser, chromium } from "playwright";
 import { stylesheet } from "../../src/html/styles.js";
+import { renderMarkdown } from "../../src/markdown/render.js";
 import { galleryDocument } from "../gallery/document.js";
 import { renderPaths } from "../support/render-paths.js";
 
@@ -90,9 +90,7 @@ const tableSource = `| Ref | Kind | Note |
 | \`14-conflict-output\` | branch | ahead by 3 |
 `;
 
-const renderedTable = new MarkdownIt("commonmark", { html: false })
-  .enable("table")
-  .render(tableSource);
+const renderedTable = renderMarkdown(tableSource).value;
 
 const readmeTable = `<!doctype html>
 <html lang="en" data-theme="dark">
