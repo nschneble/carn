@@ -117,12 +117,11 @@ All of these are non-negotiable:
 - Use **plumbing, not porcelain**: `git diff-tree -r -M`, never `git diff`.
 - `ls-tree -z --long` for trees. `for-each-ref` for branch lists.
 - **Pool long-lived `git cat-file --batch` per repo.** Recycle after push.
-- Set a hard timeout, and kill the child when the caller goes away. Over
-  SSH that is the channel's `close`. Over HTTP it is **`reply.raw`'s
-  `close`, guarded by `!writableFinished`** — never `request.raw`, whose
-  `close` fires once the request body is consumed, hundreds of
-  milliseconds before the response finishes, and fires identically
-  whether the client is still there or not.
+- Set a hard timeout and kill the child when the caller goes away. Over SSH
+  that's the channel's `close`. Over HTTP it's `reply.raw`'s `close`,
+  guarded by `!writableFinished`; never `request.raw`, whose `close` fires
+  once the request body is consumed, hundreds of ms before the response
+  finishes, and fires identically whether the client is still there or not.
 - Cap global concurrency with a semaphore.
 
 ## Verified gotchas

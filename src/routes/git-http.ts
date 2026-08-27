@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//
-// Refusals answer as text/plain because git's show_http_message()
+
+// refusals answer as text/plain because git's show_http_message()
 // drops a server message sent as any other type
 
 import { PassThrough, pipeline, Readable } from "node:stream";

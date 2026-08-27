@@ -51,8 +51,8 @@ function assertRefusal(
   }
 }
 
-// the Host header is attacker-controlled on an anonymous route, so the
-// refusal must use the configured host, never reflect what the client sent
+// host header is attacker-controlled on an anonymous route, so the refusal
+// must use the configured host + never reflect what the client sent
 test("the advertisement refuses receive-pack, names SSH, and uses the configured host", async () => {
   const response = await inject({
     method: "GET",
