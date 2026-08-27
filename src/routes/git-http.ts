@@ -8,8 +8,13 @@ import { createGunzip } from "node:zlib";
 
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
+import { config } from "../config.js";
 import { spawnGit } from "../git/spawn.js";
-import { type ResolvedRepo, resolveRepo } from "../repos/resolve.js";
+import {
+  namePattern,
+  type ResolvedRepo,
+  resolveRepo,
+} from "../repos/resolve.js";
 
 const timeoutMs = 600_000;
 
@@ -27,9 +32,11 @@ export const refusals = {
   badName: "That's not a valid repo name. Check the URL and try again.",
   noRepo: (name: string) =>
     `There's no repo named ${name}. Push to it over SSH to create it.`,
-  noHttpPush: (host: string, repo: string) =>
+  noHttpPush: (host: string, repo: string | null) =>
     "This server takes pushes over SSH, not HTTP. " +
-    `Set your remote to git@${host}:${repo} and push again.`,
+    (repo === null
+      ? `Set your remote to git@${host} and push again.`
+      : `Set your remote to git@${host}:${repo} and push again.`),
   smartOnly:
     "This server speaks the smart HTTP protocol only. " +
     "Clone with a git client rather than a browser.",
@@ -61,6 +68,12 @@ function noCache(reply: FastifyReply, contentType: string): FastifyReply {
 
 function refuse(reply: FastifyReply, status: number, message: string): void {
   noCache(reply, "text/plain").code(status).send(`${message}\n`);
+}
+
+// noHttpPush runs before lookup(), so an unvalidated name would otherwise
+// reach show_http_message() on the client's own terminal
+function safeRepoName(name: string): string | null {
+  return namePattern.test(name) ? name : null;
 }
 
 // git splits GIT_PROTOCOL on ":" and takes the highest version it knows
@@ -214,7 +227,7 @@ async function advertise(
     refuse(
       reply,
       403,
-      refusals.noHttpPush(request.hostname, request.params.repo),
+      refusals.noHttpPush(config.host, safeRepoName(request.params.repo)),
     );
     return;
   }
@@ -303,7 +316,7 @@ export function gitHttpRoutes(app: FastifyInstance): void {
     refuse(
       reply,
       403,
-      refusals.noHttpPush(request.hostname, request.params.repo),
+      refusals.noHttpPush(config.host, safeRepoName(request.params.repo)),
     );
   });
 }
