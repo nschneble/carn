@@ -317,11 +317,13 @@ else
 fi
 
 # 12
+# the budget catches unauthorised creep, so a later phase's authorised
+# additions belong in it: 1d's four are named in docs/phases/1d-design.md
 if node -e '
   const pkg = JSON.parse(require("fs").readFileSync("package.json", "utf8"))
   const budget = {
-    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2"],
-    devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli", "@biomejs/biome", "@types/ssh2"],
+    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2", "markdown-it"],
+    devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli", "@biomejs/biome", "@types/ssh2", "axe-core", "playwright", "tuffgal"],
   }
   const over = []
   for (const [field, allowed] of Object.entries(budget)) {

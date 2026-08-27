@@ -690,11 +690,13 @@ else
 fi
 
 # 17
+# the budget catches unauthorised creep, so a later phase's authorised
+# additions belong in it: 1d's four are named in docs/phases/1d-design.md
 if node -e '
   const pkg = JSON.parse(require("fs").readFileSync("package.json", "utf8"))
   const budget = {
-    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2"],
-    devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli", "@biomejs/biome", "@types/ssh2"],
+    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2", "markdown-it"],
+    devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli", "@biomejs/biome", "@types/ssh2", "axe-core", "playwright", "tuffgal"],
   }
   const over = []
   for (const [field, allowed] of Object.entries(budget)) {
@@ -702,15 +704,15 @@ if node -e '
       if (!allowed.includes(name)) over.push(`${name} (${field})`)
     }
   }
-  if (over.length) { console.error("1c adds none, but found: " + over.join(", ")); process.exit(1) }
+  if (over.length) { console.error("outside 1b plus the four 1d adds: " + over.join(", ")); process.exit(1) }
   for (const name of ["ssh2", "@types/ssh2"]) {
     const field = name.startsWith("@types/") ? "devDependencies" : "dependencies"
     if (!pkg[field]?.[name]) { console.error(`${name} is not in ${field}`); process.exit(1) }
   }
 ' > "$work/17" 2>&1; then
-  record PASS 17 "dependencies are unchanged from 1b"
+  record PASS 17 "dependencies are 1b's plus 1d's four, and 1c adds none"
 else
-  record FAIL 17 "dependencies are unchanged from 1b" "$(cat "$work/17")"
+  record FAIL 17 "dependencies are 1b's plus 1d's four, and 1c adds none" "$(cat "$work/17")"
 fi
 
 # 18
