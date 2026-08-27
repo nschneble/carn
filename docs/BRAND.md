@@ -16,6 +16,7 @@ states — explicit dark, explicit light, and unstamped system default — resol
 
 ```css
 :root {
+  color-scheme: dark;
   /* ground → surface → sunk */
   --ground: #0e0f0f;
   --surface: #171919;
@@ -24,13 +25,14 @@ states — explicit dark, explicit light, and unstamped system default — resol
   --ink: #f2f4f4;
   --ink-soft: #c6caca;
   --ink-mid: #8e9494;
-  --ink-faint: #6a7070;
+  --ink-faint: #828888;
   /* rules */
   --rule: #2b2e2e;
   --rule-soft: #212424;
   /* brand */
-  --accent: #ff4d95; /* 6.19:1 on ground — large type, fills, rules */
-  --accent-text: #ff6ea8; /* 7.39:1 — inline links, small text */
+  --accent: #ff4d95; /* 6.17:1 on ground, 5.21 on sunk — large type, rules */
+  --accent-text: #ff6ea8; /* 7.36:1 on ground, 6.22 on sunk — links, small text */
+  --accent-fill: var(--accent); /* the pink a small label sits on — see 02 */
   --accent-wash: #331020;
   --on-accent: #0e0f0f;
 
@@ -53,35 +55,46 @@ states — explicit dark, explicit light, and unstamped system default — resol
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
+    color-scheme: light;
     --ground: #f4f6f6;
     --surface: #ffffff;
     --sunk: #e9eded;
     --ink: #0e0f0f;
     --ink-soft: #3a3e3e;
-    --ink-mid: #6e7473;
-    --ink-faint: #9aa0a0;
+    --ink-mid: #5c6261;
+    --ink-faint: #666c6b;
     --rule: #dce0e0;
     --rule-soft: #e7eaea;
     --accent: #e7156c;
     --accent-text: #c9105c;
+    --accent-fill: var(--accent-text);
     --accent-wash: #fbe2ed;
     --on-accent: #ffffff;
   }
 }
 :root[data-theme="light"] {
+  color-scheme: light;
   --ground: #f4f6f6;
   --surface: #ffffff;
   --sunk: #e9eded;
   --ink: #0e0f0f;
   --ink-soft: #3a3e3e;
-  --ink-mid: #6e7473;
-  --ink-faint: #9aa0a0;
+  --ink-mid: #5c6261;
+  --ink-faint: #666c6b;
   --rule: #dce0e0;
   --rule-soft: #e7eaea;
   --accent: #e7156c;
   --accent-text: #c9105c;
+  --accent-fill: var(--accent-text);
   --accent-wash: #fbe2ed;
   --on-accent: #ffffff;
+}
+@media (prefers-contrast: more) {
+  /* doubled :root outranks the theme selectors above */
+  :root:root {
+    --rule: var(--ink-mid);
+    --rule-soft: var(--ink-faint);
+  }
 }
 ```
 
@@ -103,6 +116,38 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* --- focus --- */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- utilities --- */
+.vh,
+.skip:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.skip {
+  display: inline-block;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 14px 18px;
+  text-decoration: none;
+}
+
 /* --- type roles --- */
 .t-xl {
   font-variation-settings:
@@ -112,6 +157,7 @@ body {
   line-height: 0.92;
   letter-spacing: -0.035em;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 .t-l {
   font-variation-settings:
@@ -121,6 +167,7 @@ body {
   line-height: 0.97;
   letter-spacing: -0.03em;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 .t-m {
   font-variation-settings:
@@ -185,9 +232,9 @@ body {
   font-size: 12px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--on-accent);
-  border: 1px solid var(--accent);
+  border: 1px solid var(--accent-fill);
   padding: 14px 18px;
   text-decoration: none;
   cursor: pointer;
@@ -239,17 +286,23 @@ body {
   margin-bottom: var(--s2);
 }
 .field .box {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   background: var(--surface);
-  border: 1px solid var(--rule);
+  border: 1px solid var(--ink-mid);
+  border-radius: 0;
   padding: 13px 15px;
+  font-family: var(--f-display);
   font-variation-settings:
     "wdth" 100,
     "wght" 400;
   font-size: 15.5px;
   color: var(--ink);
 }
-.field .box.ph {
+.field .box::placeholder {
   color: var(--ink-faint);
+  opacity: 1;
 }
 .field .box--area {
   min-height: 104px;
@@ -268,24 +321,28 @@ body {
   gap: var(--s2);
 }
 .chip {
+  display: inline-block;
   font-family: var(--f-mono);
   font-size: 11px;
   letter-spacing: 0.05em;
   background: var(--sunk);
-  border: 1px solid var(--rule);
+  border: 1px solid var(--ink-mid);
   border-radius: 999px;
   padding: 8px 15px;
   color: var(--ink-soft);
-  cursor: pointer;
 }
-.chip[aria-pressed="true"] {
-  background: var(--accent);
-  border-color: var(--accent);
+/* current: weight and border width carry it when the fill is discarded */
+.chip--current {
+  background: var(--accent-fill);
+  border: 2px solid var(--accent-fill);
+  padding: 7px 14px;
+  font-weight: 500;
   color: var(--on-accent);
 }
 
 /* --- row (list item) --- */
 .row {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr;
   gap: 0 var(--s4);
@@ -306,15 +363,26 @@ body {
 }
 .row .nm {
   color: var(--ink);
+  text-decoration: none;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.row .nm::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.row .nm:focus-visible {
+  outline-offset: -2px;
+}
 .row.is-dir .nm {
   color: var(--accent-text);
 }
+/* lifts the two columns above the row-wide overlay so both stay selectable */
 .row .msg,
 .row .age {
+  position: relative;
   font-family: var(--f-mono);
   font-size: 10px;
   color: var(--ink-faint);
@@ -332,12 +400,13 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   border-top: 1px solid var(--ink);
+  margin: 0;
 }
 .meta > div {
   padding: var(--s3) var(--s4) var(--s3) 0;
   border-bottom: 1px solid var(--rule);
 }
-.meta h5 {
+.meta dt {
   font-family: var(--f-mono);
   font-size: 9.5px;
   font-weight: 500;
@@ -346,7 +415,7 @@ body {
   color: var(--ink-faint);
   margin: 0 0 5px;
 }
-.meta p {
+.meta dd {
   font-size: 13.5px;
   margin: 0;
   color: var(--ink-soft);
@@ -360,13 +429,35 @@ body {
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 5px 10px;
-  background: var(--accent);
+  padding: 4px 9px;
+  background: var(--accent-fill);
+  border: 1px solid var(--accent-fill);
   color: var(--on-accent);
 }
 .tag--quiet {
   background: var(--sunk);
+  border-color: var(--sunk);
   color: var(--ink-mid);
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-color: Highlight;
+  }
+  .btn {
+    border-color: ButtonText;
+  }
+  .btn[aria-disabled="true"] {
+    color: GrayText;
+    border-color: GrayText;
+  }
+  .chip,
+  .tag {
+    border-color: CanvasText;
+  }
+  .chip--current {
+    border-color: Highlight;
+  }
 }
 ```
 
@@ -386,33 +477,45 @@ The Montréal rule: the accent lives wherever it can and drops wherever a machin
 
 _One accent · two ramps · measured contrast_
 
-Nine tokens. There is no secondary brand colour and no semantic palette — state is carried by the accent, by weight, and by words.
+There is no secondary brand colour and no semantic palette — state is carried by the accent, by weight, and by words.
+
+**Every ratio is measured against all three grounds.** The two shown below are the best case and the binding one: `--sunk` is the hover and focus wash, so it sits under a row's text whenever the pointer or the caret is there, and it is always the darkest ground in dark mode and the lightest in light. Quoting a token against `--ground` alone reads it high — by 0.4 in light and up to 1.0 in dark on the tokens near the threshold. The contract test asserts every pair on ground, surface, _and_ sunk.
 
 ### Dark — the default
 
 - `--ground` — #0E0F0F
 - `--surface` — #171919
 - `--sunk` — #1E2121
-- `--ink` — #F2F4F4 · 17.4:1
-- `--ink-mid` — #8E9494 · 6.3:1
-- `--accent` — #FF4D95 · 6.19:1
-- `--accent-text` — #FF6EA8 · 7.39:1
+- `--ink` — #F2F4F4 · 17.39:1 on ground, 14.69:1 on sunk
+- `--ink-soft` — #C6CACA · 11.61:1 on ground, 9.81:1 on sunk
+- `--ink-mid` — #8E9494 · 6.23:1 on ground, 5.26:1 on sunk
+- `--ink-faint` — #828888 · 5.33:1 on ground, 4.50:1 on sunk
+- `--accent` — #FF4D95 · 6.17:1 on ground, 5.21:1 on sunk
+- `--accent-text` — #FF6EA8 · 7.36:1 on ground, 6.22:1 on sunk
 
 ### Light — the alternate
 
 - `--ground` — #F4F6F6
 - `--surface` — #FFFFFF
 - `--sunk` — #E9EDED
-- `--ink` — #0E0F0F · 17.4:1
-- `--ink-mid` — #6E7473 · 4.9:1
-- `--accent` — #E7156C · 4.11:1
-- `--accent-text` — #C9105C · 5.22:1
+- `--ink` — #0E0F0F · 17.70:1 on ground, 16.27:1 on sunk
+- `--ink-soft` — #3A3E3E · 9.99:1 on ground, 9.18:1 on sunk
+- `--ink-mid` — #5C6261 · 5.74:1 on ground, 5.27:1 on sunk
+- `--ink-faint` — #666C6B · 4.94:1 on ground, 4.54:1 on sunk
+- `--accent` — #E7156C · 4.10:1 on ground, 3.77:1 on sunk
+- `--accent-text` — #C9105C · 5.22:1 on ground, 4.80:1 on sunk
 
-> **TWO PINKS, AND WHY**
+`--ink-faint` is a text colour in both themes and clears 4.5:1 on every ground in both. It has no headroom to spare: dark `#828888` measures 4.5001:1 on `--sunk`. Darkening `--sunk`, or laying anything translucent over it, breaks the token rather than dimming it.
+
+> **TWO PINKS, SPLIT BY CONTRAST REQUIREMENT**
 >
-> **#E7156C measures 4.11:1** on the light ground — AA for large text (3:1), short of the 4.5:1 body threshold. Light mode therefore carries a darkened **#C9105C at 5.22:1** for inline links and small type. Dark needs no split (**#FF4D95 is 6.19:1**); its second token exists so both themes have the same shape.
+> The split is not large elements versus inline text. It is **large type versus small type**, which is a contrast threshold, not a role. `--accent` carries anything that only owes 3:1 — headline type, rules, the focus ring. `--accent-text` carries anything that owes 4.5:1.
 >
-> No single colour can clear 4.5:1 against both grounds — it would need luminance ≤0.165 and ≥0.195 at once. Two tokens are mandatory for any brand colour on any two-theme site.
+> That is why **`--accent-text` used as a fill is correct, not an exception**. A button label is small text, so the fill behind it owes 4.5:1 against the label — and in light mode only `--accent-text` delivers it. `--accent-fill` names that choice once in the token block: `var(--accent)` in dark, `var(--accent-text)` in light. `.btn` and `.tag` use it; nothing else does.
+>
+> **#E7156C measures 4.10:1** on the light ground — AA for large text (3:1), short of the 4.5:1 body threshold, and 3.77:1 on `--sunk`. Light mode therefore carries a darkened **#C9105C at 5.22:1** for inline links, small type, and fills. Dark needs no split (**#FF4D95 is 6.17:1**, 5.21:1 on `--sunk`); its second token exists so both themes have the same shape.
+>
+> No single colour can clear 4.5:1 against both grounds — it would need luminance ≤0.165 and ≥0.196 at once. Two tokens are mandatory for any brand colour on any two-theme site.
 
 ### Where the accent is allowed
 
@@ -421,7 +524,7 @@ Nine tokens. There is no secondary brand colour and no semantic palette — stat
 - Directory names in a file list — the only accent on a repo page
 - Inline links (the `-text` variant)
 - Primary buttons, filled
-- The selected chip
+- The chip carrying the current value
 - One layer of a generated wordmark
 - Focus rings
 - The open/merged state tag
@@ -440,7 +543,7 @@ No green-for-good, red-for-bad palette. A merged PR reads Merged and a closed on
 
 _Archivo variable · Carn Mono · self-hosted_
 
-Two families, six roles. Archivo carries identity; Carn Mono carries anything a machine produced.
+Two families, eight roles. Archivo carries identity; Carn Mono carries anything a machine produced.
 
 - **t-xl · identity** — Linklater
 - **t-l · section** — Merge button
@@ -471,6 +574,8 @@ Archivo has no `smcp`, so filenames use compensated synthetic small caps: lowerc
 
 Measured against drawn small caps: stem 1.004, width 0.870, advance 0.900, height 0.790. Three details are load-bearing — `letter-spacing` stays, because real small caps keep _full-size_ sidebearings; `"case" 1` lifts `. - /` to cap alignment; and the DOM keeps the real lowercase, since `text-transform` is display-only by spec.
 
+Two rules about the markup. **`lang="en"` goes on the filename element**, once — the `<a class="nm">` or whatever carries `.t-item` — and the `.sc` spans inherit it. Under Turkish, `i` uppercases to `İ`. And **no whitespace between a plain run and an `.sc` span**: `README.<span class="sc">md</span>` is one word, and a newline or indent inside it becomes a space in the accessible name, in the clipboard, and in find-in-page. Never give an `.sc` span an `aria-label` — the DOM's true lowercase is already the right accessible name.
+
 When the font pipeline exists, replace all of it with a built **ArchivoSC**. Archivo is OFL with no Reserved Font Name, so splicing in a real `smcp` table is permitted, and the CSS collapses to `font-variant-caps: small-caps`.
 
 ### Fonts are self-hosted
@@ -485,7 +590,7 @@ _Hairlines · one spacing scale · no boxes around content_
 - **Measure** — 66ch for prose. Never wider.
 - **Page** — 1160px max, 22px gutters.
 - **Content column** — `minmax(0,1fr)` plus a 168px sidebar above 820px. Single column below.
-- **Rules** — 1px. `--rule` between sections, `--rule-soft` between rows, `--ink` under a heading that opens a table.
+- **Rules** — 1px. `--rule` between sections, `--rule-soft` between rows, `--ink` under a heading that opens a table, `--ink-mid` around a field or a chip, where the hairline is the component's only boundary. Under `prefers-contrast: more` the first two move onto the ink ramp.
 - **Radius** — 0 everywhere. The single exception is the chip, which is a full pill.
 - **Shadow** — None. Ever.
 - **Motion** — None. Hover and focus change instantly. Speed is the smoothness.
@@ -511,7 +616,11 @@ _Solid, ghost, unavailable, block. The chevron is the only ornament in the syste
 
 **Form changes, not just colour.** The fill drops away, the border goes dashed, the label recedes, and **the chevron disappears**. Since the chevron means "this moves you forward," removing it is a shape signal that survives greyscale, low vision, and every kind of colour blindness. Opacity alone fails all three.
 
-Use `aria-disabled="true"` rather than the `disabled` attribute, so the control stays focusable and a screen-reader user can find it and hear why.
+Use `aria-disabled="true"` rather than the `disabled` attribute, so the control stays focusable and a screen-reader user can find it and hear why. Three rules come with it:
+
+- **Always a `<button type="button">`.** `aria-disabled` on an `<a href>` announces the state and then navigates anyway.
+- **Point `aria-describedby` at the reason** whenever the page carries one — which, per the rule below, it usually does. Hearing that _Merge_ is unavailable without hearing _why_ is the failure this attribute was chosen to avoid.
+- **The chevron is `aria-hidden="true" focusable="false" fill="currentColor"`.** It is ornament, so it stays out of the accessibility tree and out of the tab order, and it recedes with the label rather than staying accent-pink.
 
 > **PREFER EXPLAINING OVER DISABLING**
 >
@@ -531,17 +640,45 @@ With no client JS a form submit is a browser navigation — the button cannot ch
 
 _Boxed fields with the label above in mono. Chips for any enum with fewer than six options — cheaper to hit than a select, and readable without opening anything._
 
+The box is a real `<input>` or `<textarea>` with a `<label for>`, and its placeholder is styled with `::placeholder`, never a class on a mocked-up `<div>`. Its border is `--ink-mid`, not `--rule`: a hairline at 1.2–1.4:1 is fine between sections, but it is the _only_ visual boundary of a text input, and 1.4.11 wants 3:1 for that. Same for the chip.
+
+### Chip
+
+**Static, and never a toggle.** The web UI is read-only, so a chip displays an enum value — it does not select one. No `aria-pressed`, no `cursor: pointer`, no radio group, no script.
+
+The chip carrying the current value takes `.chip--current`, a modifier class rather than an ARIA state. It differs from a plain chip by **weight and border width as well as fill**, because a difference in colour alone fails the greyscale rule and is erased outright by forced-colors mode, which discards the accent and keeps the 2px border.
+
 ### Row
 
 _Full-row hit area. Directories in accent with a trailing slash, so the distinction survives greyscale. Sixteen rows before "Show all"._
+
+**The trailing slash is real text in the DOM**, never `content: "/"`. Generated content cannot be selected, is not found by Ctrl-F, and vanishes with CSS off — which is every property the slash exists to have.
+
+**`.nm` is the anchor itself**, not a wrapper around one, and the full-row hit area is its `::after` overlay stretched across the positioned `.row`. Wrapping it would put an `overflow: hidden` ancestor between the link and its focus ring; an element's own `overflow` never clips its own outline, an ancestor's does. The ring is drawn with `outline-offset: -2px` so it lands inside the row instead of bleeding into the next grid column.
+
+`.msg` and `.age` sit above the overlay and stay directly selectable. Clicking the commit subject therefore falls through rather than following the row link — kept deliberately, because in 1e the subject and the age become links to the commit, which a whole-row anchor would make impossible.
 
 ### Meta block
 
 _Same component on every show view; only the keys change. Issue: Context / Wanted / Epic / Branch. PR: Source / Target / Strategy / Mergeability. Commit: Author / Parents / Changed / Signed._
 
+It is a `<dl>` of `<div>`-wrapped `<dt>`/`<dd>` pairs. A key is not a heading: an `<h5>` under a show page's `<h1>` skips three levels and breaks heading order on every one of these views at once.
+
 ### Tag
 
 _Filled for live states, quiet for terminal ones. No colour coding._
+
+Both variants carry a 1px border in their own fill colour — invisible in either theme, and the thing forced-colors mode has left to draw once it discards the fill. The word inside is what carries the state either way; a tag that loses its fill and keeps its border still reads _Merged_.
+
+### Focus, and the two utilities
+
+**One `:focus-visible` rule for the whole system:** a 2px `--accent` outline, offset 2px. `--accent` clears 3:1 on all three grounds in both themes, and the offset puts the ring on the ground rather than on top of a fill it would disappear into. **Never write `outline: none`**, anywhere, for anything.
+
+Two utility classes exist, and they are the only two the markup may use. `.vh` is visually-hidden text that stays in the accessible name — landmark labels, table captions, the word that tells a screen reader which chip is current. `.skip` is the same hiding, released on focus, for the skip link every page opens with; it targets `<main id="main" tabindex="-1">`. They are utilities because there is no component to attach them to, which is also why the list stops at two.
+
+### When the OS overrides the palette
+
+`forced-colors: active` throws away every colour in this file. What has to survive is the non-colour half of each signal, and the block at the end of the stylesheet is where that is spelled out: the unavailable button keeps its dashed border and its missing chevron, the current chip keeps its heavier border, the tag keeps the border it carries in its own fill colour, and the focus ring switches to `Highlight`. `prefers-contrast: more` is handled in the token block instead, by raising the two hairlines onto the ink ramp.
 
 ## 06 · Repo identity
 
