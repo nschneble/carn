@@ -40,7 +40,9 @@ Three details are load-bearing. **`letter-spacing` stays** — real small caps k
 
 > **REPLACE THIS WITH A REAL FONT WHEN THE PIPELINE EXISTS**
 >
-> Archivo is OFL with no Reserved Font Name, so splicing a genuine `smcp` table into it is permitted. Build **ArchivoSC** — instantiate the variable font at the base and at the compensated weight, scale the heavier caps to 79%, re-space them to keep full-size sidebearings, and merge the lookups into the existing GSUB so `kern`, `case`, and `ccmp` survive. The CSS then collapses to `font-variant-caps: small-caps` with no spans, no `text-transform`, and no Turkish or ß hazard.
+> Build the caps **into Carn Sans**, as `smcp` and `c2sc` — instantiate the variable font at the base and at the compensated weight, scale the heavier caps to 79%, re-space them to keep full-size sidebearings, and merge the lookups into the existing GSUB so `kern`, `case`, and `ccmp` survive. The CSS then collapses to `font-variant-caps: small-caps` with no spans, no `text-transform`, and no Turkish or ß hazard.
+>
+> A second family is the alternative and it loses on all three counts: another `@font-face`, another request on the page that already loads Carn Sans, and a `font-family` override on every small-caps run. The one thing that would reopen it is a measurement — if the added glyphs cost more on every page than a standalone file costs on the routes that set small caps. Small caps are used at one style today, so the drawn glyphs can be static and need no `gvar` deltas. See `fonts/README.md`.
 
 #### Reference
 

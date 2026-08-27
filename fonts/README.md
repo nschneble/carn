@@ -4,7 +4,7 @@
 
 Archivo 2.001, renamed to **Carn Sans**, axis-clamped and subset for Càrn. Self-hosted — not loaded from a CDN.
 
-- **54,816 B**, 286 glyphs of the upstream's 834, and 212 mapped codepoints
+- **54,612 B**, 286 glyphs of the upstream's 834, and 212 mapped codepoints
 - Axes: `wght` 400–900, `wdth` 100–125 (clamped from 100–900 / 62–125; the trimmed ranges are unused by the design and cost ~27 KB)
 - Unicode: Latin-1 + typographic punctuation, arrows, currency
 - OpenType features kept: `case` (lifts `. - /` to cap alignment — required by the small-caps rule), `kern`, `tnum` (tabular numerals for the age column), `ccmp`, `locl`, `liga`, `frac`, `zero`
@@ -30,8 +30,16 @@ n.setName("Carn Sans SemiBold", 1, 3, 1, 0x409)
 n.setName("2.001;NSCH;CarnSans-SemiBold", 3, 3, 1, 0x409)
 n.setName("Carn Sans SemiBold", 4, 3, 1, 0x409)
 n.setName("CarnSans-SemiBold", 6, 3, 1, 0x409)
+n.setName(
+    "Carn Sans is an axis-clamped, subset build of Archivo 2.001 and is "
+    "not the original font.",
+    10, 3, 1, 0x409,
+)
 n.setName("Carn Sans", 16, 3, 1, 0x409)
 n.setName("SemiBold", 17, 3, 1, 0x409)
+for record in n.names:
+    if record.nameID >= 256:
+        record.string = str(record).replace("Archivo", "CarnSans")
 f.save("renamed-sans.ttf")
 EOF
 
@@ -43,9 +51,13 @@ pyftsubset renamed-sans.ttf \
 
 Note `--layout-features+=` with the `+`. Using `=` wipes every default feature and leaves an empty GSUB table.
 
-The rename runs **after the clamp and before the subset**, and rewrites `name` IDs 1, 3, 4, 6, 16, and 17 — the family, unique, full, and PostScript names inside the binary, not just the output filename. Before the clamp would not stick: `varLib.instancer` prunes and rewrites the name table to reflect the new default instance, which is why the upstream family reads `Archivo SemiBold` here rather than `Archivo`. Only the name changes; the record structure is upstream's, so ID 1 keeps the default instance's weight the way upstream does. IDs 16 and 17 don't survive the subset, because `--name-IDs` doesn't list them.
+The rename runs **after the clamp and before the subset**, and rewrites `name` IDs 1, 3, 4, 6, 10, 16, and 17 — the family, unique, full, and PostScript names inside the binary, not just the output filename. Before the clamp would not stick: `varLib.instancer` prunes and rewrites the name table to reflect the new default instance, which is why the upstream family reads `Archivo SemiBold` here rather than `Archivo`. Only the name changes; the record structure is upstream's, so ID 1 keeps the default instance's weight the way upstream does. IDs 16 and 17 don't survive the subset, because `--name-IDs` doesn't list them.
 
-`--name-IDs+=` carries the Archivo Project Authors' trademark, foundry, designer, description, and licence records through the subset. The pyftsubset default keeps IDs 0–6 and drops all of them — which is what the previous build did, so those records were absent from the shipped file until this rebuilt it. They cost 324 B.
+The loop that follows catches the six `fvar` instance PostScript names, at IDs 270–275 here. A fixed list of IDs would be the wrong shape: `fvar` allocates them, so which IDs they land on is an artefact of the upstream build. **Scoping the loop to IDs ≥ 256 is what protects attribution** — copyright, trademark, foundry, designer, vendor URL, and licence are IDs 0, 7, 8, 9, 11, and 13, and a range excludes them structurally rather than by remembering to. The range is also complete: `fvar` may point `subfamilyNameID` at 2 or 17 and `postScriptNameID` at 6, but only for the default instance, and all three are rewritten by the `setName` calls above. Every other reference must be above 255.
+
+The upstream prefix is `ArchivoRoman`, not `Archivo`, so the instances become `CarnSansRoman-*` and stay distinct from ID 6 the way upstream keeps them distinct.
+
+`--name-IDs+=` carries the Archivo Project Authors' trademark, foundry, designer, description, and licence records through the subset. The pyftsubset default keeps IDs 0–6 and drops all of them. They cost 176 B.
 
 `recalcTimestamp=False` alone is not enough here. `varLib.instancer` re-stamps `head.modified` itself and has no flag to stop it, so the rename step copies the value back from the pinned upstream `Archivo.ttf`. Without both, two clean runs of this recipe produce different bytes. Same rule as the fixture repo's pinned commit dates.
 
@@ -53,8 +65,8 @@ The rename runs **after the clamp and before the subset**, and rewrites `name` I
 
 IBM Plex Mono 2.3, renamed to **Carn Mono** and subset for Càrn. Self-hosted — not loaded from a CDN.
 
-- **8,876 B** at 400 and **8,896 B** at 500, 256 glyphs and 209 mapped codepoints each
-- Two static files, not one variable file — Plex Mono ships per weight and has no `wght` axis
+- **8,816 B** at 400 and **8,880 B** at 500, 256 glyphs and 209 mapped codepoints each
+- Two static files, not one variable file — Plex Mono ships per weight and has no `wght` axis, and so no `fvar` table and no `name` record above ID 255 for the sans face's rename loop to reach
 - Unicode: the same `--unicodes=` request as Carn Sans, less three codepoints Plex Mono has no glyph for — see the delta below
 - OpenType features kept: `dnom`, `frac`, `numr`, `zero` (slashed zero, kept to match Carn Sans's recipe; nothing in `BRAND.md` enables it yet)
 - GPOS drops to nothing, which is correct here: the subset range has no combining marks for `mark` to position, and a monospace face has no kerning to keep
@@ -90,8 +102,8 @@ for weight in ("Regular", "Medium"):
     n.setName(full, 4, 3, 1, 0x409)
     n.setName(f"CarnMono-{weight}", 6, 3, 1, 0x409)
     n.setName(
-        "Carn Mono is a Latin subset of IBM Plex Mono 2.3, renamed because "
-        'the OFL reserves the font name "Plex".',
+        "Carn Mono is a subset build of IBM Plex Mono 2.3 and is not the "
+        "original font.",
         10, 3, 1, 0x409,
     )
     n.setName("Carn Mono", 16, 3, 1, 0x409)
@@ -107,11 +119,25 @@ for pair in Regular:400 Medium:500; do
 done
 ```
 
-The rename runs **before** the subset and rewrites `name` IDs 1, 3, 4, 6, 16, and 17 — the family, unique, full, and PostScript names inside the binary, not just the output filename. That is the whole point; see the licence note. IDs 16 and 17 don't survive the subset, because `--name-IDs` doesn't list them; ID 1 carries `Carn Mono` and `Carn Mono Medium` on its own, which is the naming a Medium weight needs anyway. Setting them keeps the intermediate `renamed-*.ttf` free of the reserved name too.
+The rename runs **before** the subset and rewrites `name` IDs 1, 3, 4, 6, 10, 16, and 17 — the family, unique, full, and PostScript names inside the binary, not just the output filename. That is the whole point; see the licence note. IDs 16 and 17 don't survive the subset, because `--name-IDs` doesn't list them; ID 1 carries `Carn Mono` and `Carn Mono Medium` on its own, which is the naming a Medium weight needs anyway. Setting them keeps the intermediate `renamed-*.ttf` free of the reserved name too.
 
 `--name-IDs+=` carries IBM's copyright, trademark, designer, foundry, and licence records through the subset. The pyftsubset default keeps IDs 0–6 and would drop all of them.
 
 `recalcTimestamp=False` is what makes the recipe reproduce byte-for-byte. Without it fontTools stamps `head.modified` with the time of the run, and the two committed files come out a few bytes different every time for no reason a reader could check. Same rule as the fixture repo's pinned commit dates.
+
+## Description (name ID 10)
+
+Both faces carry one sentence, and it says the same three things in the same order: the source family and its version, what this build did to it, and that it is not the original.
+
+> Carn Sans is an axis-clamped, subset build of Archivo 2.001 and is not the original font.
+>
+> Carn Mono is a subset build of IBM Plex Mono 2.3 and is not the original font.
+
+Neither restates copyright or licence. Those are IDs 0 and 13, verbatim from upstream, and a second copy in ID 10 is two records that can drift apart. Only the sans says "axis-clamped", because only the sans is: Plex Mono ships static, so the mono faces are subset and nothing else.
+
+The histories differ even though the fix doesn't. Plex Mono 2.3 carries no ID 10 at all — its `name` table runs 0–9, 11–14, 19 — so the mono record is one this build **adds**. Archivo 2.001 does carry one, a 205-character description of the typeface that survived the clamp and the subset, so the sans record is one this build **rewrites**.
+
+Every ID 10 ships inside the woff2 and counts against the page budget, which is the other reason for one sentence.
 
 ## @font-face
 
@@ -151,6 +177,10 @@ The RFN is why the face is called Carn Mono. Per the OFL FAQ, subsetting a webfo
 
 Only the names change. Attribution stays loud in both directions: both `OFL.txt` files are verbatim, and both binaries carry their upstream's copyright, trademark, designer, and licence records in their own `name` tables.
 
-## Later: ArchivoSC
+## Later: small caps inside Carn Sans
 
-Carn Sans has no `smcp` table, so filenames use the compensated synthetic small-caps rule in the brand book. When the font pipeline is worth extending, build a real `smcp` into Archivo upstream — the OFL permits it, and the CSS then collapses to `font-variant-caps: small-caps`. Not needed for the MLP.
+Carn Sans has no `smcp` table, so filenames use the compensated synthetic small-caps rule in the brand book. When the font pipeline is worth extending, draw the caps and merge `smcp` and `c2sc` into **this face**, not into a second family.
+
+Inside the face there is no extra `@font-face`, no extra file, and no extra request on the critical path, and the CSS collapses to `font-variant-caps: small-caps` with no `font-family` override on every small-caps run. A separate family buys none of that. Small caps are used at exactly one style today — `.t-item`, `wght` 700 and `wdth` 110 — so the drawn glyphs can be static, with no `gvar` deltas across the axis space, and the build costs the same either way.
+
+What would change the answer: if the added glyphs and lookups measure larger on **every** page than a standalone file would cost on the routes that actually set small caps. That is a measurement, not a preference, and it can only be taken once the glyphs exist. Nothing is decided by the filename.

@@ -576,7 +576,7 @@ Measured against drawn small caps: stem 1.004, width 0.870, advance 0.900, heigh
 
 Two rules about the markup. **`lang="en"` goes on the filename element**, once — the `<a class="nm">` or whatever carries `.t-item` — and the `.sc` spans inherit it. Under Turkish, `i` uppercases to `İ`. And **no whitespace between a plain run and an `.sc` span**: `README.<span class="sc">md</span>` is one word, and a newline or indent inside it becomes a space in the accessible name, in the clipboard, and in find-in-page. Never give an `.sc` span an `aria-label` — the DOM's true lowercase is already the right accessible name.
 
-When the font pipeline exists, replace all of it with a built **ArchivoSC**. Archivo is OFL with no Reserved Font Name, so splicing in a real `smcp` table is permitted, and the CSS collapses to `font-variant-caps: small-caps`.
+When the font pipeline exists, replace all of it with **real small caps merged into Carn Sans** — `smcp` and `c2sc` in the face we already ship, not a second family. Inside the face the CSS collapses to `font-variant-caps: small-caps`; a separate family would still need a `font-family` override on every run, plus its own `@font-face` and its own request on the critical path.
 
 ### Fonts are self-hosted
 
