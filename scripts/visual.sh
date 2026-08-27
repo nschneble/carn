@@ -4,7 +4,8 @@
 # Runs the Tuffgal stories against the real app: its own database, its own
 # repo root, and the frozen clock the pinned fixture was built for. Never
 # touches the dev database or the dev repo root. Args pass through, e.g.
-# `npm run visual -- --headed`.
+# `npm run visual -- --headed`. With --seed-only it prepares the database
+# and the repos, then prints how to serve them, and runs no stories.
 
 set -eu
 
@@ -50,5 +51,18 @@ DATABASE_URL="$visual_url" npx prisma migrate deploy >/dev/null
 DATABASE_URL="$visual_url"
 
 export CARN_FROZEN_NOW CARN_REPO_ROOT DATABASE_URL
+
+if [ "${1:-}" = "--seed-only" ]; then
+  node --input-type=module -e \
+    'import { resetVisualState } from "./dist/test/support/visual-db.js";
+     await resetVisualState();'
+
+  echo "Seeded. Serve them with:"
+  echo "  DATABASE_URL=$DATABASE_URL \\"
+  echo "  CARN_REPO_ROOT=$CARN_REPO_ROOT \\"
+  echo "  CARN_FROZEN_NOW=$CARN_FROZEN_NOW \\"
+  echo "  node dist/scripts/visual-server.js"
+  exit 0
+fi
 
 exec npx tuffgal run --manage-servers "$@"
