@@ -141,7 +141,7 @@ _Settled — everything downstream assumes these_
 - **Method:** YAGNI — Nothing gets built before it's wanted. Web comments included.
 - **Licence:** AGPL-3.0-or-later — Server and CLI both. Closes the network loophole plain GPL leaves open.
 - **Testing:** Tuffgal stories — Visual regression as the primary suite, plus four contract tests. No unit tests.
-- **Write path:** CLI only — The web UI is read-only at MLP. Comments come over SSH.
+- **Write path:** CLI only — The web UI is read-only at MLP; the admin forms in §06 come after it. Comments come over SSH.
 - **Rate limiting:** At the edge — Caddy, three tiers, tightest on clone and archive.
 - **Layout:** One display rule — List items in the display face; titles on show views. Mockups in §06.
 
@@ -279,9 +279,11 @@ With `html: false`, markdown-it's output vocabulary is fixed and small — that 
 
 What remains isn't XSS, and an HTML sanitizer wouldn't fix it either — it needs a URL policy:
 
-- **Third-party image loading.** `![x](http://evil.com/t.png)` renders, and every visitor to that README pings `evil.com`. On a public forge this is the thing most likely to actually be abused. Fix with a CSP `img-src` and/or an image proxy.
-- **Unbounded scheme allowlist.** `validateLink` is a blocklist of four, so `blob:`, `about:`, and custom app schemes all pass. Replace it with an allowlist of `https|http|mailto` plus the data-image forms, and reject protocol-relative `//`.
-- **No `rel`.** Add `rel="nofollow ugc"` to external links via a renderer rule override.
+- **Third-party image loading.** `![x](http://evil.com/t.png)` renders, and every visitor to that README pings `evil.com`. On a public forge this is the thing most likely to actually be abused. Fix with a CSP `img-src` and/or an image proxy. — _CSP half shipped in 1a: `img-src 'self' data:` in `src/app.ts`, pinned as an exact string by `verify-phase-1a.sh`. A README's remote image is blocked and degrades to its alt text; that is the intended behaviour, not a rendering bug. The proxy half is deferred past MLP — it is what eventually renders remote images without leaking every visitor's IP to the image host._
+- **Unbounded scheme allowlist.** `validateLink` is a blocklist of four, so `blob:`, `about:`, and custom app schemes all pass. Replace it with an allowlist of `https|http|mailto` plus the data-image forms, and reject protocol-relative `//`. — _Shipped in 1d: `allowLink` in `src/markdown/render.ts`._
+- **No `rel`.** Add `rel="nofollow ugc"` to external links via a renderer rule override. — _Shipped in 1d: a `link_open` override in `src/markdown/render.ts`. Applies to absolute `http(s)` links only; relative links, anchors, and `mailto:` are untouched, and there is no same-host carve-out._
+
+The markdown layer and the response header deliberately disagree about remote images: `allowLink` permits an `https:` image URL that CSP then refuses to load. The parsing layer parses and the header enforces, so the enforcing layer being the stricter one is correct. Do not "fix" the mismatch by widening `img-src` — that undoes the control this section specifies, and fails `verify-phase-1a.sh`.
 
 > **IF YOU EVER DO REACH FOR A SANITIZER**
 >
@@ -533,7 +535,7 @@ The complete surface outside the nine:
 
 | Route                                                  | Kind  | Note                                                                          |
 | ------------------------------------------------------ | ----- | ----------------------------------------------------------------------------- |
-| `/new` · `/settings` · `/r/:repo/settings`             | Web   | Admin forms. See the settings split below.                                    |
+| `/new` · `/settings` · `/r/:repo/settings`             | Web   | Post-MLP. Admin forms; see the settings split below.                          |
 | `/r/:repo/releases` · `/r/:repo/releases/:tag`         | Web   | Phase 5.                                                                      |
 | `/r/:repo/info/refs` · `POST /r/:repo/git-upload-pack` | Git   | Anonymous read only. No `git-receive-pack` over HTTP, ever — push is SSH.     |
 | `/r/:repo/archive/:rev.tar.gz`                         | Git   | `git archive` on demand. The tightest rate-limit zone.                        |
