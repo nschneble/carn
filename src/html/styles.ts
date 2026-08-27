@@ -22,7 +22,7 @@ export const tokens = `:root {
   --on-accent: #0e0f0f;
 
   /* type */
-  --f-display: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --f-display: "Carn Sans", "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --f-mono: "Carn Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   /* spacing — 4px base */
@@ -83,8 +83,8 @@ export const tokens = `:root {
 }`;
 
 const faces = `@font-face {
-  font-family: "Archivo";
-  src: url("/fonts/archivo-carn.woff2") format("woff2-variations");
+  font-family: "Carn Sans";
+  src: url("/fonts/carn-sans.woff2") format("woff2-variations");
   font-weight: 400 900;
   font-stretch: 100% 125%;
   font-display: swap;

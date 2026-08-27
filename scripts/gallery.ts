@@ -8,11 +8,7 @@ import { galleryDocument } from "../test/gallery/document.js";
 
 const root = resolve(import.meta.dirname, "../..");
 const out = join(root, "local/gallery");
-const faces = [
-  "archivo-carn.woff2",
-  "carn-mono-400.woff2",
-  "carn-mono-500.woff2",
-];
+const faces = ["carn-sans.woff2", "carn-mono-400.woff2", "carn-mono-500.woff2"];
 
 function beside(document: string): string {
   return document.replaceAll('url("/fonts/', 'url("fonts/');

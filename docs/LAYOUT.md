@@ -14,11 +14,11 @@ Colour, spacing, and component definitions live in the brand book. This document
 
 small caps
 
-_Archivo · compensated · self-hosted_
+_Carn Sans · compensated · self-hosted_
 
-Archivo carries the display face throughout. Filenames additionally render in small caps, which collapses the ragged ascender and descender profile of lowercase into a uniform band — calmer to scan, and it buys a tighter line-height than lowercase tolerates.
+Carn Sans carries the display face throughout. Filenames additionally render in small caps, which collapses the ragged ascender and descender profile of lowercase into a uniform band — calmer to scan, and it buys a tighter line-height than lowercase tolerates.
 
-Archivo has no `smcp` table, and browser synthesis is not usable: scaling a capital to 79% scales its stems to 79% too, so the faked small caps read visibly lighter than the full caps beside them in the same word. The stems have to be compensated, which needs the variable axes and server-rendered markup — both of which we have.
+Carn Sans has no `smcp` table, and browser synthesis is not usable: scaling a capital to 79% scales its stems to 79% too, so the faked small caps read visibly lighter than the full caps beside them in the same word. The stems have to be compensated, which needs the variable axes and server-rendered markup — both of which we have.
 
 ```
 .t-item {
@@ -44,7 +44,7 @@ Three details are load-bearing. **`letter-spacing` stays** — real small caps k
 
 #### Reference
 
-- **Archivo · as-is** — src/components/Button.tsx
+- **Carn Sans · as-is** — src/components/Button.tsx
 - **Browser-synthesized** — src/components/Button.tsx
 - **Compensated** — src/components/Button.tsx
 - **Drawn, for weight** — src/components/Button.tsx

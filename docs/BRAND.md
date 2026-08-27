@@ -37,7 +37,7 @@ states — explicit dark, explicit light, and unstamped system default — resol
   --on-accent: #0e0f0f;
 
   /* type */
-  --f-display: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --f-display: "Carn Sans", "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --f-mono: "Carn Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   /* spacing — 4px base */
@@ -541,9 +541,9 @@ No green-for-good, red-for-bad palette. A merged PR reads Merged and a closed on
 
 ## 03 · Type
 
-_Archivo variable · Carn Mono · self-hosted_
+_Carn Sans variable · Carn Mono · self-hosted_
 
-Two families, eight roles. Archivo carries identity; Carn Mono carries anything a machine produced.
+Two families, eight roles. Carn Sans carries identity; Carn Mono carries anything a machine produced.
 
 - **t-xl · identity** — Linklater
 - **t-l · section** — Merge button
@@ -562,7 +562,7 @@ Two families, eight roles. Archivo carries identity; Carn Mono carries anything 
 
 ### Small caps
 
-Archivo has no `smcp`, so filenames use compensated synthetic small caps: lowercase runs wrapped in a span, uppercased by CSS, at 79% size with weight and width raised so the stems match. Browser synthesis scales the stems too, which leaves the faked caps visibly lighter than the ones beside them.
+Carn Sans has no `smcp`, so filenames use compensated synthetic small caps: lowercase runs wrapped in a span, uppercased by CSS, at 79% size with weight and width raised so the stems match. Browser synthesis scales the stems too, which leaves the faked caps visibly lighter than the ones beside them.
 
 ```
 .t-item { font-variation-settings:"wght" 700,"wdth" 110;
@@ -580,7 +580,7 @@ When the font pipeline exists, replace all of it with a built **ArchivoSC**. Arc
 
 ### Fonts are self-hosted
 
-Not from a CDN. The small-caps build means the pipeline exists either way; a third-party font host is an extra DNS lookup and connection on the critical path; and a page that renders correctly when Google is blocked is a better page. A Latin subset of Archivo variable is ~30 KB.
+Not from a CDN. The small-caps build means the pipeline exists either way; a third-party font host is an extra DNS lookup and connection on the critical path; and a page that renders correctly when Google is blocked is a better page. Carn Sans, the axis-clamped Latin subset we ship, is 54 KB.
 
 ## 04 · Layout
 
