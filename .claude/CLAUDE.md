@@ -179,16 +179,39 @@ All of these are non-negotiable:
 - Fastify will eagerly consume the stream. Register a raw content-type
   parser for `application/x-git-*-request` or clones break confusingly.
 
-**markdown-it**
+**markdown-it** — measured against 15.0.0, not 14.x.
 
-- `new MarkdownIt('commonmark')` sets `html: true`. It's a spec-conformance
-  preset. Always `new MarkdownIt('commonmark', { html: false })`.
+- `new MarkdownIt('commonmark')` still sets `html: true` in 15. It's a
+  spec-conformance preset, and a bare `new MarkdownIt()` sets `false`, so the
+  preset is what flips it. Always
+  `new MarkdownIt('commonmark', { html: false })`.
 - Only enable `table`. Fenced code info strings are already CommonMark.
 - Cross-reference auto-linking is a core rule registered in
   `before('text_join')`, never a post-render regex over HTML which produces
-  nested `<a>` tags. Registering after `text_join` breaks escaped `\#12`.
+  nested `<a>` tags. `text_join` is still the last core rule in 15 and
+  `before()` still places a rule immediately ahead of it.
+- **Register before `text_join` or the escape stops working.** `\#12` parses
+  to `text("…") + text_special("#") + text("12 …")`, so a rule scanning
+  `text` tokens can't see `#12`. `text_join` merges them into one token whose
+  content is `#12`, indistinguishable from the unescaped form.
+- 15 inserts a `strip_references` core rule after `block`. The order is
+  `normalize, block, strip_references, inline, linkify, replacements,
+  smartquotes, text_join`.
 - Replace `validateLink` with an allowlist (`https|http|mailto` plus
-  data-image forms); the default is a blocklist of four schemes.
+  data-image forms). The default is a blocklist of exactly four schemes —
+  `vbscript|javascript|file|data` — so it fails open on everything else.
+- **15 moved `validateLink` to a prototype method. `md.validateLink = fn`
+  still shadows it**, because an own property wins. Assign on the instance.
+- **A `javascript:` payload cannot prove the allowlist is installed**, since
+  the default blocklist already rejects it — an unpatched instance passes the
+  same test. Discriminate with a scheme the default *allows* and the allowlist
+  denies, e.g. `ftp:`, then assert `javascript:` separately.
+- **15 bundles its own type declarations and `@types/markdown-it` is a trap.**
+  A bare `import` resolves to markdown-it's own `.d.mts`, but 15 dropped its
+  `lib/*` subpath exports while `@types/markdown-it@14` still exports `./*`.
+  So `import "markdown-it/lib/rules_block/state_block.mjs"` type-checks clean
+  under `strict` and throws `ERR_PACKAGE_PATH_NOT_EXPORTED` at runtime. Import
+  only the package root.
 
 **post-receive hooks**
 
