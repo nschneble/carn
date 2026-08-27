@@ -68,7 +68,17 @@ doesn't move a number that's currently failing, it doesn't get done.
 - **Fewer than 12 `spawn` calls per render.** This catches a specific way
   this codebase could get slow. A file list calling `cat-file` once per row
   is pixel-identical, byte-identical, and four times slower.
-- **Zero axe violations** across both light and dark themes.
+- **Zero axe violations across all four render paths.** Not "both themes":
+  `prefers-color-scheme` splits the unstamped state into two, and unstamped
+  is the only state where a token defined solely inside a media query
+  resolves to nothing. Every token must also read back non-empty on `:root`
+  in all four — an empty one falls back to `inherit`, which axe cannot see.
+
+The axe ruleset is `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`.
+That last tag is one rule above the 2.1 AA tenet 3 states — `target-size`,
+kept because it pins the repo-row hit area. **Open question for Nick:
+should tenet 3 move to 2.2 AA?** Until he says, the tenet and the gate
+disagree by exactly that one rule, and this is the note saying so.
 
 ## Tech stack (and the rules about adding to it)
 

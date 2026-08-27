@@ -6,6 +6,7 @@ import { after, before, test } from "node:test";
 import type { AxeResults, Result } from "axe-core";
 import { type Browser, chromium } from "playwright";
 import { galleryDocument } from "../gallery/document.js";
+import { renderPaths } from "../support/render-paths.js";
 
 declare const document: object;
 declare const axe: {
@@ -13,7 +14,17 @@ declare const axe: {
 };
 
 const axeSource = createRequire(import.meta.url).resolve("axe-core");
-const ruleset = ["wcag2a", "wcag2aa"];
+const ruleset = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+
+const beyondWcag20 = [
+  "autocomplete-valid",
+  "avoid-inline-spacing",
+  "target-size",
+];
+const skippedAsExperimental = [
+  "css-orientation-lock",
+  "label-content-name-mismatch",
+];
 
 const plantedFailures = `<!doctype html>
 <html>
@@ -41,22 +52,31 @@ after(async () => {
   await browser?.close();
 });
 
-async function violations(markup: string): Promise<Result[]> {
+async function run(
+  markup: string,
+  colorScheme: "light" | "dark" = "light",
+): Promise<AxeResults> {
   const page = await browser.newPage();
 
   try {
+    await page.emulateMedia({ colorScheme });
     await page.setContent(markup);
     await page.addScriptTag({ path: axeSource });
 
-    const results = await page.evaluate(
+    return await page.evaluate(
       async (tags) => await axe.run(document, { runOnly: tags }),
       ruleset,
     );
-
-    return results.violations;
   } finally {
     await page.close();
   }
+}
+
+async function violations(
+  markup: string,
+  colorScheme: "light" | "dark" = "light",
+): Promise<Result[]> {
+  return (await run(markup, colorScheme)).violations;
 }
 
 function report(found: Result[]): string {
@@ -65,9 +85,12 @@ function report(found: Result[]): string {
     .join("\n");
 }
 
-for (const theme of ["dark", "light", null] as const) {
-  test(`no axe violations in the ${theme ?? "unstamped"} gallery`, async () => {
-    const found = await violations(galleryDocument(theme));
+for (const path of renderPaths) {
+  test(`no axe violations in the ${path.name} gallery`, async () => {
+    const found = await violations(
+      galleryDocument(path.theme),
+      path.colorScheme,
+    );
 
     assert.deepStrictEqual(
       found.map((rule) => rule.id),
@@ -76,6 +99,45 @@ for (const theme of ["dark", "light", null] as const) {
     );
   });
 }
+
+test("the rules above WCAG 2.0 report which of them found anything", async (t) => {
+  const results = await run(galleryDocument("dark"));
+  const buckets = [
+    "violations",
+    "incomplete",
+    "passes",
+    "inapplicable",
+  ] as const;
+  const bucketOf = (name: string) =>
+    buckets.find((bucket) => results[bucket].some((rule) => rule.id === name));
+
+  for (const name of beyondWcag20) {
+    const landed = bucketOf(name);
+
+    assert.ok(
+      landed,
+      `${name} is in no bucket, so the ruleset stopped loading it — wcag21a, wcag21aa, and wcag22aa are pinned by criterion 11, not decoration`,
+    );
+    assert.notStrictEqual(landed, "violations", `${name} is violated`);
+    t.diagnostic(`${name}: ${landed}`);
+  }
+
+  for (const name of skippedAsExperimental) {
+    assert.strictEqual(
+      bucketOf(name),
+      undefined,
+      `${name} now runs; axe skips every rule tagged experimental, so this ruleset covers more than it used to and the reporting here is stale`,
+    );
+    t.diagnostic(`${name}: never runs, tagged experimental`);
+  }
+
+  const hitAreas = results.passes.find((rule) => rule.id === "target-size");
+  assert.ok(
+    hitAreas && hitAreas.nodes.length > 0,
+    "target-size evaluated nothing, so wcag22aa pins no hit area and the repo row rests on the screenshot baseline alone",
+  );
+  t.diagnostic(`target-size evaluated ${hitAreas.nodes.length} hit areas`);
+});
 
 test("axe reports a planted failure", async () => {
   const found = await violations(plantedFailures);

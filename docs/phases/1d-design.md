@@ -157,10 +157,13 @@ small, and quiet.
 
 ## Themes
 
-The token block in `BRAND.md` is copied **verbatim**. It is built so all
-three theme states resolve — explicit dark, explicit light, and the
-unstamped system default — and no colour is defined only inside a media
-query. Changing its structure breaks a case that is invisible in testing.
+The token block in `BRAND.md` is copied **verbatim**. It is built so that
+no colour is defined only inside a media query, which is what makes all
+four render paths resolve: explicit dark, explicit light, and the
+unstamped default under each `prefers-color-scheme`. The unstamped pair is
+two paths, not one — dark is the bare `:root`, light is the media query —
+and a token left only inside that query is empty in the other two. Changing
+the structure breaks a case that is invisible in testing.
 
 Theme is a cookie; the server reads it and picks. No client-side
 switching, no flash, no JavaScript. A `<noscript>` is not needed because
@@ -178,7 +181,24 @@ where they start binding:
 - **Fewer than 12 `spawn` calls per render.** The file tree is one
   `ls-tree -z --long`, not one `cat-file` per row. This is the budget most
   likely to be broken by code that looks correct.
-- **Zero axe violations**, both themes.
+- **Zero axe violations across all four render paths.** Not "both themes."
+  `prefers-color-scheme` splits the unstamped state in two, and the
+  unstamped state is the only one in which a token defined solely inside a
+  media query resolves to nothing. It is the state the token block's
+  structure exists to protect, so it is the one the gate must cover.
+
+The axe ruleset is `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`.
+The last is above the standard CLAUDE.md tenet 3 states, and is adopted
+deliberately: it is clean today, and its `target-size` rule pins the
+repo-row hit area, which otherwise rests on a screenshot baseline alone.
+Dropping the tag later is a decision, not a cleanup — a `target-size`
+failure is answered at the hit area, or by an explicit note from Nick.
+
+**Open question, Nick's to settle:** tenet 3 commits to WCAG 2.1 AA while
+the gate now enforces one 2.2 rule. Should tenet 3 move to 2.2 AA? A tenet
+stating one standard while the gate enforces another is the same defect the
+ruleset correction just fixed, and this records the second copy of it
+rather than leaving it silent.
 
 ---
 
@@ -225,13 +245,18 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
    renders inert — assert the output, not the absence of an error
 9. `validateLink` rejects `javascript:` — the allowlist, proven, not the
    assignment
-10. Both themes render: `data-theme="dark"`, `data-theme="light"`, and
-    unstamped, all three resolving to a complete palette
-11. **Zero axe violations across all three theme states** —
-    `data-theme="dark"`, `data-theme="light"`, and unstamped. Run against
-    the gallery as well as both pages. Prove the harness bites: a fixture
-    with a known contrast failure must be reported. A run that finds
-    nothing because axe never loaded is indistinguishable from a pass.
+10. In all four render paths, enumerate every custom property named in
+    `BRAND.md`'s token block and assert each resolves to a non-empty value
+    on `:root`. Not a spot check, not a screenshot — read them back with
+    `getComputedStyle(document.documentElement).getPropertyValue()` and
+    fail on the first empty string. Give it a positive control: delete one
+    token from a fixture and confirm the check fails.
+11. Zero axe violations across all four render paths: `data-theme="dark"`,
+    `data-theme="light"`, unstamped under `colorScheme: 'light'`, and
+    unstamped under `colorScheme: 'dark'`. The last is not optional and is
+    not covered by the third — set it explicitly in the context. Run
+    against the gallery as well as both pages. Prove the harness bites: a
+    fixture with a known contrast failure must be reported.
 12. **Under 100 KB per page**, fonts and all
 13. **Fewer than 12 `spawn` calls** rendering a repo page — instrument the
     wrapper and count
