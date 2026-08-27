@@ -578,6 +578,8 @@ Two rules about the markup. **`lang="en"` goes on the filename element**, once â
 
 When the font pipeline exists, replace all of it with **real small caps merged into Carn Sans** â€” `smcp` and `c2sc` in the face we already ship, not a second family. Inside the face the CSS collapses to `font-variant-caps: small-caps`; a separate family would still need a `font-family` override on every run, plus its own `@font-face` and its own request on the critical path.
 
+The licence permits the splice; `fonts/README.md` carries the reasoning and the conditions that come with it.
+
 ### Fonts are self-hosted
 
 Not from a CDN. The small-caps build means the pipeline exists either way; a third-party font host is an extra DNS lookup and connection on the critical path; and a page that renders correctly when Google is blocked is a better page. Carn Sans, the axis-clamped Latin subset we ship, is 54 KB.

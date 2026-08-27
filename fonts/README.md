@@ -1,5 +1,7 @@
 # Fonts
 
+Every byte figure below is a compressed woff2 as shipped, never a raw table size. Glyph and codepoint deltas do not reconcile to byte deltas by arithmetic — brotli decides — so don't try. `test/contract/fonts-budget.contract.ts` measures the shipped files and fails if a figure here drifts out of date.
+
 ## carn-sans.woff2
 
 Archivo 2.001, renamed to **Carn Sans**, axis-clamped and subset for Càrn. Self-hosted — not loaded from a CDN.
@@ -171,11 +173,19 @@ Archivo is SIL Open Font License 1.1, with no Reserved Font Name. Subsetting, cl
 
 IBM Plex Mono is also OFL 1.1, but it declares a Reserved Font Name: `Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"`. Ship `OFL-plex.txt` alongside it — that is IBM's licence text, verbatim and distinct from Archivo's `OFL.txt`.
 
-The RFN is why the face is called Carn Mono. Per the OFL FAQ, subsetting a webfont **is** modification (2.6), and a Modified Version keeps an RFN only if it preserves Functional Equivalence, whose first requirement is the same full character inventory (2.7, 2.8). This subset goes from 930 mapped codepoints to 209, so it falls short and must pick its own name. The escape hatch in FAQ 2.2.1 — WOFF2-compress the original, change nothing else, keep the name — costs 79,328 B for the pair against 17,772 B subset. With the sans face that is 134,144 B, so it blows the 100 KB page budget on fonts alone. Renaming is the only route that ships.
+The RFN is why the face is called Carn Mono. Per the OFL FAQ, subsetting a webfont **is** modification (2.6), and a Modified Version keeps an RFN only if it preserves Functional Equivalence, whose first requirement is the same full character inventory (2.7, 2.8). This subset goes from 930 mapped codepoints to 209, so it falls short and must pick its own name. The escape hatch in FAQ 2.2.1 — WOFF2-compress the original, change nothing else, keep the name — costs 79,328 B for the pair against 17,696 B subset. With the sans face that is 133,940 B, so it blows the 100 KB page budget on fonts alone. Renaming is the only route that ships.
 
 **Carn Sans is a choice, not an obligation.** Archivo's licence would let the subset keep the name. It doesn't, because the pair can only be made consistent in this direction — the mono face has no option — and because 286 glyphs of 834 with two clamped axes is not the thing Omnibus-Type published. A reader who sees `Carn Sans` and `Carn Mono` in `--f-display` and `--f-mono` gets one true story about what the browser loads.
 
 Only the names change. Attribution stays loud in both directions: both `OFL.txt` files are verbatim, and both binaries carry their upstream's copyright, trademark, designer, and licence records in their own `name` tables.
+
+### Splicing smcp into Carn Sans is permitted
+
+OFL 1.1 permits modification, so building a real `smcp` feature into Carn Sans is allowed. The grant paragraph is explicit — "use, study, copy, merge, embed, modify, redistribute" — and two conditions apply. The derivative must itself be distributed under OFL and under no other licence (condition 5). And the copyright notice and licence text must travel with it (condition 2), which is why `name` IDs 0 and 13 are carried through untouched.
+
+Archivo carries no Reserved Font Name. That is not what permits the splice; it would only have permitted keeping the name Archivo, which this project declined to do. Condition 3 governs what a Modified Version may be **named**, not whether it may be modified.
+
+If any `smcp` glyphs come from a source other than Archivo, they arrive with their own licence and condition 5 governs the combined result: the merged face has to ship entirely under OFL, so an incoming outline that cannot be redistributed that way cannot go in. This is the constraint most likely to be discovered late.
 
 ## Later: small caps inside Carn Sans
 
