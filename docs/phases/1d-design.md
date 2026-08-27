@@ -71,8 +71,9 @@ GET /r/:repo     repo show — file tree at the default branch + rendered README
 ```
 
 Plus everything they need: the stylesheet from `BRAND.md`'s token block,
-self-hosted Archivo and IBM Plex Mono, both themes, compensated small
-caps, the generated wordmark, and header-image resolution.
+self-hosted Archivo and Carn Mono (a renamed IBM Plex Mono subset — OFL
+reserves the name "Plex"), both themes, compensated small caps, the
+generated wordmark, and header-image resolution.
 
 ## What 1d is not
 
