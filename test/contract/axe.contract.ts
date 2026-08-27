@@ -1,15 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+// axe drops experimental and deprecated rules from a tag selection; the
+// experimental ones are computed back on, the deprecated two are not:
+// audio-caption can never apply here, this site serves no audio, and
+// aria-roledescription was retired as unreliable
+
 import assert from "node:assert";
 import { createRequire } from "node:module";
 import { after, before, test } from "node:test";
 import type { AxeResults, Result } from "axe-core";
+import MarkdownIt from "markdown-it";
 import { type Browser, chromium } from "playwright";
+import { stylesheet } from "../../src/html/styles.js";
 import { galleryDocument } from "../gallery/document.js";
 import { renderPaths } from "../support/render-paths.js";
 
 declare const document: object;
 declare const axe: {
+  getRules(): { ruleId: string; tags: string[] }[];
   run(
     context: object,
     options: {
@@ -17,6 +25,12 @@ declare const axe: {
       rules: Record<string, { enabled: boolean }>;
     },
   ): Promise<AxeResults>;
+};
+
+type Audit = {
+  results: AxeResults;
+  forced: string[];
+  unevaluated: string[];
 };
 
 const axeSource = createRequire(import.meta.url).resolve("axe-core");
@@ -28,10 +42,15 @@ const beyondWcag20 = [
   "target-size",
 ];
 
-const forcedExperimental = {
-  "css-orientation-lock": { enabled: true },
-  "label-content-name-mismatch": { enabled: true },
-};
+const experimentalInRuleset = [
+  "css-orientation-lock",
+  "label-content-name-mismatch",
+  "p-as-heading",
+  "table-fake-caption",
+  "td-has-header",
+];
+
+const retiredByAxe = ["aria-roledescription", "audio-caption"];
 
 const plantedFailures = `<!doctype html>
 <html>
@@ -64,6 +83,34 @@ const plantedNameMismatch = `<!doctype html>
 </html>
 `;
 
+const tableSource = `| Ref | Kind | Note |
+| --- | --- | --- |
+| \`main\` | branch | the default |
+| \`v1.0.0\` | tag | signed, annotated |
+| \`14-conflict-output\` | branch | ahead by 3 |
+`;
+
+const renderedTable = new MarkdownIt("commonmark", { html: false })
+  .enable("table")
+  .render(tableSource);
+
+const readmeTable = `<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rendered README table · Càrn</title>
+<style>
+${stylesheet}
+</style>
+</head>
+<body>
+<main id="main" tabindex="-1">
+${renderedTable}</main>
+</body>
+</html>
+`;
+
 let browser: Browser;
 
 before(async () => {
@@ -77,7 +124,7 @@ after(async () => {
 async function run(
   markup: string,
   colorScheme: "light" | "dark" = "light",
-): Promise<AxeResults> {
+): Promise<Audit> {
   const page = await browser.newPage();
 
   try {
@@ -85,11 +132,36 @@ async function run(
     await page.setContent(markup);
     await page.addScriptTag({ path: axeSource });
 
-    return await page.evaluate(
-      async ([tags, rules]) =>
-        await axe.run(document, { runOnly: tags, rules }),
-      [ruleset, forcedExperimental] as const,
-    );
+    return await page.evaluate(async (tags) => {
+      const selected = new Set(tags);
+      const inSelection = axe
+        .getRules()
+        .filter((rule) => rule.tags.some((tag) => selected.has(tag)));
+      const forced = inSelection
+        .filter((rule) => rule.tags.includes("experimental"))
+        .map((rule) => rule.ruleId)
+        .sort();
+
+      const results = await axe.run(document, {
+        runOnly: tags,
+        rules: Object.fromEntries(forced.map((id) => [id, { enabled: true }])),
+      });
+
+      const evaluated = new Set(
+        (["violations", "incomplete", "passes", "inapplicable"] as const)
+          .flatMap((bucket) => results[bucket])
+          .map((rule) => rule.id),
+      );
+
+      return {
+        results,
+        forced,
+        unevaluated: inSelection
+          .map((rule) => rule.ruleId)
+          .filter((id) => !evaluated.has(id))
+          .sort(),
+      };
+    }, ruleset);
   } finally {
     await page.close();
   }
@@ -99,7 +171,7 @@ async function violations(
   markup: string,
   colorScheme: "light" | "dark" = "light",
 ): Promise<Result[]> {
-  return (await run(markup, colorScheme)).violations;
+  return (await run(markup, colorScheme)).results.violations;
 }
 
 function report(found: Result[]): string {
@@ -123,8 +195,28 @@ for (const path of renderPaths) {
   });
 }
 
+test("the ruleset's experimental rules are the ones forced on", async () => {
+  const { forced } = await run(galleryDocument("dark"));
+
+  assert.deepStrictEqual(
+    forced,
+    experimentalInRuleset,
+    "the computed override no longer matches the pinned set, so axe has added or dropped an experimental rule under these tags — read the diff and decide, do not re-pin blindly",
+  );
+});
+
+test("only the deprecated pair goes unevaluated", async () => {
+  const { unevaluated } = await run(galleryDocument("dark"));
+
+  assert.deepStrictEqual(
+    unevaluated,
+    retiredByAxe,
+    "a rule the ruleset selects did not execute and is not one of the two deprecated rules held off deliberately — axe is excluding it by a mechanism this file does not know about",
+  );
+});
+
 test("the rules above WCAG 2.0 report which of them found anything", async (t) => {
-  const results = await run(galleryDocument("dark"));
+  const { results } = await run(galleryDocument("dark"));
   const buckets = [
     "violations",
     "incomplete",
@@ -145,7 +237,7 @@ test("the rules above WCAG 2.0 report which of them found anything", async (t) =
     t.diagnostic(`${name}: ${landed}`);
   }
 
-  for (const name of Object.keys(forcedExperimental)) {
+  for (const name of experimentalInRuleset) {
     const landed = bucketOf(name);
 
     assert.ok(
@@ -162,6 +254,26 @@ test("the rules above WCAG 2.0 report which of them found anything", async (t) =
     "target-size evaluated nothing, so wcag22aa pins no hit area and the repo row rests on the screenshot baseline alone",
   );
   t.diagnostic(`target-size evaluated ${hitAreas.nodes.length} hit areas`);
+});
+
+test("a rendered README table exercises the table rules", async (t) => {
+  const { results } = await run(readmeTable);
+
+  assert.deepStrictEqual(
+    results.violations.map((rule) => rule.id),
+    [],
+    report(results.violations),
+  );
+
+  for (const name of ["table-fake-caption", "td-has-header"]) {
+    const passed = results.passes.find((rule) => rule.id === name);
+
+    assert.ok(
+      passed && passed.nodes.length > 0,
+      `${name} evaluated no table, so forcing it on buys nothing — the fixture stopped rendering a table, or markdown-it stopped emitting one`,
+    );
+    t.diagnostic(`${name} passed on ${passed.nodes.length} table`);
+  }
 });
 
 test("axe reports a planted failure", async () => {
