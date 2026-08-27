@@ -2,6 +2,7 @@
 
 import type { FastifyInstance } from "fastify";
 
+import { now } from "../clock.js";
 import { repoListPage } from "../html/repo-list.js";
 import { readTheme } from "../html/theme.js";
 import { listRepos } from "../repos/list.js";
@@ -18,7 +19,7 @@ export function indexRoute(app: FastifyInstance): void {
         repoListPage({
           repos,
           theme: readTheme(request.headers.cookie),
-          now: new Date(),
+          now: now(),
         }),
       );
     } catch (error) {

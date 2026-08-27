@@ -1,0 +1,8 @@
+{
+  "action": "repo-index-dark",
+  "steps": [
+    { "kind": "navigate", "path": "/" },
+    { "kind": "read", "hint": { "selector": "html[data-theme=\"dark\"]" } }
+  ],
+  "expect": { "anyOf": [{ "role": "heading", "text": "Repositories" }] }
+}

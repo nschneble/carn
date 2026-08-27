@@ -27,8 +27,24 @@ function readPort(name: string, fallback: string): number {
   return value;
 }
 
+// the visual harness pins it so every relative timestamp renders the same
+function readInstant(name: string): Date | null {
+  const value = process.env[name];
+  if (value === undefined) return null;
+
+  const at = new Date(value);
+
+  if (Number.isNaN(at.getTime())) {
+    console.error(`${name} must be an ISO timestamp (got ${value}).`);
+    process.exit(1);
+  }
+
+  return at;
+}
+
 export const config = Object.freeze({
   databaseUrl: read("DATABASE_URL"),
+  frozenNow: readInstant("CARN_FROZEN_NOW"),
   host: read("HOST", "127.0.0.1"),
   nodeEnv: read("NODE_ENV", "development"),
   port: readPort("PORT", "3000"),

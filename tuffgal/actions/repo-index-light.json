@@ -1,0 +1,8 @@
+{
+  "action": "repo-index-light",
+  "steps": [
+    { "kind": "navigate", "path": "/" },
+    { "kind": "read", "hint": { "selector": "html[data-theme=\"light\"]" } }
+  ],
+  "expect": { "anyOf": [{ "role": "heading", "text": "Repositories" }] }
+}
