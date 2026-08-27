@@ -13,6 +13,8 @@ import {
   type Position,
   root,
   scan,
+  scanIn,
+  sources,
   template,
   templateSources,
 } from "../support/html-position.js";
@@ -127,17 +129,39 @@ test("no interpolation lands in an unquoted attribute position", () => {
   const reported: string[] = [];
   let classified = 0;
 
-  for (const { path, source } of files) {
-    for (const found of scan(source)) {
+  for (const file of files) {
+    for (const found of scanIn(file)) {
       classified += 1;
       if (safePositions.has(found.position)) continue;
-      reported.push(`${path}:${lineOf(source, found.index)} ${found.position}`);
+      reported.push(
+        `${file.path}:${lineOf(file.source, found.index)} ${found.position}`,
+      );
     }
   }
 
   assert.ok(files.length > 0, "found no template source to check");
   assert.ok(classified > 0, "found no interpolations to classify");
+  assert.ok(
+    files.some(({ path }) => path.startsWith("src/")),
+    "the corpus holds no template under src/, so this gate is reading no product code",
+  );
   assert.deepStrictEqual(reported, []);
+});
+
+test("the html tag is never imported under another name", () => {
+  const aliased = sources()
+    .filter(({ source }) =>
+      /import\s[^;]*(?:\bhtml\s+as\s+\w+|\*\s+as\s+\w+\s+from\s+"[^"]*html\/index)/.test(
+        source,
+      ),
+    )
+    .map(({ path }) => path);
+
+  assert.deepStrictEqual(
+    aliased,
+    [],
+    "both the corpus filter and the opener key on the literal tag name, so an alias leaves the template unscanned",
+  );
 });
 
 test("escaping does not cover what ends an unquoted value", () => {

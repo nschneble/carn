@@ -251,9 +251,11 @@ Full system in `docs/BRAND.md`. The rules a coding session needs:
   it's the items. On a show page, the single title. On a create page, the
   question. Everything else is mono, small, and quiet.
 - Self-hosted Carn Sans and Carn Mono (renamed subsets of Archivo and IBM
-  Plex Mono; OFL reserves the name "Plex"). Two families, six roles.
-- One accent. `--accent` for large type + fills; `--accent-text` for inline
-  links + small text. Light-mode pink is 4.11:1, misses AA for body copy.
+  Plex Mono; OFL reserves the name "Plex"). Two families, eight roles.
+- One accent. `--accent` for large type, `--accent-text` for inline links
+  and small text, and `--accent-fill` for fills — which resolves to
+  `--accent` in dark and `--accent-text` in light. Light-mode pink is
+  4.10:1, which misses AA for body copy and is why the fill splits.
 - **No color-only signals.** Dirs get trailing `/`, diffs get `+`/`−`, and
   states get a word.
 - Radius 0 except the chip. No shadows. **No motion at all.**

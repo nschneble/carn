@@ -6,6 +6,7 @@ import { now } from "../clock.js";
 import { repoListPage } from "../html/repo-list.js";
 import { readTheme } from "../html/theme.js";
 import { listRepos } from "../repos/list.js";
+import { sendPage } from "./cache.js";
 
 // fastify's default body carries the driver's message, host and all
 const unavailable = "The repo list is unavailable. Try again shortly.\n";
@@ -15,7 +16,9 @@ export function indexRoute(app: FastifyInstance): void {
     try {
       const repos = await listRepos();
 
-      return await reply.type("text/html; charset=utf-8").send(
+      return await sendPage(
+        request,
+        reply,
         repoListPage({
           repos,
           theme: readTheme(request.headers.cookie),

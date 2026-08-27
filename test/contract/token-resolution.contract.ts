@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import assert from "node:assert";
-import { after, before, test } from "node:test";
-import { type Browser, chromium } from "playwright";
+import { after, test } from "node:test";
 import { galleryDocument } from "../gallery/document.js";
+import {
+  type BrowserDocument,
+  browser,
+  closeBrowser,
+} from "../support/browser.js";
 import { renderPaths } from "../support/render-paths.js";
 import { brandTokens, dark, light } from "../support/tokens.js";
 
-declare const document: { documentElement: object };
+declare const document: BrowserDocument;
 declare function getComputedStyle(element: object): {
   getPropertyValue(name: string): string;
 };
@@ -21,21 +25,13 @@ const names = [
 ];
 const colours = names.filter((name) => !/^--(f-|s[1-9]$|measure$)/.test(name));
 
-let browser: Browser;
-
-before(async () => {
-  browser = await chromium.launch();
-});
-
-after(async () => {
-  await browser?.close();
-});
+after(closeBrowser);
 
 async function resolveTokens(
   markup: string,
   colorScheme: "light" | "dark",
 ): Promise<Map<string, string>> {
-  const page = await browser.newPage();
+  const page = await (await browser()).newPage();
 
   try {
     await page.emulateMedia({ colorScheme });
@@ -53,6 +49,24 @@ async function resolveTokens(
     await page.close();
   }
 }
+
+test("the four render paths are the ones every gate iterates", () => {
+  assert.deepStrictEqual(
+    renderPaths.map((path) => [
+      path.name,
+      path.theme,
+      path.colorScheme,
+      path.palette,
+    ]),
+    [
+      ['data-theme="dark"', "dark", "light", "dark"],
+      ['data-theme="light"', "light", "light", "light"],
+      ["unstamped under colorScheme light", null, "light", "light"],
+      ["unstamped under colorScheme dark", null, "dark", "dark"],
+    ],
+    "render-paths.ts is a shared support module: dropping an entry shrinks this file and axe.contract.ts at once, and every test in both still passes",
+  );
+});
 
 test("the enumeration names every token the palettes resolve", () => {
   for (const name of dark.keys()) {

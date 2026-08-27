@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+// Position scanner for the html tag's templates. Three shapes it leaves to
+// other gates: raw() in an attribute (src/html/index.ts refuses it), one
+// inside <style> or <script> (the CSP refuses it), and a URL scheme in a
+// quoted href (the markdown allowlist). No html-comment state either.
+
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -109,6 +114,20 @@ export function scan(source: string): Interpolation[] {
   }
 }
 
+// a bare scan throws a byte offset and no file, which names nothing
+export function scanIn(file: {
+  path: string;
+  source: string;
+}): Interpolation[] {
+  try {
+    return scan(file.source);
+  } catch (error) {
+    throw new Error(`${file.path}: ${(error as Error).message}`, {
+      cause: error,
+    });
+  }
+}
+
 export function substitution(source: string, found: Interpolation): string {
   return source.slice(found.index + 2, found.end - 1);
 }
@@ -121,7 +140,8 @@ export function lineOf(source: string, index: number): number {
   return source.slice(0, index).split("\n").length;
 }
 
-export function templateSources(): { path: string; source: string }[] {
+// the planted controls end .ts.fixture, which is what keeps them out
+export function sources(): { path: string; source: string }[] {
   const listed = execFileSync(
     "git",
     [
@@ -140,7 +160,10 @@ export function templateSources(): { path: string; source: string }[] {
 
   return listed
     .split("\0")
-    .filter((path) => path !== "" && !path.startsWith("test/fixtures/"))
-    .map((path) => ({ path, source: readFileSync(join(root, path), "utf8") }))
-    .filter(({ source }) => source.includes(opener));
+    .filter((path) => path.endsWith(".ts"))
+    .map((path) => ({ path, source: readFileSync(join(root, path), "utf8") }));
+}
+
+export function templateSources(): { path: string; source: string }[] {
+  return sources().filter(({ source }) => source.includes(opener));
 }

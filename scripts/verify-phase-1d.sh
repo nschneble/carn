@@ -64,7 +64,10 @@ cleanup() {
   drop_scratch
   rm -rf "$work"
 }
+# signalled, exit rather than resume: a handler alone returns to the run
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # the verdict derives from this log, so a deleted FAIL trips the count
 record() {
@@ -614,7 +617,7 @@ contract 9 "validateLink rejects javascript:, and the allowlist is what does it"
 # 10
 # the whole file: four render paths, the enumeration that keeps the list
 # honest, and the deleted-token control
-contract 10 "every BRAND.md token resolves non-empty on :root in all four paths" 6 "" \
+contract 10 "every BRAND.md token resolves non-empty on :root in all four paths" 7 "" \
   token-resolution
 
 # 11

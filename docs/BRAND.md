@@ -90,8 +90,8 @@ states — explicit dark, explicit light, and unstamped system default — resol
   --on-accent: #ffffff;
 }
 @media (prefers-contrast: more) {
-  /* doubled :root outranks the theme selectors above */
-  :root:root {
+  /* tripled :root outranks the theme blocks by specificity, not order */
+  :root:root:root {
     --rule: var(--ink-mid);
     --rule-soft: var(--ink-faint);
   }
@@ -479,7 +479,7 @@ _One accent · two ramps · measured contrast_
 
 There is no secondary brand colour and no semantic palette — state is carried by the accent, by weight, and by words.
 
-**Every ratio is measured against all three grounds.** The two shown below are the best case and the binding one: `--sunk` is the hover and focus wash, so it sits under a row's text whenever the pointer or the caret is there, and it is always the darkest ground in dark mode and the lightest in light. Quoting a token against `--ground` alone reads it high — by 0.4 in light and up to 1.0 in dark on the tokens near the threshold. The contract test asserts every pair on ground, surface, _and_ sunk.
+**Every ratio is measured against all three grounds.** The two shown below are the best case and the binding one: `--sunk` is the hover and focus wash, so it sits under a row's text whenever the pointer or the caret is there, and it is always the lightest ground in dark mode and the darkest in light — in both, the one nearest the ink. Quoting a token against `--ground` alone reads it high — by 0.4 in light and up to 1.0 in dark on the tokens near the threshold. The contract test asserts every pair on ground, surface, _and_ sunk.
 
 ### Dark — the default
 
@@ -602,7 +602,7 @@ _Hairlines · one spacing scale · no boxes around content_
 
 ## 05 · Components
 
-_Seven primitives — everything else composes from these_
+_Six primitives — everything else composes from these_
 
 > **THE MODEL**
 >

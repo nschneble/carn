@@ -15,6 +15,7 @@ import {
   lineOf,
   root,
   scan,
+  scanIn,
   substitution,
   template,
   templateSources,
@@ -360,13 +361,15 @@ test("no rendered markdown lands in an attribute position", () => {
   const bearing: string[] = [];
   let classified = 0;
 
-  for (const { path, source } of files) {
-    for (const found of scan(source)) {
+  for (const file of files) {
+    for (const found of scanIn(file)) {
       classified += 1;
-      if (!bearsMarkdown.test(substitution(source, found))) continue;
-      bearing.push(path);
+      if (!bearsMarkdown.test(substitution(file.source, found))) continue;
+      bearing.push(file.path);
       if (found.position === "text") continue;
-      reported.push(`${path}:${lineOf(source, found.index)} ${found.position}`);
+      reported.push(
+        `${file.path}:${lineOf(file.source, found.index)} ${found.position}`,
+      );
     }
   }
 

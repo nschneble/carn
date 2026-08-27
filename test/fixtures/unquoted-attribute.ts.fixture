@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Positive control for test/contract/unquoted-attribute.contract.ts. The
-// first three functions are deliberately unsafe; leave them wrong. Not a
-// .ts file: tsconfig compiles test/**/*.ts into dist, which npm publishes.
+// first three functions are deliberately unsafe; leave them wrong. The
+// .fixture extension is what keeps it uncompiled and out of the corpus.
 
 import { html } from "../../src/html/index.js";
 

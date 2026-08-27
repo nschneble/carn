@@ -29,8 +29,9 @@ test("anything that is not a theme leaves the OS to decide", () => {
   assert.strictEqual(readTheme("THEME=dark"), null);
 });
 
-test("the first theme cookie wins", () => {
+test("the first valid theme cookie wins", () => {
   assert.strictEqual(readTheme("theme=dark; theme=light"), "dark");
+  assert.strictEqual(readTheme("theme=sepia; theme=light"), "light");
 });
 
 test("each theme state stamps the document it is meant to", () => {

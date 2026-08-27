@@ -537,6 +537,7 @@ The complete surface outside the nine:
 | ------------------------------------------------------ | ----- | ----------------------------------------------------------------------------- |
 | `/new` · `/settings` · `/r/:repo/settings`             | Web   | Post-MLP. Admin forms; see the settings split below.                          |
 | `/r/:repo/releases` · `/r/:repo/releases/:tag`         | Web   | Phase 5.                                                                      |
+| `/r/:repo/header/:asset`                               | Web   | The committed header image, addressed by blob OID. Immutable — cache forever. |
 | `/r/:repo/info/refs` · `POST /r/:repo/git-upload-pack` | Git   | Anonymous read only. No `git-receive-pack` over HTTP, ever — push is SSH.     |
 | `/r/:repo/archive/:rev.tar.gz`                         | Git   | `git archive` on demand. The tightest rate-limit zone.                        |
 | Any view + `.json`                                     | API   | Read API — the same view model, serialized. No separate route tree.           |

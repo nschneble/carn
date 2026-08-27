@@ -211,6 +211,13 @@ test("each primitive draws from the token the contrast check measured", () => {
     assert.match(rule(filled), /border: 1px solid var\(--accent-fill\);/);
   }
 
+  assert.match(rule(".chip--current"), /background: var\(--accent-fill\);/);
+  assert.match(
+    rule(".chip--current"),
+    /border: 2px solid var\(--accent-fill\);/,
+  );
+  assert.match(rule(".row.is-dir .nm"), /color: var\(--accent-text\);/);
+
   assert.match(rule(":focus-visible"), /outline: 2px solid var\(--accent\);/);
   assert.match(rule(":focus-visible"), /outline-offset: 2px;/);
   assert.match(rule(".row .nm:focus-visible"), /outline-offset: -2px;/);

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Positive control for test/contract/markdown.contract.ts. The first three
-// functions put rendered markdown in an attribute; leave them wrong. Not a
-// .ts file: tsconfig compiles test/**/*.ts into dist, which npm publishes.
+// functions put rendered markdown in an attribute; leave them wrong. The
+// .fixture extension is what keeps it uncompiled and out of the corpus.
 
 import { html, raw } from "../../src/html/index.js";
 import { renderMarkdown } from "../../src/markdown/render.js";

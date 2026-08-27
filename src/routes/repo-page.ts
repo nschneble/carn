@@ -26,6 +26,7 @@ import {
 import { resolveRepo } from "../repos/resolve.js";
 import { loadRepoView } from "../repos/show.js";
 import { resolveTip } from "../repos/tree.js";
+import { sendPage } from "./cache.js";
 
 type PageRoute = { Params: { repo: string }; Querystring: { all?: string } };
 type AssetRoute = { Params: { repo: string; asset: string } };
@@ -76,9 +77,11 @@ async function showRepo(
       signal: abortWith(reply),
     });
 
-    return reply
-      .type(htmlType)
-      .send(repoShowPage({ repo, theme, showAll: request.query.all === "1" }));
+    return sendPage(
+      request,
+      reply,
+      repoShowPage({ repo, theme, showAll: request.query.all === "1" }),
+    );
   } catch (error) {
     request.log.error({ err: error }, "repo page: the page failed to render");
     return fail(reply, 503, unavailable, theme);

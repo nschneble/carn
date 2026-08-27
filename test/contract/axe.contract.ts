@@ -7,18 +7,23 @@
 import assert from "node:assert";
 import { createRequire } from "node:module";
 import { after, before, test } from "node:test";
-import type { AxeResults, Result } from "axe-core";
-import { type Browser, chromium } from "playwright";
+import type { AxeResults, NodeResult, Result } from "axe-core";
+import type { Page } from "playwright";
 import { errorPage, noSuchRepo } from "../../src/html/error-page.js";
 import { stylesheet } from "../../src/html/styles.js";
 import { renderMarkdown } from "../../src/markdown/render.js";
 import { galleryDocument } from "../gallery/document.js";
 import { hoverSimulation, indexDocument } from "../gallery/repo-index.js";
 import { showDocument, view } from "../gallery/repo-show.js";
+import {
+  type BrowserDocument,
+  browser,
+  closeBrowser,
+} from "../support/browser.js";
 import { renderPaths } from "../support/render-paths.js";
 import { type Served, serve } from "../support/serve.js";
 
-declare const document: { fonts: { ready: Promise<unknown> } };
+declare const document: BrowserDocument;
 declare const axe: {
   getRules(): { ruleId: string; tags: string[] }[];
   run(
@@ -69,6 +74,7 @@ const retiredByAxe = [
   "landmark-complementary-is-top-level",
 ];
 
+// no lang attribute on purpose: html-has-lang is one of the three planted
 const plantedFailures = `<!doctype html>
 <html>
 <head>
@@ -109,6 +115,7 @@ const tableSource = `| Ref | Kind | Note |
 
 const renderedTable = renderMarkdown(tableSource).value;
 
+// repoint at the shared page shell once a wave gives markdown one
 const readmeTable = `<!doctype html>
 <html lang="en" data-theme="dark">
 <head>
@@ -126,6 +133,8 @@ ${renderedTable}</main>
 </body>
 </html>
 `;
+
+const buckets = ["violations", "incomplete", "passes", "inapplicable"] as const;
 
 const fixtures: Record<string, string> = {};
 
@@ -156,24 +165,22 @@ for (const path of renderPaths) {
   });
 }
 
-let browser: Browser;
 let site: Served;
 
 before(async () => {
-  browser = await chromium.launch();
   site = await serve({ documents: fixtures, extraCss: hoverSimulation });
 });
 
 after(async () => {
-  await browser?.close();
+  await closeBrowser();
   await site?.close();
 });
 
 async function audit(
-  load: (page: Awaited<ReturnType<Browser["newPage"]>>) => Promise<void>,
+  load: (page: Page) => Promise<void>,
   colorScheme: "light" | "dark",
 ): Promise<Audit> {
-  const page = await browser.newPage();
+  const page = await (await browser()).newPage();
 
   try {
     await page.emulateMedia({ colorScheme });
@@ -253,18 +260,47 @@ function report(found: Result[]): string {
     .join("\n");
 }
 
+// these two reach no verdict on any page; incomplete is all they report
+const alwaysIncomplete = new Set(["css-orientation-lock", "hidden-content"]);
+
+// axe declines contrast on the decorative arrow's non-text glyph
+function nonText(node: NodeResult): boolean {
+  return node.any.some(
+    (check) =>
+      check.id === "color-contrast" &&
+      (check.data as { messageKey?: string } | null)?.messageKey === "nonBmp",
+  );
+}
+
+function decided(results: AxeResults): void {
+  const undecided = results.incomplete
+    .filter((rule) => !alwaysIncomplete.has(rule.id))
+    .flatMap((rule) =>
+      rule.nodes
+        .filter((node) => !nonText(node))
+        .map((node) => `${rule.id} ${node.html}`),
+    );
+
+  assert.deepStrictEqual(
+    undecided,
+    [],
+    `axe reached no verdict on these, so the clean violations list is measuring fewer nodes than it looks like:\n${undecided.join("\n")}`,
+  );
+}
+
 for (const path of renderPaths) {
   test(`no axe violations in the ${path.name} gallery`, async () => {
-    const found = await violations(
+    const { results } = await run(
       galleryDocument(path.theme),
       path.colorScheme,
     );
 
     assert.deepStrictEqual(
-      found.map((rule) => rule.id),
+      results.violations.map((rule) => rule.id),
       [],
-      report(found),
+      report(results.violations),
     );
+    decided(results);
   });
 }
 
@@ -289,6 +325,7 @@ for (const path of renderPaths) {
         [],
         report(results.violations),
       );
+      decided(results);
     });
   }
 }
@@ -348,12 +385,6 @@ test("only axe's own deprecated rules go unevaluated", async () => {
 
 test("the rules above WCAG 2.0 report which of them found anything", async (t) => {
   const { results } = await run(galleryDocument("dark"));
-  const buckets = [
-    "violations",
-    "incomplete",
-    "passes",
-    "inapplicable",
-  ] as const;
   const bucketOf = (name: string) =>
     buckets.find((bucket) => results[bucket].some((rule) => rule.id === name));
 
@@ -427,15 +458,26 @@ test("axe reports a planted accessible name mismatch", async () => {
   );
 });
 
-test("axe reads the gallery's own stylesheet, not a bare document", async () => {
-  const darkened = galleryDocument("dark").replace(
-    "--ink: #f2f4f4;",
-    "--ink: #1a1c1c;",
-  );
-  const found = await violations(darkened);
+test("axe reads the gallery's own stylesheet, in both palettes", async () => {
+  const planted = [
+    { theme: "dark", from: "\n  --ink: #f2f4f4;", to: "\n  --ink: #1a1c1c;" },
+    { theme: "light", from: "\n  --ink: #0e0f0f;", to: "\n  --ink: #eceeee;" },
+  ] as const;
 
-  assert.ok(
-    found.some((violation) => violation.id === "color-contrast"),
-    `a token darkened to the ground went unreported:\n${report(found)}`,
-  );
+  for (const { theme, from, to } of planted) {
+    const markup = galleryDocument(theme);
+
+    assert.strictEqual(
+      markup.split(from).length,
+      2,
+      `the ${theme} --ink declaration is no longer unique in the gallery, so the control moves the wrong token or none`,
+    );
+
+    const found = await violations(markup.replace(from, to));
+
+    assert.ok(
+      found.some((violation) => violation.id === "color-contrast"),
+      `a ${theme} token moved onto its own ground went unreported, so this palette's half of the gate is measuring a bare document:\n${report(found)}`,
+    );
+  }
 });

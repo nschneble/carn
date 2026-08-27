@@ -59,7 +59,10 @@ cleanup() {
   drop_scratch
   rm -rf "$work"
 }
+# signalled, exit rather than resume: a handler alone returns to the run
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # the verdict derives from this log, so a deleted FAIL trips the count
 record() {

@@ -77,8 +77,8 @@ export const tokens = `:root {
   --on-accent: #ffffff;
 }
 @media (prefers-contrast: more) {
-  /* doubled :root outranks the theme selectors above */
-  :root:root {
+  /* tripled :root outranks the theme blocks by specificity, not order */
+  :root:root:root {
     --rule: var(--ink-mid);
     --rule-soft: var(--ink-faint);
   }
