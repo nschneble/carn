@@ -206,12 +206,13 @@ All of these are non-negotiable:
   the default blocklist already rejects it — an unpatched instance passes the
   same test. Discriminate with a scheme the default *allows* and the allowlist
   denies, e.g. `ftp:`, then assert `javascript:` separately.
-- **15 bundles its own type declarations and `@types/markdown-it` is a trap.**
-  A bare `import` resolves to markdown-it's own `.d.mts`, but 15 dropped its
-  `lib/*` subpath exports while `@types/markdown-it@14` still exports `./*`.
-  So `import "markdown-it/lib/rules_block/state_block.mjs"` type-checks clean
-  under `strict` and throws `ERR_PACKAGE_PATH_NOT_EXPORTED` at runtime. Import
-  only the package root.
+- **15 bundles its own type declarations. Never add `@types/markdown-it`.**
+  A bare `import` resolves to markdown-it's own `.d.mts`. `@types` 14 is
+  redundant and wrong: 15 dropped its `lib/*` subpath exports while `@types`
+  still exports `./*`, so `import "markdown-it/lib/rules_block/state_block.mjs"`
+  type-checks clean under `strict` and throws `ERR_PACKAGE_PATH_NOT_EXPORTED`.
+  Import only the package root. 15 also exports the class as a type only, so
+  annotate via `import MarkdownIt, { type MarkdownIt as MarkdownItInstance }`.
 
 **post-receive hooks**
 
