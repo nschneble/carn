@@ -33,7 +33,8 @@ Verified 2026-08-27. If `npm install` resolves outside these majors,
 | `highlight.js` | 11.12.0 | **11** | Not needed until 1e. Do not install it yet. |
 | `tuffgal` | 0.2.0-alpha.8 | **0** | Pre-1.0, unstable API by its own README. Pin the exact version. |
 
-New dependencies this phase: `markdown-it`, `tuffgal`. Nothing else.
+New dependencies this phase: `markdown-it`, `tuffgal`, `axe-core`, and
+`playwright`. Nothing else.
 Archivo was already in `fonts/`; the mono face was not, and this phase
 builds it — see `fonts/README.md`. `@types/markdown-it` was installed and
 then dropped, because 15 is self-typed. `docs/STACK.md` records why; don't
@@ -226,7 +227,11 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
    assignment
 10. Both themes render: `data-theme="dark"`, `data-theme="light"`, and
     unstamped, all three resolving to a complete palette
-11. **Zero axe violations in both themes**
+11. **Zero axe violations across all three theme states** —
+    `data-theme="dark"`, `data-theme="light"`, and unstamped. Run against
+    the gallery as well as both pages. Prove the harness bites: a fixture
+    with a known contrast failure must be reported. A run that finds
+    nothing because axe never loaded is indistinguishable from a pass.
 12. **Under 100 KB per page**, fonts and all
 13. **Fewer than 12 `spawn` calls** rendering a repo page — instrument the
     wrapper and count
@@ -237,7 +242,9 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
     fixture and a frozen clock
 17. `git grep` finds no shell-enabled spawn — scoped form, positive control
 18. Every `.ts` under `src`, `test`, and `scripts` opens with the SPDX line
-19. `package.json` adds only `markdown-it` and `tuffgal`
+19. `package.json` adds only `markdown-it`, `tuffgal`, `axe-core`, and
+    `playwright`. `axe-core` and `playwright` are devDependencies;
+    `@types/markdown-it` and `@axe-core/playwright` are not installed.
 20. `npx squawk prisma/migrations/**/*.sql` exits 0
 21. 1a, 1b, and 1c verify scripts all still pass in full
 22. Running this script twice gives the same result, leaving no
