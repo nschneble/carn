@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // axe drops experimental and deprecated rules from a tag selection; the
-// experimental ones are computed back on, the deprecated two are not:
-// audio-caption can never apply here, this site serves no audio, and
-// aria-roledescription was retired as unreliable
+// experimental ones are computed back on and the deprecated ones are not,
+// which the pinned list below asserts by their own tag rather than by name
 
 import assert from "node:assert";
 import { createRequire } from "node:module";
@@ -13,9 +12,11 @@ import { type Browser, chromium } from "playwright";
 import { stylesheet } from "../../src/html/styles.js";
 import { renderMarkdown } from "../../src/markdown/render.js";
 import { galleryDocument } from "../gallery/document.js";
+import { hoverSimulation, indexDocument } from "../gallery/repo-index.js";
 import { renderPaths } from "../support/render-paths.js";
+import { type Served, serve } from "../support/serve.js";
 
-declare const document: object;
+declare const document: { fonts: { ready: Promise<unknown> } };
 declare const axe: {
   getRules(): { ruleId: string; tags: string[] }[];
   run(
@@ -31,10 +32,18 @@ type Audit = {
   results: AxeResults;
   forced: string[];
   unevaluated: string[];
+  deprecated: string[];
 };
 
 const axeSource = createRequire(import.meta.url).resolve("axe-core");
-const ruleset = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+const ruleset = [
+  "wcag2a",
+  "wcag2aa",
+  "wcag21a",
+  "wcag21aa",
+  "wcag22aa",
+  "best-practice",
+];
 
 const beyondWcag20 = [
   "autocomplete-valid",
@@ -44,13 +53,19 @@ const beyondWcag20 = [
 
 const experimentalInRuleset = [
   "css-orientation-lock",
+  "focus-order-semantics",
+  "hidden-content",
   "label-content-name-mismatch",
   "p-as-heading",
   "table-fake-caption",
   "td-has-header",
 ];
 
-const retiredByAxe = ["aria-roledescription", "audio-caption"];
+const retiredByAxe = [
+  "aria-roledescription",
+  "audio-caption",
+  "landmark-complementary-is-top-level",
+];
 
 const plantedFailures = `<!doctype html>
 <html>
@@ -104,31 +119,44 @@ ${stylesheet}
 </head>
 <body>
 <main id="main" tabindex="-1">
+<h1 class="t-label">Refs</h1>
 ${renderedTable}</main>
 </body>
 </html>
 `;
 
+const fixtures: Record<string, string> = {};
+
+for (const path of renderPaths) {
+  const key = `${path.palette}-${path.theme ?? "unstamped"}`;
+  fixtures[`/populated-${key}`] = indexDocument({ theme: path.theme });
+  fixtures[`/hover-${key}`] = indexDocument({ theme: path.theme, hover: true });
+  fixtures[`/empty-${key}`] = indexDocument({ theme: path.theme, repos: [] });
+}
+
 let browser: Browser;
+let site: Served;
 
 before(async () => {
   browser = await chromium.launch();
+  site = await serve({ documents: fixtures, extraCss: hoverSimulation });
 });
 
 after(async () => {
   await browser?.close();
+  await site?.close();
 });
 
-async function run(
-  markup: string,
-  colorScheme: "light" | "dark" = "light",
+async function audit(
+  load: (page: Awaited<ReturnType<Browser["newPage"]>>) => Promise<void>,
+  colorScheme: "light" | "dark",
 ): Promise<Audit> {
   const page = await browser.newPage();
 
   try {
     await page.emulateMedia({ colorScheme });
-    await page.setContent(markup);
-    await page.addScriptTag({ path: axeSource });
+    await load(page);
+    await page.evaluate(() => document.fonts.ready);
 
     return await page.evaluate(async (tags) => {
       const selected = new Set(tags);
@@ -158,11 +186,36 @@ async function run(
           .map((rule) => rule.ruleId)
           .filter((id) => !evaluated.has(id))
           .sort(),
+        deprecated: inSelection
+          .filter((rule) => rule.tags.includes("deprecated"))
+          .map((rule) => rule.ruleId)
+          .sort(),
       };
     }, ruleset);
   } finally {
     await page.close();
   }
+}
+
+async function run(
+  markup: string,
+  colorScheme: "light" | "dark" = "light",
+): Promise<Audit> {
+  return audit(async (page) => {
+    await page.setContent(markup);
+    await page.addScriptTag({ path: axeSource });
+  }, colorScheme);
+}
+
+// the served CSP blocks addScriptTag; an init script goes over CDP
+async function fetched(
+  path: string,
+  colorScheme: "light" | "dark",
+): Promise<Audit> {
+  return audit(async (page) => {
+    await page.addInitScript({ path: axeSource });
+    await page.goto(`${site.origin}${path}`);
+  }, colorScheme);
 }
 
 async function violations(
@@ -193,6 +246,49 @@ for (const path of renderPaths) {
   });
 }
 
+for (const path of renderPaths) {
+  const key = `${path.palette}-${path.theme ?? "unstamped"}`;
+
+  for (const state of ["populated", "hover", "empty"]) {
+    test(`no axe violations on the ${state} index, ${path.name}`, async () => {
+      const { results } = await fetched(`/${state}-${key}`, path.colorScheme);
+
+      assert.deepStrictEqual(
+        results.violations.map((rule) => rule.id),
+        [],
+        report(results.violations),
+      );
+    });
+  }
+}
+
+test("the hover wash is measured under the two columns that sit on it", async (t) => {
+  for (const path of renderPaths) {
+    const key = `${path.palette}-${path.theme ?? "unstamped"}`;
+    const { results } = await fetched(`/hover-${key}`, path.colorScheme);
+    const contrast: Result | undefined = results.passes.find(
+      (rule) => rule.id === "color-contrast",
+    );
+
+    assert.ok(
+      contrast,
+      `color-contrast evaluated nothing on the ${path.name} hover fixture, so the stylesheet never reached the page and a clean run proves nothing`,
+    );
+
+    for (const column of ['class="msg"', "<time datetime="]) {
+      const measured: number = contrast.nodes.filter((node) =>
+        node.html.includes(column),
+      ).length;
+
+      assert.ok(
+        measured > 0,
+        `color-contrast never measured ${column} on the ${path.name} hover fixture`,
+      );
+      t.diagnostic(`${path.name} ${column}: ${measured} measured`);
+    }
+  }
+});
+
 test("the ruleset's experimental rules are the ones forced on", async () => {
   const { forced } = await run(galleryDocument("dark"));
 
@@ -203,13 +299,19 @@ test("the ruleset's experimental rules are the ones forced on", async () => {
   );
 });
 
-test("only the deprecated pair goes unevaluated", async () => {
-  const { unevaluated } = await run(galleryDocument("dark"));
+test("only axe's own deprecated rules go unevaluated", async () => {
+  const { unevaluated, deprecated } = await run(galleryDocument("dark"));
 
   assert.deepStrictEqual(
     unevaluated,
     retiredByAxe,
-    "a rule the ruleset selects did not execute and is not one of the two deprecated rules held off deliberately — axe is excluding it by a mechanism this file does not know about",
+    "a rule the ruleset selects did not execute and is not one of the deprecated rules held off deliberately — axe is excluding it by a mechanism this file does not know about",
+  );
+
+  assert.deepStrictEqual(
+    deprecated,
+    retiredByAxe,
+    "the pinned list is no longer exactly the rules axe itself tags deprecated, so it has drifted into a list of rules this project gave up on",
   );
 });
 

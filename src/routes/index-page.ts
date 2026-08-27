@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import type { FastifyInstance } from "fastify";
+
+import { repoListPage } from "../html/repo-list.js";
+import { readTheme } from "../html/theme.js";
+import { listRepos } from "../repos/list.js";
+
+// fastify's default body carries the driver's message, host and all
+const unavailable = "The repo list is unavailable. Try again shortly.\n";
+
+export function indexRoute(app: FastifyInstance): void {
+  app.get("/", async (request, reply) => {
+    try {
+      const repos = await listRepos();
+
+      return await reply.type("text/html; charset=utf-8").send(
+        repoListPage({
+          repos,
+          theme: readTheme(request.headers.cookie),
+          now: new Date(),
+        }),
+      );
+    } catch (error) {
+      request.log.error({ err: error }, "index: the repo list failed to load");
+      return await reply
+        .code(503)
+        .type("text/plain; charset=utf-8")
+        .send(unavailable);
+    }
+  });
+}

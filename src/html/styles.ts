@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { createHash } from "node:crypto";
+
 export const tokens = `:root {
   color-scheme: dark;
   /* ground → surface → sunk */
@@ -465,10 +467,12 @@ export const identity = `.hdr {
   aspect-ratio: 4 / 1;
   object-fit: cover;
 }
+/* body's axis settings are inherited and outrank the mark's own two */
 .mark {
   display: block;
   width: 100%;
   height: auto;
+  font-variation-settings: normal;
 }
 .hdr-light {
   display: none;
@@ -485,4 +489,55 @@ export const identity = `.hdr {
   }
 }`;
 
-export const stylesheet = `${faces}\n${tokens}\n${components}\n${identity}\n`;
+export const pages = `a {
+  color: var(--accent-text);
+}
+
+/* --- page frame --- */
+body > header,
+body > main,
+body > footer {
+  box-sizing: border-box;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 var(--s5);
+}
+body > header {
+  padding-top: var(--s5);
+  padding-bottom: var(--s6);
+}
+body > footer {
+  border-top: 1px solid var(--rule);
+  margin-top: var(--s8);
+  padding-top: var(--s4);
+  padding-bottom: var(--s8);
+}
+body > header > p,
+body > footer > p {
+  margin: 0;
+}
+main > h1 {
+  margin: 0 0 var(--s2);
+}
+
+/* --- repo index --- */
+.repos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--ink);
+}
+.empty p {
+  max-width: var(--measure);
+  margin: 0 0 var(--s4);
+}
+.empty code {
+  overflow-wrap: anywhere;
+}`;
+
+export const stylesheet = `${faces}\n${tokens}\n${components}\n${identity}\n${pages}\n`;
+
+export const styleHref = `/carn.${createHash("sha256")
+  .update(stylesheet)
+  .digest("hex")
+  .slice(0, 16)}.css`;

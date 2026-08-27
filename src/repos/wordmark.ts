@@ -162,7 +162,7 @@ function build(name: string): Raw {
 
   const pivot = `translate(${round(boardWidth / 2)}, ${round(boardHeight / 2)}) rotate(${round(rotation)}) translate(${round(-boxWidth / 2)}, ${round(-boxHeight / 2)})`;
 
-  return html`<svg class="mark" viewBox="0 0 ${round(boardWidth)} ${round(boardHeight)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false" font-size="${em}" style="font-variation-settings: 'wdth' ${width}, 'wght' ${weight}"><defs><g id="${id}">${text}</g></defs><g transform="${pivot}">${stack}</g></svg>`;
+  return html`<svg class="mark" viewBox="0 0 ${round(boardWidth)} ${round(boardHeight)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false" font-size="${em}" font-weight="${weight}" font-stretch="${width}%"><defs><g id="${id}">${text}</g></defs><g transform="${pivot}">${stack}</g></svg>`;
 }
 
 export function wordmark(name: string): Raw {
