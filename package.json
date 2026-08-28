@@ -25,7 +25,8 @@
     "@prisma/engines@7.9.1": true,
     "prisma@7.9.1": true,
     "ssh2@1.17.0": true,
-    "cpu-features@0.0.10": true
+    "cpu-features@0.0.10": true,
+    "fsevents@2.3.2": true
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
@@ -42,7 +43,7 @@
     "playwright": "^1.62.1",
     "prisma": "^7.9.1",
     "squawk-cli": "^2.62.0",
-    "tuffgal": "0.2.0-alpha.8",
+    "tuffgal": "0.2.1-alpha.1",
     "typescript": "^7.0.2"
   }
 }

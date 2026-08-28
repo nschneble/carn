@@ -19,6 +19,9 @@ export default defineConfig({
 
   baseUrl: visualOrigin,
 
+  // no story produces these; each is a committed cookie fixture instead
+  seededLabels: ["theme-dark", "theme-light"],
+
   // BRAND.md's 1440 is not in tuffgal's registry, whose desktop is 1280
   breakpoints: [{ name: "desktop", width: 1440, height: 900 }],
 
