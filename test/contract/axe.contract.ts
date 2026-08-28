@@ -12,16 +12,18 @@ import type { Page } from "playwright";
 import { errorPage, noSuchRepo } from "../../src/html/error-page.js";
 import { stylesheet } from "../../src/html/styles.js";
 import { renderMarkdown } from "../../src/markdown/render.js";
+import { headerAssetPath } from "../../src/repos/header-asset.js";
 import { galleryDocument } from "../gallery/document.js";
 import { hoverSimulation, indexDocument } from "../gallery/repo-index.js";
-import { showDocument, view } from "../gallery/repo-show.js";
+import { committedHeader, showDocument, view } from "../gallery/repo-show.js";
 import {
   type BrowserDocument,
   browser,
   closeBrowser,
 } from "../support/browser.js";
+import { fixtureHeaders } from "../support/fixture-repos.js";
 import { renderPaths } from "../support/render-paths.js";
-import { type Served, serve } from "../support/serve.js";
+import { type Served, type ServedAsset, serve } from "../support/serve.js";
 
 declare const document: BrowserDocument;
 declare const axe: {
@@ -140,6 +142,19 @@ const fixtures: Record<string, string> = {};
 
 const emptyRepo = view({ tip: null, entries: [], readme: null });
 
+// the show page's only external subresource; without it the audited
+// header is a broken image and the committed path goes unmeasured
+const headerAssets: Record<string, ServedAsset> = {
+  [headerAssetPath("linklater", committedHeader.light)]: {
+    type: "image/svg+xml",
+    body: fixtureHeaders.light,
+  },
+  [headerAssetPath("linklater", committedHeader.dark)]: {
+    type: "image/svg+xml",
+    body: fixtureHeaders.dark,
+  },
+};
+
 for (const path of renderPaths) {
   const key = `${path.palette}-${path.theme ?? "unstamped"}`;
   fixtures[`/populated-${key}`] = indexDocument({ theme: path.theme });
@@ -159,6 +174,10 @@ for (const path of renderPaths) {
     theme: path.theme,
     repo: emptyRepo,
   });
+  fixtures[`/show-header-${key}`] = showDocument({
+    theme: path.theme,
+    repo: view({ header: committedHeader }),
+  });
   fixtures[`/not-found-${key}`] = errorPage({
     failure: noSuchRepo("linklater"),
     theme: path.theme,
@@ -168,7 +187,11 @@ for (const path of renderPaths) {
 let site: Served;
 
 before(async () => {
-  site = await serve({ documents: fixtures, extraCss: hoverSimulation });
+  site = await serve({
+    documents: fixtures,
+    assets: headerAssets,
+    extraCss: hoverSimulation,
+  });
 });
 
 after(async () => {
@@ -327,6 +350,7 @@ for (const path of renderPaths) {
     "show-all",
     "show-bare",
     "show-new",
+    "show-header",
     "not-found",
   ]) {
     test(`no axe violations on the ${state} page, ${path.name}`, async () => {
@@ -341,6 +365,50 @@ for (const path of renderPaths) {
     });
   }
 }
+
+// a 404 header is still alt="", so axe stays clean over a broken image
+test("the committed header the audit renders is a real 4:1 image", async (t) => {
+  const page = await (await browser()).newPage();
+
+  try {
+    for (const path of renderPaths) {
+      const key = `${path.palette}-${path.theme ?? "unstamped"}`;
+      const markup = fixtures[`/show-header-${key}`] as string;
+      const picture = markup.includes("<picture>");
+
+      assert.strictEqual(
+        picture,
+        path.theme === null,
+        `the ${path.name} show-header fixture ${picture ? "took" : "skipped"} the <picture> branch, which is backwards for this render path`,
+      );
+
+      await page.emulateMedia({ colorScheme: path.colorScheme });
+      await page.goto(`${site.origin}/show-header-${key}`);
+
+      const measured = await page.locator("img.hdr").evaluate((node) => {
+        const image = node as HTMLImageElement;
+        const box = image.getBoundingClientRect();
+        return {
+          natural: [image.naturalWidth, image.naturalHeight],
+          ratio: box.width / box.height,
+        };
+      });
+
+      assert.deepStrictEqual(
+        measured.natural,
+        [1600, 400],
+        `the ${path.name} header decoded to ${measured.natural.join("x")}, so the audit measured a broken or off-spec image`,
+      );
+      assert.ok(
+        Math.abs(measured.ratio - 4) < 0.02,
+        `the ${path.name} header box is ${measured.ratio.toFixed(3)}:1, not 4:1`,
+      );
+      t.diagnostic(`${path.name}: ${measured.ratio.toFixed(3)}:1`);
+    }
+  } finally {
+    await page.close();
+  }
+});
 
 test("the hover wash is measured under the two columns that sit on it", async (t) => {
   for (const path of renderPaths) {

@@ -18,8 +18,11 @@ export type Served = {
   close: () => Promise<void>;
 };
 
+export type ServedAsset = { type: string; body: string };
+
 export async function serve(options: {
   documents: Record<string, string>;
+  assets?: Record<string, ServedAsset>;
   extraCss?: string;
 }): Promise<Served> {
   const server: Server = createServer((request, response) => {
@@ -36,6 +39,13 @@ export async function serve(options: {
       const face = path.slice("/fonts/".length);
       response.setHeader("Content-Type", "font/woff2");
       response.end(readFileSync(join(root, "fonts", face)));
+      return;
+    }
+
+    const asset = options.assets?.[path];
+    if (asset !== undefined) {
+      response.setHeader("Content-Type", asset.type);
+      response.end(asset.body);
       return;
     }
 

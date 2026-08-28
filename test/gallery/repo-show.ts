@@ -2,10 +2,28 @@
 
 import { repoShowPage } from "../../src/html/repo-show.js";
 import type { Theme } from "../../src/html/theme.js";
+import type { HeaderImage } from "../../src/repos/header.js";
 import type { RepoView } from "../../src/repos/show.js";
 import type { TreeEntry } from "../../src/repos/tree.js";
+import { fixtureHeaders } from "../support/fixture-repos.js";
 
 const tip = "c".repeat(40);
+
+const lightHeader: HeaderImage = {
+  path: ".carn/header-light.svg",
+  oid: "d".repeat(40),
+  bytes: Buffer.byteLength(fixtureHeaders.light, "utf8"),
+};
+
+const darkHeader: HeaderImage = {
+  path: ".carn/header-dark.svg",
+  oid: "e".repeat(40),
+  bytes: Buffer.byteLength(fixtureHeaders.dark, "utf8"),
+};
+
+// the two bodies the visual fixture commits, at the two paths it commits
+// them to, so the audit and the capture render the same header
+export const committedHeader = { light: lightHeader, dark: darkHeader };
 
 function file(name: string, bytes = 512): TreeEntry {
   return { name, oid: "0".repeat(40), directory: false, bytes };

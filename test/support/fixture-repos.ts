@@ -59,13 +59,23 @@ const readme = [
   "",
 ].join("\n");
 
-const header = [
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 200" width="1200" height="200">',
-  '  <rect width="1200" height="200" fill="#1c1b1a" />',
-  '  <text x="48" y="120" font-family="monospace" font-size="72" fill="#f5f2ef">linklater</text>',
-  "</svg>",
-  "",
-].join("\n");
+// 1600x400 and transparent, per BRAND.md 06. geometry only: an svg in an
+// <img> reaches no @font-face, so text would differ across machines
+function header(ink: string, rule: string): string {
+  return [
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 400" width="1600" height="400">',
+    `  <rect x="64" y="120" width="900" height="40" fill="${ink}" />`,
+    `  <rect x="64" y="200" width="560" height="16" fill="${rule}" />`,
+    `  <rect x="64" y="256" width="1472" height="4" fill="${rule}" />`,
+    "</svg>",
+    "",
+  ].join("\n");
+}
+
+export const fixtureHeaders = {
+  light: header("#141617", "#9aa0a0"),
+  dark: header("#f2f4f4", "#6c7272"),
+};
 
 export const fixtureRepos: FixtureRepo[] = [
   {
@@ -77,7 +87,8 @@ export const fixtureRepos: FixtureRepo[] = [
       message: "Read the list back",
       at: "2026-01-18T09:30:00.000Z",
       files: [
-        { path: ".carn/header.svg", body: header },
+        { path: ".carn/header-dark.svg", body: fixtureHeaders.dark },
+        { path: ".carn/header-light.svg", body: fixtureHeaders.light },
         { path: "README.md", body: readme },
         { path: "docs/BRAND.md", body: "# Brand\n\nOne accent, no motion.\n" },
         { path: "package.json", body: '{ "name": "linklater" }\n' },

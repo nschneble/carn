@@ -468,9 +468,11 @@ export const identity = `.hdr {
   object-fit: cover;
 }
 /* body's axis settings are inherited and outrank the mark's own two */
+/* the bare ratio beats the viewBox's; the svg's own meet fits the mark */
 .mark {
   display: block;
   width: 100%;
+  aspect-ratio: 4 / 1;
   height: auto;
   font-variation-settings: normal;
 }
@@ -506,11 +508,21 @@ body > header {
   padding-top: var(--s5);
   padding-bottom: var(--s6);
 }
+/* the rule is inset to the gutters, so it matches every rule inside main */
 body > footer {
-  border-top: 1px solid var(--rule);
+  position: relative;
+  border-top: 0;
   margin-top: var(--s8);
   padding-top: var(--s4);
   padding-bottom: var(--s8);
+}
+body > footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--s5);
+  right: var(--s5);
+  border-top: 1px solid var(--rule);
 }
 body > header > p,
 body > footer > p {

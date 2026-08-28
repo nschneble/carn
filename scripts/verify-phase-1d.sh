@@ -621,7 +621,7 @@ contract 10 "every BRAND.md token resolves non-empty on :root in all four paths"
   token-resolution
 
 # 11
-contract 11 "zero axe violations across all four render paths, gallery included" 44 "" \
+contract 11 "zero axe violations across all four render paths, gallery included" 49 "" \
   axe
 
 # 12
