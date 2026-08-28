@@ -681,7 +681,7 @@ Committed to the repo, not uploaded. Versioned, editable by commit, survives mig
 
 > **THE CAP AND THE BUDGET DISAGREE BY ABOUT 6 KB**
 >
-> Measured: the two font families are 72,308 B and the stylesheet 12,730 B, and the heaviest repo page — full README, show-all tree — is 7,005 B. That is 92,043 B against the 100 KB budget, leaving **10,357 B** for a header. A header at the 16 KB cap puts the page at roughly 108 KB.
+> Measured: the two font families are 72,308 B and the stylesheet 12,730 B, and the heaviest repo page — full README, show-all tree — is 7,005 B. That is 92,043 B against the 100 KB budget, leaving **10,357 B** for a header. A header at the 16 KB cap puts the page at 108,427 B, roughly 106 KB.
 >
 > The contract test excludes the committed header from the measured weight, so nothing fails today. **Open question for Nick: is the cap 10 KB, or does the header sit outside the page budget?** Until he says, the cap and the budget disagree by exactly that, and this is the note saying so.
 

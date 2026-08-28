@@ -1,15 +1,10 @@
 #!/bin/sh
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Runs the Tuffgal stories against the real app: its own database, its own
-# repo root, and the frozen clock the pinned fixture was built for. Never
-# touches the dev database or the dev repo root. Args pass through, e.g.
-# `npm run visual -- --headed`. With --seed-only it prepares the database
-# and the repos, then prints how to serve them, and runs no stories.
-#
-# Runs twice, once per colour scheme. Tuffgal pins colorScheme per run and
-# records it as a pixel-affecting manifest key, so each scheme needs its
-# own run and its own baseline directory.
+# Runs the Tuffgal stories against the real app -- its own database,
+# repo root, and frozen clock, never the dev ones. Args pass through,
+# e.g. --headed; --seed-only seeds without running stories. Runs twice,
+# once per colour scheme, since tuffgal pins colorScheme per run.
 
 set -eu
 

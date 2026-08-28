@@ -17,8 +17,7 @@ export type Header = { light: HeaderSource; dark: HeaderSource };
 
 export type HeaderSrc = (image: HeaderImage) => string;
 
-// what the 100 KB page budget leaves once the fonts and the document are
-// paid for. BRAND.md 06
+// what the 100 KB budget leaves after fonts and the page. BRAND.md 06
 export const maxHeaderBytes = 16 * 1024;
 
 const listTimeoutMs = 5_000;

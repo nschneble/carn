@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// nothing is stamped on the document, so a render path is a system
-// preference and the palette it selects, and there are only the two
+// no theme is stamped, so a render path is just the system preference
 
 export type RenderPath = {
   name: string;

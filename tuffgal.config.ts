@@ -19,9 +19,7 @@ export default defineConfig({
   paths: {
     actions: "tuffgal/actions",
     stories: "tuffgal/stories",
-    // colorScheme is a pixel-affecting manifest key, so one dir per run.
-    // the local cache too: shared, the second run self-diffs against the
-    // first and every screen reports changed
+    // colorScheme is pixel-affecting, so each run gets its own dir
     baselines: `tuffgal/baselines/${scheme}`,
     localCache: `tuffgal/.cache/${scheme}`,
     report: `tuffgal/report/${scheme}`,

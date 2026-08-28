@@ -57,8 +57,7 @@ function readme(view: RepoView): Raw {
   return html`<div class="readme">${renderMarkdown(view.readme)}</div>`;
 }
 
-// the mark is decorative, so the name it carries has to be a real heading
-// somewhere; visually hidden keeps it off a page that already shows it
+// the mark is decorative, so .vh carries the name as a real heading
 export function repoShowPage(view: {
   repo: RepoView;
   showAll: boolean;
