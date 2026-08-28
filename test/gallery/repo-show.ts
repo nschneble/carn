@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { repoShowPage } from "../../src/html/repo-show.js";
-import type { Theme } from "../../src/html/theme.js";
 import type { HeaderImage } from "../../src/repos/header.js";
 import type { RepoView } from "../../src/repos/show.js";
 import type { TreeEntry } from "../../src/repos/tree.js";
@@ -127,14 +126,11 @@ export const empty: RepoView = view({
   readme: null,
 });
 
-export function showDocument(options: {
-  theme: Theme | null;
-  repo?: RepoView;
-  showAll?: boolean;
-}): string {
+export function showDocument(
+  options: { repo?: RepoView; showAll?: boolean } = {},
+): string {
   return repoShowPage({
     repo: options.repo ?? view(),
-    theme: options.theme,
     showAll: options.showAll ?? false,
   });
 }

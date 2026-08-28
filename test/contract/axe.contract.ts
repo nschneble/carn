@@ -10,10 +10,10 @@ import { after, before, test } from "node:test";
 import type { AxeResults, NodeResult, Result } from "axe-core";
 import type { Page } from "playwright";
 import { errorPage, noSuchRepo } from "../../src/html/error-page.js";
-import { stylesheet } from "../../src/html/styles.js";
+import { styleHref } from "../../src/html/styles.js";
 import { renderMarkdown } from "../../src/markdown/render.js";
 import { headerAssetPath } from "../../src/repos/header-asset.js";
-import { galleryDocument } from "../gallery/document.js";
+import { galleryCss, galleryDocument } from "../gallery/document.js";
 import { hoverSimulation, indexDocument } from "../gallery/repo-index.js";
 import { committedHeader, showDocument, view } from "../gallery/repo-show.js";
 import {
@@ -76,17 +76,25 @@ const retiredByAxe = [
   "landmark-complementary-is-top-level",
 ];
 
+// the pair is in a served sheet, not a style attribute: the app's own
+// style-src 'self' drops an inline one and takes the defect with it
+const plantedContrastCss = `.faint {
+  color: #d3d3d3;
+  background: #ffffff;
+}`;
+
 // no lang attribute on purpose: html-has-lang is one of the three planted
 const plantedFailures = `<!doctype html>
 <html>
 <head>
 <meta charset="utf-8" />
 <title>Planted failures</title>
+<link rel="stylesheet" href="/planted-failures.css" />
 </head>
 <body>
 <main>
 <h1>Three defects</h1>
-<p style="color: #d3d3d3; background: #ffffff">This pair measures 1.5 to 1</p>
+<p class="faint">This pair measures 1.5 to 1</p>
 <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="40" height="40" />
 </main>
 </body>
@@ -119,14 +127,12 @@ const renderedTable = renderMarkdown(tableSource).value;
 
 // repoint at the shared page shell once a wave gives markdown one
 const readmeTable = `<!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Rendered README table · Càrn</title>
-<style>
-${stylesheet}
-</style>
+<link rel="stylesheet" href="${styleHref}" />
 </head>
 <body>
 <main id="main" tabindex="-1">
@@ -138,7 +144,19 @@ ${renderedTable}</main>
 
 const buckets = ["violations", "incomplete", "passes", "inapplicable"] as const;
 
-const fixtures: Record<string, string> = {};
+const galleryHref = "/gallery.css";
+
+const fixtures: Record<string, string> = {
+  "/gallery": galleryDocument(galleryHref),
+  "/readme-table": readmeTable,
+  "/planted-failures": plantedFailures,
+  "/planted-name-mismatch": plantedNameMismatch,
+};
+
+const styles: Record<string, string> = {
+  [galleryHref]: galleryCss,
+  "/planted-failures.css": plantedContrastCss,
+};
 
 const emptyRepo = view({ tip: null, entries: [], readme: null });
 
@@ -155,33 +173,22 @@ const headerAssets: Record<string, ServedAsset> = {
   },
 };
 
-for (const path of renderPaths) {
-  const key = `${path.palette}-${path.theme ?? "unstamped"}`;
-  fixtures[`/populated-${key}`] = indexDocument({ theme: path.theme });
-  fixtures[`/hover-${key}`] = indexDocument({ theme: path.theme, hover: true });
-  fixtures[`/empty-${key}`] = indexDocument({ theme: path.theme, repos: [] });
+// one document per state: nothing is stamped, so the two render paths
+// audit the same bytes under two system preferences
+const states = {
+  populated: indexDocument(),
+  hover: indexDocument({ hover: true }),
+  empty: indexDocument({ repos: [] }),
+  show: showDocument(),
+  "show-all": showDocument({ showAll: true }),
+  "show-bare": showDocument({ repo: view({ readme: null }) }),
+  "show-new": showDocument({ repo: emptyRepo }),
+  "show-header": showDocument({ repo: view({ header: committedHeader }) }),
+  "not-found": errorPage({ failure: noSuchRepo("linklater") }),
+};
 
-  fixtures[`/show-${key}`] = showDocument({ theme: path.theme });
-  fixtures[`/show-all-${key}`] = showDocument({
-    theme: path.theme,
-    showAll: true,
-  });
-  fixtures[`/show-bare-${key}`] = showDocument({
-    theme: path.theme,
-    repo: view({ readme: null }),
-  });
-  fixtures[`/show-new-${key}`] = showDocument({
-    theme: path.theme,
-    repo: emptyRepo,
-  });
-  fixtures[`/show-header-${key}`] = showDocument({
-    theme: path.theme,
-    repo: view({ header: committedHeader }),
-  });
-  fixtures[`/not-found-${key}`] = errorPage({
-    failure: noSuchRepo("linklater"),
-    theme: path.theme,
-  });
+for (const [state, markup] of Object.entries(states)) {
+  fixtures[`/${state}`] = markup;
 }
 
 let site: Served;
@@ -189,6 +196,7 @@ let site: Served;
 before(async () => {
   site = await serve({
     documents: fixtures,
+    styles,
     assets: headerAssets,
     extraCss: hoverSimulation,
   });
@@ -199,9 +207,49 @@ after(async () => {
   await site?.close();
 });
 
+const families = ["Carn Sans", "Carn Mono"];
+
+async function fontState(page: Page): Promise<Record<string, string[]>> {
+  return page.evaluate(
+    (wanted) =>
+      Object.fromEntries(
+        wanted.map((family) => [
+          family,
+          [...document.fonts]
+            .filter((face) => face.family === family)
+            .map((face) => face.status),
+        ]),
+      ),
+    families,
+  );
+}
+
+// document.fonts.check() is not the oracle: it answers true for a family
+// with no face at all, which is exactly what a document that lost its
+// stylesheet looks like, and false for a face the page has not demanded
+// yet, which is legitimate. read the face statuses instead
+async function expectFonts(page: Page, where: string): Promise<void> {
+  const state = await fontState(page);
+
+  for (const family of families) {
+    const faces = state[family] ?? [];
+    const seen = `${where} rendered ${family} as [${faces.join(", ") || "no face at all"}]`;
+
+    assert.ok(
+      faces.length > 0 && !faces.includes("error"),
+      `${seen}, so the audit measured a fallback face and every font-sensitive rule — target-size above all — sized the wrong glyphs`,
+    );
+    assert.ok(
+      faces.includes("loaded"),
+      `${seen}, so nothing on the page ever asked for ${family} and its metrics went unmeasured`,
+    );
+  }
+}
+
 async function audit(
   load: (page: Page) => Promise<void>,
   colorScheme: "light" | "dark",
+  fonts: string | null,
 ): Promise<Audit> {
   const page = await (await browser()).newPage();
 
@@ -209,6 +257,7 @@ async function audit(
     await page.emulateMedia({ colorScheme });
     await load(page);
     await page.evaluate(() => document.fonts.ready);
+    if (fonts !== null) await expectFonts(page, fonts);
 
     return await page.evaluate(async (tags) => {
       const selected = new Set(tags);
@@ -249,32 +298,41 @@ async function audit(
   }
 }
 
-async function run(
-  markup: string,
-  colorScheme: "light" | "dark" = "light",
-): Promise<Audit> {
-  return audit(async (page) => {
-    await page.setContent(markup);
-    await page.addScriptTag({ path: axeSource });
-  }, colorScheme);
-}
-
-// the served CSP blocks addScriptTag; an init script goes over CDP
+// every audit navigates: page.setContent leaves the document at
+// about:blank, where the sheet's root-relative @font-face src cannot
+// resolve and the whole audit silently measures the system fallback.
+// the served CSP blocks addScriptTag, so an init script goes over CDP
 async function fetched(
   path: string,
   colorScheme: "light" | "dark",
+  fonts: string | null = path,
 ): Promise<Audit> {
-  return audit(async (page) => {
-    await page.addInitScript({ path: axeSource });
-    await page.goto(`${site.origin}${path}`);
-  }, colorScheme);
+  return audit(
+    async (page) => {
+      await page.addInitScript({ path: axeSource });
+      await page.goto(`${site.origin}${path}`);
+    },
+    colorScheme,
+    fonts,
+  );
 }
 
-async function violations(
-  markup: string,
-  colorScheme: "light" | "dark" = "light",
-): Promise<Result[]> {
-  return (await run(markup, colorScheme)).results.violations;
+let planted = 0;
+
+// a gallery served against a doctored copy of its own stylesheet, so a
+// planted regression reaches the audit the way a real one would
+async function galleryOn(
+  css: string,
+  colorScheme: "light" | "dark",
+  where: string,
+): Promise<Audit> {
+  planted += 1;
+  const path = `/planted-${planted}`;
+
+  styles[`${path}.css`] = css;
+  fixtures[path] = galleryDocument(`${path}.css`);
+
+  return fetched(path, colorScheme, where);
 }
 
 function report(found: Result[]): string {
@@ -323,38 +381,56 @@ function decided(results: AxeResults): void {
   );
 }
 
-for (const path of renderPaths) {
-  test(`no axe violations in the ${path.name} gallery`, async () => {
-    const { results } = await run(
-      galleryDocument(path.theme),
-      path.colorScheme,
-    );
-
-    assert.deepStrictEqual(
-      results.violations.map((rule) => rule.id),
-      [],
-      report(results.violations),
-    );
-    decided(results);
-  });
+// a clean violations list says nothing about how many nodes reached a
+// verdict. a gradient, a translucent fill, or a background image moves
+// contrast nodes from decided to incomplete with every gate still green,
+// so count what colour-contrast actually measured and settled
+function measured(results: AxeResults, id: string): number {
+  return (["violations", "passes"] as const).reduce(
+    (total, bucket) =>
+      total +
+      (results[bucket].find((rule) => rule.id === id)?.nodes.length ?? 0),
+    0,
+  );
 }
 
-for (const path of renderPaths) {
-  const key = `${path.palette}-${path.theme ?? "unstamped"}`;
+function contrastPin(results: AxeResults, where: string, pinned: number): void {
+  const undecided = results.incomplete.find(
+    (rule) => rule.id === "color-contrast",
+  );
 
-  for (const state of [
-    "populated",
-    "hover",
-    "empty",
-    "show",
-    "show-all",
-    "show-bare",
-    "show-new",
-    "show-header",
-    "not-found",
-  ]) {
+  assert.strictEqual(
+    undecided?.nodes.filter((node) => !nonText(node)).length ?? 0,
+    0,
+    `${where}: colour-contrast reached no verdict on a text node, so the gate is green over an unmeasured one`,
+  );
+
+  assert.strictEqual(
+    measured(results, "color-contrast"),
+    pinned,
+    `${where}: colour-contrast settled a different number of nodes than the ${pinned} pinned here. A gradient, a translucent fill, or a background image moves nodes out of the decided set with the violations list still empty, which is the way this gate goes quiet`,
+  );
+}
+
+// measured once per fixture, identical in both schemes: the two paths
+// audit the same bytes and differ only in which token block applies
+const contrastNodes: Record<string, number> = {
+  gallery: 62,
+  populated: 18,
+  hover: 18,
+  empty: 6,
+  show: 58,
+  "show-all": 116,
+  "show-bare": 32,
+  "show-new": 5,
+  "show-header": 58,
+  "not-found": 7,
+};
+
+for (const path of renderPaths) {
+  for (const state of ["gallery", ...Object.keys(states)]) {
     test(`no axe violations on the ${state} page, ${path.name}`, async () => {
-      const { results } = await fetched(`/${state}-${key}`, path.colorScheme);
+      const { results } = await fetched(`/${state}`, path.colorScheme);
 
       assert.deepStrictEqual(
         results.violations.map((rule) => rule.id),
@@ -362,28 +438,36 @@ for (const path of renderPaths) {
         report(results.violations),
       );
       decided(results);
+      contrastPin(
+        results,
+        `${state} ${path.name}`,
+        contrastNodes[state] as number,
+      );
     });
   }
 }
+
+test("every audited fixture has a pinned contrast count", () => {
+  assert.deepStrictEqual(
+    Object.keys(contrastNodes).sort(),
+    ["gallery", ...Object.keys(states)].sort(),
+    "a fixture was added or dropped without its contrast count, so the loop above would pin undefined and settle nothing",
+  );
+});
 
 // a 404 header is still alt="", so axe stays clean over a broken image
 test("the committed header the audit renders is a real 4:1 image", async (t) => {
   const page = await (await browser()).newPage();
 
+  assert.ok(
+    states["show-header"].includes("<picture>"),
+    "the show-header fixture skipped the <picture> branch, which is the only thing that resolves two committed slots now that nothing is stamped",
+  );
+
   try {
     for (const path of renderPaths) {
-      const key = `${path.palette}-${path.theme ?? "unstamped"}`;
-      const markup = fixtures[`/show-header-${key}`] as string;
-      const picture = markup.includes("<picture>");
-
-      assert.strictEqual(
-        picture,
-        path.theme === null,
-        `the ${path.name} show-header fixture ${picture ? "took" : "skipped"} the <picture> branch, which is backwards for this render path`,
-      );
-
       await page.emulateMedia({ colorScheme: path.colorScheme });
-      await page.goto(`${site.origin}/show-header-${key}`);
+      await page.goto(`${site.origin}/show-header`);
 
       const measured = await page.locator("img.hdr").evaluate((node) => {
         const image = node as HTMLImageElement;
@@ -412,8 +496,7 @@ test("the committed header the audit renders is a real 4:1 image", async (t) => 
 
 test("the hover wash is measured under the two columns that sit on it", async (t) => {
   for (const path of renderPaths) {
-    const key = `${path.palette}-${path.theme ?? "unstamped"}`;
-    const { results } = await fetched(`/hover-${key}`, path.colorScheme);
+    const { results } = await fetched("/hover", path.colorScheme);
     const contrast: Result | undefined = results.passes.find(
       (rule) => rule.id === "color-contrast",
     );
@@ -438,7 +521,7 @@ test("the hover wash is measured under the two columns that sit on it", async (t
 });
 
 test("the ruleset's experimental rules are the ones forced on", async () => {
-  const { forced } = await run(galleryDocument("dark"));
+  const { forced } = await fetched("/gallery", "dark");
 
   assert.deepStrictEqual(
     forced,
@@ -448,7 +531,7 @@ test("the ruleset's experimental rules are the ones forced on", async () => {
 });
 
 test("only axe's own deprecated rules go unevaluated", async () => {
-  const { unevaluated, deprecated } = await run(galleryDocument("dark"));
+  const { unevaluated, deprecated } = await fetched("/gallery", "dark");
 
   assert.deepStrictEqual(
     unevaluated,
@@ -464,7 +547,7 @@ test("only axe's own deprecated rules go unevaluated", async () => {
 });
 
 test("the rules above WCAG 2.0 report which of them found anything", async (t) => {
-  const { results } = await run(galleryDocument("dark"));
+  const { results } = await fetched("/gallery", "dark");
   const bucketOf = (name: string) =>
     buckets.find((bucket) => results[bucket].some((rule) => rule.id === name));
 
@@ -499,7 +582,7 @@ test("the rules above WCAG 2.0 report which of them found anything", async (t) =
 });
 
 test("a rendered README table exercises the table rules", async (t) => {
-  const { results } = await run(readmeTable);
+  const { results } = await fetched("/readme-table", "dark");
 
   assert.deepStrictEqual(
     results.violations.map((rule) => rule.id),
@@ -519,7 +602,8 @@ test("a rendered README table exercises the table rules", async (t) => {
 });
 
 test("axe reports a planted failure", async () => {
-  const found = await violations(plantedFailures);
+  const { results } = await fetched("/planted-failures", "light", null);
+  const found = results.violations;
 
   for (const rule of ["html-has-lang", "image-alt", "color-contrast"]) {
     assert.ok(
@@ -530,7 +614,8 @@ test("axe reports a planted failure", async () => {
 });
 
 test("axe reports a planted accessible name mismatch", async () => {
-  const found = await violations(plantedNameMismatch);
+  const { results } = await fetched("/planted-name-mismatch", "light", null);
+  const found = results.violations;
 
   assert.ok(
     found.some((violation) => violation.id === "label-content-name-mismatch"),
@@ -538,26 +623,61 @@ test("axe reports a planted accessible name mismatch", async () => {
   );
 });
 
+// each plant is only a failure under the scheme that selects its block,
+// so asserting the other scheme stays clean is what pins colorScheme as a
+// live input: hardcode the loop to one value and this half stops holding
 test("axe reads the gallery's own stylesheet, in both palettes", async () => {
   const planted = [
-    { theme: "dark", from: "\n  --ink: #f2f4f4;", to: "\n  --ink: #1a1c1c;" },
-    { theme: "light", from: "\n  --ink: #0e0f0f;", to: "\n  --ink: #eceeee;" },
+    {
+      palette: "dark",
+      from: "\n  --ink: #f2f4f4;",
+      to: "\n  --ink: #1a1c1c;",
+    },
+    {
+      palette: "light",
+      from: "\n    --ink: #0e0f0f;",
+      to: "\n    --ink: #eceeee;",
+    },
   ] as const;
 
-  for (const { theme, from, to } of planted) {
-    const markup = galleryDocument(theme);
-
+  for (const { palette, from, to } of planted) {
     assert.strictEqual(
-      markup.split(from).length,
+      galleryCss.split(from).length,
       2,
-      `the ${theme} --ink declaration is no longer unique in the gallery, so the control moves the wrong token or none`,
+      `the ${palette} --ink declaration is no longer unique in the stylesheet, so the control moves the wrong token or none`,
     );
 
-    const found = await violations(markup.replace(from, to));
+    const doctored = galleryCss.replace(from, to);
+    const other = palette === "dark" ? "light" : "dark";
 
+    const hit = await galleryOn(doctored, palette, `${palette} plant`);
     assert.ok(
-      found.some((violation) => violation.id === "color-contrast"),
-      `a ${theme} token moved onto its own ground went unreported, so this palette's half of the gate is measuring a bare document:\n${report(found)}`,
+      hit.results.violations.some((rule) => rule.id === "color-contrast"),
+      `a ${palette} token moved onto its own ground went unreported, so this palette's half of the gate is measuring a bare document:\n${report(hit.results.violations)}`,
+    );
+
+    const clear = await galleryOn(
+      doctored,
+      other,
+      `${palette} plant, ${other}`,
+    );
+    assert.deepStrictEqual(
+      clear.results.violations.map((rule) => rule.id),
+      [],
+      `the ${palette} plant also failed under colorScheme ${other}, so the two paths are not selecting different blocks and the loop's scheme is doing nothing`,
     );
   }
+});
+
+// the font assertion above every audit is only worth its runtime if it
+// fails on the document that lost its stylesheet, which is the shape
+// page.setContent produced for every gallery audit before this wave
+test("the font check bites on a document with no stylesheet", async () => {
+  fixtures["/no-stylesheet"] = galleryDocument("/absent.css");
+
+  await assert.rejects(
+    () => fetched("/no-stylesheet", "dark"),
+    /measured a fallback face/,
+    "a gallery whose stylesheet 404s passed the font check, so document.fonts.check alone is being trusted and it answers true for a family with no face at all",
+  );
 });

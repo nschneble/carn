@@ -12,7 +12,6 @@ import type { TreeEntry } from "../repos/tree.js";
 import { smallCaps } from "./filename.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
-import type { Theme } from "./theme.js";
 
 export const treeRowCap = 16;
 
@@ -58,9 +57,10 @@ function readme(view: RepoView): Raw {
   return html`<div class="readme">${renderMarkdown(view.readme)}</div>`;
 }
 
+// the mark is decorative, so the name it carries has to be a real heading
+// somewhere; visually hidden keeps it off a page that already shows it
 export function repoShowPage(view: {
   repo: RepoView;
-  theme: Theme | null;
   showAll: boolean;
 }): string {
   const { repo } = view;
@@ -68,15 +68,13 @@ export function repoShowPage(view: {
   const identity = headerMarkup({
     name: repo.name,
     header: repo.header,
-    theme: view.theme,
     src: (image) => headerAssetPath(repo.name, image),
   });
 
   return page({
     title: `${repo.name} · Càrn`,
-    theme: view.theme,
     main: html`${identity}
-<h1 class="t-label">${repo.name}</h1>
+<h1 class="vh">${repo.name}</h1>
 ${tree(repo, view.showAll)}
 ${readme(repo)}`,
   });

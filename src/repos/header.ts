@@ -8,16 +8,18 @@
 import { oidPattern } from "../git/oid.js";
 import { spawnGit } from "../git/spawn.js";
 import { html, type Raw } from "../html/index.js";
-import type { Theme } from "../html/theme.js";
 import { wordmark } from "./wordmark.js";
 
+export type Slot = "light" | "dark";
 export type HeaderImage = { path: string; oid: string; bytes: number };
 export type HeaderSource = HeaderImage | "wordmark";
 export type Header = { light: HeaderSource; dark: HeaderSource };
 
 export type HeaderSrc = (image: HeaderImage) => string;
 
-export const maxHeaderBytes = 512 * 1024;
+// what the 100 KB page budget leaves once the fonts and the document are
+// paid for. BRAND.md 06
+export const maxHeaderBytes = 16 * 1024;
 
 const listTimeoutMs = 5_000;
 const fileModes: ReadonlySet<string> = new Set(["100644", "100755"]);
@@ -25,13 +27,8 @@ const cacheLimit = 512;
 
 const cache = new Map<string, Header>();
 
-function chain(slot: Theme): string[] {
-  return [
-    `.carn/header-${slot}.svg`,
-    `.carn/header-${slot}.png`,
-    ".carn/header.svg",
-    ".carn/header.png",
-  ];
+function chain(slot: Slot): string[] {
+  return [`.carn/header-${slot}.svg`, ".carn/header.svg"];
 }
 
 function parse(listing: string): Map<string, HeaderImage> {
@@ -89,7 +86,7 @@ async function walk(
   signal: AbortSignal | undefined,
 ): Promise<Header> {
   const found = parse(await list(repoPath, commit, signal));
-  const pick = (slot: Theme): HeaderSource => {
+  const pick = (slot: Slot): HeaderSource => {
     for (const candidate of chain(slot)) {
       const image = found.get(candidate);
       if (image !== undefined) return image;
@@ -148,14 +145,9 @@ function slot(name: string, source: HeaderSource, src: HeaderSrc): Raw {
 export function headerMarkup(options: {
   name: string;
   header: Header;
-  theme: Theme | null;
   src: HeaderSrc;
 }): Raw {
-  const { name, header, theme, src } = options;
-
-  if (theme !== null) {
-    return slot(name, theme === "dark" ? header.dark : header.light, src);
-  }
+  const { name, header, src } = options;
 
   if (same(header)) return slot(name, header.light, src);
 

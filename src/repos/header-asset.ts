@@ -6,29 +6,19 @@
 import { oidSource } from "../git/oid.js";
 import type { HeaderImage } from "./header.js";
 
-export type HeaderAsset = { oid: string; extension: ".png" | ".svg" };
+export type HeaderAsset = { oid: string };
 
-const assetPattern = new RegExp(`^(${oidSource})(\\.png|\\.svg)$`);
+const assetPattern = new RegExp(`^(${oidSource})\\.svg$`);
 
-export const headerTypes: Record<HeaderAsset["extension"], string> = {
-  ".png": "image/png",
-  ".svg": "image/svg+xml",
-};
-
-export function headerExtension(path: string): HeaderAsset["extension"] {
-  return path.endsWith(".svg") ? ".svg" : ".png";
-}
+export const headerType = "image/svg+xml";
 
 export function headerAssetPath(repo: string, image: HeaderImage): string {
-  return `/r/${repo}/header/${image.oid}${headerExtension(image.path)}`;
+  return `/r/${repo}/header/${image.oid}.svg`;
 }
 
 export function parseHeaderAsset(asset: string): HeaderAsset | null {
   const found = assetPattern.exec(asset);
   if (found === null) return null;
 
-  return {
-    oid: found[1] as string,
-    extension: found[2] as HeaderAsset["extension"],
-  };
+  return { oid: found[1] as string };
 }

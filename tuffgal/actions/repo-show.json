@@ -1,0 +1,5 @@
+{
+  "action": "repo-show",
+  "steps": [{ "kind": "navigate", "path": "/r/linklater" }],
+  "expect": { "anyOf": [{ "role": "heading", "text": "linklater" }] }
+}

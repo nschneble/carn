@@ -7,20 +7,30 @@ import { resetVisualState } from "./dist/test/support/visual-db.js";
 
 // scripts/visual.sh sets the environment this needs; run that, not tuffgal
 
+const scheme = process.env.CARN_VISUAL_SCHEME;
+
+if (scheme !== "dark" && scheme !== "light") {
+  throw new Error(
+    `CARN_VISUAL_SCHEME is ${scheme ?? "unset"}, wanted dark or light. tuffgal pins the colour scheme per run, so run sh scripts/visual.sh, which runs both.`,
+  );
+}
+
 export default defineConfig({
   paths: {
     actions: "tuffgal/actions",
     stories: "tuffgal/stories",
-    baselines: "tuffgal/baselines",
-    report: "tuffgal/report",
-    // committed; tuffgal's own default .gitignore excludes .auth
-    authState: "tuffgal/theme-state",
+    // colorScheme is a pixel-affecting manifest key, so one dir per run.
+    // the local cache too: shared, the second run self-diffs against the
+    // first and every screen reports changed
+    baselines: `tuffgal/baselines/${scheme}`,
+    localCache: `tuffgal/.cache/${scheme}`,
+    report: `tuffgal/report/${scheme}`,
   },
 
   baseUrl: visualOrigin,
 
-  // no story produces these; each is a committed cookie fixture instead
-  seededLabels: ["theme-dark", "theme-light"],
+  // the only thing that picks a palette, now that no page carries a theme
+  colorScheme: scheme,
 
   // BRAND.md's 1440 is not in tuffgal's registry, whose desktop is 1280
   breakpoints: [{ name: "desktop", width: 1440, height: 900 }],

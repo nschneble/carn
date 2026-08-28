@@ -2,7 +2,6 @@
 
 import { html } from "./index.js";
 import { page } from "./page.js";
-import type { Theme } from "./theme.js";
 
 export type Failure = {
   title: string;
@@ -32,15 +31,11 @@ export const badRepoName: Failure = {
   next: "A name is letters, digits, dots, dashes, and underscores, up to 64 characters. Check the URL, or find the repo in all repos.",
 };
 
-export function errorPage(view: {
-  failure: Failure;
-  theme: Theme | null;
-}): string {
+export function errorPage(view: { failure: Failure }): string {
   const { failure } = view;
 
   return page({
     title: failure.title,
-    theme: view.theme,
     main: html`<h1 class="t-l">${failure.heading}</h1>
 <div class="empty">
 <p class="t-body">${failure.said}</p>

@@ -3,7 +3,6 @@
 import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-import type { Theme } from "../src/html/theme.js";
 import { galleryDocument } from "../test/gallery/document.js";
 
 const root = resolve(import.meta.dirname, "../..");
@@ -14,19 +13,12 @@ function beside(document: string): string {
   return document.replaceAll('url("/fonts/', 'url("fonts/');
 }
 
-const pages: [string, Theme | null][] = [
-  ["dark.html", "dark"],
-  ["light.html", "light"],
-  ["unstamped.html", null],
-];
-
 mkdirSync(join(out, "fonts"), { recursive: true });
 
 for (const face of faces) {
   copyFileSync(join(root, "fonts", face), join(out, "fonts", face));
 }
 
-for (const [name, theme] of pages) {
-  writeFileSync(join(out, name), beside(galleryDocument(theme)), "utf8");
-  console.log(`wrote local/gallery/${name}`);
-}
+// one page: the palette follows the operating system, so switch that
+writeFileSync(join(out, "gallery.html"), beside(galleryDocument()), "utf8");
+console.log("wrote local/gallery/gallery.html");

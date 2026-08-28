@@ -1,8 +1,0 @@
-{
-  "action": "repo-show-light",
-  "steps": [
-    { "kind": "navigate", "path": "/r/linklater" },
-    { "kind": "read", "hint": { "selector": "html[data-theme=\"light\"]" } }
-  ],
-  "expect": { "anyOf": [{ "role": "heading", "text": "linklater" }] }
-}

@@ -49,7 +49,7 @@ function commit(files: Record<string, string | number>, links: string[] = []) {
 
   for (const path of links) {
     mkdirSync(join(work, path, ".."), { recursive: true });
-    symlinkSync("header.png", join(work, path));
+    symlinkSync("elsewhere.svg", join(work, path));
   }
 
   execFileSync("git", ["-C", work, "add", "-A"]);
@@ -77,17 +77,17 @@ function commit(files: Record<string, string | number>, links: string[] = []) {
 }
 
 const src = (image: HeaderImage) => `/blob/${image.oid}/${image.path}`;
-const markup = (header: Header, theme: "dark" | "light" | null) =>
-  headerMarkup({ name: "linklater", header, theme, src }).value;
+const markup = (header: Header) =>
+  headerMarkup({ name: "linklater", header, src }).value;
 
 const wordmarkOnly: Header = { light: "wordmark", dark: "wordmark" };
 const shared: HeaderImage = {
-  path: ".carn/header.png",
+  path: ".carn/header.svg",
   oid: "a".repeat(40),
   bytes: 10,
 };
 const dark: HeaderImage = {
-  path: ".carn/header-dark.png",
+  path: ".carn/header-dark.svg",
   oid: "b".repeat(40),
   bytes: 10,
 };
@@ -105,12 +105,11 @@ test("a repo with no .carn falls through to the wordmark", async () => {
   assert.deepStrictEqual(await resolveHeader(repo), wordmarkOnly);
 });
 
-test("each slot walks its own chain, and .svg beats .png", async () => {
+test("each slot walks its own chain, and its own slot wins", async () => {
   const repo = commit({
     ".carn/header-dark.svg": "d",
-    ".carn/header-dark.png": "d",
     ".carn/header.svg": "g",
-    ".carn/header.png": "g",
+    ".carn/header.png": "ignored",
   });
 
   const header = await resolveHeader(repo);
@@ -125,33 +124,42 @@ test("each slot walks its own chain, and .svg beats .png", async () => {
   );
 });
 
+test("a png in the slot is not a header, so the mark stands in", async () => {
+  const repo = commit({
+    ".carn/header.png": "g",
+    ".carn/header-dark.png": "d",
+  });
+
+  assert.deepStrictEqual(await resolveHeader(repo), wordmarkOnly);
+});
+
 test("a dark-only header leaves light on the wordmark", async () => {
-  const repo = commit({ ".carn/header-dark.png": "d" });
+  const repo = commit({ ".carn/header-dark.svg": "d" });
   const header = await resolveHeader(repo);
 
   assert.strictEqual(header.light, "wordmark");
   assert.strictEqual(
     header.dark === "wordmark" ? null : header.dark.path,
-    ".carn/header-dark.png",
+    ".carn/header-dark.svg",
   );
 });
 
 test("an oversize image is ignored and the chain continues", async () => {
   const repo = commit({
-    ".carn/header-light.png": maxHeaderBytes + 1,
-    ".carn/header.png": "g",
+    ".carn/header-light.svg": maxHeaderBytes + 1,
+    ".carn/header.svg": "g",
   });
 
   const header = await resolveHeader(repo);
 
   assert.strictEqual(
     header.light === "wordmark" ? null : header.light.path,
-    ".carn/header.png",
+    ".carn/header.svg",
   );
 });
 
 test("an image exactly at the cap is kept", async () => {
-  const repo = commit({ ".carn/header.png": maxHeaderBytes });
+  const repo = commit({ ".carn/header.svg": maxHeaderBytes });
   const header = await resolveHeader(repo);
 
   assert.strictEqual(
@@ -161,19 +169,21 @@ test("an image exactly at the cap is kept", async () => {
 });
 
 test("an oversize image with nothing behind it falls to the wordmark", async () => {
-  const repo = commit({ ".carn/header.png": maxHeaderBytes + 1 });
+  const repo = commit({ ".carn/header.svg": maxHeaderBytes + 1 });
 
   assert.deepStrictEqual(await resolveHeader(repo), wordmarkOnly);
 });
 
 test("a symlink and a subtree are not headers", async () => {
-  const repo = commit({ ".carn/header.png/keep": "x" }, [".carn/header.svg"]);
+  const repo = commit({ ".carn/header-dark.svg/keep": "x" }, [
+    ".carn/header.svg",
+  ]);
 
   assert.deepStrictEqual(await resolveHeader(repo), wordmarkOnly);
 });
 
 test("a ref that is not an object id is refused", async () => {
-  const repo = commit({ ".carn/header.png": "g" });
+  const repo = commit({ ".carn/header.svg": "g" });
 
   for (const bad of ["--upload-pack=x", "-main", "HEAD", "main", ""]) {
     await assert.rejects(
@@ -185,7 +195,7 @@ test("a ref that is not an object id is refused", async () => {
 });
 
 test("resolution spawns git once, and not again once cached", async () => {
-  const repo = commit({ ".carn/header.png": "g" });
+  const repo = commit({ ".carn/header.svg": "g" });
   const shim = mkdtempSync(join(dir, "shim-"));
   const log = join(shim, "calls");
   const originalPath = process.env.PATH;
@@ -217,61 +227,38 @@ test("resolution spawns git once, and not again once cached", async () => {
   }
 });
 
-test("a theme cookie renders one element and never a picture", () => {
-  const differing: Header = { light: shared, dark };
-
-  for (const theme of ["dark", "light"] as const) {
-    const out = markup(differing, theme);
-
-    assert.ok(!out.includes("<picture"), theme);
-    assert.ok(!out.includes("hdr-light"), theme);
-    assert.strictEqual((out.match(/<img /g) ?? []).length, 1, theme);
-  }
-
-  assert.match(markup(differing, "dark"), /header-dark\.png/);
-  assert.match(markup(differing, "light"), /header\.png/);
-});
-
-test("a cookie for a slot on the wordmark renders the mark alone", () => {
-  const out = markup({ light: "wordmark", dark }, "light");
-
-  assert.match(out, /<svg class="mark"/);
-  assert.ok(!out.includes("<img "), out);
-  assert.ok(!out.includes("<picture"), out);
-});
-
-test("no cookie and one shared source is a plain img", () => {
-  const out = markup({ light: shared, dark: shared }, null);
+test("one shared source is a plain img", () => {
+  const out = markup({ light: shared, dark: shared });
 
   assert.ok(!out.includes("<picture"), out);
   assert.strictEqual((out.match(/<img /g) ?? []).length, 1);
 });
 
-test("no cookie and two committed images is a picture", () => {
-  const out = markup({ light: shared, dark }, null);
+test("two committed images is a picture", () => {
+  const out = markup({ light: shared, dark });
 
   assert.match(out, /<picture>/);
   assert.match(out, /media="\(prefers-color-scheme: dark\)"/);
-  assert.match(out, /<source srcset="[^"]*header-dark\.png"/);
-  assert.match(out, /<img class="hdr" src="[^"]*header\.png"/);
+  assert.match(out, /<source srcset="[^"]*header-dark\.svg"/);
+  assert.match(out, /<img class="hdr" src="[^"]*header\.svg"/);
 });
 
-test("no cookie and a wordmark in one slot swaps in CSS, not picture", () => {
-  const out = markup({ light: "wordmark", dark }, null);
+test("a wordmark in one slot swaps in CSS, not picture", () => {
+  const out = markup({ light: "wordmark", dark });
 
   assert.ok(!out.includes("<picture"), out);
   assert.match(out, /<span class="hdr-light"><svg class="mark"/);
   assert.match(out, /<span class="hdr-dark"><img class="hdr"/);
 });
 
-test("no cookie and both slots on the wordmark is one mark", () => {
-  const out = markup(wordmarkOnly, null);
+test("both slots on the wordmark is one mark", () => {
+  const out = markup(wordmarkOnly);
 
   assert.ok(!out.includes("hdr-light"), out);
   assert.strictEqual((out.match(/<svg /g) ?? []).length, 1);
 });
 
-test("the unstamped paths resolve per colour scheme", {
+test("both render paths resolve per colour scheme", {
   timeout: 60_000,
 }, async () => {
   const tint = (fill: string) =>
@@ -286,14 +273,12 @@ test("the unstamped paths resolve per colour scheme", {
   const twoImages = headerMarkup({
     name: "linklater",
     header: { light: shared, dark },
-    theme: null,
     src: paint,
   }).value;
 
   const swapped = headerMarkup({
     name: "linklater",
     header: { light: "wordmark", dark },
-    theme: null,
     src: paint,
   }).value;
 
@@ -339,9 +324,9 @@ test("the unstamped paths resolve per colour scheme", {
 
 test("a header image carries an empty alt, never a missing one", () => {
   for (const out of [
-    markup({ light: shared, dark: shared }, null),
-    markup({ light: shared, dark }, null),
-    markup({ light: shared, dark }, "dark"),
+    markup({ light: shared, dark: shared }),
+    markup({ light: shared, dark }),
+    markup({ light: "wordmark", dark }),
   ]) {
     for (const tag of out.match(/<img [^>]*>/g) ?? []) {
       assert.match(tag, /alt=""/, tag);

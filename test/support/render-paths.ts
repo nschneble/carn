@@ -1,37 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import type { Theme } from "../../src/html/theme.js";
+// nothing is stamped on the document, so a render path is a system
+// preference and the palette it selects, and there are only the two
 
 export type RenderPath = {
   name: string;
-  theme: Theme | null;
   colorScheme: "light" | "dark";
-  palette: Theme;
+  palette: "light" | "dark";
 };
 
 export const renderPaths: readonly RenderPath[] = [
-  {
-    name: 'data-theme="dark"',
-    theme: "dark",
-    colorScheme: "light",
-    palette: "dark",
-  },
-  {
-    name: 'data-theme="light"',
-    theme: "light",
-    colorScheme: "light",
-    palette: "light",
-  },
-  {
-    name: "unstamped under colorScheme light",
-    theme: null,
-    colorScheme: "light",
-    palette: "light",
-  },
-  {
-    name: "unstamped under colorScheme dark",
-    theme: null,
-    colorScheme: "dark",
-    palette: "dark",
-  },
+  { name: "colorScheme light", colorScheme: "light", palette: "light" },
+  { name: "colorScheme dark", colorScheme: "dark", palette: "dark" },
 ];

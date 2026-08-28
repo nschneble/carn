@@ -15,12 +15,10 @@ import {
   unavailable,
 } from "../html/error-page.js";
 import { repoShowPage } from "../html/repo-show.js";
-import { readTheme, type Theme } from "../html/theme.js";
 import { type Header, maxHeaderBytes, resolveHeader } from "../repos/header.js";
 import {
   type HeaderAsset,
-  headerExtension,
-  headerTypes,
+  headerType,
   parseHeaderAsset,
 } from "../repos/header-asset.js";
 import { resolveRepo } from "../repos/resolve.js";
@@ -51,17 +49,14 @@ function fail(
   reply: FastifyReply,
   status: number,
   failure: Failure,
-  theme: Theme | null,
 ): FastifyReply {
-  return sendStatus(request, reply, status, errorPage({ failure, theme }));
+  return sendStatus(request, reply, status, errorPage({ failure }));
 }
 
 async function showRepo(
   request: FastifyRequest<PageRoute>,
   reply: FastifyReply,
 ): Promise<FastifyReply> {
-  const theme = readTheme(request.headers.cookie);
-
   try {
     const found = await resolveRepo(request.params.repo);
 
@@ -69,7 +64,7 @@ async function showRepo(
       const failure =
         found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
 
-      return fail(request, reply, 404, failure, theme);
+      return fail(request, reply, 404, failure);
     }
 
     const repo = await loadRepoView({
@@ -80,20 +75,17 @@ async function showRepo(
     return sendPage(
       request,
       reply,
-      repoShowPage({ repo, theme, showAll: request.query.all === "1" }),
+      repoShowPage({ repo, showAll: request.query.all === "1" }),
     );
   } catch (error) {
     request.log.error({ err: error }, "repo page: the page failed to render");
-    return fail(request, reply, 503, unavailable, theme);
+    return fail(request, reply, 503, unavailable);
   }
 }
 
 function committed(header: Header, asset: HeaderAsset): boolean {
   return [header.light, header.dark].some(
-    (source) =>
-      source !== "wordmark" &&
-      source.oid === asset.oid &&
-      headerExtension(source.path) === asset.extension,
+    (source) => source !== "wordmark" && source.oid === asset.oid,
   );
 }
 
@@ -133,10 +125,7 @@ async function serveHeader(
       signal,
     });
 
-    return reply
-      .header("Cache-Control", forever)
-      .type(headerTypes[asset.extension])
-      .send(body);
+    return reply.header("Cache-Control", forever).type(headerType).send(body);
   } catch (error) {
     request.log.error({ err: error }, "repo page: the header failed to load");
     return reply.code(503).type("text/plain; charset=utf-8").send(imageFailed);

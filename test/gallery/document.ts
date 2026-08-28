@@ -2,7 +2,6 @@
 
 import { html } from "../../src/html/index.js";
 import { stylesheet } from "../../src/html/styles.js";
-import type { Theme } from "../../src/html/theme.js";
 import { type HeaderImage, headerMarkup } from "../../src/repos/header.js";
 import { wordmark } from "../../src/repos/wordmark.js";
 
@@ -146,18 +145,18 @@ function swatch(fill: string): string {
 }
 
 const committed: HeaderImage = {
-  path: ".carn/header.png",
+  path: ".carn/header.svg",
   oid: "0".repeat(40),
   bytes: 4096,
 };
 const darkOnly: HeaderImage = {
-  path: ".carn/header-dark.png",
+  path: ".carn/header-dark.svg",
   oid: "1".repeat(40),
   bytes: 4096,
 };
 
 const source = (image: HeaderImage) =>
-  swatch(image.path === ".carn/header-dark.png" ? "#2f2140" : "#f0c8dc");
+  swatch(image.path === ".carn/header-dark.svg" ? "#2f2140" : "#f0c8dc");
 
 const identity = html`<section>
   <h2 class="t-l">Repo identity</h2>
@@ -170,14 +169,12 @@ const identity = html`<section>
   ${headerMarkup({
     name: "linklater",
     header: { light: committed, dark: committed },
-    theme: null,
     src: source,
   })}
   <p class="t-label">Dark header only, wordmark in light</p>
   ${headerMarkup({
     name: "linklater",
     header: { light: "wordmark", dark: darkOnly },
-    theme: null,
     src: source,
   })}
 </section>`;
@@ -193,23 +190,23 @@ const body = html`<body>
   </main>
 </body>`;
 
-export function galleryDocument(theme: Theme | null): string {
-  const open =
-    theme === null
-      ? html`<html lang="en">`
-      : html`<html lang="en" data-theme="${theme}">`;
+export const galleryCss = `${stylesheet}\n${hoverSimulation}\n${figureFit}`;
+
+// linked when the document is served, because the app's own style-src
+// 'self' drops an inline sheet and takes the fonts down with it
+export function galleryDocument(cssHref?: string): string {
+  const styles =
+    cssHref === undefined
+      ? `<style>\n${galleryCss}\n</style>`
+      : html`<link rel="stylesheet" href="${cssHref}" />`.value;
 
   return `<!doctype html>
-${open.value}
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Component gallery · Càrn</title>
-<style>
-${stylesheet}
-${hoverSimulation}
-${figureFit}
-</style>
+${styles}
 </head>
 ${body.value}
 </html>

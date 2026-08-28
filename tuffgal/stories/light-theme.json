@@ -1,5 +1,0 @@
-{
-  "story": "A visitor reads the repo index, then a repo, in the light theme",
-  "needs": ["theme-light"],
-  "actions": [{ "action": "repo-index-light" }, { "action": "repo-show-light" }]
-}

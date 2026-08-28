@@ -36,7 +36,6 @@ import {
   view,
   wide,
 } from "../gallery/repo-show.js";
-import { renderPaths } from "../support/render-paths.js";
 import { type Served, serve } from "../support/serve.js";
 
 const root = resolve(import.meta.dirname, "../../..");
@@ -133,9 +132,9 @@ test("a real repo renders its tree and its readme", async () => {
   );
   assert.ok(loaded.readme?.startsWith("# Linklater"));
 
-  const markup = repoShowPage({ repo: loaded, theme: "dark", showAll: false });
+  const markup = repoShowPage({ repo: loaded, showAll: false });
 
-  assert.ok(markup.includes('<h1 class="t-label">linklater</h1>'));
+  assert.ok(markup.includes('<h1 class="vh">linklater</h1>'));
   assert.ok(markup.includes("<h1>Linklater</h1>"), "the readme did not render");
   assert.strictEqual(rows(markup), 4);
 });
@@ -163,7 +162,7 @@ test("a repo with no readme renders the tree and says how to make one", async ()
 
   assert.strictEqual(loaded.readme, null);
 
-  const markup = repoShowPage({ repo: loaded, theme: "dark", showAll: false });
+  const markup = repoShowPage({ repo: loaded, showAll: false });
 
   assert.strictEqual(rows(markup), 1, "the tree vanished with the readme");
   assert.ok(markup.includes('<div class="empty">'));
@@ -179,7 +178,6 @@ test("a repo with no readme renders the tree and says how to make one", async ()
 
 test("a repo with no commits says what would be here and how to push it", () => {
   const markup = showDocument({
-    theme: "dark",
     repo: view({ tip: null, entries: [], readme: null }),
   });
 
@@ -293,9 +291,8 @@ test("an invalid repo name is refused before any database query", () => {
 test("a 404 page says what happened, then what to do", () => {
   const missing = errorPage({
     failure: noSuchRepo("linklater"),
-    theme: "dark",
   });
-  const bad = errorPage({ failure: badRepoName, theme: null });
+  const bad = errorPage({ failure: badRepoName });
 
   for (const markup of [missing, bad]) {
     assert.match(markup, /^<!doctype html>\n<html lang="en"/);
@@ -316,8 +313,8 @@ test("a 404 page says what happened, then what to do", () => {
 
 // criterion 15
 test("the tree cap holds, and show-all lifts it", () => {
-  const capped = showDocument({ theme: "dark" });
-  const all = showDocument({ theme: "dark", showAll: true });
+  const capped = showDocument();
+  const all = showDocument({ showAll: true });
 
   assert.strictEqual(rows(capped), treeRowCap);
   assert.strictEqual(rows(all), wide.length);
@@ -332,7 +329,7 @@ test("the tree cap holds, and show-all lifts it", () => {
 });
 
 test("a directory row carries the accent class and a trailing slash", () => {
-  const markup = showDocument({ theme: "dark" });
+  const markup = showDocument();
 
   assert.ok(
     markup.includes(
@@ -391,20 +388,34 @@ test("small caps split lowercase runs and never insert whitespace", () => {
   }
 });
 
-test("the identity mark is decorative and the h1 carries the name", () => {
-  for (const path of renderPaths) {
-    const markup = showDocument({ theme: path.theme });
-    const marks = markup.match(/<svg class="mark"[^>]*>/g) ?? [];
+// the mark is alt=""/aria-hidden, so the name reaches the accessibility
+// tree only through this h1. it is visually hidden because the mark
+// already shows the name, and two adjacent labels read as one block
+test("the identity mark is decorative and a visually hidden h1 carries the name", () => {
+  const markup = showDocument();
+  const marks = markup.match(/<svg class="mark"[^>]*>/g) ?? [];
 
-    assert.strictEqual(marks.length, 1, path.name);
-    assert.match(marks[0] as string, /aria-hidden="true"/, path.name);
-    assert.ok(markup.includes('<h1 class="t-label">linklater</h1>'), path.name);
-    assert.strictEqual(
-      [...markup.matchAll(/<h1[ >]/g)].length,
-      2,
-      "the page h1 plus the readme's own — anything else is a heading regression",
-    );
-  }
+  assert.strictEqual(marks.length, 1);
+  assert.match(marks[0] as string, /aria-hidden="true"/);
+  assert.ok(markup.includes('<h1 class="vh">linklater</h1>'));
+  assert.doesNotMatch(
+    markup,
+    /<h1 class="t-label">/,
+    "the repo name is a visible label again, next to the Files label it used to sit against",
+  );
+  assert.strictEqual(
+    [...markup.matchAll(/<h1[ >]/g)].length,
+    2,
+    "the page h1 plus the readme's own — anything else is a heading regression",
+  );
+
+  const bare = showDocument({ repo: view({ readme: null }) });
+  assert.strictEqual(
+    [...bare.matchAll(/<h1[ >]/g)].length,
+    1,
+    "a repo with no readme heading must still have exactly one h1, and it must be the name",
+  );
+  assert.ok(bare.includes('<h1 class="vh">linklater</h1>'));
 });
 
 test("a committed header points at the repo's own asset route", () => {
@@ -414,7 +425,6 @@ test("a committed header points at the repo's own asset route", () => {
     bytes: 4096,
   };
   const markup = showDocument({
-    theme: "dark",
     repo: view({ header: { light: image, dark: image } }),
   });
 
@@ -434,7 +444,6 @@ test("a committed header points at the repo's own asset route", () => {
 // criteria 8, 9, 23 — proven at renderMarkdown, re-proven on the page
 test("a hostile readme renders inert through the page", () => {
   const markup = showDocument({
-    theme: "dark",
     repo: view({ readme: hostileReadme }),
   });
 
@@ -459,7 +468,7 @@ test("a hostile readme renders inert through the page", () => {
 });
 
 test("a remote readme image survives for the csp to stop", () => {
-  const markup = readmeBody(showDocument({ theme: "dark" }));
+  const markup = readmeBody(showDocument());
   const image =
     /<img src="https:\/\/example\.com\/shot\.png" alt="([^"]*)"[^>]*>/.exec(
       markup,
@@ -473,7 +482,7 @@ test("a remote readme image survives for the csp to stop", () => {
 });
 
 test("external readme links carry the rel and local ones do not", () => {
-  const markup = showDocument({ theme: "dark" });
+  const markup = showDocument();
   const anchors = tagsIn(readmeBody(markup)).filter((tag) =>
     tag.startsWith("<a "),
   );
@@ -498,15 +507,13 @@ test("external readme links carry the rel and local ones do not", () => {
 });
 
 test("no repo page carries script, an inline style, or a style attribute", () => {
-  for (const path of renderPaths) {
-    for (const showAll of [false, true]) {
-      const markup = showDocument({ theme: path.theme, showAll });
+  for (const showAll of [false, true]) {
+    const markup = showDocument({ showAll });
 
-      assert.doesNotMatch(markup, /<script/i);
-      assert.doesNotMatch(markup, /<style[ >]/i);
-      assert.doesNotMatch(markup, / style=/i);
-      assert.doesNotMatch(markup, /\son[a-z]+=/i);
-    }
+    assert.doesNotMatch(markup, /<script/i);
+    assert.doesNotMatch(markup, /<style[ >]/i);
+    assert.doesNotMatch(markup, / style=/i);
+    assert.doesNotMatch(markup, /\son[a-z]+=/i);
   }
 });
 
@@ -524,12 +531,11 @@ test("the repo page fits the weight budget, fonts and stylesheet in", () => {
     ) + Buffer.byteLength(stylesheet, "utf8");
 
   for (const [state, markup] of [
-    ["capped", showDocument({ theme: "dark" })],
-    ["show-all", showDocument({ theme: "dark", showAll: true })],
+    ["capped", showDocument()],
+    ["show-all", showDocument({ showAll: true })],
     [
       "empty",
       showDocument({
-        theme: "dark",
         repo: view({ tip: null, entries: [], readme: null }),
       }),
     ],
@@ -556,8 +562,8 @@ before(async () => {
   browser = await chromium.launch();
   site = await serve({
     documents: {
-      "/show": showDocument({ theme: "dark" }),
-      "/show-all": showDocument({ theme: "dark", showAll: true }),
+      "/show": showDocument(),
+      "/show-all": showDocument({ showAll: true }),
     },
   });
 });

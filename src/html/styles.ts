@@ -41,7 +41,7 @@ export const tokens = `:root {
   --measure: 66ch;
 }
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
+  :root {
     color-scheme: light;
     --ground: #f4f6f6;
     --surface: #ffffff;
@@ -59,25 +59,8 @@ export const tokens = `:root {
     --on-accent: #ffffff;
   }
 }
-:root[data-theme="light"] {
-  color-scheme: light;
-  --ground: #f4f6f6;
-  --surface: #ffffff;
-  --sunk: #e9eded;
-  --ink: #0e0f0f;
-  --ink-soft: #3a3e3e;
-  --ink-mid: #5c6261;
-  --ink-faint: #666c6b;
-  --rule: #dce0e0;
-  --rule-soft: #e7eaea;
-  --accent: #e7156c;
-  --accent-text: #c9105c;
-  --accent-fill: var(--accent-text);
-  --accent-wash: #fbe2ed;
-  --on-accent: #ffffff;
-}
 @media (prefers-contrast: more) {
-  /* tripled :root outranks the theme blocks by specificity, not order */
+  /* tripled :root outranks the light block by specificity, not order */
   :root:root:root {
     --rule: var(--ink-mid);
     --rule-soft: var(--ink-faint);

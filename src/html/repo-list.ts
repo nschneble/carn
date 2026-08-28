@@ -5,7 +5,6 @@ import { sshRemote } from "../repos/remote.js";
 import { ageMarkup } from "./age.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
-import type { Theme } from "./theme.js";
 
 function row(repo: RepoSummary, now: Date): Raw {
   return html`<li class="row">
@@ -24,7 +23,6 @@ function empty(): Raw {
 
 export function repoListPage(view: {
   repos: RepoSummary[];
-  theme: Theme | null;
   now: Date;
 }): string {
   const main =
@@ -36,7 +34,6 @@ ${view.repos.map((repo) => row(repo, view.now))}
 
   return page({
     title: "Càrn",
-    theme: view.theme,
     main: html`<h1 class="t-label">Repositories</h1>
 ${main}`,
   });

@@ -50,19 +50,12 @@ async function resolveTokens(
   }
 }
 
-test("the four render paths are the ones every gate iterates", () => {
+test("the two render paths are the ones every gate iterates", () => {
   assert.deepStrictEqual(
-    renderPaths.map((path) => [
-      path.name,
-      path.theme,
-      path.colorScheme,
-      path.palette,
-    ]),
+    renderPaths.map((path) => [path.name, path.colorScheme, path.palette]),
     [
-      ['data-theme="dark"', "dark", "light", "dark"],
-      ['data-theme="light"', "light", "light", "light"],
-      ["unstamped under colorScheme light", null, "light", "light"],
-      ["unstamped under colorScheme dark", null, "dark", "dark"],
+      ["colorScheme light", "light", "light"],
+      ["colorScheme dark", "dark", "dark"],
     ],
     "render-paths.ts is a shared support module: dropping an entry shrinks this file and axe.contract.ts at once, and every test in both still passes",
   );
@@ -78,11 +71,8 @@ test("the enumeration names every token the palettes resolve", () => {
 });
 
 for (const path of renderPaths) {
-  test(`the ${path.name} gallery resolves every token, on the ${path.palette} palette`, async () => {
-    const resolved = await resolveTokens(
-      galleryDocument(path.theme),
-      path.colorScheme,
-    );
+  test(`the gallery resolves every token under ${path.name}`, async () => {
+    const resolved = await resolveTokens(galleryDocument(), path.colorScheme);
 
     for (const name of names) {
       assert.ok(
@@ -100,16 +90,16 @@ for (const path of renderPaths) {
 
 test("a token dropped from the bare :root empties in exactly the dark paths", async () => {
   const declaration = "  --ink-mid: #8e9494;\n";
+  const markup = galleryDocument();
   const emptied: string[] = [];
 
-  for (const path of renderPaths) {
-    const markup = galleryDocument(path.theme);
-    assert.strictEqual(
-      markup.split(declaration).length,
-      2,
-      "the dark --ink-mid declaration is no longer unique, so the control deletes the wrong thing or nothing",
-    );
+  assert.strictEqual(
+    markup.split(declaration).length,
+    2,
+    "the dark --ink-mid declaration is no longer unique, so the control deletes the wrong thing or nothing",
+  );
 
+  for (const path of renderPaths) {
     const resolved = await resolveTokens(
       markup.replace(declaration, ""),
       path.colorScheme,

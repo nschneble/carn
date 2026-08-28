@@ -89,7 +89,7 @@ These aren't a second test suite so much as four assertions that a screenshot is
 | **Weight**       | Page < 100 KB · zero client JS on the critical path                                                         | `size-limit` against the rendered HTML plus assets. A page can double in weight and look identical.                                                                                                |
 | **Subprocesses** | < 12 `spawn` calls per render                                                                               | A counter in the git layer, asserted per route. **The most valuable test in the plan** — see below.                                                                                                |
 | **Headers**      | Blob origin always returns `sandbox` CSP · never `Set-Cookie` · `javascript:` in markdown renders no anchor | Plain request assertions. Four of them, covering the three vulnerability classes in §11.                                                                                                           |
-| **a11y rules**   | Zero axe violations across all four render paths · every token reads back non-empty in all four             | `axe-core` — complementary to the a11y tree, not redundant. The tree snapshot catches _structural_ drift; axe catches _rule_ violations like contrast and ARIA misuse, which a tree can't express. Neither sees a vanished token, so that is asserted separately. |
+| **a11y rules**   | Zero axe violations across both render paths · every token reads back non-empty in both                        | `axe-core` — complementary to the a11y tree, not redundant. The tree snapshot catches _structural_ drift; axe catches _rule_ violations like contrast and ARIA misuse, which a tree can't express. Neither sees a vanished token, so that is asserted separately. |
 
 The subprocess counter deserves the emphasis: it's the only test that catches the specific way this codebase will get slow. A well-meaning refactor that renders a file list by calling `cat-file` once per row passes every other check — the screenshots are pixel-identical, the HTML is byte-identical — and quietly turns a 40 ms page into a 400 ms one. Nothing else in the suite would notice.
 
@@ -566,7 +566,7 @@ Three, in fact:
 
 - **Site settings** (`settings` table, key/value, admin-only): site title, the _default_ default-branch name for new repos, the reserved-name list, the mirror target _pattern_.
 - **Repo settings** (columns on `repos`): description, this repo's actual default branch, its specific mirror remote, archived flag.
-- **Viewer preferences** (a cookie): theme, diff view mode, tab width. There's no session to hang these on and no reason to want one — a cookie is the correct storage for a preference that belongs to a browser rather than a person.
+- **Viewer preferences** (a cookie): diff view mode, tab width. There's no session to hang these on and no reason to want one — a cookie is the correct storage for a preference that belongs to a browser rather than a person. The palette is not one of them: it follows `prefers-color-scheme` so that every page stays byte-identical for every visitor.
 
 The distinction: _default branch name_ is a site setting because it's a policy for repos that don't exist yet; _default branch_ is a repo setting because it's a fact about one repo. Same for mirrors — the site knows the pattern, the repo knows its remote.
 

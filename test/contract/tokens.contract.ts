@@ -7,9 +7,10 @@ import { components, stylesheet, tokens } from "../../src/html/styles.js";
 import {
   brand,
   dark,
-  declarations,
   fences,
   light,
+  lightBlock,
+  lightQuery,
   palettes,
 } from "../support/tokens.js";
 
@@ -64,15 +65,19 @@ test("BRAND.md's token block is in the stylesheet verbatim", () => {
   );
 });
 
-test("both palettes are complete, and the two light blocks agree", () => {
-  const guarded = declarations(tokens, ':root:not([data-theme="dark"])');
-  const stamped = declarations(tokens, ':root[data-theme="light"]');
-
-  assert.deepStrictEqual(
-    [...guarded.entries()].sort(),
-    [...stamped.entries()].sort(),
-    "the two light blocks have drifted apart",
+// dark on the bare :root, light inside the query, and never the reverse:
+// a colour declared only inside a media query is empty wherever the query
+// does not match, and dark is the default, so it is the one that vanishes
+test("both palettes are complete, and only light lives in the query", () => {
+  assert.strictEqual(
+    tokens.indexOf(lightQuery),
+    tokens.lastIndexOf(lightQuery),
+    "the light palette is declared in more than one place",
   );
+
+  const bare = tokens.replace(`${lightBlock}\n}`, "");
+  assert.doesNotMatch(bare, /prefers-color-scheme/);
+  assert.match(bare, /^:root \{\n {2}color-scheme: dark;/m);
 
   assert.deepStrictEqual([...light.keys()].sort(), [...dark.keys()].sort());
 

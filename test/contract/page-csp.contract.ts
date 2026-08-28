@@ -46,7 +46,6 @@ const axes = mark.value.match(/font-weight="(\d+)" font-stretch="(\d+)%"/);
 
 const marked = page({
   title: "Càrn",
-  theme: "dark",
   main: html`<h1 class="t-label">Repositories</h1>
 <span id="generated">${mark}</span>`,
 });
@@ -72,9 +71,9 @@ before(async () => {
   browser = await chromium.launch();
   site = await serve({
     documents: {
-      "/": indexDocument({ theme: "dark" }),
-      "/dark": indexDocument({ theme: "dark" }),
-      "/light": indexDocument({ theme: "light" }),
+      "/": indexDocument(),
+      "/dark": indexDocument(),
+      "/light": indexDocument(),
       "/marked": marked,
       "/unfixed": unfixed,
     },

@@ -5,7 +5,7 @@ import { test } from "node:test";
 
 import { age } from "../../src/html/age.js";
 import { repoListPage } from "../../src/html/repo-list.js";
-import { styleHref } from "../../src/html/styles.js";
+import { styleHref, stylesheet } from "../../src/html/styles.js";
 import type { RepoSummary } from "../../src/repos/list.js";
 import { sshRemote } from "../../src/repos/remote.js";
 import { frozen, indexDocument, populated } from "../gallery/repo-index.js";
@@ -25,12 +25,9 @@ function stub(count: number): RepoSummary[] {
 }
 
 test("the shell is one header, one main, and one footer", () => {
-  const markup = indexDocument({ theme: "dark" });
+  const markup = indexDocument();
 
-  assert.match(
-    markup,
-    /^<!doctype html>\n<html lang="en" data-theme="dark">\n/,
-  );
+  assert.match(markup, /^<!doctype html>\n<html lang="en">\n/);
   assert.match(
     markup,
     /<meta name="viewport" content="width=device-width, initial-scale=1" \/>/,
@@ -65,7 +62,7 @@ test("the shell is one header, one main, and one footer", () => {
 });
 
 test("the skip link is the first focusable thing on the page", () => {
-  const markup = indexDocument({ theme: "dark" });
+  const markup = indexDocument();
   const first = markup.indexOf(
     '<a class="skip" href="#main">Skip to content</a>',
   );
@@ -83,7 +80,7 @@ test("the skip link is the first focusable thing on the page", () => {
 });
 
 test("one h1, the list's own label, and no other heading", () => {
-  const markup = indexDocument({ theme: "dark" });
+  const markup = indexDocument();
 
   assert.ok(markup.includes('<h1 class="t-label">Repositories</h1>'));
   assert.strictEqual([...markup.matchAll(/<h[1-6][ >]/g)].length, 1);
@@ -94,7 +91,6 @@ test("the index lists every repo, with no cap and no show-all", () => {
   for (const count of [0, 1, 16, 17, 40, 200]) {
     const markup = repoListPage({
       repos: stub(count),
-      theme: "dark",
       now: frozen,
     });
 
@@ -105,13 +101,13 @@ test("the index lists every repo, with no cap and no show-all", () => {
     );
   }
 
-  const many = repoListPage({ repos: stub(40), theme: "dark", now: frozen });
+  const many = repoListPage({ repos: stub(40), now: frozen });
   assert.doesNotMatch(many, /Show all/i);
   assert.doesNotMatch(many, /aria-expanded|<details|<summary/);
 });
 
 test("a row is an anchored name, a description slot, and a datetime", () => {
-  const markup = indexDocument({ theme: "dark" });
+  const markup = indexDocument();
 
   assert.ok(markup.includes('<ul class="repos" role="list">'));
   assert.ok(
@@ -139,7 +135,7 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
 });
 
 test("a repo name wears the display face without small caps or a tooltip", () => {
-  const markup = indexDocument({ theme: "dark" });
+  const markup = indexDocument();
 
   assert.doesNotMatch(markup, /class="sc"/);
   assert.doesNotMatch(markup, /class="nm t-item"[^>]*title=/);
@@ -147,7 +143,7 @@ test("a repo name wears the display face without small caps or a tooltip", () =>
 });
 
 test("a description is escaped, never interpolated raw", () => {
-  const markup = indexDocument({ theme: "dark" });
+  const markup = indexDocument();
 
   assert.ok(
     markup.includes(
@@ -158,7 +154,7 @@ test("a description is escaped, never interpolated raw", () => {
 });
 
 test("the empty state says what would be here and how to make one", () => {
-  const markup = indexDocument({ theme: "dark", repos: [] });
+  const markup = indexDocument({ repos: [] });
 
   assert.strictEqual(rows(markup), 0);
   assert.ok(markup.includes('<h1 class="t-label">Repositories</h1>'));
@@ -180,34 +176,30 @@ test("the empty state says what would be here and how to make one", () => {
   assert.doesNotMatch(copy, /[!…]|Oops/);
 });
 
-test("the theme is stamped in both directions and left off when unset", () => {
-  assert.match(
-    indexDocument({ theme: "dark" }),
-    /<html lang="en" data-theme="dark">/,
-  );
-  assert.match(
-    indexDocument({ theme: "light" }),
-    /<html lang="en" data-theme="light">/,
-  );
+// the palette is the reader's system preference and nothing else, so the
+// root element carries no state at all and the page is one set of bytes
+test("the root element carries nothing but its language", () => {
+  for (const repos of [populated, []]) {
+    const markup = indexDocument({ repos });
+    const root = markup.slice(
+      markup.indexOf("<html"),
+      markup.indexOf(">", markup.indexOf("<html")) + 1,
+    );
 
-  const unstamped = indexDocument({ theme: null });
-  assert.match(unstamped, /<html lang="en">\n/);
-  assert.doesNotMatch(
-    unstamped.slice(0, unstamped.indexOf(">", unstamped.indexOf("<html"))),
-    /data-theme/,
-  );
+    assert.strictEqual(root, '<html lang="en">');
+  }
+
+  assert.doesNotMatch(stylesheet, /data-theme/);
 });
 
 test("no page carries script, an inline style, or a style attribute", () => {
-  for (const theme of ["dark", "light", null] as const) {
-    for (const repos of [populated, []]) {
-      const markup = indexDocument({ theme, repos });
+  for (const repos of [populated, []]) {
+    const markup = indexDocument({ repos });
 
-      assert.doesNotMatch(markup, /<script/i);
-      assert.doesNotMatch(markup, /<style[ >]/i);
-      assert.doesNotMatch(markup, / style=/i);
-      assert.doesNotMatch(markup, /\son[a-z]+=/i);
-    }
+    assert.doesNotMatch(markup, /<script/i);
+    assert.doesNotMatch(markup, /<style[ >]/i);
+    assert.doesNotMatch(markup, / style=/i);
+    assert.doesNotMatch(markup, /\son[a-z]+=/i);
   }
 });
 

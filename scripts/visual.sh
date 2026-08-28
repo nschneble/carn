@@ -6,6 +6,10 @@
 # touches the dev database or the dev repo root. Args pass through, e.g.
 # `npm run visual -- --headed`. With --seed-only it prepares the database
 # and the repos, then prints how to serve them, and runs no stories.
+#
+# Runs twice, once per colour scheme. Tuffgal pins colorScheme per run and
+# records it as a pixel-affecting manifest key, so each scheme needs its
+# own run and its own baseline directory.
 
 set -eu
 
@@ -65,4 +69,7 @@ if [ "${1:-}" = "--seed-only" ]; then
   exit 0
 fi
 
-exec npx tuffgal run --manage-servers "$@"
+for scheme in dark light; do
+  echo "== $scheme =="
+  CARN_VISUAL_SCHEME="$scheme" npx tuffgal run --manage-servers "$@"
+done

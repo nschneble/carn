@@ -73,7 +73,7 @@ GET /r/:repo     repo show — file tree at the default branch + rendered README
 
 Plus everything they need: the stylesheet from `BRAND.md`'s token block,
 self-hosted Carn Sans and Carn Mono (renamed subsets of Archivo and IBM
-Plex Mono — OFL reserves the name "Plex"), both themes, compensated small
+Plex Mono — OFL reserves the name "Plex"), both palettes, compensated small
 caps, the generated wordmark, and header-image resolution.
 
 ## What 1d is not
@@ -158,16 +158,17 @@ small, and quiet.
 ## Themes
 
 The token block in `BRAND.md` is copied **verbatim**. It is built so that
-no colour is defined only inside a media query, which is what makes all
-four render paths resolve: explicit dark, explicit light, and the
-unstamped default under each `prefers-color-scheme`. The unstamped pair is
-two paths, not one — dark is the bare `:root`, light is the media query —
-and a token left only inside that query is empty in the other two. Changing
-the structure breaks a case that is invisible in testing.
+no colour is defined only inside a media query, which is what makes both
+render paths resolve. Dark is the bare `:root`; light is redefined inside
+`prefers-color-scheme: light`. A token left only inside that query is
+empty under dark, which is the default, so changing the structure breaks a
+case that is invisible in testing.
 
-Theme is a cookie; the server reads it and picks. No client-side
-switching, no flash, no JavaScript. A `<noscript>` is not needed because
-nothing needs script.
+**`prefers-color-scheme` and nothing else.** No theme cookie, no
+`data-theme`, no client-side switching, no flash, no JavaScript. Every
+page is one set of bytes for every visitor, which is what makes it
+genuinely cacheable and why no response carries `Vary`. A `<noscript>` is
+not needed because nothing needs script.
 
 ## Budgets
 
@@ -181,11 +182,15 @@ where they start binding:
 - **Fewer than 12 `spawn` calls per render.** The file tree is one
   `ls-tree -z --long`, not one `cat-file` per row. This is the budget most
   likely to be broken by code that looks correct.
-- **Zero axe violations across all four render paths.** Not "both themes."
-  `prefers-color-scheme` splits the unstamped state in two, and the
-  unstamped state is the only one in which a token defined solely inside a
-  media query resolves to nothing. It is the state the token block's
-  structure exists to protect, so it is the one the gate must cover.
+- **Zero axe violations across both render paths.** `prefers-color-scheme`
+  is the only thing that picks a palette, so the paths are `colorScheme:
+  'light'` and `colorScheme: 'dark'`. Dark is the one in which a token
+  defined solely inside the light media query resolves to nothing, and it
+  is the state the token block's structure exists to protect, so neither
+  path is optional. The audit runs against real HTTP, not `setContent`:
+  the sheet's `@font-face` src is root-relative and cannot resolve at
+  `about:blank`, and an audit on fallback fonts measures the wrong glyphs
+  for every font-sensitive rule, `target-size` first among them.
 
 The axe ruleset is `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`.
 The last is above the standard CLAUDE.md tenet 3 states, and is adopted
@@ -208,7 +213,9 @@ First phase with anything to screenshot, so Tuffgal enters here rather
 than at Phase 4 — nine screens arriving at once is where a wrong baseline
 hides.
 
-- Stories for both pages, in **both themes**
+- One story covering both pages, run once per colour scheme. Tuffgal pins
+  `colorScheme` per run and records it as a pixel-affecting manifest key,
+  so each scheme gets its own run and its own baseline directory
 - The fixture repo must be **byte-reproducible**: build it once with
   `GIT_AUTHOR_DATE` and `GIT_COMMITTER_DATE` pinned, and commit the bare
   repo as a tarball
@@ -248,26 +255,30 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
    request. Assert the tag is present and the CSP header is unchanged.
 9. `validateLink` rejects `javascript:` — the allowlist, proven, not the
    assignment
-10. In all four render paths, enumerate every custom property named in
+10. In both render paths, enumerate every custom property named in
     `BRAND.md`'s token block and assert each resolves to a non-empty value
     on `:root`. Not a spot check, not a screenshot — read them back with
     `getComputedStyle(document.documentElement).getPropertyValue()` and
     fail on the first empty string. Give it a positive control: delete one
-    token from a fixture and confirm the check fails.
-11. Zero axe violations across all four render paths: `data-theme="dark"`,
-    `data-theme="light"`, unstamped under `colorScheme: 'light'`, and
-    unstamped under `colorScheme: 'dark'`. The last is not optional and is
-    not covered by the third — set it explicitly in the context. Run
-    against the gallery as well as both pages. Prove the harness bites: a
-    fixture with a known contrast failure must be reported.
+    token from a fixture and confirm the check empties in exactly the dark
+    path, since that is where a light-only declaration goes missing.
+11. Zero axe violations across both render paths, `colorScheme: 'light'`
+    and `colorScheme: 'dark'`. The second is not optional and is not
+    covered by the first — set it explicitly in the context. Run against
+    the gallery as well as both pages, over real HTTP so the fonts and the
+    stylesheet load, and assert both families reached `loaded` before any
+    audit runs. Prove the harness bites three ways: a fixture with a known
+    contrast failure must be reported; a token darkened onto its own
+    ground must be reported in its own palette and only there; and a
+    document whose stylesheet 404s must fail the font check.
 12. **Under 100 KB per page**, fonts and all
 13. **Fewer than 12 `spawn` calls** rendering a repo page — instrument the
     wrapper and count
 14. Zero `<script>` tags on either page
 15. The DOM under small caps holds the true lowercase, and filenames carry
     `lang="en"`
-16. Tuffgal stories pass for both pages in both themes, against the pinned
-    fixture and a frozen clock
+16. The Tuffgal story passes for both pages under both colour schemes,
+    against the pinned fixture and a frozen clock
 17. `git grep` finds no shell-enabled spawn — scoped form, positive control
 18. Every `.ts` under `src`, `test`, and `scripts` opens with the SPDX line
 19. `package.json` adds only `markdown-it`, `tuffgal`, `axe-core`, and
@@ -299,7 +310,7 @@ Every check above is mechanical, and none of them says whether it looks
 good. That gate is his, and it is the one this phase exists for.
 
 Make it easy to reach: when the phase is done, give him the exact commands
-to see both pages in both themes with a repo that has real content in it.
+to see both pages in both palettes with a repo that has real content in it.
 Not screenshots — the running thing.
 
 ## Handoff notes

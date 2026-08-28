@@ -77,7 +77,7 @@ or a generated mark
 
 _Every repo has one from the moment it exists_
 
-The header image is `.carn/header.png`, committed to the repo. No upload form, no blob storage, no admin UI — versioned with the code, editable by commit, and it survives a migration to anywhere else. Resolution walks per theme slot: `header-{slot}.svg` → `header-{slot}.png` → `header.svg` → `header.png` → the generated mark. Full spec in the brand book.
+The header image is `.carn/header.svg`, committed to the repo. No upload form, no blob storage, no admin UI — versioned with the code, editable by commit, and it survives a migration to anywhere else. Resolution walks per theme slot: `header-{slot}.svg` → `header.svg` → the generated mark. Full spec in the brand book.
 
 When no image is committed, the repo name is hashed to a seed and the seed drives layer count, offset vector, per-letter baseline drift, rotation, weight, width, and whether the top layer is filled or outlined. Rendered as SVG server-side, cached by name, drawn only from `--accent` and `--ink` so it inverts with the theme.
 

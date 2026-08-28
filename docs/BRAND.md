@@ -11,8 +11,9 @@ Dark is the default and the theme designed first. Light is a complete alternate,
 ## Tokens
 
 Copy this block verbatim into the stylesheet. Dark is the bare `:root`; light is
-the alternate. No colour is defined only inside a media query, so all three theme
-states — explicit dark, explicit light, and unstamped system default — resolve.
+the alternate, redefined inside `prefers-color-scheme: light`. No colour is
+defined only inside a media query, so both render paths resolve — a token left
+only inside the query would be empty under dark, which is the default.
 
 ```css
 :root {
@@ -54,7 +55,7 @@ states — explicit dark, explicit light, and unstamped system default — resol
   --measure: 66ch;
 }
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
+  :root {
     color-scheme: light;
     --ground: #f4f6f6;
     --surface: #ffffff;
@@ -72,25 +73,8 @@ states — explicit dark, explicit light, and unstamped system default — resol
     --on-accent: #ffffff;
   }
 }
-:root[data-theme="light"] {
-  color-scheme: light;
-  --ground: #f4f6f6;
-  --surface: #ffffff;
-  --sunk: #e9eded;
-  --ink: #0e0f0f;
-  --ink-soft: #3a3e3e;
-  --ink-mid: #5c6261;
-  --ink-faint: #666c6b;
-  --rule: #dce0e0;
-  --rule-soft: #e7eaea;
-  --accent: #e7156c;
-  --accent-text: #c9105c;
-  --accent-fill: var(--accent-text);
-  --accent-wash: #fbe2ed;
-  --on-accent: #ffffff;
-}
 @media (prefers-contrast: more) {
-  /* tripled :root outranks the theme blocks by specificity, not order */
+  /* tripled :root outranks the light block by specificity, not order */
   :root:root:root {
     --rule: var(--ink-mid);
     --rule-soft: var(--ink-faint);
@@ -686,14 +670,20 @@ Two utility classes exist, and they are the only two the markup may use. `.vh` i
 
 _A committed image, or a generated mark_
 
-### Header image — `.carn/header.png`
+### Header image — `.carn/header.svg`
 
 Committed to the repo, not uploaded. Versioned, editable by commit, survives migration, and needs no storage, form, or admin UI.
 
 - **Aspect** — 4:1. Reference size 1600 × 400.
-- **Format** — PNG or SVG. **Transparent background** — it composites on either theme.
-- **Max size** — 512 KB. Above that it's ignored and the generated mark is used.
+- **Format** — SVG. **Transparent background** — it composites on either theme.
+- **Max size** — 16 KB, derived from the page budget rather than picked. Above the cap it's ignored and the generated mark is used.
 - **Processing** — **None.** Served as committed. `object-fit: cover` absorbs minor mismatch.
+
+> **THE CAP AND THE BUDGET DISAGREE BY ABOUT 6 KB**
+>
+> Measured: the two font families are 72,308 B and the stylesheet 12,730 B, and the heaviest repo page — full README, show-all tree — is 7,005 B. That is 92,043 B against the 100 KB budget, leaving **10,357 B** for a header. A header at the 16 KB cap puts the page at roughly 108 KB.
+>
+> The contract test excludes the committed header from the measured weight, so nothing fails today. **Open question for Nick: is the cap 10 KB, or does the header sit outside the page budget?** Until he says, the cap and the budget disagree by exactly that, and this is the note saying so.
 
 ### Resolution — per theme slot, first match wins
 
@@ -701,24 +691,20 @@ Two slots, light and dark, each resolving independently down the same chain — 
 
 ```
 // for each slot in (light, dark), first that exists at the
-// default branch tip. .svg is preferred over .png.
+// default branch tip
 
   .carn/header-{slot}.svg
-  .carn/header-{slot}.png
   .carn/header.svg
-  .carn/header.png
   → generated wordmark          // always available, theme-aware
 ```
 
-If both slots resolve to the same source — the common case, one `header.png` — emit a plain `<img>`. One request, simpler markup. Only emit `<picture>` when the two slots genuinely differ.
+If both slots resolve to the same source — the common case, one `header.svg` — emit a plain `<img>`. One request, simpler markup. Only emit `<picture>` when the two slots genuinely differ.
 
-> **THE THEME TOGGLE BREAKS <PICTURE>**
+> **`<PICTURE>` IS THE WHOLE MECHANISM**
 >
-> `<picture>` switches on `prefers-color-scheme` only — it cannot see a `data-theme` attribute. So a viewer whose OS is dark but who toggled the site to light would get the dark header on a light page.
->
-> The fix falls out of the architecture. **Theme is a cookie, so the server already knows it.** When the cookie is present, render a plain `<img>` for the resolved theme and skip `<picture>` entirely. When it isn't, emit `<picture>` and let `prefers-color-scheme` decide. Both paths are zero-JS and always correct.
+> Càrn follows `prefers-color-scheme` and nothing else. There is no theme cookie and no `data-theme` attribute, so `<picture>` sees everything there is to see. Two committed images become a `<source>` plus an `<img>`; a wordmark in one slot and an image in the other swap in CSS, since `<picture>` can only switch between images. Both paths are zero-JS and always correct.
 
-The resolution needs one `ls-tree` of `.carn/` per repo page — cache it against the default branch's OID and it costs nothing on a warm page. A committed image that exceeds 512 KB is ignored, and the chain simply continues past it.
+The resolution needs one `ls-tree` of `.carn/` per repo page — cache it against the default branch's OID and it costs nothing on a warm page. A committed image that exceeds 16 KB is ignored, and the chain simply continues past it.
 
 > **NO RESIZING OR CROPPING**
 >

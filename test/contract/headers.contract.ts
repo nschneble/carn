@@ -27,35 +27,43 @@ test("health reports the process is up, as json", async () => {
   assert.strictEqual(response.body, '{"status":"ok"}');
 });
 
-test("a read page revalidates on its own bytes and varies on the cookie", async () => {
+// nothing about a reader reaches the render any more, so a shared cache
+// holds one entry per URL and Vary would be declaring a dependency the
+// server no longer has
+test("a read page revalidates on its own bytes and varies on nothing", async () => {
   const app = Fastify();
-  app.get<{ Querystring: { theme?: string } }>("/page", (request, reply) =>
-    sendPage(request, reply, `<p>${request.query.theme ?? "unstamped"}</p>`),
+  app.get<{ Querystring: { body?: string } }>("/page", (request, reply) =>
+    sendPage(request, reply, `<p>${request.query.body ?? "first"}</p>`),
   );
 
-  const dark = await app.inject({ method: "GET", url: "/page?theme=dark" });
-  const light = await app.inject({ method: "GET", url: "/page?theme=light" });
+  const first = await app.inject({ method: "GET", url: "/page" });
+  const edited = await app.inject({ method: "GET", url: "/page?body=second" });
   const again = await app.inject({
     method: "GET",
-    url: "/page?theme=dark",
-    headers: { "if-none-match": String(dark.headers.etag) },
+    url: "/page",
+    headers: { "if-none-match": String(first.headers.etag) },
   });
   const crossed = await app.inject({
     method: "GET",
-    url: "/page?theme=light",
-    headers: { "if-none-match": String(dark.headers.etag) },
+    url: "/page?body=second",
+    headers: { "if-none-match": String(first.headers.etag) },
+  });
+  const cookied = await app.inject({
+    method: "GET",
+    url: "/page",
+    headers: { cookie: "theme=light" },
   });
   await app.close();
 
-  assert.strictEqual(dark.headers["cache-control"], "public, no-cache");
-  assert.strictEqual(dark.headers.vary, "Cookie");
-  assert.match(String(dark.headers.etag), /^"[0-9a-f]{16}"$/);
-  assert.match(String(dark.headers["content-type"]), /^text\/html/);
+  assert.strictEqual(first.headers["cache-control"], "public, no-cache");
+  assert.strictEqual(first.headers.vary, undefined);
+  assert.match(String(first.headers.etag), /^"[0-9a-f]{16}"$/);
+  assert.match(String(first.headers["content-type"]), /^text\/html/);
 
   assert.notStrictEqual(
-    dark.headers.etag,
-    light.headers.etag,
-    "two themes of the same page share an etag, so a cache would hand one reader the other's theme",
+    first.headers.etag,
+    edited.headers.etag,
+    "two different bodies share an etag, so a cache would hand a reader the wrong one",
   );
 
   assert.strictEqual(again.statusCode, 304);
@@ -63,9 +71,15 @@ test("a read page revalidates on its own bytes and varies on the cookie", async 
   assert.strictEqual(
     crossed.statusCode,
     200,
-    "a stale validator was answered 304, so the body never reaches the reader whose theme changed",
+    "a stale validator was answered 304, so the edited body never reaches the reader",
   );
-  assert.strictEqual(crossed.body, "<p>light</p>");
+  assert.strictEqual(crossed.body, "<p>second</p>");
+
+  assert.strictEqual(
+    cookied.body,
+    first.body,
+    "a cookie changed the response, so something about the reader still reaches the render and dropping Vary was wrong",
+  );
 });
 
 test("the security headers reach a hit and a miss alike", async () => {

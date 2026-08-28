@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { repoListPage } from "../../src/html/repo-list.js";
-import type { Theme } from "../../src/html/theme.js";
 import type { RepoSummary } from "../../src/repos/list.js";
 
 export const frozen = new Date("2026-08-27T12:00:00.000Z");
@@ -44,14 +43,11 @@ export const hoverSimulation = `
   background: var(--sunk);
 }`;
 
-export function indexDocument(options: {
-  theme: Theme | null;
-  repos?: RepoSummary[];
-  hover?: boolean;
-}): string {
+export function indexDocument(
+  options: { repos?: RepoSummary[]; hover?: boolean } = {},
+): string {
   const markup = repoListPage({
     repos: options.repos ?? populated,
-    theme: options.theme,
     now: frozen,
   });
 

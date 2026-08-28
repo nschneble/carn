@@ -3,11 +3,9 @@
 import { config } from "../config.js";
 import { html, type Raw } from "./index.js";
 import { styleHref } from "./styles.js";
-import type { Theme } from "./theme.js";
 
 export type Page = {
   title: string;
-  theme: Theme | null;
   main: Raw;
 };
 
@@ -31,13 +29,8 @@ ${main}</main>
 </body>`;
 
 export function page(view: Page): string {
-  const open =
-    view.theme === null
-      ? html`<html lang="en">`
-      : html`<html lang="en" data-theme="${view.theme}">`;
-
   return `<!doctype html>
-${open.value}
+<html lang="en">
 ${head(view.title).value}
 ${body(view.main).value}
 </html>

@@ -615,13 +615,15 @@ contract 9 "validateLink rejects javascript:, and the allowlist is what does it"
   "an entity-encoded scheme is decoded before the allowlist sees it"
 
 # 10
-# the whole file: four render paths, the enumeration that keeps the list
+# the whole file: both render paths, the enumeration that keeps the list
 # honest, and the deleted-token control
-contract 10 "every BRAND.md token resolves non-empty on :root in all four paths" 7 "" \
+contract 10 "every BRAND.md token resolves non-empty on :root in both paths" 5 "" \
   token-resolution
 
 # 11
-contract 11 "zero axe violations across all four render paths, gallery included" 49 "" \
+# served over real http, not set into about:blank, so the audit measures
+# Carn Sans and Carn Mono rather than whatever the host falls back to
+contract 11 "zero axe violations across both render paths, gallery included" 31 "" \
   axe
 
 # 12
@@ -693,7 +695,7 @@ if require_daemon 15 "$TITLE_15" && require_seed 15 "$TITLE_15"; then
     record FAIL 15 "$TITLE_15" "$wrong"
   else
     contract 15 "$TITLE_15" 4 "both served rows keep the lowercase and the lang" \
-      repo-page theme -- \
+      repo-page gallery -- \
       "the rendered dom holds the true filename under small caps" \
       "a directory row carries the accent class and a trailing slash" \
       "small caps split lowercase runs and never insert whitespace" \
@@ -732,16 +734,21 @@ drop_scratch
 rm -rf "$repo_root"
 
 # 16
-# expected to fail: tuffgal 0.2.0-alpha.8's buildSchedule refuses a
-# pre-seeded needs label before the storage state that satisfies it runs
-readonly TITLE_16="the tuffgal stories pass for both pages in both themes"
+# two runs, one per colour scheme: tuffgal pins colorScheme per run, so a
+# single run would leave one palette unphotographed
+readonly TITLE_16="the tuffgal story passes for both pages in both palettes"
 if require_db 16 "$TITLE_16"; then
   npm run visual > "$work/16" 2>&1
   visual_status=$?
-  if [ "$visual_status" -eq 0 ]; then
-    record PASS 16 "$TITLE_16" "$(tail -1 "$work/16")"
-  else
+  passes=$(grep -c '^== \(dark\|light\) ==$' "$work/16")
+  # one summary line per run, whatever verdict each reached
+  summaries=$(sed -n 's/^[^0-9]*\([0-9][0-9]* [a-z]* on "desktop" breakpoint\)$/\1/p' "$work/16")
+  if [ "$visual_status" -ne 0 ]; then
     record FAIL 16 "$TITLE_16" "npm run visual exited $visual_status: $(grep -m1 'tuffgal error' "$work/16" || tail -3 "$work/16")"
+  elif [ "$passes" != "2" ] || [ "$(printf '%s\n' "$summaries" | grep -c .)" != "2" ]; then
+    record FAIL 16 "$TITLE_16" "$passes of 2 colour-scheme runs started and $(printf '%s\n' "$summaries" | grep -c .) of 2 reported, so a palette went unphotographed"
+  else
+    record PASS 16 "$TITLE_16" "$(printf '%s' "$summaries" | tr '\n' ';' | sed 's/;/; /g')"
   fi
 fi
 

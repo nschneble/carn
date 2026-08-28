@@ -5,9 +5,11 @@
 
 import { type Browser, chromium } from "playwright";
 
+export type BrowserFontFace = { family: string; status: string };
+
 export type BrowserDocument = {
   documentElement: object;
-  fonts: { ready: Promise<unknown> };
+  fonts: { ready: Promise<unknown> } & Iterable<BrowserFontFace>;
 };
 
 let shared: Browser | undefined;

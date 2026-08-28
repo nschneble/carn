@@ -16,10 +16,7 @@ export function fences(document: string): string[] {
   );
 }
 
-export function declarations(
-  css: string,
-  selector: string,
-): Map<string, string> {
+function declarations(css: string, selector: string): Map<string, string> {
   const opener = new RegExp(
     `^[ ]*${selector.replaceAll(/[[\](){}.*+?^$|\\]/g, "\\$&")} \\{$`,
     "gm",
@@ -42,10 +39,26 @@ export function declarations(
   return found;
 }
 
+// both palettes declare :root, so scope each read to its own block first
+export const lightQuery = "@media (prefers-color-scheme: light)";
+
+function inside(css: string, atRule: string): string {
+  const start = css.indexOf(`${atRule} {`);
+  assert.notStrictEqual(start, -1, `${atRule} is missing`);
+
+  const end = css.indexOf("\n}", start);
+  assert.notStrictEqual(end, -1, `${atRule} is unterminated`);
+
+  return css.slice(start, end);
+}
+
+export const lightBlock = inside(tokens, lightQuery);
+const darkBlock = tokens.replace(`${lightBlock}\n}`, "");
+
 export function resolvePalette(
   overrides: Map<string, string>,
 ): Map<string, string> {
-  const merged = new Map([...declarations(tokens, ":root"), ...overrides]);
+  const merged = new Map([...declarations(darkBlock, ":root"), ...overrides]);
 
   for (const [name, value] of merged) {
     const reference = value.match(/^var\((--[a-z0-9-]+)\)$/);
@@ -63,9 +76,7 @@ assert.ok(tokenFence, "BRAND.md has no token fence");
 export const brandTokens = tokenFence;
 
 export const dark = resolvePalette(new Map());
-export const light = resolvePalette(
-  declarations(tokens, ':root[data-theme="light"]'),
-);
+export const light = resolvePalette(declarations(lightBlock, ":root"));
 export const palettes = [
   ["dark", dark],
   ["light", light],

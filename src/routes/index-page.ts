@@ -5,21 +5,18 @@ import type { FastifyInstance } from "fastify";
 import { now } from "../clock.js";
 import { errorPage, unavailable } from "../html/error-page.js";
 import { repoListPage } from "../html/repo-list.js";
-import { readTheme } from "../html/theme.js";
 import { listRepos } from "../repos/list.js";
 import { sendPage, sendStatus } from "./cache.js";
 
 export function indexRoute(app: FastifyInstance): void {
   app.get("/", async (request, reply) => {
-    const theme = readTheme(request.headers.cookie);
-
     try {
       const repos = await listRepos();
 
       return await sendPage(
         request,
         reply,
-        repoListPage({ repos, theme, now: now() }),
+        repoListPage({ repos, now: now() }),
       );
     } catch (error) {
       request.log.error({ err: error }, "index: the repo list failed to load");
@@ -27,7 +24,7 @@ export function indexRoute(app: FastifyInstance): void {
         request,
         reply,
         503,
-        errorPage({ failure: unavailable, theme }),
+        errorPage({ failure: unavailable }),
       );
     }
   });

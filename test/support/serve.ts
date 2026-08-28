@@ -20,8 +20,11 @@ export type Served = {
 
 export type ServedAsset = { type: string; body: string };
 
+// documents and styles are read per request, so a caller may register a
+// fixture after the server is up
 export async function serve(options: {
   documents: Record<string, string>;
+  styles?: Record<string, string>;
   assets?: Record<string, ServedAsset>;
   extraCss?: string;
 }): Promise<Served> {
@@ -32,6 +35,13 @@ export async function serve(options: {
     if (path === styleHref) {
       response.setHeader("Content-Type", "text/css; charset=utf-8");
       response.end(`${stylesheet}${options.extraCss ?? ""}`);
+      return;
+    }
+
+    const css = options.styles?.[path];
+    if (css !== undefined) {
+      response.setHeader("Content-Type", "text/css; charset=utf-8");
+      response.end(css);
       return;
     }
 
