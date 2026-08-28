@@ -5,6 +5,7 @@
 // deliberate in light mode. one ls-tree per page, cached on the tip's
 // OID. BRAND.md 06
 
+import { oidPattern } from "../git/oid.js";
 import { spawnGit } from "../git/spawn.js";
 import { html, type Raw } from "../html/index.js";
 import type { Theme } from "../html/theme.js";
@@ -18,7 +19,6 @@ export type HeaderSrc = (image: HeaderImage) => string;
 
 export const maxHeaderBytes = 512 * 1024;
 
-const oidPattern = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
 const listTimeoutMs = 5_000;
 const fileModes: ReadonlySet<string> = new Set(["100644", "100755"]);
 const cacheLimit = 512;

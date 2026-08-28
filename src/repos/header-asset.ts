@@ -3,11 +3,12 @@
 // the url is content-addressed, so it can be immutable, and the route
 // checks the oid against the repo's own resolved slots before serving
 
+import { oidSource } from "../git/oid.js";
 import type { HeaderImage } from "./header.js";
 
 export type HeaderAsset = { oid: string; extension: ".png" | ".svg" };
 
-const assetPattern = /^([0-9a-f]{40}(?:[0-9a-f]{24})?)(\.png|\.svg)$/;
+const assetPattern = new RegExp(`^(${oidSource})(\\.png|\\.svg)$`);
 
 export const headerTypes: Record<HeaderAsset["extension"], string> = {
   ".png": "image/png",

@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { oidPattern } from "./oid.js";
 import { spawnGit } from "./spawn.js";
 
 export const blobTimeoutMs = 5_000;
-
-const oidPattern = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
 
 export async function readBlob(options: {
   repoPath: string;

@@ -4,6 +4,7 @@
 // cat-file is pixel-identical and four times slower, which is the whole
 // reason CLAUDE.md caps a render at twelve spawns
 
+import { oidPattern } from "../git/oid.js";
 import { spawnGit } from "../git/spawn.js";
 
 export type TreeEntry = {
@@ -14,8 +15,6 @@ export type TreeEntry = {
 };
 
 export const treeTimeoutMs = 5_000;
-
-const oidPattern = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
 
 async function read(options: {
   args: string[];
