@@ -26,7 +26,7 @@ import {
 import { resolveRepo } from "../repos/resolve.js";
 import { loadRepoView } from "../repos/show.js";
 import { resolveTip } from "../repos/tree.js";
-import { sendPage } from "./cache.js";
+import { sendPage, sendStatus } from "./cache.js";
 
 type PageRoute = { Params: { repo: string }; Querystring: { all?: string } };
 type AssetRoute = { Params: { repo: string; asset: string } };
@@ -34,7 +34,6 @@ type AssetRoute = { Params: { repo: string; asset: string } };
 const forever = "public, max-age=31536000, immutable";
 const noImage = "No such header image.\n";
 const imageFailed = "That header image failed to load. Try again shortly.\n";
-const htmlType = "text/html; charset=utf-8";
 
 // the child dies with the response, never with the request body
 function abortWith(reply: FastifyReply): AbortSignal {
@@ -48,12 +47,13 @@ function abortWith(reply: FastifyReply): AbortSignal {
 }
 
 function fail(
+  request: FastifyRequest,
   reply: FastifyReply,
   status: number,
   failure: Failure,
   theme: Theme | null,
 ): FastifyReply {
-  return reply.code(status).type(htmlType).send(errorPage({ failure, theme }));
+  return sendStatus(request, reply, status, errorPage({ failure, theme }));
 }
 
 async function showRepo(
@@ -69,7 +69,7 @@ async function showRepo(
       const failure =
         found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
 
-      return fail(reply, 404, failure, theme);
+      return fail(request, reply, 404, failure, theme);
     }
 
     const repo = await loadRepoView({
@@ -84,7 +84,7 @@ async function showRepo(
     );
   } catch (error) {
     request.log.error({ err: error }, "repo page: the page failed to render");
-    return fail(reply, 503, unavailable, theme);
+    return fail(request, reply, 503, unavailable, theme);
   }
 }
 

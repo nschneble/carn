@@ -165,7 +165,7 @@ test("the empty state says what would be here and how to make one", () => {
   assert.ok(markup.includes("<footer>"));
   assert.ok(
     markup.includes(
-      `<code class="t-mono">git push ${sshRemote("linklater")} main</code>`,
+      `<code class="t-mono">git push ${sshRemote("your-repo")} main</code>`,
     ),
     "the empty state's command does not come from config",
   );

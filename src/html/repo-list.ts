@@ -18,7 +18,7 @@ ${ageMarkup("Created", repo.createdAt, now)}
 function empty(): Raw {
   return html`<div class="empty">
 <p class="t-body">No repos yet. Every repo on this server is listed here, and pushing to a name that doesn't exist creates it.</p>
-<p><code class="t-mono">git push ${sshRemote("linklater")} main</code></p>
+<p><code class="t-mono">git push ${sshRemote("your-repo")} main</code></p>
 </div>`;
 }
 

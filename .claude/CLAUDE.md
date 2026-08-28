@@ -38,8 +38,11 @@ Rules for a coding session:
   be absorbed into AGPL works. Anything copyleft-incompatible,
   source-available-but-not-open, or with a field-of-use restriction is
   disqualified. This compounds the dependency rule above; stop and ask.
-- **The font is licensed separately.** Archivo is SIL OFL 1.1 and ships
-  with its own `fonts/OFL.txt`. Leave it alone.
+- **The fonts are licensed separately.** Archivo is SIL OFL 1.1
+  (`fonts/OFL.txt`, no Reserved Font Name). IBM Plex Mono is SIL OFL 1.1
+  with a Reserved Font Name (`fonts/OFL-plex.txt`), which is why the
+  subset ships renamed as Carn Mono rather than as Plex Mono. Leave both
+  license files alone.
 - The web UI carries a source link as a license obligation; a network user
   must be able to get the source.
 

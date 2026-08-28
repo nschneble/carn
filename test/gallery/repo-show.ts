@@ -64,7 +64,7 @@ file.
 | \`v1.0.0\` | tag | signed, annotated |
 
 \`\`\`sh
-git clone git@carn.example:linklater
+git clone git@carn.example:linklater && cd linklater && npm install
 \`\`\`
 
 > Pushing to a name that doesn't exist creates it.

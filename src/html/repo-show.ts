@@ -33,7 +33,8 @@ function tree(view: RepoView, showAll: boolean): Raw {
   if (view.entries.length === 0) return noCommits(view);
 
   const shown = showAll ? view.entries : view.entries.slice(0, treeRowCap);
-  const list = html`<ul class="tree" role="list">
+  const list = html`<h2 class="t-label">Files</h2>
+<ul class="tree" role="list">
 ${shown.map(row)}
 </ul>`;
 

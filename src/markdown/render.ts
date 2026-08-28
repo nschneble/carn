@@ -29,17 +29,40 @@ markdown.validateLink = allowLink;
 const external = /^https?:/i;
 const defaultLinkOpen = markdown.renderer.rules.link_open;
 
-markdown.renderer.rules.link_open = (tokens, idx, options, env, self) => {
-  const href = tokens[idx].attrGet("href");
+markdown.renderer.rules.link_open = (tokens, index, options, env, self) => {
+  const href = tokens[index].attrGet("href");
 
   if (href !== null && external.test(String(href).trim())) {
-    tokens[idx].attrSet("rel", "nofollow ugc");
+    tokens[index].attrSet("rel", "nofollow ugc");
   }
 
   return defaultLinkOpen
-    ? defaultLinkOpen(tokens, idx, options, env, self)
-    : self.renderToken(tokens, idx, options);
+    ? defaultLinkOpen(tokens, index, options, env, self)
+    : self.renderToken(tokens, index, options);
 };
+
+// a wide code block scrolls its own container, which needs to be in the
+// tab order (wcag scrollable-region-focusable) since nothing inside it is
+function focusable(html: string): string {
+  return html.replace(/^<pre(?=[ >])/, '<pre tabindex="0"');
+}
+
+const defaultFence = markdown.renderer.rules.fence;
+const defaultCodeBlock = markdown.renderer.rules.code_block;
+
+markdown.renderer.rules.fence = (tokens, index, options, env, self) =>
+  focusable(
+    defaultFence
+      ? defaultFence(tokens, index, options, env, self)
+      : self.renderToken(tokens, index, options),
+  );
+
+markdown.renderer.rules.code_block = (tokens, index, options, env, self) =>
+  focusable(
+    defaultCodeBlock
+      ? defaultCodeBlock(tokens, index, options, env, self)
+      : self.renderToken(tokens, index, options),
+  );
 
 export function renderMarkdown(source: string): Raw {
   return raw(markdown.render(source));

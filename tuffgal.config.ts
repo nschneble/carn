@@ -13,7 +13,7 @@ export default defineConfig({
     stories: "tuffgal/stories",
     baselines: "tuffgal/baselines",
     report: "tuffgal/report",
-    // committed, because tuffgal's own .gitignore excludes the .auth default
+    // committed; tuffgal's own default .gitignore excludes .auth
     authState: "tuffgal/theme-state",
   },
 
