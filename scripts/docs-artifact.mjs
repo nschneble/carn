@@ -55,7 +55,8 @@ const DOCS = [
     slug: "stack",
     file: "STACK.md",
     name: "Stack Currency",
-    blurb: "Pinned majors, known hazards, and what is deliberately not surveyed.",
+    blurb:
+      "Pinned majors, known hazards, and what is deliberately not surveyed.",
   },
 ];
 
@@ -297,8 +298,9 @@ function page(doc, all) {
 
   const env = {};
   let html = md.render(body, env);
-  html = html.replace(/<table>/g, '<div class="tablewrap"><table>')
-             .replace(/<\/table>/g, "</table></div>");
+  html = html
+    .replace(/<table>/g, '<div class="tablewrap"><table>')
+    .replace(/<\/table>/g, "</table></div>");
 
   const siblings = all
     .map((d) =>
@@ -348,7 +350,8 @@ function page(doc, all) {
 const urls = {
   plan: "https://claude.ai/code/artifact/bd38dee8-6822-4b2c-a602-bde753e498a3",
   brand: "https://claude.ai/code/artifact/234389d4-5e88-408d-936f-834ecf266f03",
-  layout: "https://claude.ai/code/artifact/587c7ac1-5712-4927-bb82-8e5a80731f80",
+  layout:
+    "https://claude.ai/code/artifact/587c7ac1-5712-4927-bb82-8e5a80731f80",
   stack: "https://claude.ai/code/artifact/d6827af7-8151-4e7b-aace-e29617e51f99",
 };
 for (const d of DOCS) d.url = urls[d.slug];
@@ -356,5 +359,7 @@ for (const d of DOCS) d.url = urls[d.slug];
 for (const d of DOCS) {
   const out = `${OUT}/carn-${d.slug}.html`;
   writeFileSync(out, page(d, DOCS), "utf8");
-  console.log(`${out}  ${Buffer.byteLength(readFileSync(out)).toLocaleString("en")} B`);
+  console.log(
+    `${out}  ${Buffer.byteLength(readFileSync(out)).toLocaleString("en")} B`,
+  );
 }
