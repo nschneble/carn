@@ -508,7 +508,7 @@ body > header {
   padding-top: var(--s5);
   padding-bottom: var(--s6);
 }
-/* the rule is inset to the gutters, so it matches every rule inside main */
+/* inset to the gutters so it matches every rule inside main */
 body > footer {
   position: relative;
   border-top: 0;
