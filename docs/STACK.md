@@ -1,3 +1,7 @@
+<!-- This file is the source of truth. The artifact at
+     https://claude.ai/code/artifact/d6827af7-8151-4e7b-aace-e29617e51f99
+     is generated FROM it by scripts/docs-artifact.mjs — edit here, re-run that. -->
+
 # Stack currency
 
 _Latest-on-npm column verified 2026-08-25. Re-verify before writing each
@@ -16,7 +20,7 @@ Phase 1a, costing six amendments.
 | `@prisma/client` | `^7.9.1` | 7.10.0 | **7** | low | `latest` is still 7.10.0 — it does *not* track the CLI's tag. |
 | `@prisma/adapter-pg` | `^7.9.1` | 7.10.0 | **7** | low | Tracks the Prisma major. Owns `pg` transitively; never add `pg` directly. |
 | `fastify` | `^5.12.1` | 5.12.1 | **5** | low | The raw content-type parser for `application/x-git-*-request` (1c) is a v5 API. |
-| `ssh2` | `^1.17.0` | 1.17.0 | **1** | none | Verified end-to-end on the dev laptop in Phase 0. CLAUDE.md's three gotchas are confirmed against this exact version. |
+| `ssh2` | `^1.17.0` | 1.17.0 | **1** | none | Verified end-to-end on the dev laptop in Phase 0. CLAUDE.md's nine ssh2 gotchas are confirmed against this exact version. |
 | `@types/ssh2` | `^1.15.5` | 1.15.5 | **1** | low | `ssh2` ships no types of its own. |
 | `@biomejs/biome` | `^2.5.10` | 2.5.10 | **2** | low | Formatter and linter. Replaced Prettier; see below. |
 | `typescript` | `^7.0.2` | 7.0.2 | **7** | medium | The Go-native compiler. Fast, but much of the ecosystem has not caught up — see the Biome note. |
@@ -104,7 +108,7 @@ next section.
 
 **Settled in Phase 1d. Do not add it back.** It was installed briefly
 because the 1d brief called for it, and removed once measurement showed the
-brief was wrong. `docs/PLAN.md` §"markdown-it 15.0.0 is the pick" had it
+brief was wrong. `docs/PLAN.md` §04, _Markdown — strict CommonMark, one deviation_, had it
 right from the start.
 
 15 bundles `dist/markdown-it.d.mts`, and the 15.0.0 changelog says to remove

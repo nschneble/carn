@@ -57,7 +57,9 @@ visitor. No sessions, no per-user rendering, no auth. Pages are genuinely
 cacheable, and it's why the budgets below are reachable and reasonable.
 
 **3. Secure and accessible.** Semantic HTML, keyboard-first, light and dark
-themes, WCAG 2.1 AA conformance. The display face never sets body copy.
+themes, WCAG 2.1 AA conformance. Gate runs 2.2 AA for `target-size`, which
+pins row hit area, and axe's `best-practice` set, which pins skip link,
+landmark shell, and the page's `<h1>`. Display face never sets body copy.
 
 ## Hard budgets
 
@@ -79,11 +81,10 @@ doesn't move a number that's currently failing, it doesn't get done.
   on `:root` in both — an empty one falls back to `inherit`, which axe
   cannot see.
 
-The axe ruleset is `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`.
-That last tag is one rule above the 2.1 AA tenet 3 states — `target-size`,
-kept because it pins the repo-row hit area. **Open question for Nick:
-should tenet 3 move to 2.2 AA?** Until he says, the tenet and the gate
-disagree by exactly that one rule, and this is the note saying so.
+The axe ruleset is `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`,
+and `best-practice`. The last is not WCAG and was added in 881ef8b as a
+side effect of a page wave; it widens the computed experimental
+force-enable list from five rules to seven.
 
 ## Tech stack (and the rules about adding to it)
 
@@ -271,6 +272,18 @@ Full system in `docs/BRAND.md`. The rules a coding session needs:
   not an opacity change. Use `aria-disabled`, not `disabled`.
 - **Prefer explaining over disabling.** A greyed-out Merge is unhelpful.
   "This branch has conflicts in 2 files" plus the fix commands is better.
+- **Repo headers are SVG only, 16 KB max.** JPEGs and PNGs are refused and
+  fall through to the generated mark. `.carn/header-{light,dark}.svg`, 4:1,
+  reference 1600×400, transparent ground. No processing; file is served
+  as-is and `object-fit: cover` absorbs small mismatches.
+- **Repo name is a visually hidden `<h1>`.** Header image and generated
+  mark are both decorative, and that's only defensible because `.vh`
+  carries the name as a real heading. Don't remove it to "clean up" the
+  markup, and don't give the mark an `alt`.
+- **Two render paths, not four.** There's no theme cookie and no stamped
+  state. `prefers-color-scheme` is the only palette switch, and Tuffgal
+  captures at 375 and 1440, which bracket the stylesheet's single
+  `min-width: 640px` query.
 
 ## Voice
 

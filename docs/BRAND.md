@@ -1,4 +1,7 @@
-<!-- Generated from the Càrn brand book artifact. Source of truth: https://claude.ai/code/artifact/4aeac735-1853-4ed6-9f20-a53297098314 -->
+<!-- This file is the source of truth. The artifact at
+     https://claude.ai/code/artifact/234389d4-5e88-408d-936f-834ecf266f03
+     is generated FROM it by scripts/docs-artifact.mjs, palette included —
+     edit here, re-run that. -->
 
 **BRAND BOOK**
 
@@ -451,7 +454,7 @@ _Two forms, one rule_
 
 - **Visual** — **Càrn** — page titles, nav, footer, docs, the landing page. Anything a person reads where the accent can render.
 - **ASCII prose** — **Carn** — plain-text READMEs, commit messages, config comments, anywhere it's a proper noun but the accent can't survive.
-- **Identifiers** — `carn` — hostname, npm package, binary, database, containers, repo name. Anything a machine parses.
+- **Identifiers** — `carn` — hostname, binary, database, containers, repo name. Anything a machine parses. The npm package alone is scoped, `@nschneble/carn`; the binary it installs is `carn`.
 - **Never** — `cairn`. That's the English loanword, not our name. And never `CARN` as an acronym — it isn't one.
 - **Pronounced** — KAARN. Gaelic for a cairn — a heap that passers-by each add one stone to, marking a route for those who follow.
 
@@ -495,7 +498,7 @@ There is no secondary brand colour and no semantic palette — state is carried 
 >
 > The split is not large elements versus inline text. It is **large type versus small type**, which is a contrast threshold, not a role. `--accent` carries anything that only owes 3:1 — headline type, rules, the focus ring. `--accent-text` carries anything that owes 4.5:1.
 >
-> That is why **`--accent-text` used as a fill is correct, not an exception**. A button label is small text, so the fill behind it owes 4.5:1 against the label — and in light mode only `--accent-text` delivers it. `--accent-fill` names that choice once in the token block: `var(--accent)` in dark, `var(--accent-text)` in light. `.btn` and `.tag` use it; nothing else does.
+> That is why **`--accent-text` used as a fill is correct, not an exception**. A button label is small text, so the fill behind it owes 4.5:1 against the label — and in light mode only `--accent-text` delivers it. `--accent-fill` names that choice once in the token block: `var(--accent)` in dark, `var(--accent-text)` in light. `.btn`, `.tag`, and `.chip--current` use it; nothing else does.
 >
 > **#E7156C measures 4.10:1** on the light ground — AA for large text (3:1), short of the 4.5:1 body threshold, and 3.77:1 on `--sunk`. Light mode therefore carries a darkened **#C9105C at 5.22:1** for inline links, small type, and fills. Dark needs no split (**#FF4D95 is 6.17:1**, 5.21:1 on `--sunk`); its second token exists so both themes have the same shape.
 >
@@ -505,7 +508,7 @@ There is no secondary brand colour and no semantic palette — state is carried 
 
 #### Yes
 
-- Directory names in a file list — the only accent on a repo page
+- Directory names in a file list — the `-text` variant. A filename is bold at 16.8px where `.t-item`'s clamp bottoms out, under the 18.66px large-text threshold, so it owes 4.5:1 and `--accent` does not clear it in light
 - Inline links (the `-text` variant)
 - Primary buttons, filled
 - The chip carrying the current value
@@ -575,12 +578,12 @@ _Hairlines · one spacing scale · no boxes around content_
 - **Spacing** — 4 · 8 · 12 · 16 · 22 · 30 · 44 · 62 · 84. Use `gap`, not margins.
 - **Measure** — 66ch for prose. Never wider.
 - **Page** — 1160px max, 22px gutters.
-- **Content column** — `minmax(0,1fr)` plus a 168px sidebar above 820px. Single column below.
+- **Content column** — A single centred column at every width. The 168px sidebar above 820px this line specified was never built and appears nowhere in `styles.ts`; reviving it is a decision, not a rediscovery.
 - **Rules** — 1px. `--rule` between sections, `--rule-soft` between rows, `--ink` under a heading that opens a table, `--ink-mid` around a field or a chip, where the hairline is the component's only boundary. Under `prefers-contrast: more` the first two move onto the ink ramp.
 - **Radius** — 0 everywhere. The single exception is the chip, which is a full pill.
 - **Shadow** — None. Ever.
 - **Motion** — None. Hover and focus change instantly. Speed is the smoothness.
-- **Breakpoints** — 375 · 768 · 1024 · 1440, matching the Tuffgal capture set.
+- **Breakpoints** — The stylesheet has one width query, `min-width: 640px`. Tuffgal captures **two**, 375 and 1440, which bracket it — a complete test of the only responsive decision the CSS makes. 375 is tuffgal's `mobile`; 1440 is a project override of its `desktop`, which the registry puts at 1280. Four captures per story, once the two colour schemes are counted.
 
 **Content is separated by rules, not contained in boxes.** A card with a border around it is almost always a row with a hairline under it.
 
@@ -594,7 +597,7 @@ _Six primitives — everything else composes from these_
 
 ### Button
 
-> _Rendered mockup — see the artifact: https://claude.ai/code/artifact/4aeac735-1853-4ed6-9f20-a53297098314_
+> _Pre-build mockup, archived: https://claude.ai/code/artifact/4aeac735-1853-4ed6-9f20-a53297098314 — the shipped components have superseded it._
 
 _Solid, ghost, unavailable, block. The chevron is the only ornament in the system, and it appears only on an action that can be taken._
 
@@ -655,6 +658,53 @@ It is a `<dl>` of `<div>`-wrapped `<dt>`/`<dd>` pairs. A key is not a heading: a
 _Filled for live states, quiet for terminal ones. No colour coding._
 
 Both variants carry a 1px border in their own fill colour — invisible in either theme, and the thing forced-colors mode has left to draw once it discards the fill. The word inside is what carries the state either way; a tag that loses its fill and keeps its border still reads _Merged_.
+
+### Breadcrumb
+
+_The masthead line, extended. On the index it is one segment._
+
+The wordmark at the top left is the breadcrumb's first segment, not a separate
+element: `Càrn` on the index, `Càrn » linklater » src » index.ts` on a blob.
+`.t-mono`, at the masthead's own size. Nothing about `/` changes — there,
+`Càrn` is the current segment and keeps the treatment it already has.
+
+**Ancestors are links at `--ink-mid`; the current segment is not a link, sits at
+`--ink`, and takes `"wght" 500`.** Three signals — colour, weight, and the
+absence of a target — because colour alone fails the greyscale rule and is
+discarded outright by forced-colors. Ancestors carry `.home`'s existing
+affordance: no underline at rest, underlined on hover and focus. That is the
+masthead convention, already shipped on the wordmark.
+
+**The separator is `»`, real text in the DOM**, never `content:`. Same rule as
+the directory trailing slash and for the same reasons: generated content cannot
+be selected, is not found by Ctrl-F, and vanishes with CSS off. Each one takes
+`aria-hidden="true"`, so the accessible name is the path and not the punctuation.
+
+**Every path segment is navigable** — `src` goes to the tree at that path. A
+breadcrumb whose middle segments are decoration is a worse version of a title.
+
+**Below 640px, keep the first two and the last two.**
+
+```
+Càrn » linklater » apps » web » src » components » ThemeEditor » index.ts
+Càrn » linklater » … » ThemeEditor » index.ts
+```
+
+The site and the repo never drop, and neither does the current segment or its
+parent. Everything between collapses to a single `…` at once rather than
+shedding one ancestor at a time — a breadcrumb that reflows segment by segment
+across a drag is noisier than one with two states.
+
+Zero JS: render every segment and swap which set displays on the media query.
+The collapsed segments are `display: none`, so they leave the accessibility tree
+along with the layout. **That is the intent, not a concession** — pointer,
+keyboard, and screen reader then agree exactly on what exists. A link nobody can
+see should not be one only some people can reach, and every one of those
+destinations is still one level up in the tree.
+
+It carries `<nav aria-label="Breadcrumb">` and an ordered list. It does **not**
+replace the page's `<h1>`: on a repo page that is the `.vh` heading carrying the
+repo name, and it is what lets the header image stay decorative.
 
 ### Focus, and the two utilities
 
@@ -717,7 +767,7 @@ Every repo has an identity from the moment it exists. The repo name is hashed to
 - **Palette** — **Two colours and the ground.** The moment a third hue appears it reads as a logo generator.
 - **Forbidden** — Gradients, drop shadows, bubble outlines, texture, skew.
 - **Long names** — The SVG `viewBox` is fitted to the rendered text, so a mark never overflows — it scales. Above 18 characters, break at a hyphen or word boundary onto a second line rather than letting it become a ribbon.
-- **Name cap** — 40 characters, enforced at creation. Long names are a create-view problem, not a rendering one.
+- **Name cap** — 40 characters. It is a typographic bound, not an identifier one: it is what the generated mark can still draw legibly. `docs/LAYOUT.md` §03 owns the enforcement sites.
 
 The mark is theme-aware by construction — it draws from `--accent` and `--ink`, so it inverts with everything else and never looks wrong in the theme it wasn't designed for.
 

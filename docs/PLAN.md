@@ -1,4 +1,6 @@
-<!-- Generated from the Càrn build plan artifact. Source of truth: https://claude.ai/code/artifact/09768107-f0d7-422a-8839-a4119fd599f8 -->
+<!-- This file is the source of truth. The artifact at
+     https://claude.ai/code/artifact/bd38dee8-6822-4b2c-a602-bde753e498a3
+     is generated FROM it by scripts/docs-artifact.mjs — edit here, re-run that. -->
 
 **IMPLEMENTATION PLAN**
 
@@ -25,7 +27,7 @@ This one is nearly free, because of a consequence of the decisions above: **with
 A budget worth writing down, so it's a test rather than an aspiration:
 
 - **Zero client JavaScript on the critical path.** Progressive enhancement only — a diff that needs JS to render is a bug.
-- **Under 100 KB per page** including the highlighted blob. This is the real argument for highlight.js over Shiki (§04): 199 bytes/line vs 563.
+- **Under 100 KB per page** including the highlighted blob, measured as **wire bytes** — gzip level 5, matching Caddy's default, with fonts counted whole because woff2 is already compressed. This is the real argument for highlight.js over Shiki (§04).
 - **TTFB under 100 ms** on a warm repo page. Achievable given the measured numbers — the whole budget is 5–10 git subprocesses at ~2 ms each, so the pooled `cat-file --batch` matters more than anything else you'll do.
 - **Cache highlighted blobs by content hash**, and set `Cache-Control: public` on anything keyed by an immutable SHA — a commit page for `a1b2c3d` can be cached forever.
 
@@ -35,10 +37,10 @@ Security is covered throughout — UUID paths, `html: false`, blob origin isolat
 
 > **CONTRAST — MEASURED**
 >
-> **#E7156C on the #F4F6F6 ground is 4.11:1.** That passes AA for large text (3:1) and for non-text UI, but _misses_ the 4.5:1 threshold for body-size text. The pink is the brand colour — big type, rules, fills, the directory colour in a file list — and a darkened **#C9105C (5.22:1)** is the variant for inline links and small text. In dark mode, **#FF6EA8 on #0E0F0F is 7.39:1** and needs no adjustment.
+> **#E7156C on the #F4F6F6 ground is 4.10:1.** That passes AA for large text (3:1) and for non-text UI, but _misses_ the 4.5:1 threshold for body-size text. `--accent` carries only what owes 3:1 — big type, rules, the focus ring — and a darkened **#C9105C (5.22:1)** carries everything that owes 4.5:1: inline links, small type, directory names in a file list, and the fill behind a button, tag, or current chip. `docs/BRAND.md` §02 owns the token split and every measured ratio; this paragraph points at it rather than restating it. In dark mode, **#FF6EA8 on #0E0F0F is 7.36:1** and needs no adjustment.
 
-- **The display face never sets body text.** All-caps removes the ascender and descender profile that word-shape recognition depends on. Uppercase Archivo for titles and labels; the body face or mono for anything read as a sentence.
-- **Real semantics.** The file list is a `<table>` with headers, not a grid of divs. Diffs are tables with row scope. The timeline is an `<ol>`. This is also what makes the page work in a terminal browser, which suits the project.
+- **The display face never sets body text.** All-caps removes the ascender and descender profile that word-shape recognition depends on. Uppercase Carn Sans for titles and labels; Carn Sans at `"wght" 400`, or Carn Mono, for anything read as a sentence. There is no third family and no separate body face — see `docs/BRAND.md` §03.
+- **Real semantics.** Diffs are tables with row scope. The timeline is an `<ol>`. This is what makes the page work in a terminal browser, which suits the project. The file and repo lists ship as `<ul role="list">` over a CSS grid (`src/html/repo-show.ts`, `src/html/repo-list.ts`); once 1e fills the commit-subject and age columns they become genuinely tabular, and moving them to a `<table>` is an open decision until then.
 - **Keyboard first.** A skip link, visible focus on everything (already in the CSS here), and no hover-only affordances — a file row's actions must be reachable by tab.
 - **Don't encode meaning in colour alone.** Directory-vs-file is pink-vs-ink in the mockups; add a trailing `/` so it survives greyscale and colour blindness. Diff add/remove needs `+`/`−` glyphs, not just green and red.
 - **No motion at all.** A page that arrives in 80 ms with no JS to parse already _feels_ smooth. Animation is what slow sites use to disguise being slow. The only transitions worth having are hover and focus states, and those should be instant.
@@ -303,9 +305,23 @@ Cross-Origin-Resource-Policy: same-site
 
 SVG is the special case — it's active content that can carry `<script>`. Either serve it as `text/plain` like everything else (safest, but your own README `<img>` tags won't render it) or give it `image/svg+xml` from the separate origin behind that CSP, which is what GitHub does. If you can't get a second hostname, `Content-Disposition: attachment` on everything is the fallback.
 
+**The origin does not exist until Phase 2.** The DNS records are a Phase 2
+pre-flight and nothing serves on `gelatinous-cube` yet, so `Show entire file`
+and `Open raw` are gated on `CARN_RAW_ORIGIN` in `config.ts`. Unset at MLP, the
+blob view simply omits the link; Phase 2 turns both on by setting one variable.
+No dead code in between.
+
+**Inline images do not come from that origin.** CSP is `img-src 'self' data:`,
+so a second hostname is blocked — and widening `img-src` to admit it would undo
+the isolation the origin exists to provide. A small image blob renders
+first-party through the content-addressed, immutable route that
+`/r/:repo/header/:asset` already established, with the same `committed()` guard
+that stops it reading an arbitrary OID. The second origin is for downloading
+untrusted content, not for embedding it.
+
 ### Syntax highlighting
 
-**highlight.js 11.12.0** — settled. Register only the languages you actually serve (`highlight.js/lib/core` plus explicit `registerLanguage`): 15 ms init, 56 MB resident, ~49k lines/sec, and **class-based output at 199 bytes per line**. The class-based part is what makes it right for the tenets — your theme lives in one cached stylesheet rather than being inlined into every blob, which for a 2,000-line file is the difference between ~400 KB of HTML and ~1.1 MB. It also means the two themes share one payload.
+**highlight.js 11.12.0** — settled. Register only the languages you actually serve (`highlight.js/lib/core` plus explicit `registerLanguage`): 15 ms init, 56 MB resident, ~49k lines/sec, and **class-based output at 111 bytes per line** — measured across 46 files sampled evenly through Linklater's 832-file TypeScript corpus, which gzips to **10.2 B/line, 9.2% of raw**. The class-based part is what makes it right for the tenets — your theme lives in one cached stylesheet rather than being inlined into every blob, which for a 2,000-line file is the difference between ~400 KB of HTML and ~1.1 MB. It also means the two themes share one payload.
 
 Wire it through markdown-it’s `highlight` option, whose return value is inserted verbatim — so return escaped HTML. And **cache highlighted blobs by content hash**: highlighting is pure, so a hash→HTML cache removes the cost entirely on repeat views and keeps you inside the TTFB budget.
 
@@ -458,7 +474,7 @@ Three parts:
 
 A PR needs no issue; plenty of changes are just changes. But an issue's _natural_ resolution is a PR that satisfies it, and that asymmetry is worth making visible rather than leaving implicit in a nullable foreign key.
 
-**Render it as a ladder on the issue page** — a four-step state showing exactly where a piece of work has got to:
+**Render it as a ladder on the issue page** — a five-step state showing exactly where a piece of work has got to:
 
 ```
 OPEN ─── BRANCH ─── PR #15 ─── MERGED ─── CLOSED
@@ -477,11 +493,11 @@ Issues and PRs are the same object with different attachments — a title, a bod
 
 _Nine views, one design language, no owner in the URL_
 
-Every page shape is drawn as a full mockup in the companion spec: [**Càrn Layout →**](https://claude.ai/code/artifact/6a95e6fc-3a60-416b-a496-b713a5005be1).
+The page shapes are specified in the companion study: [**Càrn Layout →**](https://claude.ai/code/artifact/587c7ac1-5712-4927-bb82-8e5a80731f80). The pre-build mockups that study was drawn against are archived at [the original artifact](https://claude.ai/code/artifact/6a95e6fc-3a60-416b-a496-b713a5005be1); the shipped pages have superseded them.
 
 One rule resolves every page: **the display face is worn by whatever the page is about.** On a list that's the items — filenames, repo names, issue titles. On a show page it's the single title. On a create page it's the question. Everything else is mono, small, and quiet.
 
-File rows carry three constants: **directories in the accent with a trailing slash** (the only accent on a repo page, and it survives greyscale), **full-row hit areas** with hover and focus states, and **last-commit subject plus age** in mono with tabular numerals. Sixteen rows, then `Show all N`.
+File rows carry three constants: **directories in `--accent-text` with a trailing slash** (it survives greyscale, and `-text` rather than `--accent` because a filename is bold at 16.8px where the clamp bottoms out and therefore owes 4.5:1), **full-row hit areas** with hover and focus states, and **last-commit subject plus age** in mono with tabular numerals. Sixteen rows, then `Show all N`. Of those three, only the first ships on the file tree today — see `docs/LAYOUT.md` §02, which owns what is built and what 1e still owes.
 
 #### The repo view
 
@@ -490,7 +506,7 @@ File rows carry three constants: **directories in the accent with a trailing sla
 │ SITE [Repos](/repos)     [Create new repo](/new) │
 ├──────────────────────────────────────────────────┤
 │                                                  │
-│ repo name (tiny)                                 │
+│ (repo name: visually hidden h1)                  │
 │                                                  │
 │ file preview                                list │
 │ lists                                    sidebar │
@@ -519,11 +535,13 @@ File rows carry three constants: **directories in the accent with a trailing sla
 
 | Route                   | View       | Notes                                                    |
 | ----------------------- | ---------- | -------------------------------------------------------- |
-| `/`                     | Repo list  | The whole site index. Name, description, last push.      |
+| `/`                     | Repo list  | The whole site index. Name, description, created.        |
 | `/r/:repo`              | Repo       | File tree + rendered README. The page that sells it.     |
 | `/r/:repo/blob/:rev/*`  | Blob       | Highlighted source. Raw link points at the blob origin.  |
 | `/r/:repo/commits`      | Log        | `?ref=` to scope. Paginated by SHA cursor, not `--skip`. |
 | `/r/:repo/commits/:sha` | Commit     | Diff + cross-refs resolved. Immutable — cache forever.   |
+| `/r/:repo/branches`     | Branches   | Each row links to the log scoped to that ref.            |
+| `/r/:repo/tags`         | Tags       | Same. A tag gets a page of its own in Phase 5.           |
 | `/r/:repo/issues`       | Issue list | Open/closed filter. Epics show children nested.          |
 | `/r/:repo/issues/:n`    | Issue      | Body, thread, timeline, "create branch" action.          |
 | `/r/:repo/prs`          | PR list    | Same shell as the issue list — same table underneath.    |
@@ -650,9 +668,9 @@ Everything here blocks something later and is more annoying to do mid-build.
 - **Create the GitHub mirror repo** — as a plain new repo, _not_ a fork. A fork's commits never count toward your contribution graph.
 - **Generate a dedicated mirror deploy key** (ed25519), add it to the GitHub repo with write access, and keep it out of your laptop's agent.
 - **Generate a second personal SSH key and put it somewhere you won't lose** — a hardware token, a printout in a drawer, another machine. Not on the laptop. §11 has the full recovery story.
-- **Claim the npm name** `carn` — free as of this writing, and the neighbouring names filled up over a few months.
+- **Claim the npm name** `@nschneble/carn` — unscoped `carn` is refused by npm's similarity guard for being too close to `yarn`, `cron`, and `acorn`, which is why the package is scoped and the binary is not. See §07.
 - **Create the Càrn repo itself** — on GitHub for now; it migrates to Càrn the day Phase 1 ships, a useful first migration to rehearse.
-- **Build the Archivo subset** with the small-caps recipe, or the full ArchivoSC. Half an hour, and it unblocks the stylesheet.
+- **Build the Carn Sans subset** with the compensated small-caps recipe. Half an hour, and it unblocks the stylesheet. A second small-caps family is not an alternative — `docs/BRAND.md` §03 forecloses it in favour of merging `smcp`/`c2sc` into Carn Sans itself.
 
 > **GATE** — `ssh deploy@carn.fancyenchiladas.net` works and both hostnames resolve
 
@@ -967,7 +985,7 @@ _KAARN · masculine · cairn, heap of stones — also a verb: to heap, pile up, 
 
 Masculine noun, genitive and plural _cùirn_. A heap that _many passers-by each add one stone to_, and which _marks a route for those who follow_ — a commit history and a public repo in one image. It doubles as a verb: to heap, pile up, accumulate.
 
-`Càrn · carn.fancyenchiladas.net · npm: carn`
+`Càrn · carn.fancyenchiladas.net · npm: @nschneble/carn`
 
 ### Where each spelling goes
 
@@ -975,7 +993,8 @@ Masculine noun, genitive and plural _cùirn_. A heap that _many passers-by each 
 | ----------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | Page titles, nav, footer, README, docs    | **Càrn** | The real word. Nothing here is parsed by a machine.                                                                              |
 | Hostname, clone URLs, TLS cert, Caddyfile | `carn.`  | OpenSSH can't resolve IDN; Caddy fails silently on Unicode addresses.                                                            |
-| npm package and binary                    | `carn`   | npm forbids non-ASCII names outright. `cairn` and `cairn-cli` are both taken; the latter already claims the `cairn` binary name. |
+| npm package                               | `@nschneble/carn` | npm forbids non-ASCII names outright, and unscoped `carn` is refused by the similarity guard (`yarn`, `cron`, `acorn`). |
+| Binary on `$PATH`                         | `carn`   | A scope is a registry namespace, not a command name. `cairn` and `cairn-cli` are both taken; the latter already claims the `cairn` binary name. |
 | Repo, database, container names           | `carn`   | Anywhere a shell or a config file has to type it.                                                                                |
 
 Grave accents in Gaelic are meaning-bearing, not decorative — `obair` is "work," `òbair` is "retch." Only grave accents exist in modern Gaelic; acutes are pre-1981 and appear only in older dictionaries.
@@ -1013,7 +1032,7 @@ _After the MLP — each an explicit decision, not a drift_
 
 - Inline diff comments
 - Web writes via `carn web-login`
-- A variable ArchivoSC build
+- Real small caps merged into Carn Sans (`smcp`/`c2sc`)
 
 #### Never
 
