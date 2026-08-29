@@ -141,7 +141,7 @@ _Settled — everything downstream assumes these_
 - **Highlighting:** highlight.js — Settled. Alternatives dropped from the doc.
 - **Themes:** Both, dark-first — Dark is the default and the one that's designed first.
 - **Method:** YAGNI — Nothing gets built before it's wanted. Web comments included.
-- **Licence:** AGPL-3.0-or-later — Server and CLI both. Closes the network loophole plain GPL leaves open.
+- **License:** AGPL-3.0-or-later — Server and CLI both. Closes the network loophole plain GPL leaves open.
 - **Testing:** Tuffgal stories — Visual regression as the primary suite, plus four contract tests. No unit tests.
 - **Write path:** CLI only — The web UI is read-only at MLP; the admin forms in §06 come after it. Comments come over SSH.
 - **Rate limiting:** At the edge — Caddy, three tiers, tightest on clone and archive.
@@ -1063,7 +1063,7 @@ Not useful as designed, and the reason is a genuine tension rather than a techni
 
 > **"PUBLIC AND OPEN SOURCE" + "ADMIN-CREATED ACCOUNTS ONLY" = READ-ONLY OPEN SOURCE**
 >
-> Anyone can read every repo, clone it, and fork it elsewhere. **Nobody can contribute back** — there's no signup, so there's no account, so there's no branch to open a PR from. That's the right position for a personal forge, but it means "open source by default" describes the _licence_ and the _visibility_, not the _participation_.
+> Anyone can read every repo, clone it, and fork it elsewhere. **Nobody can contribute back** — there's no signup, so there's no account, so there's no branch to open a PR from. That's the right position for a personal forge, but it means "open source by default" describes the _license_ and the _visibility_, not the _participation_.
 >
 > Three answers exist without changing the model: add them as a user, take a patch by email and `git am` it, or accept a pull request on the GitHub mirror. The third is the best — the mirror already exists for CI, and it makes GitHub the contribution front door while Càrn stays the canonical home.
 

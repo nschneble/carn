@@ -500,7 +500,7 @@ for attribute values; do not "optimize" either away.
 > not one. `escaping.contract.ts` asserts a security contract — the same
 > category as the header and page-weight tests, and one a screenshot cannot
 > see. It is the only function in 1a that gets assertions. Do not take it
-> as licence to test anything else.
+> as license to test anything else.
 
 Required assertions:
 
