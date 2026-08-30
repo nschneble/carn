@@ -31,13 +31,13 @@ export const badRepoName: Failure = {
   next: "A name is letters, digits, dots, dashes, and underscores, up to 64 characters. Check the URL, or find the repo in all repos.",
 };
 
-export function errorPage(view: { failure: Failure; path: string }): string {
-  const { failure, path } = view;
+export function errorPage(view: { failure: Failure }): string {
+  const { failure } = view;
 
   return page({
     title: failure.title,
     description: failure.said,
-    path,
+    path: "",
     main: html`<h1 class="t-l">${failure.heading}</h1>
       <div class="empty">
         <p class="t-body">${failure.said}</p>

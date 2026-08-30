@@ -813,7 +813,7 @@ Every repo has an identity from the moment it exists. The repo name is hashed to
 - **Palette** — **Two colors and the ground.** The moment a third hue appears it reads as a logo generator.
 - **Forbidden** — Gradients, drop shadows, bubble outlines, texture, skew.
 - **Long names** — The SVG `viewBox` is fitted to the rendered text, so a mark never overflows — it scales. Above 18 characters, break at a hyphen or word boundary onto a second line rather than letting it become a ribbon.
-- **Name cap** — 40 characters. It is a typographic bound, not an identifier one: it is what the generated mark can still draw legibly. `docs/LAYOUT.md` §03 owns the enforcement sites.
+- **Name cap** — **40 characters, in 1e.** It is a typographic bound, not an identifier one: it is what the generated mark can still draw legibly. `namePattern` permits 64 today. `docs/LAYOUT.md` §03 owns the enforcement sites.
 
 The mark is theme-aware by construction — it draws from `--accent` and `--ink`, so it inverts with everything else and never looks wrong in the theme it wasn't designed for.
 

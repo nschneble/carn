@@ -185,10 +185,7 @@ const states = {
   "show-bare": showDocument({ repo: view({ readme: null }) }),
   "show-new": showDocument({ repo: emptyRepo }),
   "show-header": showDocument({ repo: view({ header: committedHeader }) }),
-  "not-found": errorPage({
-    failure: noSuchRepo("linklater"),
-    path: "/r/linklater",
-  }),
+  "not-found": errorPage({ failure: noSuchRepo("linklater") }),
 };
 
 for (const [state, markup] of Object.entries(states)) {

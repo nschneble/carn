@@ -639,7 +639,7 @@ if require_daemon 12 "$TITLE_12" && require_seed 12 "$TITLE_12"; then
   else
     contract 12 "$TITLE_12" 2 "index $index_bytes B, repo page $show_bytes B" \
       assets repo-page -- \
-      "the whole page fits the budget with both families and the sheet" \
+      "the whole page fits the budget with both families, images, and the sheet" \
       "the repo page fits the weight budget, fonts and stylesheet in"
   fi
 fi

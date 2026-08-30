@@ -46,12 +46,7 @@ function fail(
   status: number,
   failure: Failure,
 ): FastifyReply {
-  return sendStatus(
-    request,
-    reply,
-    status,
-    errorPage({ failure, path: request.url.split("?")[0] as string }),
-  );
+  return sendStatus(request, reply, status, errorPage({ failure }));
 }
 
 async function showRepo(

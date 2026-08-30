@@ -286,11 +286,8 @@ test("an invalid repo name is refused before any database query", () => {
 });
 
 test("a 404 page says what happened, then what to do", () => {
-  const missing = errorPage({
-    failure: noSuchRepo("linklater"),
-    path: "/r/linklater",
-  });
-  const bad = errorPage({ failure: badRepoName, path: "/r/-nope" });
+  const missing = errorPage({ failure: noSuchRepo("linklater") });
+  const bad = errorPage({ failure: badRepoName });
 
   for (const markup of [missing, bad]) {
     assert.match(markup, /^<!doctype html>\n<html lang="en"/);
