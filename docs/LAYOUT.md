@@ -12,6 +12,39 @@ On a **list**, it's the items — filenames, repo names, issue titles. On a **sh
 
 Color, spacing, and component definitions live in the brand book. This document covers the three page shapes — list, show, create — and the repo identity system.
 
+## 00 — THE HEAD · Every page
+
+declares three things
+
+_`src/html/page.ts` · one shell, no per-page markup_
+
+`page()` takes `{ title, description, path, main }`. The first three are the
+whole head contract; a view that forgets one ships an empty `content=""`, which
+is worse than no tag. `errorPage()` takes the same `path` so a 404 and a 503 are
+as describable as any other page.
+
+- **`title`** — `"<subject> · Càrn"`, or bare `"Càrn"` on the index. `og:title`
+  reuses it verbatim; there is no second title string to keep in step.
+- **`description`** — one sentence, no markup, under about 160 characters. On a
+  repo page it is the README's opening prose, flattened by `renderPlainText`
+  (`src/markdown/render.ts`), cut on a word boundary. A repo with no README says
+  so; a repo with no commits says nothing at all. `og:description` and
+  `<meta name="description">` are the same string.
+- **`path`** — the request path with any query string removed, joined to
+  `config.origin` for `og:url`. It is the one absolute URL a page genuinely
+  needs: a crawler cannot resolve a relative canonical.
+
+**Absolute URLs belong only where a crawler reads them.** `og:image`,
+`twitter:image`, and `og:url` are fetched off-site and must carry
+`config.origin`. The icons must not: a favicon is fetched by the browser
+rendering the page, and `img-src 'self'` refuses it the moment the serving
+origin differs from `CARN_ORIGIN` — which is every local run, every contract
+test, and every Tuffgal capture. Icons and the stylesheet are site-relative.
+
+**Four image files, one on the page-load path.** `/images/:image` serves them
+with a week's `Cache-Control` and an ETag; `docs/BRAND.md` 06 carries the
+arithmetic and the reason only `favicon.png` counts against the 100 KB budget.
+
 ## 01 — TYPE · Filenames in
 
 small caps
@@ -90,7 +123,7 @@ _Deterministic — the same name always yields the same mark._
 - **Palette** — Two colors and the ground. A third hue makes it a logo generator.
 - **Forbidden** — Gradients, drop shadows, bubble outlines, texture, skew.
 - **Long names** — The `viewBox` is fitted to the rendered text, so a mark scales rather than overflows. Above 18 characters, break at a hyphen, underscore, or dot onto a second line — `wordmark.ts` treats all three as separators.
-- **Name cap** — **40 characters.** A typographic bound: it is what the generated mark can still draw legibly, not what the identifier grammar allows. Five sites move together — `namePattern` in `src/repos/resolve.ts`, the `CHECK` in the init migration, the refusal copy, and `BAD_NAME` in `verify-phase-1b.sh:22` and `verify-phase-1c.sh` (check 12 greps that exact string). The length checks need no change: 1b, 1c, and 1d each assert a **65**-character name is refused, which stays true at any lower cap. 1d adds the boundary pair — 40 accepted, 41 refused.
+- **Name cap** — **40 characters, in 1e.** A typographic bound: it is what the generated mark can still draw legibly, not what the identifier grammar allows. Six sites move together — `namePattern` in `src/repos/resolve.ts`, the `CHECK` in the init migration, **two** pieces of refusal copy (`badRepoName.next` in `src/html/error-page.ts` and `refusals.badName` in `src/ssh/exec.ts`, both of which say "64 characters" today), and `BAD_NAME` in `verify-phase-1b.sh:22` and `verify-phase-1c.sh` (check 12 greps that exact string). The pattern is an anchor character plus a repeat, so 40 is `{0,39}` — `{0,63}` is a 64-character cap. The length checks need no change: 1b, 1c, and 1d each assert a **65**-character name is refused, which stays true at any lower cap. 1e adds the boundary pair — 40 accepted, 41 refused — and pins the column's collation in the same migration.
 
 ## 04 — SHOW VIEW · One title,
 
