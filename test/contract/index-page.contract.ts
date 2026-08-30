@@ -30,7 +30,7 @@ test("the shell is one header, one main, and one footer", () => {
   assert.match(markup, /^<!doctype html>\n<html lang="en">\n/);
   assert.match(
     markup,
-    /<meta name="viewport" content="width=device-width, initial-scale=1" \/>/,
+    /<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" \/>/,
   );
   assert.doesNotMatch(markup, /maximum-scale|user-scalable/);
   assert.ok(markup.includes("<title>Càrn</title>"));
@@ -116,9 +116,10 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
 
   const noDescription = populated.find((repo) => repo.description === null);
   assert.ok(noDescription, "the fixture lost its repo with no description");
-  assert.ok(
-    markup.includes(
-      `<a class="nm t-item" href="/r/${noDescription.name}">${noDescription.name}</a>\n<span class="msg"></span>`,
+  assert.match(
+    markup,
+    new RegExp(
+      `<a class="nm t-item" href="/r/${noDescription.name}">${noDescription.name}</a>\\s*<span class="msg"></span>`,
     ),
     "a repo with no description dropped its .msg span, so the grid columns no longer line up",
   );

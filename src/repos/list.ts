@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// the index is uncapped at MLP. the file tree's sixteen-row cap reasons
-// about repo-root entry counts and does not transfer to how many repos an
-// install has. when one outgrows a page the answer is a keyset cursor on
-// lower(name) — unique by repos_name_lower_key, so it needs no tiebreak —
-// never a cap borrowed from the tree
+// index returns all repos, but if we get to a point where we need to
+// paginate, we can do a keyset cursor on lower(name)
 
 import { db } from "../db.js";
 

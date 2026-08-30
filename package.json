@@ -18,7 +18,7 @@
     "migrate": "set -a && . ./.env && set +a && prisma migrate deploy",
     "prepare": "git config core.hooksPath .githooks || true",
     "pretest": "npm run build",
-    "test": "node --test \"dist/test/**/*.js\"",
+    "test": "node --env-file-if-exists=.env --enable-source-maps --test \"dist/test/**/*.js\"",
     "visual": "npm run build && sh scripts/visual.sh",
     "visual:seed": "npm run build && sh scripts/visual.sh --seed-only"
   },

@@ -186,7 +186,7 @@ test("a repo with no commits says what would be here and how to push it", () => 
   assert.ok(markup.includes("git push "));
   assert.doesNotMatch(
     markup,
-    /No README yet/,
+    /<p class="t-body">No README yet/,
     "an empty repo gets one empty state, not two",
   );
   assert.doesNotMatch(empties(markup), /[!…]|Oops/);

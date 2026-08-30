@@ -31,7 +31,7 @@ export const refusals = {
   badName:
     "That's not a valid repo name. Names are up to 64 characters, " +
     "starting with a letter or number, and containing only letters, " +
-    "numbers, dots, dashs, and underscores.",
+    "numbers, dots, dashes, and underscores.",
   noRepo: (name: string) =>
     `There's no repo named ${name}. Push to it to create it.`,
   noWrite: (name: string) =>
