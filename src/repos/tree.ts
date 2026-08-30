@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // the root tree at the default branch tip, in one ls-tree; a per-row
-// cat-file is pixel-identical and four times slower, which is the whole
-// reason CLAUDE.md caps a render at twelve spawns
+// cat-file is pixel-identical and four times slower, which is why
+// CLAUDE.md holds a render to fewer than twelve spawns
 
 import { oidPattern } from "../git/oid.js";
 import { spawnGit } from "../git/spawn.js";

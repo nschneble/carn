@@ -402,11 +402,7 @@ test("one configured instance serves the whole repo", () => {
       readFileSync(join(root, path), "utf8").includes("new MarkdownIt("),
     );
 
-  // scripts stays in the scan: visual-server.ts serves the pages every
-  // baseline is shot against, so narrowing to src and test would let a
-  // second parser reach a served page unreported. docs-artifact.mjs is a
-  // build-time renderer needing table and heading anchors the served one
-  // deliberately omits, so it is enumerated rather than coupled
+  // scripts stays in scan: visual-server.ts serves the baselined pages
   assert.deepStrictEqual(carrying, [
     "scripts/docs-artifact.mjs",
     "src/markdown/render.ts",

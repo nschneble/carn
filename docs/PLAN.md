@@ -564,7 +564,7 @@ The complete surface outside the nine:
 | Any view + `.json`                                     | API   | Read API — the same view model, serialized. No separate route tree.           |
 | `POST /api/r/:repo/statuses/:sha`                      | API   | The one machine-callable write. GitHub-shaped. See §07.                       |
 | `/carn.<hash>.css`                                     | Asset | The stylesheet, hashed on its own bytes. Immutable — cache forever.           |
-| `/fonts/:face`                                         | Asset | The three woff2 faces. Immutable — cache forever.                            |
+| `/fonts/:face`                                         | Asset | The three woff2 faces. Not content-addressed, so a week with an ETag, not forever. |
 | `/images/:image`                                       | Asset | Four fixed files: the two favicons, the touch icon, the `og:image` card. Not content-addressed, so a week, not forever. |
 | `/health`                                              | Ops   | What Caddy health-checks and what the SIGTERM handler flips.                  |
 | `/robots.txt` · `/sitemap.xml`                         | Ops   | See below — both matter more here than on a normal site.                      |
