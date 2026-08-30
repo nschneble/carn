@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // style-src 'self' drops an inline <style> block and a style attribute
-// alike, and page.setContent applies no CSP at all — so every check here
+// alike, and page.setContent applies no CSP at all; so every check here
 // loads over http with the app's own header on the response
 
 import assert from "node:assert";
@@ -23,6 +23,7 @@ declare const document: {
   createElementNS(namespace: string, name: string): SvgLike;
   fonts: { ready: Promise<unknown> };
 };
+
 declare function getComputedStyle(element: object): {
   fontFamily: string;
   fontSize: string;
@@ -33,6 +34,7 @@ declare function getComputedStyle(element: object): {
   textDecorationLine: string;
   getPropertyValue(name: string): string;
 };
+
 type SvgLike = {
   textContent: string;
   appendChild(child: SvgLike): void;
@@ -46,6 +48,8 @@ const axes = mark.value.match(/font-weight="(\d+)" font-stretch="(\d+)%"/);
 
 const marked = page({
   title: "Càrn",
+  description: "Repositories",
+  path: "/",
   main: html`<h1 class="t-label">Repositories</h1>
 <span id="generated">${mark}</span>`,
 });
@@ -137,6 +141,7 @@ test("the stylesheet arrives as a route and applies under the real CSP", async (
       .fontFamily,
     fontSize: getComputedStyle(document.querySelector("h1") as object).fontSize,
   }));
+
   await tab.close();
 
   assert.deepStrictEqual(refused, [], "the page tripped its own CSP");
@@ -166,6 +171,7 @@ test("the footer's source link takes the accent and keeps its underline", async 
           .trim(),
       };
     });
+
     await tab.close();
 
     const [, red, green, blue] =
@@ -180,7 +186,7 @@ test("the footer's source link takes the accent and keeps its underline", async 
     assert.strictEqual(
       link.decoration,
       "underline",
-      `the ${theme} source link lost its underline, which is colour as the only signal`,
+      `the ${theme} source link lost its underline, which is color as the only signal`,
     );
   }
 });
@@ -235,6 +241,7 @@ test("the harness bites: the pre-fix document loses all three inline styles", as
     sheets: document.styleSheets.length,
     heading: getComputedStyle(document.querySelector("h1") as object).color,
   }));
+
   await tab.close();
 
   assert.ok(

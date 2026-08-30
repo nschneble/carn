@@ -9,6 +9,10 @@ function at(iso: string): Date {
   return new Date(iso);
 }
 
+function css(strings: TemplateStringsArray, ...values: unknown[]): string {
+  return String.raw({ raw: strings }, ...values);
+}
+
 export const populated: RepoSummary[] = [
   {
     name: "carn",
@@ -38,7 +42,7 @@ export const populated: RepoSummary[] = [
   },
 ];
 
-export const hoverSimulation = `
+export const hoverSimulation = css`
 .row.is-hover {
   background: var(--sunk);
 }`;

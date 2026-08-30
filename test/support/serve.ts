@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // page.setContent applies no CSP, so a document that only ever loads that
-// way proves nothing about style-src. this serves one over real http with
+// way proves nothing about style-src; this serves one over real http with
 // the app's own header
 
 import { readFileSync } from "node:fs";

@@ -734,7 +734,7 @@ drop_scratch
 rm -rf "$repo_root"
 
 # 16
-# two runs, one per colour scheme: tuffgal pins colorScheme per run, so a
+# two runs, one per color scheme: tuffgal pins colorScheme per run, so a
 # single run would leave one palette unphotographed
 readonly TITLE_16="the tuffgal story passes for both pages in both palettes"
 if require_db 16 "$TITLE_16"; then
@@ -746,7 +746,7 @@ if require_db 16 "$TITLE_16"; then
   if [ "$visual_status" -ne 0 ]; then
     record FAIL 16 "$TITLE_16" "npm run visual exited $visual_status: $(grep -m1 'tuffgal error' "$work/16" || tail -3 "$work/16")"
   elif [ "$passes" != "2" ] || [ "$(printf '%s\n' "$summaries" | grep -c .)" != "2" ]; then
-    record FAIL 16 "$TITLE_16" "$passes of 2 colour-scheme runs started and $(printf '%s\n' "$summaries" | grep -c .) of 2 reported, so a palette went unphotographed"
+    record FAIL 16 "$TITLE_16" "$passes of 2 color-scheme runs started and $(printf '%s\n' "$summaries" | grep -c .) of 2 reported, so a palette went unphotographed"
   else
     record PASS 16 "$TITLE_16" "$(printf '%s' "$summaries" | tr '\n' ';' | sed 's/;/; /g')"
   fi

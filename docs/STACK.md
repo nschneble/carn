@@ -70,7 +70,7 @@ Two things that bit us and will bite again:
 
 Version 15 shipped 2026-07-30. CLAUDE.md's gotchas were written against
 14.x; Phase 1d spiked the installed 15.0.0 and CLAUDE.md now carries the
-measured behaviour. Every API question below is answered by measurement.
+measured behavior. Every API question below is answered by measurement.
 The `@types` dependency was the last open question; it is settled in the
 next section.
 

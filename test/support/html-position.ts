@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// position scanner for the html tag's templates. three shapes it leaves to
+// position scanner for the html tag's templates; it leaves three shapes to
 // other gates: raw() in an attribute (src/html/index.ts refuses it), one
 // inside <style> or <script> (the CSP refuses it), and a URL scheme in a
-// quoted href (the markdown allowlist). no html-comment state either
+// quoted href (the Markdown allowlist)
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -17,7 +17,7 @@ export type Interpolation = { index: number; end: number; position: Position };
 
 export const root = resolve(import.meta.dirname, "../../..");
 
-// spelled, never written, so this file is not a template of its own
+// spelled, never written, so this file isn't a template of its own
 const backtick = "`";
 export const opener = `html${backtick}`;
 
@@ -140,7 +140,7 @@ export function lineOf(source: string, index: number): number {
   return source.slice(0, index).split("\n").length;
 }
 
-// the planted controls end .ts.fixture, which is what keeps them out
+// the planted controls end in .ts.fixture, which keeps them out
 export function sources(): { path: string; source: string }[] {
   const listed = execFileSync(
     "git",

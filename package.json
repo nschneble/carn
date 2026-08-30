@@ -19,7 +19,8 @@
     "prepare": "git config core.hooksPath .githooks || true",
     "pretest": "npm run build",
     "test": "node --test \"dist/test/**/*.js\"",
-    "visual": "npm run build && sh scripts/visual.sh"
+    "visual": "npm run build && sh scripts/visual.sh",
+    "visual:seed": "npm run build && sh scripts/visual.sh --seed-only"
   },
   "allowScripts": {
     "@prisma/engines@7.9.1": true,

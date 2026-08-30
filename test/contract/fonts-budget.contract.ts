@@ -40,7 +40,7 @@ test("the README states the size of every font it ships", () => {
   );
 });
 
-test("the licence note's subset figure is the mono pair as shipped", () => {
+test("the license note's subset figure is the mono pair as shipped", () => {
   const [, subset] = stated(
     "the subset comparison",
     /costs ([\d,]+) B for the pair against ([\d,]+) B subset/,
@@ -49,7 +49,7 @@ test("the licence note's subset figure is the mono pair as shipped", () => {
   assert.strictEqual(subset, shipped(...mono));
 });
 
-test("the licence note's total is the unsubset pair plus the sans as shipped", () => {
+test("the license note's total is the unsubset pair plus the sans as shipped", () => {
   const [unsubset] = stated(
     "the subset comparison",
     /costs ([\d,]+) B for the pair against [\d,]+ B subset/,

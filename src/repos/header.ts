@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// light and dark each walk the same chain at the default branch tip and
-// take the first match, so a repo with only a dark header still looks
-// deliberate in light mode. one ls-tree per page, cached on the tip's
-// OID. BRAND.md 06
+// header choice waterfalls gracefully, so a repo with only a dark header
+// still looks deliberate in light mode
 
 import { oidPattern } from "../git/oid.js";
 import { spawnGit } from "../git/spawn.js";
@@ -17,7 +15,7 @@ export type Header = { light: HeaderSource; dark: HeaderSource };
 
 export type HeaderSrc = (image: HeaderImage) => string;
 
-// what the 100 KB budget leaves after fonts and the page. BRAND.md 06
+// 16 KB gives the rest of the page plenty of room below the 100 KB budget
 export const maxHeaderBytes = 16 * 1024;
 
 const listTimeoutMs = 5_000;
@@ -147,7 +145,6 @@ export function headerMarkup(options: {
   src: HeaderSrc;
 }): Raw {
   const { name, header, src } = options;
-
   if (same(header)) return slot(name, header.light, src);
 
   if (header.light !== "wordmark" && header.dark !== "wordmark") {

@@ -23,7 +23,7 @@ function channel(value: number): number {
 
 function luminance(hex: string): number {
   const match = hex.match(/^#([0-9a-f]{6})$/i);
-  assert.ok(match, `${hex} is not a six-digit hex colour`);
+  assert.ok(match, `${hex} is not a six-digit hex color`);
   const digits = match[1] as string;
   const [red, green, blue] = [0, 2, 4].map((offset) =>
     channel(Number.parseInt(digits.slice(offset, offset + 2), 16)),
@@ -38,7 +38,7 @@ function contrast(one: string, other: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-function colour(palette: Map<string, string>, name: string): string {
+function color(palette: Map<string, string>, name: string): string {
   const value = palette.get(name);
   assert.ok(value, `${name} is undeclared`);
   return value;
@@ -65,9 +65,9 @@ test("BRAND.md's token block is in the stylesheet verbatim", () => {
   );
 });
 
-// dark on the bare :root, light inside the query, and never the reverse:
-// a colour declared only inside a media query is empty wherever the query
-// does not match, and dark is the default, so it is the one that vanishes
+// dark on the bare :root, light inside the query; a color declared only
+// inside a media query is empty wherever the query doesn't match, and dark
+// is the default, so it's the one that vanishes
 test("both palettes are complete, and only light lives in the query", () => {
   assert.strictEqual(
     tokens.indexOf(lightQuery),
@@ -85,17 +85,17 @@ test("both palettes are complete, and only light lives in the query", () => {
     for (const token of palette.keys()) {
       if (/^--(f-|s[1-9]$|measure$)/.test(token)) continue;
       assert.match(
-        colour(palette, token),
+        color(palette, token),
         /^#[0-9a-f]{6}$/,
-        `${name} ${token} did not resolve to a hex colour`,
+        `${name} ${token} did not resolve to a hex color`,
       );
     }
   }
 
-  assert.strictEqual(colour(dark, "--accent-fill"), colour(dark, "--accent"));
+  assert.strictEqual(color(dark, "--accent-fill"), color(dark, "--accent"));
   assert.strictEqual(
-    colour(light, "--accent-fill"),
-    colour(light, "--accent-text"),
+    color(light, "--accent-fill"),
+    color(light, "--accent-text"),
   );
 });
 
@@ -103,10 +103,7 @@ test("every ink token clears AA on ground, surface, and sunk", () => {
   for (const [name, palette] of palettes) {
     for (const ink of ["--ink", "--ink-soft", "--ink-mid", "--ink-faint"]) {
       for (const ground of grounds) {
-        const measured = contrast(
-          colour(palette, ink),
-          colour(palette, ground),
-        );
+        const measured = contrast(color(palette, ink), color(palette, ground));
         assert.ok(
           measured >= 4.5,
           `${name} ${ink} on ${ground} is ${measured.toFixed(2)}:1, under 4.5`,
@@ -120,18 +117,20 @@ test("the accent pair clears its own threshold on all three grounds", () => {
   for (const [name, palette] of palettes) {
     for (const ground of grounds) {
       const large = contrast(
-        colour(palette, "--accent"),
-        colour(palette, ground),
+        color(palette, "--accent"),
+        color(palette, ground),
       );
+
       assert.ok(
         large >= 3,
         `${name} --accent on ${ground} is ${large.toFixed(2)}:1, under 3`,
       );
 
       const small = contrast(
-        colour(palette, "--accent-text"),
-        colour(palette, ground),
+        color(palette, "--accent-text"),
+        color(palette, ground),
       );
+
       assert.ok(
         small >= 4.5,
         `${name} --accent-text on ${ground} is ${small.toFixed(2)}:1, under 4.5`,
@@ -142,15 +141,15 @@ test("the accent pair clears its own threshold on all three grounds", () => {
 
 test("a label on a fill clears AA, and the fill's edge clears 3:1", () => {
   for (const [name, palette] of palettes) {
-    const fill = colour(palette, "--accent-fill");
-    const label = contrast(colour(palette, "--on-accent"), fill);
+    const fill = color(palette, "--accent-fill");
+    const label = contrast(color(palette, "--on-accent"), fill);
     assert.ok(
       label >= 4.5,
       `${name} --on-accent on --accent-fill is ${label.toFixed(2)}:1`,
     );
 
     for (const ground of grounds) {
-      const edge = contrast(fill, colour(palette, ground));
+      const edge = contrast(fill, color(palette, ground));
       assert.ok(
         edge >= 3,
         `${name} --accent-fill against ${ground} is ${edge.toFixed(2)}:1`,
@@ -163,18 +162,20 @@ test("a component's only boundary clears 3:1 and --rule does not", () => {
   for (const [name, palette] of palettes) {
     for (const ground of grounds) {
       const border = contrast(
-        colour(palette, "--ink-mid"),
-        colour(palette, ground),
+        color(palette, "--ink-mid"),
+        color(palette, ground),
       );
+
       assert.ok(
         border >= 3,
         `${name} --ink-mid against ${ground} is ${border.toFixed(2)}:1`,
       );
 
       const hairline = contrast(
-        colour(palette, "--rule"),
-        colour(palette, ground),
+        color(palette, "--rule"),
+        color(palette, ground),
       );
+
       assert.ok(
         hairline < 3,
         `${name} --rule now clears 3:1 against ${ground}; use it for boundaries`,
@@ -185,9 +186,9 @@ test("a component's only boundary clears 3:1 and --rule does not", () => {
 
 test("the retired ink values would still fail, so the check discriminates", () => {
   const retired = [
-    ["dark --ink-faint", "#6a7070", colour(dark, "--sunk")],
-    ["light --ink-mid", "#6e7473", colour(light, "--sunk")],
-    ["light --ink-faint", "#9aa0a0", colour(light, "--sunk")],
+    ["dark --ink-faint", "#6a7070", color(dark, "--sunk")],
+    ["light --ink-mid", "#6e7473", color(light, "--sunk")],
+    ["light --ink-faint", "#9aa0a0", color(light, "--sunk")],
   ] as const;
 
   for (const [name, hex, ground] of retired) {
@@ -234,7 +235,7 @@ test("the button's hover brightening does not cost it AA", () => {
   assert.ok(factor, ".btn:hover no longer brightens");
 
   for (const [name, palette] of palettes) {
-    const fill = colour(palette, "--accent-fill").slice(1);
+    const fill = color(palette, "--accent-fill").slice(1);
     const brightened = `#${[0, 2, 4]
       .map((offset) =>
         Math.min(
@@ -249,7 +250,7 @@ test("the button's hover brightening does not cost it AA", () => {
       )
       .join("")}`;
 
-    const measured = contrast(colour(palette, "--on-accent"), brightened);
+    const measured = contrast(color(palette, "--on-accent"), brightened);
     assert.ok(
       measured >= 4.5,
       `${name} .btn:hover is ${measured.toFixed(2)}:1, under 4.5`,
@@ -305,18 +306,18 @@ test("BRAND.md's stated ratios are the measured ones", () => {
   for (const [, token, hex, onGround, onSunk] of stated) {
     const palette = [dark, light].find(
       (candidate) =>
-        colour(candidate, token as string).toLowerCase() ===
+        color(candidate, token as string).toLowerCase() ===
         (hex as string).toLowerCase(),
     );
     assert.ok(palette, `${token} ${hex} matches neither theme's token block`);
 
     assert.strictEqual(
-      contrast(hex as string, colour(palette, "--ground")).toFixed(2),
+      contrast(hex as string, color(palette, "--ground")).toFixed(2),
       onGround,
       `${token} on ground`,
     );
     assert.strictEqual(
-      contrast(hex as string, colour(palette, "--sunk")).toFixed(2),
+      contrast(hex as string, color(palette, "--sunk")).toFixed(2),
       onSunk,
       `${token} on sunk`,
     );
@@ -333,11 +334,11 @@ test("the token block's own accent annotations are the measured ones", () => {
 
   for (const [, , hex, onGround, onSunk] of annotated) {
     assert.strictEqual(
-      contrast(hex as string, colour(dark, "--ground")).toFixed(2),
+      contrast(hex as string, color(dark, "--ground")).toFixed(2),
       onGround,
     );
     assert.strictEqual(
-      contrast(hex as string, colour(dark, "--sunk")).toFixed(2),
+      contrast(hex as string, color(dark, "--sunk")).toFixed(2),
       onSunk,
     );
   }

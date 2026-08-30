@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// regenerates test/fixtures/repos.tar, the pinned bare repos every visual
-// story renders. run it deliberately and review the diff; nothing rebuilds
-// it per run. plumbing only, and the tar headers are written here because
-// no platform tar pins mode, owner, and mtime portably
+// plumbing only; regenerates test/fixtures/repos.tar, the pinned bare
+// repos every visual story renders
 
 import { execFileSync } from "node:child_process";
 import {

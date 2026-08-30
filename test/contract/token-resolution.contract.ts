@@ -12,6 +12,7 @@ import { renderPaths } from "../support/render-paths.js";
 import { brandTokens, dark, light } from "../support/tokens.js";
 
 declare const document: BrowserDocument;
+
 declare function getComputedStyle(element: object): {
   getPropertyValue(name: string): string;
 };
@@ -23,7 +24,8 @@ const names = [
     ),
   ),
 ];
-const colours = names.filter((name) => !/^--(f-|s[1-9]$|measure$)/.test(name));
+
+const colors = names.filter((name) => !/^--(f-|s[1-9]$|measure$)/.test(name));
 
 after(closeBrowser);
 
@@ -82,7 +84,7 @@ for (const path of renderPaths) {
     }
 
     const expected = path.palette === "dark" ? dark : light;
-    for (const name of colours) {
+    for (const name of colors) {
       assert.strictEqual(resolved.get(name), expected.get(name), name);
     }
   });

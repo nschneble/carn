@@ -81,7 +81,7 @@ test("different names render different marks", () => {
   }
 });
 
-test("the palette is two colours and the ground", () => {
+test("the palette is two colors and the ground", () => {
   for (const name of names) {
     const mark = wordmark(name).value;
     const hues = new Set(mark.match(/var\(--[a-z-]+\)/g) ?? []);

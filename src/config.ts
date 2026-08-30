@@ -33,7 +33,6 @@ function readInstant(name: string): Date | null {
   if (value === undefined) return null;
 
   const at = new Date(value);
-
   if (Number.isNaN(at.getTime())) {
     console.error(`${name} must be an ISO timestamp (got ${value}).`);
     process.exit(1);
@@ -47,6 +46,7 @@ export const config = Object.freeze({
   frozenNow: readInstant("CARN_FROZEN_NOW"),
   host: read("HOST", "127.0.0.1"),
   nodeEnv: read("NODE_ENV", "development"),
+  origin: read("CARN_ORIGIN", "https://carn.fancyenchiladas.net"),
   port: readPort("PORT", "3000"),
   repoRoot: read("CARN_REPO_ROOT", "./local/repos"),
   sourceUrl: read("CARN_SOURCE_URL", "https://github.com/nschneble/carn"),

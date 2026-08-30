@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// a repo's default identity. the name hashes to a seed; the seed spends
-// on layers, offset, drift, rotation, weight, width, and fill-or-outline.
-// two colours and the ground, from --accent and --ink. BRAND.md 06
+// a repo's default identity, based on a seed hashed from the repo name
+// used to determine layers, offset, drift, rotation, weight, width, and
+// fill-or-outline with two colors (--accent, --ink) and the ground
 
 import { html, type Raw } from "../html/index.js";
 

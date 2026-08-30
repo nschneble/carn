@@ -42,7 +42,7 @@ Security is covered throughout — UUID paths, `html: false`, blob origin isolat
 - **The display face never sets body text.** All-caps removes the ascender and descender profile that word-shape recognition depends on. Uppercase Carn Sans for titles and labels; Carn Sans at `"wght" 400`, or Carn Mono, for anything read as a sentence. There is no third family and no separate body face — see `docs/BRAND.md` §03.
 - **Real semantics.** Diffs are tables with row scope. The timeline is an `<ol>`. This is what makes the page work in a terminal browser, which suits the project. The file and repo lists ship as `<ul role="list">` over a CSS grid (`src/html/repo-show.ts`, `src/html/repo-list.ts`); once 1e fills the commit-subject and age columns they become genuinely tabular, and moving them to a `<table>` is an open decision until then.
 - **Keyboard first.** A skip link, visible focus on everything (already in the CSS here), and no hover-only affordances — a file row's actions must be reachable by tab.
-- **Don't encode meaning in colour alone.** Directory-vs-file is pink-vs-ink in the mockups; add a trailing `/` so it survives greyscale and colour blindness. Diff add/remove needs `+`/`−` glyphs, not just green and red.
+- **Don't encode meaning in color alone.** Directory-vs-file is pink-vs-ink in the mockups; add a trailing `/` so it survives grayscale and color blindness. Diff add/remove needs `+`/`−` glyphs, not just green and red.
 - **No motion at all.** A page that arrives in 80 ms with no JS to parse already _feels_ smooth. Animation is what slow sites use to disguise being slow. The only transitions worth having are hover and focus states, and those should be instant.
 
 ### Turning the tenets into tests — Tuffgal, and what it doesn't cover
@@ -214,7 +214,7 @@ Spawning `git upload-pack --stateless-rpc` is right. Three corrections to the ob
 
 ### 4 · Reading repos — process spawn cost is the whole story
 
-Shell out to _plumbing_, not porcelain: `git diff-tree -r -M`, never `git diff` — porcelain honors `diff.external`, textconv, and colour config from whatever gitconfig the daemon happens to see. `ls-tree -z --long` for trees, `for-each-ref` for branch lists (one process instead of N), `rev-list --count` for pagination.
+Shell out to _plumbing_, not porcelain: `git diff-tree -r -M`, never `git diff` — porcelain honors `diff.external`, textconv, and color config from whatever gitconfig the daemon happens to see. `ls-tree -z --long` for trees, `for-each-ref` for branch lists (one process instead of N), `rev-list --count` for pagination.
 
 Measured: 200 separate `git cat-file` processes took **370 ms**; the same 200 lookups through one long-lived `git cat-file --batch` took **7 ms**. On small repos essentially all the cost is process startup — `rev-parse` costs the same as `log -n 20`. A page doing 5–10 spawns is fine; anything rendering N blobs needs a pooled `--batch` process per repo, recycled after each push.
 
@@ -281,9 +281,10 @@ With `html: false`, markdown-it's output vocabulary is fixed and small — that 
 
 What remains isn't XSS, and an HTML sanitizer wouldn't fix it either — it needs a URL policy:
 
-- **Third-party image loading.** `![x](http://evil.com/t.png)` renders, and every visitor to that README pings `evil.com`. On a public forge this is the thing most likely to actually be abused. Fix with a CSP `img-src` and/or an image proxy. — _CSP half shipped in 1a: `img-src 'self' data:` in `src/app.ts`, pinned as an exact string by `verify-phase-1a.sh`. A README's remote image is blocked and degrades to its alt text; that is the intended behaviour, not a rendering bug. The proxy half is deferred past MLP — it is what eventually renders remote images without leaking every visitor's IP to the image host._
+- **Third-party image loading.** `![x](http://evil.com/t.png)` renders, and every visitor to that README pings `evil.com`. On a public forge this is the thing most likely to actually be abused. Fix with a CSP `img-src` and/or an image proxy. — _CSP half shipped in 1a: `img-src 'self' data:` in `src/app.ts`, pinned as an exact string by `verify-phase-1a.sh`. A README's remote image is blocked and degrades to its alt text; that is the intended behavior, not a rendering bug. The proxy half is deferred past MLP — it is what eventually renders remote images without leaking every visitor's IP to the image host._
 - **Unbounded scheme allowlist.** `validateLink` is a blocklist of four, so `blob:`, `about:`, and custom app schemes all pass. Replace it with an allowlist of `https|http|mailto` plus the data-image forms, and reject protocol-relative `//`. — _Shipped in 1d: `allowLink` in `src/markdown/render.ts`._
 - **No `rel`.** Add `rel="nofollow ugc"` to external links via a renderer rule override. — _Shipped in 1d: a `link_open` override in `src/markdown/render.ts`. Applies to absolute `http(s)` links only; relative links, anchors, and `mailto:` are untouched, and there is no same-host carve-out._
+- **Relative links resolve against the wrong page.** A README's `[docs](docs/BRAND.md)` renders as a link to `/r/:repo/docs/BRAND.md`, which is not a route. `allowLink` passes schemeless destinations through unmodified on purpose — that is ordinary README content, not a hole — but nothing rewrites them to `/r/:repo/blob/:rev/docs/BRAND.md`, which is where they belong. The same applies to **relative images**: `![diagram](docs/arch.png)` is schemeless, so it resolves wrong and renders broken, and rewriting it to the first-party content-addressed asset route makes committed images in READMEs work under `img-src 'self'` with no CSP change. — _1e, which is where `/r/:repo/blob/:rev/*` lands. It needs `renderMarkdown` to take a `{ repo, rev }` context — it is a pure function today with one call site at `src/html/repo-show.ts` — and it needs `test/contract/markdown.contract.ts`, which currently pins the unrewritten behavior as intentional, updated deliberately in the same commit. **Rewrite unconditionally**, without checking the tree: an existence check costs a nested-path lookup per link straight into the 12-spawn budget, makes the same README render differently on different refs, and buys nothing — a 404 on a link to a file that is not there is the correct answer, and better than silently leaving a link pointing somewhere else wrong._
 
 The markdown layer and the response header deliberately disagree about remote images: `allowLink` permits an `https:` image URL that CSP then refuses to load. The parsing layer parses and the header enforces, so the enforcing layer being the stricter one is correct. Do not "fix" the mismatch by widening `img-src` — that undoes the control this section specifies, and fails `verify-phase-1a.sh`.
 
@@ -358,7 +359,7 @@ Do the coarse limiting **at the edge, in Caddy**, so an abusive request never re
 >
 > **Set `ipv6_prefix 56`, not 64.** A /64 is one LAN, but residential subscribers are typically _delegated_ a /56 or /48 — so a per-/64 limit still leaves an attacker 256+ buckets to rotate through. /56 stops the realistic attack; loosen to /64 only if you get collateral-damage complaints.
 
-Keep a coarse in-app limit as defence in depth on the write paths — `rate-limiter-flexible` (v11, actively maintained, memory backend with no Redis needed) with per-key `blockDuration` so repeat abusers escalate. Note it's a "flexible fixed window," not a true sliding one; that's another argument for doing the real work at the edge. And add failed-auth banning on the SSH listener: N failures from an IP in a window, then a temporary block.
+Keep a coarse in-app limit as defense in depth on the write paths — `rate-limiter-flexible` (v11, actively maintained, memory backend with no Redis needed) with per-key `blockDuration` so repeat abusers escalate. Note it's a "flexible fixed window," not a true sliding one; that's another argument for doing the real work at the edge. And add failed-auth banning on the SSH listener: N failures from an IP in a window, then a temporary block.
 
 ### Git config for the box
 
@@ -390,7 +391,7 @@ Three limits, at three different layers, and only the first two need building:
 - **Per-repo:** a soft warning and a hard block, checked in `post-receive` against `git count-objects -vH`. Something like warn at 500 MB, refuse further pushes at 1 GB. Surface it as `carn repo size` and on the repo settings page so it's never a surprise.
 - **Per-file:** `core.bigFileThreshold = 16m` is already set and does half the job — files above it skip delta compression entirely, which removes most of the _CPU_ pain. It does nothing for clone size. If you want a real per-file cap, a `pre-receive` hook walking the pushed objects is the place, but I'd skip it initially: `maxInputSize` catches the same accidents with a tenth of the code.
 
-These are guardrails against accidents, not defences against attack — you're the only person who can push.
+These are guardrails against accidents, not defenses against attack — you're the only person who can push.
 
 And in the Caddy site block for the git routes: `flush_interval -1` (pack streaming is long-lived and chunked, and Caddy's auto-detection of streaming responses is undocumented — don't rely on it), don't let `encode` re-compress an already-compressed pack, and raise timeouts well above your largest clone.
 
@@ -497,7 +498,7 @@ The page shapes are specified in the companion study: [**Càrn Layout →**](htt
 
 One rule resolves every page: **the display face is worn by whatever the page is about.** On a list that's the items — filenames, repo names, issue titles. On a show page it's the single title. On a create page it's the question. Everything else is mono, small, and quiet.
 
-File rows carry three constants: **directories in `--accent-text` with a trailing slash** (it survives greyscale, and `-text` rather than `--accent` because a filename is bold at 16.8px where the clamp bottoms out and therefore owes 4.5:1), **full-row hit areas** with hover and focus states, and **last-commit subject plus age** in mono with tabular numerals. Sixteen rows, then `Show all N`. Of those three, only the first ships on the file tree today — see `docs/LAYOUT.md` §02, which owns what is built and what 1e still owes.
+File rows carry three constants: **directories in `--accent-text` with a trailing slash** (it survives grayscale, and `-text` rather than `--accent` because a filename is bold at 16.8px where the clamp bottoms out and therefore owes 4.5:1), **full-row hit areas** with hover and focus states, and **last-commit subject plus age** in mono with tabular numerals. Sixteen rows, then `Show all N`. Of those three, only the first ships on the file tree today — see `docs/LAYOUT.md` §02, which owns what is built and what 1e still owes.
 
 #### The repo view
 
@@ -961,7 +962,7 @@ No new mechanism is needed. Three layers, in order of how often you'd reach for 
 >
 > Four lines in the repo's README: how to reach the console, how to exec into the container, the exact command, how to verify. Recovery is always possible — you own the hardware. The failure mode is reverse-engineering your own `ssh_keys` table from memory at 11pm.
 
-**Revocation is instant.** Every SSH connection re-reads the key table, so deleting a row is sufficient — no cached authorization, no session to expire. Don't optimise that away with a key cache later.
+**Revocation is instant.** Every SSH connection re-reads the key table, so deleting a row is sufficient — no cached authorization, no session to expire. Don't optimize that away with a key cache later.
 
 ## 12 · Naming
 

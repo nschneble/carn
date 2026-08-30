@@ -2,8 +2,8 @@
 
 import type { ServerChannel } from "ssh2";
 
-import { db } from "../db.js";
 import { spawnGit } from "../git/spawn.js";
+import { mayWrite } from "../repos/access.js";
 import { createRepo } from "../repos/create.js";
 import { type ResolvedRepo, resolveRepo } from "../repos/resolve.js";
 
@@ -49,26 +49,6 @@ export function parseCommand(command: string): ParsedCommand | null {
     service: `${match[1]}-pack` as GitService,
     target: match[2] ?? "",
   };
-}
-
-async function mayWrite(repo: ResolvedRepo, userId: string): Promise<boolean> {
-  if (repo.ownerId === userId) {
-    return true;
-  }
-
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: {
-      isAdmin: true,
-      grants: {
-        where: { repoId: repo.id, level: { in: ["admin", "write"] } },
-        select: { repoId: true },
-        take: 1,
-      },
-    },
-  });
-
-  return user?.isAdmin === true || (user?.grants.length ?? 0) > 0;
 }
 
 // an abandoned channel is already gone; exiting on it throws

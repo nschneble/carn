@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // the pinned world every visual story renders against: fixed uuids so the
-// tarball layout and the seeded rows agree, fixed dates so the frozen
-// clock always reads the same ages
+// tarball layout and the seeded rows agree, and fixed dates so the frozen
+// clock always reads the same relative ages
 
 export type FixtureFile = { path: string; body: string };
 
@@ -59,8 +59,8 @@ const readme = [
   "",
 ].join("\n");
 
-// 1600x400 and transparent, per BRAND.md 06. geometry only: an svg in an
-// <img> reaches no @font-face, so text would differ across machines
+// 1600x400 and transparent, geometry only; an svg in an <img> reaches no
+// @font-face, so text would differ across machines
 function header(ink: string, rule: string): string {
   return [
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 400" width="1600" height="400">',

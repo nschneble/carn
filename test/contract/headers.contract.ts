@@ -27,9 +27,8 @@ test("health reports the process is up, as json", async () => {
   assert.strictEqual(response.body, '{"status":"ok"}');
 });
 
-// nothing about a reader reaches the render any more, so a shared cache
-// holds one entry per URL and Vary would be declaring a dependency the
-// server no longer has
+// nothing about a reader reaches the render, so a shared cache holds one
+// entry per URL
 test("a read page revalidates on its own bytes and varies on nothing", async () => {
   const app = Fastify();
   app.get<{ Querystring: { body?: string } }>("/page", (request, reply) =>

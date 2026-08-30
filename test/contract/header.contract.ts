@@ -101,7 +101,6 @@ test("an empty repo resolves to the wordmark without touching git", async () => 
 
 test("a repo with no .carn falls through to the wordmark", async () => {
   const repo = commit({ "README.md": "hi" });
-
   assert.deepStrictEqual(await resolveHeader(repo), wordmarkOnly);
 });
 
@@ -170,7 +169,6 @@ test("an image exactly at the cap is kept", async () => {
 
 test("an oversize image with nothing behind it falls to the wordmark", async () => {
   const repo = commit({ ".carn/header.svg": maxHeaderBytes + 1 });
-
   assert.deepStrictEqual(await resolveHeader(repo), wordmarkOnly);
 });
 
@@ -258,15 +256,13 @@ test("both slots on the wordmark is one mark", () => {
   assert.strictEqual((out.match(/<svg /g) ?? []).length, 1);
 });
 
-test("both render paths resolve per colour scheme", {
+test("both render paths resolve per color scheme", {
   timeout: 60_000,
 }, async () => {
   const tint = (fill: string) =>
     `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="4" height="1"><rect width="4" height="1" fill="${fill}"/></svg>`)}`;
-
   const paint = (image: HeaderImage) =>
     tint(image.path.includes("dark") ? "black" : "white");
-
   const shell = (body: string) =>
     `<!doctype html><html lang="en"><head><meta charset="utf-8" /><title>H</title><style>${stylesheet}</style></head><body>${body}</body></html>`;
 

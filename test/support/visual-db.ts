@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // the visual harness's reset: the pinned rows, and the pinned bare repos
-// unpacked beside them. tuffgal calls it once per breakpoint pass. both
-// halves are destructive, so both refuse to run anywhere but the harness's
-// own database and its own repo root
+// unpacked beside them; both halves are destructive, so both refuse to run
+// anywhere but the harness's own database and its own repo root
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync } from "node:fs";
@@ -43,36 +42,34 @@ function guard(): string {
 }
 
 async function ownerId(): Promise<string> {
-  const rows = await db.$queryRaw<{ id: string }[]>`
-    SELECT id FROM users WHERE handle = 'nschneble'
-  `;
-  const row = rows[0];
+  const admin = await db.user.findUnique({
+    where: { handle: "nschneble" },
+    select: { id: true },
+  });
 
-  if (row === undefined) {
+  if (admin === null) {
     throw new Error("the harness database has no admin row to own the repos");
   }
 
-  return row.id;
+  return admin.id;
 }
 
 export async function resetVisualState(): Promise<void> {
   const root = guard();
   const owner = await ownerId();
 
-  await db.$executeRaw`TRUNCATE TABLE repos RESTART IDENTITY CASCADE`;
+  // raw: TRUNCATE has no DSL form, and deleteMany is a different statement
+  await db.$executeRaw`TRUNCATE TABLE repos CASCADE`;
 
-  for (const repo of fixtureRepos) {
-    await db.$executeRaw`
-      INSERT INTO repos (id, owner_id, name, description, created_at)
-      VALUES (
-        ${repo.id}::uuid,
-        ${owner}::uuid,
-        ${repo.name},
-        ${repo.description},
-        ${new Date(repo.createdAt)}
-      )
-    `;
-  }
+  await db.repo.createMany({
+    data: fixtureRepos.map((repo) => ({
+      id: repo.id,
+      ownerId: owner,
+      name: repo.name,
+      description: repo.description,
+      createdAt: new Date(repo.createdAt),
+    })),
+  });
 
   rmSync(root, { recursive: true, force: true });
   mkdirSync(root, { recursive: true });

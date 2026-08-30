@@ -99,16 +99,13 @@ test("the configuration is commonmark with html off", () => {
 
 test("table is enabled and nothing else beyond commonmark is", () => {
   const table = renderMarkdown("| a | b |\n| --- | --- |\n| 1 | 2 |\n").value;
-
   assert.ok(table.startsWith("<table>"), table);
   assert.ok(table.includes("<th>a</th>"), table);
 
   const off = renderMarkdown("~~struck~~ and http://bare.example/x\n").value;
-
   assert.strictEqual(off, "<p>~~struck~~ and http://bare.example/x</p>\n");
 
   const fenced = renderMarkdown("```js\nconst a = 1;\n```\n").value;
-
   assert.ok(fenced.includes('<code class="language-js">'), fenced);
 });
 
@@ -143,7 +140,6 @@ test("every allowed destination renders a working link", () => {
 test("every denied destination renders no link at all", () => {
   for (const destination of deniedSchemes) {
     const out = link(destination);
-
     assert.strictEqual(href(out), null, out);
     assert.ok(!out.includes("<a "), out);
   }
@@ -163,7 +159,6 @@ test("an image destination is held to the same allowlist", () => {
 test("an external link carries the rel, in all three link forms", () => {
   for (const [form, source] of externalForms) {
     const out = renderMarkdown(source).value;
-
     assert.strictEqual(rel(out), "nofollow ugc", `${form}: ${out}`);
   }
 });
@@ -277,7 +272,6 @@ test("the rendered fragment is text, and the html tag leaves it alone", () => {
 
 test("rendered markdown outside text position is a violation", () => {
   const safe = template(`<article>\${renderMarkdown(readme)}</article>`);
-
   assert.deepStrictEqual(misplaced(safe), []);
 
   const planted: [string, string][] = [
@@ -359,6 +353,7 @@ test("no rendered markdown lands in an attribute position", () => {
   const files = templateSources();
   const reported: string[] = [];
   const bearing: string[] = [];
+
   let classified = 0;
 
   for (const file of files) {

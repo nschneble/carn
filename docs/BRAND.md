@@ -9,12 +9,12 @@
 
 Written in its own system. The stylesheet at the top of this file is the deliverable — copy the token block into Càrn's stylesheet and the components below come with it.
 
-Dark is the default and the theme designed first. Light is a complete alternate, not an afterthought — every token has a value in both, and no colour is defined only inside a media query.
+Dark is the default and the theme designed first. Light is a complete alternate, not an afterthought — every token has a value in both, and no color is defined only inside a media query.
 
 ## Tokens
 
 Copy this block verbatim into the stylesheet. Dark is the bare `:root`; light is
-the alternate, redefined inside `prefers-color-scheme: light`. No colour is
+the alternate, redefined inside `prefers-color-scheme: light`. No color is
 defined only inside a media query, so both render paths resolve — a token left
 only inside the query would be empty under dark, which is the default.
 
@@ -242,7 +242,7 @@ body {
   background: var(--sunk);
   filter: none;
 }
-/* unavailable: form changes, not just colour — the chevron goes */
+/* unavailable: form changes, not just color — the chevron goes */
 .btn[aria-disabled="true"] {
   background: none;
   color: var(--ink-faint);
@@ -382,7 +382,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* --- meta block (labelled fields on show views) --- */
+/* --- meta block (labeled fields on show views) --- */
 .meta {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -460,11 +460,11 @@ _Two forms, one rule_
 
 The Montréal rule: the accent lives wherever it can and drops wherever a machine has to type it. An accented hostname breaks `git clone` over SSH — settled, not stylistic.
 
-## 02 · Colour
+## 02 · Color
 
 _One accent · two ramps · measured contrast_
 
-There is no secondary brand colour and no semantic palette — state is carried by the accent, by weight, and by words.
+There is no secondary brand color and no semantic palette — state is carried by the accent, by weight, and by words.
 
 **Every ratio is measured against all three grounds.** The two shown below are the best case and the binding one: `--sunk` is the hover and focus wash, so it sits under a row's text whenever the pointer or the caret is there, and it is always the lightest ground in dark mode and the darkest in light — in both, the one nearest the ink. Quoting a token against `--ground` alone reads it high — by 0.4 in light and up to 1.0 in dark on the tokens near the threshold. The contract test asserts every pair on ground, surface, _and_ sunk.
 
@@ -492,7 +492,7 @@ There is no secondary brand colour and no semantic palette — state is carried 
 - `--accent` — #E7156C · 4.10:1 on ground, 3.77:1 on sunk
 - `--accent-text` — #C9105C · 5.22:1 on ground, 4.80:1 on sunk
 
-`--ink-faint` is a text colour in both themes and clears 4.5:1 on every ground in both. It has no headroom to spare: dark `#828888` measures 4.5001:1 on `--sunk`. Darkening `--sunk`, or laying anything translucent over it, breaks the token rather than dimming it.
+`--ink-faint` is a text color in both themes and clears 4.5:1 on every ground in both. It has no headroom to spare: dark `#828888` measures 4.5001:1 on `--sunk`. Darkening `--sunk`, or laying anything translucent over it, breaks the token rather than dimming it.
 
 > **TWO PINKS, SPLIT BY CONTRAST REQUIREMENT**
 >
@@ -502,7 +502,7 @@ There is no secondary brand colour and no semantic palette — state is carried 
 >
 > **#E7156C measures 4.10:1** on the light ground — AA for large text (3:1), short of the 4.5:1 body threshold, and 3.77:1 on `--sunk`. Light mode therefore carries a darkened **#C9105C at 5.22:1** for inline links, small type, and fills. Dark needs no split (**#FF4D95 is 6.17:1**, 5.21:1 on `--sunk`); its second token exists so both themes have the same shape.
 >
-> No single colour can clear 4.5:1 against both grounds — it would need luminance ≤0.165 and ≥0.196 at once. Two tokens are mandatory for any brand colour on any two-theme site.
+> No single color can clear 4.5:1 against both grounds — it would need luminance ≤0.165 and ≥0.196 at once. Two tokens are mandatory for any brand color on any two-theme site.
 
 ### Where the accent is allowed
 
@@ -524,7 +524,7 @@ There is no secondary brand colour and no semantic palette — state is carried 
 - Gradients, of any kind
 - More than one accented element per screenful
 
-No green-for-good, red-for-bad palette. A merged PR reads Merged and a closed one reads Closed — the word carries the state, the fill carries the emphasis. That is what makes the design survive greyscale and colour blindness.
+No green-for-good, red-for-bad palette. A merged PR reads Merged and a closed one reads Closed — the word carries the state, the fill carries the emphasis. That is what makes the design survive grayscale and color blindness.
 
 ## 03 · Type
 
@@ -578,12 +578,12 @@ _Hairlines · one spacing scale · no boxes around content_
 - **Spacing** — 4 · 8 · 12 · 16 · 22 · 30 · 44 · 62 · 84. Use `gap`, not margins.
 - **Measure** — 66ch for prose. Never wider.
 - **Page** — 1160px max, 22px gutters.
-- **Content column** — A single centred column at every width. The 168px sidebar above 820px this line specified was never built and appears nowhere in `styles.ts`; reviving it is a decision, not a rediscovery.
+- **Content column** — A single centered column at every width. The 168px sidebar above 820px this line specified was never built and appears nowhere in `styles.ts`; reviving it is a decision, not a rediscovery.
 - **Rules** — 1px. `--rule` between sections, `--rule-soft` between rows, `--ink` under a heading that opens a table, `--ink-mid` around a field or a chip, where the hairline is the component's only boundary. Under `prefers-contrast: more` the first two move onto the ink ramp.
 - **Radius** — 0 everywhere. The single exception is the chip, which is a full pill.
 - **Shadow** — None. Ever.
 - **Motion** — None. Hover and focus change instantly. Speed is the smoothness.
-- **Breakpoints** — The stylesheet has one width query, `min-width: 640px`. Tuffgal captures **two**, 375 and 1440, which bracket it — a complete test of the only responsive decision the CSS makes. 375 is tuffgal's `mobile`; 1440 is a project override of its `desktop`, which the registry puts at 1280. Four captures per story, once the two colour schemes are counted.
+- **Breakpoints** — The stylesheet has one width query, `min-width: 640px`. Tuffgal captures **two**, 375 and 1440, which bracket it — a complete test of the only responsive decision the CSS makes. 375 is tuffgal's `mobile`; 1440 is a project override of its `desktop`, which the registry puts at 1280. Four captures per story, once the two color schemes are counted.
 
 **Content is separated by rules, not contained in boxes.** A card with a border around it is almost always a row with a hairline under it.
 
@@ -603,7 +603,7 @@ _Solid, ghost, unavailable, block. The chevron is the only ornament in the syste
 
 ### Unavailable
 
-**Form changes, not just colour.** The fill drops away, the border goes dashed, the label recedes, and **the chevron disappears**. Since the chevron means "this moves you forward," removing it is a shape signal that survives greyscale, low vision, and every kind of colour blindness. Opacity alone fails all three.
+**Form changes, not just color.** The fill drops away, the border goes dashed, the label recedes, and **the chevron disappears**. Since the chevron means "this moves you forward," removing it is a shape signal that survives grayscale, low vision, and every kind of color blindness. Opacity alone fails all three.
 
 Use `aria-disabled="true"` rather than the `disabled` attribute, so the control stays focusable and a screen-reader user can find it and hear why. Three rules come with it:
 
@@ -613,7 +613,7 @@ Use `aria-disabled="true"` rather than the `disabled` attribute, so the control 
 
 > **PREFER EXPLAINING OVER DISABLING**
 >
-> A greyed-out **Merge** says nothing. Usually the better component is a sentence: _"This branch has conflicts in 2 files"_ followed by the three commands that fix it. Use the unavailable state when the action is momentarily out of reach, and prose when there's a reason worth reading.
+> A grayed-out **Merge** says nothing. Usually the better component is a sentence: _"This branch has conflicts in 2 files"_ followed by the three commands that fix it. Use the unavailable state when the action is momentarily out of reach, and prose when there's a reason worth reading.
 
 ### There is no loading state
 
@@ -635,11 +635,11 @@ The box is a real `<input>` or `<textarea>` with a `<label for>`, and its placeh
 
 **Static, and never a toggle.** The web UI is read-only, so a chip displays an enum value — it does not select one. No `aria-pressed`, no `cursor: pointer`, no radio group, no script.
 
-The chip carrying the current value takes `.chip--current`, a modifier class rather than an ARIA state. It differs from a plain chip by **weight and border width as well as fill**, because a difference in colour alone fails the greyscale rule and is erased outright by forced-colors mode, which discards the accent and keeps the 2px border.
+The chip carrying the current value takes `.chip--current`, a modifier class rather than an ARIA state. It differs from a plain chip by **weight and border width as well as fill**, because a difference in color alone fails the grayscale rule and is erased outright by forced-colors mode, which discards the accent and keeps the 2px border.
 
 ### Row
 
-_Full-row hit area. Directories in accent with a trailing slash, so the distinction survives greyscale. Sixteen rows before "Show all"._
+_Full-row hit area. Directories in accent with a trailing slash, so the distinction survives grayscale. Sixteen rows before "Show all"._
 
 **The trailing slash is real text in the DOM**, never `content: "/"`. Generated content cannot be selected, is not found by Ctrl-F, and vanishes with CSS off — which is every property the slash exists to have.
 
@@ -655,9 +655,9 @@ It is a `<dl>` of `<div>`-wrapped `<dt>`/`<dd>` pairs. A key is not a heading: a
 
 ### Tag
 
-_Filled for live states, quiet for terminal ones. No colour coding._
+_Filled for live states, quiet for terminal ones. No color coding._
 
-Both variants carry a 1px border in their own fill colour — invisible in either theme, and the thing forced-colors mode has left to draw once it discards the fill. The word inside is what carries the state either way; a tag that loses its fill and keeps its border still reads _Merged_.
+Both variants carry a 1px border in their own fill color — invisible in either theme, and the thing forced-colors mode has left to draw once it discards the fill. The word inside is what carries the state either way; a tag that loses its fill and keeps its border still reads _Merged_.
 
 ### Breadcrumb
 
@@ -669,8 +669,8 @@ element: `Càrn` on the index, `Càrn » linklater » src » index.ts` on a blob
 `Càrn` is the current segment and keeps the treatment it already has.
 
 **Ancestors are links at `--ink-mid`; the current segment is not a link, sits at
-`--ink`, and takes `"wght" 500`.** Three signals — colour, weight, and the
-absence of a target — because colour alone fails the greyscale rule and is
+`--ink`, and takes `"wght" 500`.** Three signals — color, weight, and the
+absence of a target — because color alone fails the grayscale rule and is
 discarded outright by forced-colors. Ancestors carry `.home`'s existing
 affordance: no underline at rest, underlined on hover and focus. That is the
 masthead convention, already shipped on the wordmark.
@@ -714,7 +714,7 @@ Two utility classes exist, and they are the only two the markup may use. `.vh` i
 
 ### When the OS overrides the palette
 
-`forced-colors: active` throws away every colour in this file. What has to survive is the non-colour half of each signal, and the block at the end of the stylesheet is where that is spelled out: the unavailable button keeps its dashed border and its missing chevron, the current chip keeps its heavier border, the tag keeps the border it carries in its own fill colour, and the focus ring switches to `Highlight`. `prefers-contrast: more` is handled in the token block instead, by raising the two hairlines onto the ink ramp.
+`forced-colors: active` throws away every color in this file. What has to survive is the non-color half of each signal, and the block at the end of the stylesheet is where that is spelled out: the unavailable button keeps its dashed border and its missing chevron, the current chip keeps its heavier border, the tag keeps the border it carries in its own fill color, and the focus ring switches to `Highlight`. `prefers-contrast: more` is handled in the token block instead, by raising the two hairlines onto the ink ramp.
 
 ## 06 · Repo identity
 
@@ -729,11 +729,22 @@ Committed to the repo, not uploaded. Versioned, editable by commit, survives mig
 - **Max size** — 16 KB, derived from the page budget rather than picked. Above the cap it's ignored and the generated mark is used.
 - **Processing** — **None.** Served as committed. `object-fit: cover` absorbs minor mismatch.
 
-> **THE CAP AND THE BUDGET DISAGREE BY ABOUT 6 KB**
+> **THE CAP AND THE BUDGET, RECONCILED**
 >
-> Measured: the two font families are 72,308 B and the stylesheet 12,730 B, and the heaviest repo page — full README, show-all tree — is 7,005 B. That is 92,043 B against the 100 KB budget, leaving **10,357 B** for a header. A header at the 16 KB cap puts the page at 108,427 B, roughly 106 KB.
+> Measured as wire bytes at gzip level 5 — the metric `PLAN.md` §00 settled, and the one a visitor actually pays. Fonts count whole because woff2 is Brotli inside and does not shrink.
 >
-> The contract test excludes the committed header from the measured weight, so nothing fails today. **Open question for Nick: is the cap 10 KB, or does the header sit outside the page budget?** Until he says, the cap and the budget disagree by exactly that, and this is the note saying so.
+> ```
+> fonts                       72,308 B
+> stylesheet, minified + gzip  2,698 B
+> favicon.png                  4,610 B   one icon, cached site-wide
+> page chrome                    900 B
+>                            ----------
+> against a 102,400 B budget  21,884 B remain
+> ```
+>
+> A header at the 16 KB cap leaves 5,884 B for the page's own HTML, and the heaviest repo page — full README, show-all tree — gzips to roughly 2,200 B. **The cap fits, with room.**
+>
+> The favicon is one file, not four. `apple-touch-icon.png` is fetched only when someone adds the site to a home screen and `preview.jpg` only by crawlers reading `og:image`; neither is on the page-load path. `favicon.ico` is a fallback that a declared `<link rel="icon">` pre-empts.
 
 ### Resolution — per theme slot, first match wins
 
@@ -764,7 +775,7 @@ The resolution needs one `ls-tree` of `.carn/` per repo page — cache it agains
 
 Every repo has an identity from the moment it exists. The repo name is hashed to a seed; the seed drives layer count, offset vector, per-letter baseline drift, rotation, weight, width, and whether the top layer is filled or outlined. Rendered as SVG, server-side, cached by name.
 
-- **Palette** — **Two colours and the ground.** The moment a third hue appears it reads as a logo generator.
+- **Palette** — **Two colors and the ground.** The moment a third hue appears it reads as a logo generator.
 - **Forbidden** — Gradients, drop shadows, bubble outlines, texture, skew.
 - **Long names** — The SVG `viewBox` is fitted to the rendered text, so a mark never overflows — it scales. Above 18 characters, break at a hyphen or word boundary onto a second line rather than letting it become a ribbon.
 - **Name cap** — 40 characters. It is a typographic bound, not an identifier one: it is what the generated mark can still draw legibly. `docs/LAYOUT.md` §03 owns the enforcement sites.
@@ -803,13 +814,13 @@ _The list that keeps it coherent_
 
 | Never                              | Because                                                                                                                                                                       |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A second brand colour              | One accent forces hierarchy to come from size and weight, which is what makes the pages read.                                                                                 |
+| A second brand color              | One accent forces hierarchy to come from size and weight, which is what makes the pages read.                                                                                 |
 | Rounded corners on content         | Softness fights the type. The chip is the only pill.                                                                                                                          |
 | Drop shadows or elevation          | Depth is a box metaphor. This design separates with rules.                                                                                                                    |
 | Icon fonts or icon libraries       | Almost none are needed. The few that are get inlined SVG.                                                                                                                     |
 | Animation or transitions on layout | Motion is what slow sites use to feel fast. Be fast.                                                                                                                          |
 | The display face in body copy      | All-caps removes the ascender and descender profile that word-shape recognition depends on.                                                                                   |
 | A "dyslexia-friendly" font option  | A 2026 meta-analysis of 15 studies and 688 participants puts the effect at _g_ = −0.04 (n.s.). Reader controls for size, measure, and line-height help more people, for less. |
-| Colour as the only signal          | Directories get a slash, diffs get `+` and `−`, states get a word.                                                                                                            |
+| Color as the only signal          | Directories get a slash, diffs get `+` and `−`, states get a word.                                                                                                            |
 | A utility-class framework          | Class soup in the markup is the problem this system exists to avoid.                                                                                                          |
 | Client JS on the critical path     | A page that needs JS to render a diff is a bug.                                                                                                                               |

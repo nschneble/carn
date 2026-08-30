@@ -1,9 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// a committed header is served first-party because img-src is 'self'
-// data:. the app's own default-src 'none' already denies script to a
-// navigated svg, which is the control PLAN.md 04 asks the blob origin for
-
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 import { readBlob } from "../git/blob.js";
@@ -31,7 +27,7 @@ type AssetRoute = { Params: { repo: string; asset: string } };
 
 const forever = "public, max-age=31536000, immutable";
 const noImage = "No such header image.\n";
-const imageFailed = "That header image failed to load. Try again shortly.\n";
+const imageFailed = "The header image failed to load. Try again shortly.\n";
 
 // the child dies with the response, never with the request body
 function abortWith(reply: FastifyReply): AbortSignal {
@@ -50,7 +46,12 @@ function fail(
   status: number,
   failure: Failure,
 ): FastifyReply {
-  return sendStatus(request, reply, status, errorPage({ failure }));
+  return sendStatus(
+    request,
+    reply,
+    status,
+    errorPage({ failure, path: request.url.split("?")[0] as string }),
+  );
 }
 
 async function showRepo(
@@ -59,11 +60,9 @@ async function showRepo(
 ): Promise<FastifyReply> {
   try {
     const found = await resolveRepo(request.params.repo);
-
     if (found.status !== "found") {
       const failure =
         found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
-
       return fail(request, reply, 404, failure);
     }
 

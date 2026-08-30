@@ -20,10 +20,10 @@ const shipped: Shipped[] = [
   {
     file: "carn-sans.woff2",
     identifiers: new Map([
-      [1, "Carn Sans SemiBold"],
-      [3, "2.001;NSCH;CarnSans-SemiBold"],
-      [4, "Carn Sans SemiBold"],
-      [6, "CarnSans-SemiBold"],
+      [1, "Carn Sans Semibold"],
+      [3, "2.001;NSCH;CarnSans-Semibold"],
+      [4, "Carn Sans Semibold"],
+      [6, "CarnSans-Semibold"],
     ]),
     upstream: ["Archivo"],
     attribution: new Map([
@@ -35,7 +35,7 @@ const shipped: Shipped[] = [
       [13, sil],
     ]),
     description:
-      "Carn Sans is an axis-clamped, subset build of Archivo 2.001 and is not the original font.",
+      "Carn Sans is an axis-clamped, subset build of Archivo 2.001 and isn't the original font.",
     variable: true,
   },
   {
@@ -56,7 +56,7 @@ const shipped: Shipped[] = [
       [13, sil],
     ]),
     description:
-      "Carn Mono is a subset build of IBM Plex Mono 2.3 and is not the original font.",
+      "Carn Mono is a subset build of IBM Plex Mono 2.3 and isn't the original font.",
     variable: false,
   },
   {
@@ -77,7 +77,7 @@ const shipped: Shipped[] = [
       [13, sil],
     ]),
     description:
-      "Carn Mono is a subset build of IBM Plex Mono 2.3 and is not the original font.",
+      "Carn Mono is a subset build of IBM Plex Mono 2.3 and isn't the original font.",
     variable: false,
   },
 ];
@@ -168,6 +168,7 @@ test("the display face keeps its six clamped instances, the mono faces none", ()
         ["wdth", [100, 100, 125]],
       ],
     );
+
     assert.deepStrictEqual(
       parsed.instances.map((instance) => [...instance.coordinates]),
       [400, 500, 600, 700, 800, 900].map((weight) => [

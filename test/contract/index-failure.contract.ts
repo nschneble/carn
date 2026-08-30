@@ -8,13 +8,17 @@ import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { test } from "node:test";
 
+function ts(strings: TemplateStringsArray, ...values: unknown[]): string {
+  return String.raw({ raw: strings }, ...values);
+}
+
 const root = resolve(import.meta.dirname, "../../..");
 const nowhere = "postgresql://nobody:nobody@127.0.0.1:1/nothing";
 
 // the app logs to stdout, and pino's writes can land after console.log
 const sentinel = "carn-probe:";
 
-const probe = `
+const probe = ts`
 const { buildApp } = await import("./dist/src/app.js");
 const { listRepos } = await import("./dist/src/repos/list.js");
 const Fastify = (await import("fastify")).default;

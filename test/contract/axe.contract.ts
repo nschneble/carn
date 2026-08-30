@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // axe drops experimental and deprecated rules from a tag selection; the
-// experimental ones are computed back on and the deprecated ones are not,
+// experimental ones are computed back on and the deprecated ones aren't,
 // which the pinned list below asserts by their own tag rather than by name
 
 import assert from "node:assert";
@@ -86,41 +86,41 @@ const plantedContrastCss = `.faint {
 // no lang attribute on purpose: html-has-lang is one of the three planted
 const plantedFailures = `<!doctype html>
 <html>
-<head>
-<meta charset="utf-8" />
-<title>Planted failures</title>
-<link rel="stylesheet" href="/planted-failures.css" />
-</head>
-<body>
-<main>
-<h1>Three defects</h1>
-<p class="faint">This pair measures 1.5 to 1</p>
-<img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="40" height="40" />
-</main>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>Planted failures</title>
+    <link rel="stylesheet" href="/planted-failures.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Three defects</h1>
+      <p class="faint">This pair measures 1.5 to 1</p>
+      <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="40" height="40" />
+    </main>
+  </body>
 </html>
 `;
 
 const plantedNameMismatch = `<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<title>Planted name mismatch</title>
-</head>
-<body>
-<main>
-<h1>One defect</h1>
-<button type="button" aria-label="Close">Save changes</button>
-</main>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>Planted name mismatch</title>
+  </head>
+  <body>
+    <main>
+      <h1>One defect</h1>
+      <button type="button" aria-label="Close">Save changes</button>
+    </main>
+  </body>
 </html>
 `;
 
-const tableSource = `| Ref | Kind | Note |
-| --- | --- | --- |
-| \`main\` | branch | the default |
-| \`v1.0.0\` | tag | signed, annotated |
-| \`14-conflict-output\` | branch | ahead by 3 |
+const tableSource = `| Ref                    | Kind   | Note              |
+| ---------------------- | ------ | ----------------- |
+| \`main\`               | branch | the default       |
+| \`v1.0.0\`             | tag    | signed, annotated |
+| \`14-conflict-output\` | branch | ahead by 3        |
 `;
 
 const renderedTable = renderMarkdown(tableSource).value;
@@ -128,17 +128,18 @@ const renderedTable = renderMarkdown(tableSource).value;
 // repoint at the shared page shell once a wave gives markdown one
 const readmeTable = `<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Rendered README table · Càrn</title>
-<link rel="stylesheet" href="${styleHref}" />
-</head>
-<body>
-<main id="main" tabindex="-1">
-<h1 class="t-label">Refs</h1>
-${renderedTable}</main>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rendered README table · Càrn</title>
+    <link rel="stylesheet" href="${styleHref}" />
+  </head>
+  <body>
+    <main id="main" tabindex="-1">
+      <h1 class="t-label">Refs</h1>
+      ${renderedTable}
+    </main>
+  </body>
 </html>
 `;
 
@@ -184,7 +185,10 @@ const states = {
   "show-bare": showDocument({ repo: view({ readme: null }) }),
   "show-new": showDocument({ repo: emptyRepo }),
   "show-header": showDocument({ repo: view({ header: committedHeader }) }),
-  "not-found": errorPage({ failure: noSuchRepo("linklater") }),
+  "not-found": errorPage({
+    failure: noSuchRepo("linklater"),
+    path: "/r/linklater",
+  }),
 };
 
 for (const [state, markup] of Object.entries(states)) {
@@ -224,10 +228,10 @@ async function fontState(page: Page): Promise<Record<string, string[]>> {
   );
 }
 
-// document.fonts.check() is not the oracle: it answers true for a family
+// document.fonts.check() isn't the oracle; it answers true for a family
 // with no face at all, which is exactly what a document that lost its
 // stylesheet looks like, and false for a face the page has not demanded
-// yet, which is legitimate. read the face statuses instead
+// yet, which is legitimate (read the face statuses instead)
 async function expectFonts(page: Page, where: string): Promise<void> {
   const state = await fontState(page);
 
@@ -300,7 +304,7 @@ async function audit(
 
 // every audit navigates: page.setContent leaves the document at
 // about:blank, where the sheet's root-relative @font-face src cannot
-// resolve and the whole audit silently measures the system fallback.
+// resolve and the whole audit silently measures the system fallback;
 // the served CSP blocks addScriptTag, so an init script goes over CDP
 async function fetched(
   path: string,
@@ -328,7 +332,6 @@ async function galleryOn(
 ): Promise<Audit> {
   planted += 1;
   const path = `/planted-${planted}`;
-
   styles[`${path}.css`] = css;
   fixtures[path] = galleryDocument(`${path}.css`);
 
@@ -355,7 +358,7 @@ function nonText(node: NodeResult): boolean {
 }
 
 // the exemption above is only safe while the arrow inherits its parent's
-// colour; pin that a passing ancestor still covers each exempted node
+// color; pin that a passing ancestor still covers each exempted node
 function coveredByAPass(results: AxeResults, node: NodeResult): boolean {
   const contrast = results.passes.find((rule) => rule.id === "color-contrast");
   return (
@@ -382,9 +385,9 @@ function decided(results: AxeResults): void {
 }
 
 // a clean violations list says nothing about how many nodes reached a
-// verdict. a gradient, a translucent fill, or a background image moves
+// verdict; a gradient, translucent fill, or background image moves
 // contrast nodes from decided to incomplete with every gate still green,
-// so count what colour-contrast actually measured and settled
+// so count what color-contrast actually measured and settled
 function measured(results: AxeResults, id: string): number {
   return (["violations", "passes"] as const).reduce(
     (total, bucket) =>
@@ -402,13 +405,13 @@ function contrastPin(results: AxeResults, where: string, pinned: number): void {
   assert.strictEqual(
     undecided?.nodes.filter((node) => !nonText(node)).length ?? 0,
     0,
-    `${where}: colour-contrast reached no verdict on a text node, so the gate is green over an unmeasured one`,
+    `${where}: color-contrast reached no verdict on a text node, so the gate is green over an unmeasured one`,
   );
 
   assert.strictEqual(
     measured(results, "color-contrast"),
     pinned,
-    `${where}: colour-contrast settled a different number of nodes than the ${pinned} pinned here. A gradient, a translucent fill, or a background image moves nodes out of the decided set with the violations list still empty, which is the way this gate goes quiet`,
+    `${where}: color-contrast settled a different number of nodes than the ${pinned} pinned here. A gradient, translucent fill, or background image moves nodes out of the decided set with the violations list still empty`,
   );
 }
 
@@ -526,7 +529,7 @@ test("the ruleset's experimental rules are the ones forced on", async () => {
   assert.deepStrictEqual(
     forced,
     experimentalInRuleset,
-    "the computed override no longer matches the pinned set, so axe has added or dropped an experimental rule under these tags — read the diff and decide, do not re-pin blindly",
+    "the computed override no longer matches the pinned set, so axe has added or dropped an experimental rule under these tags; read the diff and decide what to do",
   );
 });
 
@@ -536,13 +539,13 @@ test("only axe's own deprecated rules go unevaluated", async () => {
   assert.deepStrictEqual(
     unevaluated,
     retiredByAxe,
-    "a rule the ruleset selects did not execute and is not one of the deprecated rules held off deliberately — axe is excluding it by a mechanism this file does not know about",
+    "a rule the ruleset selects didn't execute and isn't one of the deprecated rules held off deliberately; axe is excluding it by a mechanism this file doesn't know about",
   );
 
   assert.deepStrictEqual(
     deprecated,
     retiredByAxe,
-    "the pinned list is no longer exactly the rules axe itself tags deprecated, so it has drifted into a list of rules this project gave up on",
+    "the pinned list is no longer exactly the rules axe itself tags deprecated, so it's drifted into a list of rules this project abandoned",
   );
 });
 
@@ -556,7 +559,7 @@ test("the rules above WCAG 2.0 report which of them found anything", async (t) =
 
     assert.ok(
       landed,
-      `${name} is in no bucket, so the ruleset stopped loading it — wcag21a, wcag21aa, and wcag22aa are pinned by criterion 11, not decoration`,
+      `${name} is in no bucket, so the ruleset stopped loading it; wcag21a, wcag21aa, and wcag22aa are pinned by criterion 11, not decoration`,
     );
     assert.notStrictEqual(landed, "violations", `${name} is violated`);
     t.diagnostic(`${name}: ${landed}`);
@@ -567,7 +570,7 @@ test("the rules above WCAG 2.0 report which of them found anything", async (t) =
 
     assert.ok(
       landed,
-      `${name} is in no bucket, so the rules override stopped forcing it on — axe leaves every experimental rule out of tag selection, and without the override this gate silently shrinks`,
+      `${name} is in no bucket, so the rules override stopped forcing it on; axe leaves every experimental rule out of tag selection, and without the override this gate silently shrinks`,
     );
     assert.notStrictEqual(landed, "violations", `${name} is violated`);
     t.diagnostic(`${name}: ${landed}`);
@@ -595,7 +598,7 @@ test("a rendered README table exercises the table rules", async (t) => {
 
     assert.ok(
       passed && passed.nodes.length > 0,
-      `${name} evaluated no table, so forcing it on buys nothing — the fixture stopped rendering a table, or markdown-it stopped emitting one`,
+      `${name} evaluated no table, so forcing it on buys nothing; the fixture stopped rendering a table, or markdown-it stopped emitting one`,
     );
     t.diagnostic(`${name} passed on ${passed.nodes.length} table`);
   }
@@ -619,7 +622,7 @@ test("axe reports a planted accessible name mismatch", async () => {
 
   assert.ok(
     found.some((violation) => violation.id === "label-content-name-mismatch"),
-    `a button labelled Close over the words Save changes went unreported, so the rules override is not reaching axe:\n${report(found)}`,
+    `a button labeled "Close" over the words "Save changes" went unreported, so the rules override isn't reaching axe:\n${report(found)}`,
   );
 });
 

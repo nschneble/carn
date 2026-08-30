@@ -1,10 +1,9 @@
 #!/bin/sh
 # SPDX-License-Identifier: AGPL-3.0-or-later
-#
-# Runs the Tuffgal stories against the real app -- its own database,
-# repo root, and frozen clock, never the dev ones. Args pass through,
-# e.g. --headed; --seed-only seeds without running stories. Runs twice,
-# once per colour scheme, since tuffgal pins colorScheme per run.
+
+# Runs the Tuffgal stories against the real app with its own database,
+# repo root, and frozen clock. Args pass through, e.g. `--headed`, and
+# `--seed-only` seeds without running stories. Runs once per color scheme.
 
 set -eu
 
@@ -20,20 +19,21 @@ if [ -z "${DATABASE_URL:-}" ]; then
 fi
 
 if [ ! -d dist/test/support ]; then
-  echo "dist is missing. Run npm run build first." >&2
+  echo "dist/ is missing. Run npm run build first." >&2
   exit 1
 fi
 
 # every pinned value the harness runs on, from the one file that declares
 # them, so the shell cannot drift from what the fixture was built for
 pinned=$(node --input-type=module -e \
-  'import { frozenNow, visualDatabase, visualRepoRoot }
+  'import { frozenNow, visualDatabase, visualOrigin, visualRepoRoot }
      from "./dist/test/support/fixture-repos.js";
-   process.stdout.write(`${frozenNow}\n${visualDatabase}\n${visualRepoRoot}\n`);')
+   process.stdout.write(`${frozenNow}\n${visualDatabase}\n${visualOrigin}\n${visualRepoRoot}\n`);')
 
 CARN_FROZEN_NOW=$(printf '%s\n' "$pinned" | sed -n 1p)
 visual_db=$(printf '%s\n' "$pinned" | sed -n 2p)
-CARN_REPO_ROOT="$PWD/$(printf '%s\n' "$pinned" | sed -n 3p)"
+CARN_ORIGIN=$(printf '%s\n' "$pinned" | sed -n 3p)
+CARN_REPO_ROOT="$PWD/$(printf '%s\n' "$pinned" | sed -n 4p)"
 
 admin_url="$DATABASE_URL"
 
@@ -46,20 +46,20 @@ psql "$admin_url" --no-psqlrc -q -tAc \
   || psql "$admin_url" --no-psqlrc -q -c "CREATE DATABASE \"$visual_db\""
 
 DATABASE_URL="$visual_url" npx prisma migrate deploy >/dev/null
-
 DATABASE_URL="$visual_url"
 
-export CARN_FROZEN_NOW CARN_REPO_ROOT DATABASE_URL
+export CARN_FROZEN_NOW CARN_ORIGIN CARN_REPO_ROOT DATABASE_URL
 
 if [ "${1:-}" = "--seed-only" ]; then
   node --input-type=module -e \
     'import { resetVisualState } from "./dist/test/support/visual-db.js";
      await resetVisualState();'
 
-  echo "Seeded. Serve them with:"
-  echo "  DATABASE_URL=$DATABASE_URL \\"
-  echo "  CARN_REPO_ROOT=$CARN_REPO_ROOT \\"
+  echo "Seeded. Serve with:"
   echo "  CARN_FROZEN_NOW=$CARN_FROZEN_NOW \\"
+  echo "  CARN_ORIGIN=$CARN_ORIGIN \\"
+  echo "  CARN_REPO_ROOT=$CARN_REPO_ROOT \\"
+  echo "  DATABASE_URL=$DATABASE_URL \\"
   echo "  node dist/scripts/visual-server.js"
   exit 0
 fi

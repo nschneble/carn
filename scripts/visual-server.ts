@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// the real app minus the ssh listener, for tuffgal to drive
+// the real app minus the ssh listener, for Tuffgal to drive
 
 import { buildApp } from "../src/app.js";
 import { visualHost, visualPort } from "../test/support/fixture-repos.js";

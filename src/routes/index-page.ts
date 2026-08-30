@@ -24,7 +24,7 @@ export function indexRoute(app: FastifyInstance): void {
         request,
         reply,
         503,
-        errorPage({ failure: unavailable }),
+        errorPage({ failure: unavailable, path: "/" }),
       );
     }
   });

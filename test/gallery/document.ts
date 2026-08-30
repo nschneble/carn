@@ -5,11 +5,15 @@ import { stylesheet } from "../../src/html/styles.js";
 import { type HeaderImage, headerMarkup } from "../../src/repos/header.js";
 import { wordmark } from "../../src/repos/wordmark.js";
 
-const hoverSimulation = `.row.is-hover {
+function css(strings: TemplateStringsArray, ...values: unknown[]): string {
+  return String.raw({ raw: strings }, ...values);
+}
+
+const hoverSimulation = css`.row.is-hover {
   background: var(--sunk);
 }`;
 
-const figureFit = `figure {
+const figureFit = css`figure {
   max-width: 360px;
   margin: var(--s4) 0;
 }`;

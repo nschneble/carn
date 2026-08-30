@@ -38,6 +38,10 @@ import {
 } from "../gallery/repo-show.js";
 import { type Served, serve } from "../support/serve.js";
 
+function ts(strings: TemplateStringsArray, ...values: unknown[]): string {
+  return String.raw({ raw: strings }, ...values);
+}
+
 const root = resolve(import.meta.dirname, "../../..");
 const dir = mkdtempSync(join(tmpdir(), "carn-repo-page-"));
 const realGit = execFileSync("sh", ["-c", "command -v git"], {
@@ -75,7 +79,6 @@ function tagsIn(markup: string): string[] {
 
 function build(tracked: Record<string, string>): ResolvedRepo {
   const path = mkdtempSync(join(dir, "repo-"));
-
   execFileSync("git", ["init", "-q", "-b", "main", "--", path]);
 
   for (const [name, body] of Object.entries(tracked)) {
@@ -109,7 +112,6 @@ function build(tracked: Record<string, string>): ResolvedRepo {
   };
 }
 
-// criterion 3 — the tree at the default branch, and the rendered readme
 test("a real repo renders its tree and its readme", async () => {
   const repo = build({
     "README.md": "# Linklater\n\nSave a URL, read it later.\n",
@@ -139,7 +141,6 @@ test("a real repo renders its tree and its readme", async () => {
   assert.strictEqual(rows(markup), 4);
 });
 
-// criterion 3 — ls-tree not recursive, or the cap counts the wrong thing
 test("a nested directory contributes one row, not its contents", async () => {
   const repo = build({
     "src/a.ts": "export {};\n",
@@ -155,7 +156,6 @@ test("a nested directory contributes one row, not its contents", async () => {
   );
 });
 
-// criterion 4
 test("a repo with no readme renders the tree and says how to make one", async () => {
   const repo = build({ "package.json": "{}\n" });
   const loaded = await loadRepoView({ repo });
@@ -192,7 +192,6 @@ test("a repo with no commits says what would be here and how to push it", () => 
   assert.doesNotMatch(empties(markup), /[!…]|Oops/);
 });
 
-// criterion 13
 test("a repo page render stays inside the spawn budget", async () => {
   const repo = build({ "README.md": "# hi\n", "src/a.ts": "export {};\n" });
   const shim = mkdtempSync(join(dir, "shim-"));
@@ -236,11 +235,10 @@ test("a repo page render stays inside the spawn budget", async () => {
   }
 });
 
-// criterion 5, second half — the invalid branch reaches no database
 const sentinel = "carn-probe:";
 const nowhere = "postgresql://nobody:nobody@127.0.0.1:1/nothing";
 
-const probe = `
+const probe = ts`
 const { buildApp } = await import("./dist/src/app.js");
 const app = buildApp();
 
@@ -280,7 +278,6 @@ test("an invalid repo name is refused before any database query", () => {
   assert.ok(invalid.body.includes(badRepoName.heading));
   assert.doesNotMatch(invalid.body, /127\.0\.0\.1|prisma|queryRaw/i);
 
-  // criterion 8 — the response header is the pinned string, unchanged
   assert.strictEqual(
     invalid.headers["content-security-policy"],
     contentSecurityPolicy,
@@ -291,8 +288,9 @@ test("an invalid repo name is refused before any database query", () => {
 test("a 404 page says what happened, then what to do", () => {
   const missing = errorPage({
     failure: noSuchRepo("linklater"),
+    path: "/r/linklater",
   });
-  const bad = errorPage({ failure: badRepoName });
+  const bad = errorPage({ failure: badRepoName, path: "/r/-nope" });
 
   for (const markup of [missing, bad]) {
     assert.match(markup, /^<!doctype html>\n<html lang="en"/);
@@ -311,7 +309,6 @@ test("a 404 page says what happened, then what to do", () => {
   assert.ok(bad.includes(html`${badRepoName.said}`.value));
 });
 
-// criterion 15
 test("the tree cap holds, and show-all lifts it", () => {
   const capped = showDocument();
   const all = showDocument({ showAll: true });
@@ -365,7 +362,7 @@ test("small caps split lowercase runs and never insert whitespace", () => {
     assert.strictEqual(smallCaps(name).value, expected, name);
   }
 
-  // a filename is not a repo name, so it is not held to namePattern
+  // a filename is not a repo name, so it's not held to namePattern
   const awkward = ["café.md", "日本語.txt", "🎁.png", "Straße.md", "a b.txt"];
 
   for (const name of [...wide.map((entry) => entry.name), ...awkward]) {
@@ -379,7 +376,7 @@ test("small caps split lowercase runs and never insert whitespace", () => {
         `${name} carries whitespace between runs`,
       );
     }
-    assert.doesNotMatch(markup, /aria-label/, `${name} labelled an .sc span`);
+    assert.doesNotMatch(markup, /aria-label/, `${name} labeled an .sc span`);
     assert.strictEqual(
       markup.replace(/<[^>]*>/g, ""),
       name,
@@ -388,9 +385,9 @@ test("small caps split lowercase runs and never insert whitespace", () => {
   }
 });
 
-// the mark is alt=""/aria-hidden, so the name reaches the accessibility
-// tree only through this h1. it is visually hidden because the mark
-// already shows the name, and two adjacent labels read as one block
+// the mark is alt=""/aria-hidden, so the name reaches the a11y tree only
+// through this h1; it's visually hidden because the mark already shows the
+// name, and two adjacent labels read as one block
 test("the identity mark is decorative and a visually hidden h1 carries the name", () => {
   const markup = showDocument();
   const marks = markup.match(/<svg class="mark"[^>]*>/g) ?? [];
@@ -441,7 +438,6 @@ test("a committed header points at the repo's own asset route", () => {
   );
 });
 
-// criteria 8, 9, 23 — proven at renderMarkdown, re-proven on the page
 test("a hostile readme renders inert through the page", () => {
   const markup = showDocument({
     repo: view({ readme: hostileReadme }),
@@ -517,7 +513,6 @@ test("no repo page carries script, an inline style, or a style attribute", () =>
   }
 });
 
-// criterion 12. a committed header is left out: see the wave 17 note
 test("the repo page fits the weight budget, fonts and stylesheet in", () => {
   const faces = [
     "carn-sans.woff2",
@@ -573,7 +568,6 @@ after(async () => {
   await site?.close();
 });
 
-// criterion 15, in the browser: uppercase on screen, lowercase in the dom
 test("the rendered dom holds the true filename under small caps", async () => {
   const page = await browser.newPage();
 

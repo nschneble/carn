@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // the axe suite audits the gallery, so a primitive missing from the
-// gallery is a primitive nothing audits. these two guards moved here when
-// the theme cookie went, since neither was ever about the cookie
+// gallery is a primitive nothing audits
 
 import assert from "node:assert";
 import { test } from "node:test";
@@ -73,7 +72,7 @@ test("a directory's trailing slash is real text, and small caps are unspaced", (
 });
 
 // the linked mode is what the axe suite serves; the inline mode is what
-// npm run gallery writes for a browser to open from the filesystem
+// `npm run gallery` writes for a browser to open from the filesystem
 test("the gallery carries its stylesheet exactly one way at a time", () => {
   const inline = galleryDocument();
   const linked = galleryDocument("/gallery.css");

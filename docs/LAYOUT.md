@@ -10,7 +10,7 @@ That sentence resolves every page in the product.
 
 On a **list**, it's the items — filenames, repo names, issue titles. On a **show** page, it's the single thing you came for. On a **create** page, it's the question being asked. Everything else is mono, small, and quiet. There is no third register.
 
-Colour, spacing, and component definitions live in the brand book. This document covers the three page shapes — list, show, create — and the repo identity system.
+Color, spacing, and component definitions live in the brand book. This document covers the three page shapes — list, show, create — and the repo identity system.
 
 ## 01 — TYPE · Filenames in
 
@@ -61,13 +61,13 @@ are the headline
 
 _Sixteen rows · show-all · header image above_
 
-Filenames take the display face. The repo name is a visually hidden `<h1>`: the header image or generated mark carries identity on screen, and `.vh` keeps the name in the accessible name. Directories render in `--accent-text` with a trailing slash, so the distinction survives greyscale. Not `--accent` — a filename is bold at 16.8px where `.t-item`'s clamp bottoms out, under WCAG's 18.66px large-text threshold, so it owes 4.5:1 and light `--accent` measures 4.10:1.
+Filenames take the display face. The repo name is a visually hidden `<h1>`: the header image or generated mark carries identity on screen, and `.vh` keeps the name in the accessible name. Directories render in `--accent-text` with a trailing slash, so the distinction survives grayscale. Not `--accent` — a filename is bold at 16.8px where `.t-item`'s clamp bottoms out, under WCAG's 18.66px large-text threshold, so it owes 4.5:1 and light `--accent` measures 4.10:1.
 
 > _Pre-build mockup, archived: https://claude.ai/code/artifact/6a95e6fc-3a60-416b-a496-b713a5005be1 — the shipped pages have superseded it._
 
 - **Default rows** — **16**, then `Show all N →`. The median repo root holds 15 entries with about 8.5 directories, so sixteen shows most trees whole and always reaches files.
 - **Hit area** — The full row, with a `--sunk` background on hover and focus. **Not built.** `styles.ts` disables the `::after` overlay and the hover wash on `.tree` until 1e gives a file row somewhere to go; a wash with no click target is a false affordance. Live on the repo index today.
-- **Directories** — Accent colour, sorted first, trailing slash always.
+- **Directories** — Accent color, sorted first, trailing slash always.
 - **Right columns** — Last commit subject at 190px, age right-aligned at 46px with tabular numerals. Both mono, both `--ink-faint`. **Not built on the file tree**, whose grid collapses to one column; filling it needs a bounded `git log --name-status` walk, which is 1e's work. Live on the repo index, where the same two columns carry description and creation age.
 - **Truncation** — Ellipsis on the filename, never a wrap. Rows stay one line at every breakpoint.
 
@@ -87,7 +87,7 @@ When no image is committed, the repo name is hashed to a seed and the seed drive
 
 _Deterministic — the same name always yields the same mark._
 
-- **Palette** — Two colours and the ground. A third hue makes it a logo generator.
+- **Palette** — Two colors and the ground. A third hue makes it a logo generator.
 - **Forbidden** — Gradients, drop shadows, bubble outlines, texture, skew.
 - **Long names** — The `viewBox` is fitted to the rendered text, so a mark scales rather than overflows. Above 18 characters, break at a hyphen, underscore, or dot onto a second line — `wordmark.ts` treats all three as separators.
 - **Name cap** — **40 characters.** A typographic bound: it is what the generated mark can still draw legibly, not what the identifier grammar allows. Five sites move together — `namePattern` in `src/repos/resolve.ts`, the `CHECK` in the init migration, the refusal copy, and `BAD_NAME` in `verify-phase-1b.sh:22` and `verify-phase-1c.sh` (check 12 greps that exact string). The length checks need no change: 1b, 1c, and 1d each assert a **65**-character name is refused, which stays true at any lower cap. 1d adds the boundary pair — 40 accepted, 41 refused.
@@ -99,7 +99,7 @@ a thread
 
 _Issue · PR · commit — one template_
 
-The title takes the display face. Beneath it sits a block of labelled metadata fields, then the discussion. The same component serves all three show views; only the keys change.
+The title takes the display face. Beneath it sits a block of labeled metadata fields, then the discussion. The same component serves all three show views; only the keys change.
 
 > _Pre-build mockup, archived: https://claude.ai/code/artifact/6a95e6fc-3a60-416b-a496-b713a5005be1 — the shipped pages have superseded it._
 

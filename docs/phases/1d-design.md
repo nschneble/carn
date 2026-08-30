@@ -158,7 +158,7 @@ small, and quiet.
 ## Themes
 
 The token block in `BRAND.md` is copied **verbatim**. It is built so that
-no colour is defined only inside a media query, which is what makes both
+no color is defined only inside a media query, which is what makes both
 render paths resolve. Dark is the bare `:root`; light is redefined inside
 `prefers-color-scheme: light`. A token left only inside that query is
 empty under dark, which is the default, so changing the structure breaks a
@@ -213,7 +213,7 @@ First phase with anything to screenshot, so Tuffgal enters here rather
 than at Phase 4 — nine screens arriving at once is where a wrong baseline
 hides.
 
-- One story covering both pages, run once per colour scheme. Tuffgal pins
+- One story covering both pages, run once per color scheme. Tuffgal pins
   `colorScheme` per run and records it as a pixel-affecting manifest key,
   so each scheme gets its own run and its own baseline directory
 - The fixture repo must be **byte-reproducible**: build it once with
@@ -226,7 +226,7 @@ hides.
   screens, rather than later with nine.
 
 Tuffgal is pre-1.0 with an explicitly unstable API. If its README and its
-actual behaviour disagree, **report it rather than working around it** —
+actual behavior disagree, **report it rather than working around it** —
 Nick maintains it, and a wrong workaround here becomes a bug report he
 never receives.
 
@@ -277,7 +277,7 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
 14. Zero `<script>` tags on either page
 15. The DOM under small caps holds the true lowercase, and filenames carry
     `lang="en"`
-16. The Tuffgal story passes for both pages under both colour schemes,
+16. The Tuffgal story passes for both pages under both color schemes,
     against the pinned fixture and a frozen clock
 17. `git grep` finds no shell-enabled spawn — scoped form, positive control
 18. Every `.ts` under `src`, `test`, and `scripts` opens with the SPDX line
@@ -319,7 +319,7 @@ Not screenshots — the running thing.
   CLAUDE.md
 - Whether `@types/markdown-it@14` matched the 15.0.0 runtime API. Answered
   ahead of the handoff: it did not, and the dependency was dropped
-- Any place Tuffgal's README and behaviour disagreed
+- Any place Tuffgal's README and behavior disagreed
 - Any place CLAUDE.md, `BRAND.md`, `docs/STACK.md`, and this brief
   disagreed
 - Anything you wanted to add and did not, with the reason

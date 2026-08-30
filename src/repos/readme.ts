@@ -4,7 +4,6 @@ import { readBlob } from "../git/blob.js";
 import type { TreeEntry } from "./tree.js";
 
 export const maxReadmeBytes = 512 * 1024;
-
 const readmeName = "readme.md";
 
 export function findReadme(entries: TreeEntry[]): TreeEntry | null {
