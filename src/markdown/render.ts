@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// remote images are blocked and degrade to alt text to prevent abuse; CSP
-// will eventually be replaced with an image proxy
+// remote https: image urls are permitted here and blocked by csp
+// (img-src 'self' data:, src/app.ts): parse layer and enforcement layer
+// disagree on purpose. degrading to alt text is plan.md 04's privacy
+// control, and a proxy would serve first-party under csp, not replace it
 
 import MarkdownIt from "markdown-it";
 import { type Raw, raw } from "../html/index.js";

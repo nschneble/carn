@@ -56,7 +56,7 @@ test("a dead database does not put the driver's message on a public page", () =>
 
   assert.strictEqual(guarded.status, 503);
   assert.match(guarded.body, /<h1 class="t-l">Unavailable<\/h1>/);
-  assert.match(guarded.body, /That page failed to load on the server\./);
+  assert.match(guarded.body, /The page failed to load on the server\./);
   assert.match(guarded.body, /Try again shortly\./);
 
   assert.match(

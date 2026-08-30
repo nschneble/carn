@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // lowercase runs go in .sc spans and everything else stays at full size,
-// so the DOM keeps the true filename
+// so the DOM keeps the true filename. no whitespace between the runs: a
+// newline inside README.<span>md</span> becomes a space in the accessible
+// name, the clipboard, and find-in-page. BRAND.md 03
 
 import { html, type Raw } from "./index.js";
 

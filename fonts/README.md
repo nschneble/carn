@@ -28,17 +28,17 @@ f = TTFont("Archivo-clamped.ttf", recalcTimestamp=False)
 f["head"].modified = upstream
 f["OS/2"].achVendID = "NSCH"
 n = f["name"]
-n.setName("Carn Sans Semibold", 1, 3, 1, 0x409)
-n.setName("2.001;NSCH;CarnSans-Semibold", 3, 3, 1, 0x409)
-n.setName("Carn Sans Semibold", 4, 3, 1, 0x409)
-n.setName("CarnSans-Semibold", 6, 3, 1, 0x409)
+n.setName("Carn Sans SemiBold", 1, 3, 1, 0x409)
+n.setName("2.001;NSCH;CarnSans-SemiBold", 3, 3, 1, 0x409)
+n.setName("Carn Sans SemiBold", 4, 3, 1, 0x409)
+n.setName("CarnSans-SemiBold", 6, 3, 1, 0x409)
 n.setName(
     "Carn Sans is an axis-clamped, subset build of Archivo 2.001 and is "
     "not the original font.",
     10, 3, 1, 0x409,
 )
 n.setName("Carn Sans", 16, 3, 1, 0x409)
-n.setName("Semibold", 17, 3, 1, 0x409)
+n.setName("SemiBold", 17, 3, 1, 0x409)
 for record in n.names:
     if record.nameID >= 256:
         record.string = str(record).replace("Archivo", "CarnSans")
@@ -53,7 +53,7 @@ pyftsubset renamed-sans.ttf \
 
 Note `--layout-features+=` with the `+`. Using `=` wipes every default feature and leaves an empty GSUB table.
 
-The rename runs **after the clamp and before the subset**, and rewrites `name` IDs 1, 3, 4, 6, 10, 16, and 17; the family, unique, full, and PostScript names inside the binary. Before the clamp wouldn't stick: `varLib.instancer` prunes and rewrites the name table to reflect the new default instance, which is why the upstream family reads `Archivo Semibold` here rather than `Archivo`. Only the name changes; the record structure is upstream's, so ID 1 keeps the default instance's weight the way upstream does. IDs 16 and 17 don't survive the subset, because `--name-IDs` doesn't list them.
+The rename runs **after the clamp and before the subset**, and rewrites `name` IDs 1, 3, 4, 6, 10, 16, and 17; the family, unique, full, and PostScript names inside the binary. Before the clamp wouldn't stick: `varLib.instancer` prunes and rewrites the name table to reflect the new default instance, which is why the upstream family reads `Archivo SemiBold` here rather than `Archivo`. Only the name changes; the record structure is upstream's, so ID 1 keeps the default instance's weight the way upstream does. IDs 16 and 17 don't survive the subset, because `--name-IDs` doesn't list them.
 
 The loop that follows catches the six `fvar` instance PostScript names, at IDs 270–275 here. A fixed list of IDs would be the wrong shape: `fvar` allocates them, so which IDs they land on is an artifact of the upstream build. **Scoping the loop to IDs ≥ 256 is what protects attribution.** Copyright, trademark, foundry, designer, vendor URL, and license are IDs 0, 7, 8, 9, 11, and 13, and a range excludes them structurally. The range is also complete: `fvar` may point `subfamilyNameID` at 2 or 17 and `postScriptNameID` at 6, but only for the default instance, and all three are rewritten by the `setName` calls above. Every other reference must be above 255.
 
@@ -173,7 +173,7 @@ Archivo is SIL Open Font License 1.1, with no Reserved Font Name. Subsetting, cl
 
 IBM Plex Mono is also OFL 1.1, but it declares a Reserved Font Name: `Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"`. Ship `OFL-plex.txt` alongside it; that's IBM's license text, verbatim and distinct from Archivo's `OFL.txt`.
 
-The RFN is why the face is called Carn Mono. Per the OFL FAQ, subsetting a webfont is modification (2.6), and a Modified Version keeps an RFN only if it preserves Functional Equivalence, whose first requirement is the same full character inventory (2.7, 2.8). This subset goes from 930 mapped codepoints to 209, so it falls short and must pick its own name.
+The RFN is why the face is called Carn Mono. Per the OFL FAQ, subsetting a webfont is modification (2.6), and a Modified Version keeps an RFN only if it preserves Functional Equivalence, whose first requirement is the same full character inventory (2.7, 2.8). This subset goes from 930 mapped codepoints to 209, so it falls short and must pick its own name. The escape hatch in FAQ 2.2.1 — WOFF2-compress the original, change nothing else, keep the name — costs 79,328 B for the pair against 17,696 B subset. With the sans face that is 133,940 B, so it blows the 100 KB page budget on fonts alone. Renaming is the only route that ships.
 
 **Carn Sans is a choice, not an obligation.** Archivo's license would let the subset keep the name. It doesn't, because the pair can only be made consistent in this direction (the mono face has no option) and because 286 glyphs of 834 with two clamped axes is not what Omnibus-Type published. A reader who sees `Carn Sans` and `Carn Mono` in `--f-display` and `--f-mono` gets one true story about what the browser loads.
 

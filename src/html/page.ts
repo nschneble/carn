@@ -20,16 +20,16 @@ const head = (title: string, description: string, path: string) => html`<head>
     <meta name="twitter:image" content="${config.origin}/images/preview.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <meta property="og:description" content=${description}"" />
+    <meta property="og:description" content="${description}" />
     <meta property="og:image" content="${config.origin}/images/preview.jpg" />
     <meta property="og:site_name" content="Càrn" />
     <meta property="og:title" content="${title}" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="${config.origin}${path}" />
 
-    <link rel="apple-touch-icon" sizes="180x180" href="${config.origin}/images/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="96x96" href="${config.origin}/images/favicon.png" />
-    <link rel="shortcut icon" href="${config.origin}/images/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon.png" />
+    <link rel="shortcut icon" href="/images/favicon.ico" />
     <link rel="stylesheet" href="${styleHref}" />
   </head>`;
 

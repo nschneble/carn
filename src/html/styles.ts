@@ -25,17 +25,17 @@ export const tokens = css`:root {
   --rule-soft: #212424;
 
   /* brand */
-  --accent: #ff4d95;
-  --accent-text: #ff6ea8;
-  --accent-fill: var(--accent);
+  --accent: #ff4d95; /* 6.17:1 on ground, 5.21 on sunk — large type, rules */
+  --accent-text: #ff6ea8; /* 7.36:1 on ground, 6.22 on sunk — links, small text */
+  --accent-fill: var(--accent); /* the pink a small label sits on — see 02 */
   --accent-wash: #331020;
   --on-accent: #0e0f0f;
 
   /* type */
   --f-display: "Carn Sans", "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --f-mono: "Carn Mono", "IBM Plex Mono", "SF Mono", Menlo, monospace;
+  --f-mono: "Carn Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* spacing (4px base) */
+  /* spacing — 4px base */
   --s1: 4px;
   --s2: 8px;
   --s3: 12px;

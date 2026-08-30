@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // header choice waterfalls gracefully, so a repo with only a dark header
-// still looks deliberate in light mode
+// still looks deliberate in light mode. one ls-tree per page, cached on
+// the tip's oid. BRAND.md 06
 
 import { oidPattern } from "../git/oid.js";
 import { spawnGit } from "../git/spawn.js";
@@ -15,7 +16,7 @@ export type Header = { light: HeaderSource; dark: HeaderSource };
 
 export type HeaderSrc = (image: HeaderImage) => string;
 
-// 16 KB gives the rest of the page plenty of room below the 100 KB budget
+// what the 100 KB budget leaves after fonts and the page. BRAND.md 06
 export const maxHeaderBytes = 16 * 1024;
 
 const listTimeoutMs = 5_000;

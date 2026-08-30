@@ -26,6 +26,7 @@ export default defineConfig({
   },
   baseUrl: visualOrigin,
   colorScheme: scheme,
+  // BRAND.md's 1440 is not in Tuffgal's registry, whose desktop is 1280
   breakpoints: [{ name: "desktop", width: 1440, height: 900 }],
   // a forge page is mostly below the fold: tree, readme, footer
   captureMode: "fullPage",

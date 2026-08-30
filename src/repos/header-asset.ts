@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-//  url is content-addressed, so it can be immutable, and the route
+// the url is content-addressed, so it can be immutable, and the route
 // checks the oid against the repo's own resolved slots before serving
 
 import { oidSource } from "../git/oid.js";

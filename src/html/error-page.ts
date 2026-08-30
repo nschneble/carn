@@ -14,7 +14,7 @@ export const noSuchRepo = (name: string): Failure => ({
   title: `No repo named ${name} · Càrn`,
   heading: "No repo here",
   said: `There's no repo named ${name} on this server.`,
-  next: "Try and find it in all repos.",
+  next: "Find it in all repos.",
 });
 
 export const unavailable: Failure = {
@@ -28,7 +28,7 @@ export const badRepoName: Failure = {
   title: "Not a repo name · Càrn",
   heading: "Not a repo name",
   said: "That URL doesn't carry a repo name this server can look up.",
-  next: "A name is comprised of letters, digits, dots, dashes, and underscores, up to 64 characters.",
+  next: "A name is letters, digits, dots, dashes, and underscores, up to 64 characters. Check the URL, or find the repo in all repos.",
 };
 
 export function errorPage(view: { failure: Failure; path: string }): string {
