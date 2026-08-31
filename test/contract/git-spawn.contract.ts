@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { after, test } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 
+import { captureGit } from "../../src/git/capture.js";
 import {
   type GitChild,
   gitConcurrency,
@@ -68,6 +69,22 @@ async function advertise(gitProtocol?: string): Promise<string> {
 async function release(child: GitChild): Promise<void> {
   child.stdin.end();
   await child.done;
+}
+
+// bigger than a pipe buffer: a stalled read hangs instead of truncating
+const wide = "z".repeat(256 * 1024);
+const oid = execFileSync("git", ["-C", repo, "hash-object", "-w", "--stdin"], {
+  encoding: "utf8",
+  input: wide,
+}).trim();
+
+function capture(limit?: number) {
+  return captureGit({
+    args: ["cat-file", "blob", oid],
+    cwd: repo,
+    limit,
+    timeoutMs: generous,
+  });
 }
 
 test("a git call inside the timeout is left alone", bounded, async () => {
@@ -243,3 +260,64 @@ test(
     }
   },
 );
+
+test("a capture under the limit keeps all of it", bounded, async () => {
+  const { code, stdout } = await capture(wide.length * 2);
+
+  assert.strictEqual(code, 0);
+  assert.strictEqual(stdout.length, wide.length);
+});
+
+test(
+  "a capture over the limit stops at it and still exits",
+  bounded,
+  async () => {
+    const { code, stdout } = await capture(100);
+
+    assert.strictEqual(stdout.length, 100);
+    assert.strictEqual(code, 0, "the child deadlocked on a full stdout pipe");
+  },
+);
+
+test("an absent limit keeps all of it", bounded, async () => {
+  const { stdout } = await capture();
+
+  assert.strictEqual(stdout.length, wide.length);
+});
+
+test(
+  "a failing capture reports its code rather than throwing",
+  bounded,
+  async () => {
+    const { code, stdout } = await captureGit({
+      args: ["rev-parse", "--verify", "--quiet", "refs/heads/nope^{commit}"],
+      cwd: repo,
+      timeoutMs: generous,
+    });
+
+    assert.notStrictEqual(code, 0);
+    assert.strictEqual(stdout.length, 0);
+  },
+);
+
+test("a capture past the timeout throws", bounded, async () => {
+  await assert.rejects(
+    captureGit({ args: ["hash-object", "--stdin"], cwd, timeoutMs: impatient }),
+    /timed out after 200ms/,
+  );
+});
+
+test("an abandoned capture throws", bounded, async () => {
+  const abandoned = new AbortController();
+  const capturing = captureGit({
+    args: ["hash-object", "--stdin"],
+    cwd,
+    signal: abandoned.signal,
+    timeoutMs: generous,
+  });
+
+  await delay(50);
+  abandoned.abort();
+
+  await assert.rejects(capturing, /was cancelled/);
+});

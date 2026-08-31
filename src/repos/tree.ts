@@ -4,8 +4,9 @@
 // cat-file is pixel-identical and four times slower, which is why
 // CLAUDE.md holds a render to fewer than twelve spawns
 
+import { captureGit } from "../git/capture.js";
+import { parseLsTree } from "../git/ls-tree.js";
 import { oidPattern } from "../git/oid.js";
-import { spawnGit } from "../git/spawn.js";
 
 export type TreeEntry = {
   name: string;
@@ -16,39 +17,13 @@ export type TreeEntry = {
 
 export const treeTimeoutMs = 5_000;
 
-async function read(options: {
-  args: string[];
-  cwd: string;
-  signal: AbortSignal | undefined;
-}): Promise<{ code: number | null; stdout: string }> {
-  const child = await spawnGit({
-    args: options.args,
-    cwd: options.cwd,
-    signal: options.signal,
-    timeoutMs: treeTimeoutMs,
-  });
-
-  const chunks: Buffer[] = [];
-  child.stdout.on("data", (chunk: Buffer) => {
-    chunks.push(chunk);
-  });
-  child.stderr.resume();
-
-  const result = await child.done;
-  if (result.outcome !== "exited") {
-    throw new Error(`git ${options.args[0]} ${result.outcome}`);
-  }
-
-  return { code: result.code, stdout: Buffer.concat(chunks).toString("utf8") };
-}
-
 // refs/heads/ prefixed so a branch name can never arrive as an option
 export async function resolveTip(options: {
   repoPath: string;
   branch: string;
   signal?: AbortSignal;
 }): Promise<string | null> {
-  const { code, stdout } = await read({
+  const { code, stdout } = await captureGit({
     args: [
       "rev-parse",
       "--verify",
@@ -57,35 +32,22 @@ export async function resolveTip(options: {
     ],
     cwd: options.repoPath,
     signal: options.signal,
+    timeoutMs: treeTimeoutMs,
   });
 
   if (code !== 0) return null;
 
-  const oid = stdout.trim();
+  const oid = stdout.toString("utf8").trim();
   return oidPattern.test(oid) ? oid : null;
 }
 
 function parse(listing: string): TreeEntry[] {
-  const entries: TreeEntry[] = [];
-
-  for (const record of listing.split("\0")) {
-    const tab = record.indexOf("\t");
-    if (tab === -1) continue;
-
-    const [, type, oid, size] = record.slice(0, tab).split(/\s+/);
-    const name = record.slice(tab + 1);
-    if (type === undefined || oid === undefined || name === "") continue;
-
-    const bytes = Number(size);
-    entries.push({
-      name,
-      oid,
-      directory: type === "tree",
-      bytes: Number.isInteger(bytes) ? bytes : null,
-    });
-  }
-
-  return entries;
+  return parseLsTree(listing).map(({ type, oid, size, path }) => ({
+    name: path,
+    oid,
+    directory: type === "tree",
+    bytes: size,
+  }));
 }
 
 function order(a: TreeEntry, b: TreeEntry): number {
@@ -102,15 +64,16 @@ export async function listTree(options: {
     throw new Error(`a tree listing needs an object id, got ${options.commit}`);
   }
 
-  const { code, stdout } = await read({
+  const { code, stdout } = await captureGit({
     args: ["ls-tree", "-z", "--long", options.commit, "--"],
     cwd: options.repoPath,
     signal: options.signal,
+    timeoutMs: treeTimeoutMs,
   });
 
   if (code !== 0) {
     throw new Error(`git ls-tree of ${options.commit} exited ${code}`);
   }
 
-  return parse(stdout).sort(order);
+  return parse(stdout.toString("utf8")).sort(order);
 }
