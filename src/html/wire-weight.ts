@@ -8,8 +8,7 @@ import { statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 
-import { minifyCss } from "./minify-css.js";
-import { stylesheet } from "./styles.js";
+import { servedStylesheet } from "./styles.js";
 
 const root = resolve(import.meta.dirname, "../../..");
 
@@ -29,7 +28,6 @@ export const fontBytes = faces.reduce(
   0,
 );
 
-export const servedStylesheet = minifyCss(stylesheet);
 export const stylesheetWireBytes = gzipBytes(servedStylesheet);
 
 // what the budget has left once the fonts and the served sheet are paid

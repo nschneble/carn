@@ -12,6 +12,7 @@ import {
   badRepoName,
   errorPage,
   type Failure,
+  noBlobPath,
   noSuchChange,
   noSuchCommit,
   noSuchFile,
@@ -164,6 +165,10 @@ async function showBlob(
   reply: FastifyReply,
 ): Promise<FastifyReply> {
   const path = request.params["*"];
+
+  // the url settles this before any lookup, and it keeps the copy from
+  // naming a path that is not there
+  if (path === "") return fail(request, reply, 404, noBlobPath);
 
   try {
     const found = await resolveRepo(request.params.repo);

@@ -12,6 +12,7 @@ import { smallCaps } from "./filename.js";
 import { html, type Raw, raw } from "./index.js";
 import { page } from "./page.js";
 import { highlight, type Language, languageFor } from "./syntax.js";
+import { blobHref } from "./tree-list.js";
 import {
   budgetBytes,
   pageWireBytes,
@@ -134,7 +135,7 @@ function shell(view: BlobPage, main: Raw): string {
   return page({
     title: `${blob.path} · ${repo} · Càrn`,
     description: `${blob.path} at ${blob.rev} in ${repo}.`,
-    path: `/r/${repo}/blob/${blob.rev}/${blob.path}`,
+    path: blobHref(repo, blob.rev, blob.path),
     crumbs: [...repoTrail(repo), ...pathTrail(repo, blob.rev, blob.path)],
     main,
   });
@@ -254,7 +255,9 @@ function textPage(view: BlobPage, source: string): string {
 
     const content = Math.max(1, weight - (budgetBytes - remaining));
     const fitted = Math.floor((shown * remaining) / content);
-    shown = Math.max(0, Math.min(fitted, shown - 1));
+    // never below one: zero here would skip the halving loop, and the
+    // reader would lose a line the budget could have afforded
+    shown = Math.max(1, Math.min(fitted, shown - 1));
   }
 
   // the model above averages the lines, which a file whose first line

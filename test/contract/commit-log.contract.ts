@@ -2,6 +2,7 @@
 
 import assert from "node:assert";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   chmodSync,
   mkdirSync,
@@ -413,6 +414,20 @@ test("a subject longer than a subject is bounded before it renders", async () =>
   assert.strictEqual(ordinary?.commits[0]?.subject, "main change 39");
 });
 
+// a repeated character folds into the row above it, so a page of them
+// measures far less pressure than a page of real subjects does
+function denseSubject(seed: number, chars: number): string {
+  let text = "";
+  let block = createHash("sha256").update(`carn-${seed}`).digest();
+
+  while (text.length < chars) {
+    text += block.toString("base64url");
+    block = createHash("sha256").update(block).digest();
+  }
+
+  return text.slice(0, chars);
+}
+
 test("every commit log page fits the budget as gzip-5 wire bytes", () => {
   const pages: [string, string][] = [
     ["full", logDocument()],
@@ -422,9 +437,9 @@ test("every commit log page fits the budget as gzip-5 wire bytes", () => {
       "long subjects",
       logDocument({
         log: log({
-          commits: commits(16).map((commit) => ({
+          commits: commits(16).map((commit, index) => ({
             ...commit,
-            subject: "q".repeat(maxSubjectChars),
+            subject: denseSubject(index, maxSubjectChars),
           })),
         }),
       }),

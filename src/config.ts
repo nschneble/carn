@@ -15,7 +15,7 @@ function read(name: string, fallback?: string): string {
 
 // unset means the escape hatches aren't rendered, which is a complete view
 function readOptional(name: string): string | undefined {
-  const value = process.env[name];
+  const value = process.env[name]?.trim();
   return value === undefined || value === "" ? undefined : value;
 }
 

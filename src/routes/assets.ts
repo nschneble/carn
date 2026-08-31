@@ -6,8 +6,7 @@ import { join, resolve } from "node:path";
 
 import type { FastifyInstance } from "fastify";
 
-import { styleHref } from "../html/styles.js";
-import { servedStylesheet } from "../html/wire-weight.js";
+import { servedStylesheet, styleHref } from "../html/styles.js";
 
 const root = resolve(import.meta.dirname, "../../..");
 

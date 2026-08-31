@@ -4,7 +4,7 @@
 // the file's size, because the read is capped and the truncation happens
 // on the source rather than on the rendered markup
 
-import { readBlob } from "../git/blob.js";
+import { blobTimeoutMs, readBlob } from "../git/blob.js";
 import { captureGit } from "../git/capture.js";
 import { parseLsTree } from "../git/ls-tree.js";
 import { type RasterFormat, sniffRaster } from "./blob-asset.js";
@@ -24,8 +24,6 @@ export type BlobView = {
   lines: number;
   whole: boolean;
 };
-
-export const blobTimeoutMs = 5_000;
 
 // above this a text blob cannot state its own line count without being
 // buffered whole, so it reports its size instead of truncating

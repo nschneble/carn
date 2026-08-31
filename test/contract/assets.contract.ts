@@ -9,8 +9,11 @@ import { chromium } from "playwright";
 
 import { buildApp } from "../../src/app.js";
 import { minifyCss } from "../../src/html/minify-css.js";
-import { styleHref, stylesheet } from "../../src/html/styles.js";
-import { servedStylesheet } from "../../src/html/wire-weight.js";
+import {
+  servedStylesheet,
+  styleHref,
+  stylesheet,
+} from "../../src/html/styles.js";
 
 const root = resolve(import.meta.dirname, "../../..");
 const faces = ["carn-sans.woff2", "carn-mono-400.woff2", "carn-mono-500.woff2"];
@@ -243,16 +246,17 @@ test("the whole page fits the budget with both families, images, and the sheet",
 
   const shippedFaces = faces.reduce(
     (total, face) => total + readFileSync(join(root, "fonts", face)).length,
-    sheet.rawPayload.length,
+    0,
   );
   const shippedImages = Object.entries(images).reduce(
     (total, [name, counts]) =>
       counts ? total + readFileSync(join(root, "images", name)).length : total,
-    sheet.rawPayload.length,
+    0,
   );
+  const shipped = sheet.rawPayload.length + shippedFaces + shippedImages;
 
   assert.ok(
-    shippedFaces + shippedImages < 100 * 1024,
-    `the stylesheet, images, and both families come to ${shippedFaces + shippedImages} B, which leaves no room for a page under the 100 KB budget`,
+    shipped < 100 * 1024,
+    `the stylesheet, images, and both families come to ${shipped} B, which leaves no room for a page under the 100 KB budget`,
   );
 });

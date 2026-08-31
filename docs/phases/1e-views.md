@@ -164,12 +164,14 @@ legibly, not what the identifier grammar allows. Five sites move in one commit:
 `namePattern` in `src/repos/resolve.ts`, the `CHECK` in the init migration,
 **two** pieces of refusal copy — `badRepoName.next` in `src/html/error-page.ts`
 and `refusals.badName` in `src/ssh/exec.ts`, both saying "64 characters" today —
-and `BAD_NAME` in `verify-phase-1b.sh:22` and `verify-phase-1c.sh` (check 12
-greps that exact string). **Change the number, not the sentence.** Those two
-strings were rewritten by Nick and then reverted by a review item that
-overstepped; their wording is his to set, so swap 64 for 40 and leave every
-other word alone. The length checks need no change — 1b, 1c,
-and 1d each assert a **65**-character name is refused, true at any lower cap.
+and `BAD_NAME` in `verify-phase-1b.sh:22` (check 13 greps that exact string).
+`verify-phase-1c.sh` is not one of them: its `BAD_NAME` mirrors
+`refusals.badName` in `src/routes/git-http.ts`, which names no number at all.
+**Change the number, not the sentence.** Those two strings were rewritten by
+Nick and then reverted by a review item that overstepped; their wording is his
+to set, so swap 64 for 40 and leave every other word alone. The length checks
+need no change — 1b, 1c, and 1d each assert a **65**-character name is
+refused, true at any lower cap.
 1e adds the boundary pair: **40 accepted, 41 refused.**
 
 The quantifier is the place this goes wrong. The pattern is one anchor character
@@ -192,7 +194,7 @@ it as made — read the current line, not a cached memory of it.
 
 **The row overlay retires with it.** Do not port `.nm::after` into a `<tr>` —
 `position: relative` on a table row is patchy in WebKit, and you do not need
-it: `BRAND.md:645` already says the subject and age become links to the commit
+it: `BRAND.md:684` already says the subject and age become links to the commit
 in this phase. Three cells, three links, no overlay. The overlay stops being a
 concept rather than becoming a Safari bug.
 
@@ -266,10 +268,13 @@ the index is uncapped at MLP and that has not changed. Fix what the comment
 promises, so the next person to need it starts from the right mechanism.
 
 Editing an applied migration is normally wrong, and here it is right exactly
-once. Prisma records a checksum per migration, so any database that has already
-run `20260824223229_init` will fail `migrate status` after this and must be
-reset. That costs nothing today: the verify scripts each build a scratch
-database, and **no database exists yet that outlives a test run** — Phase 2
+once. Prisma records a checksum per migration, but 7.9.1 does not report the
+mismatch — `migrate status` still says the schema is up to date against a
+database that ran the earlier text. So any database that has already run
+`20260824223229_init` silently keeps the old CHECK and the old collation and
+must be reset anyway; nothing will tell you. That costs nothing today: the
+verify scripts each build a scratch database, and **no database exists yet
+that outlives a test run** — Phase 2
 creates the first one. Do it now or carry an `ALTER TABLE ... TYPE ... COLLATE`
 and a table rewrite forever. The CHECK quantifier change above goes in the same
 edit, in the same file, for the same reason.
@@ -282,8 +287,9 @@ yet, and 1e adds no view that does. Note it; do not fix it.
 
 ## Raw SQL and the Prisma DSL
 
-Five raw call sites exist outside `src/generated`. Two go, three stay, and the
-rule is worth more than the diff:
+Five raw call sites were catalogued outside `src/generated`. Two of them were
+already gone by the time this phase opened; three stay, and the rule is worth
+more than the diff:
 
 > Raw SQL is permitted where the DSL is **wrong**, or where it has **no form**
 > for the statement at all. Nowhere else, and never for brevity. Every raw
@@ -296,9 +302,9 @@ Record that rule in `docs/STACK.md` and re-run `scripts/docs-artifact.mjs`.
 |---|---|
 | `src/repos/resolve.ts:34` | **Stays.** The DSL is wrong — twice. |
 | `src/repos/list.ts:17` | **Stays.** The DSL cannot express the sort. |
-| `test/support/visual-db.ts:46` | **Goes.** `db.user.findUnique({ where: { handle: "nschneble" } })`. |
+| `test/support/visual-db.ts:46` | **Gone already.** `db.user.findUnique({ where: { handle: "nschneble" } })`. |
 | `test/support/visual-db.ts:62` | **Stays.** `TRUNCATE` has no DSL form. |
-| `test/support/visual-db.ts:65` | **Goes.** `db.repo.createMany`, one round trip instead of N. |
+| `test/support/visual-db.ts:65` | **Gone already.** `db.repo.createMany`, one round trip instead of N. |
 
 **`resolve.ts`.** The comment on line 33 gives half the reason; it should give
 both. Prisma's `mode: "insensitive"` compiles to `ILIKE`, and `namePattern`
@@ -421,7 +427,7 @@ A README's `[docs](docs/BRAND.md)` renders as a link to `/r/:repo/docs/BRAND.md`
 which is not a route. `allowLink` passes schemeless destinations through
 unmodified on purpose — ordinary README content, not a hole — but nothing
 rewrites them. The same is true of `![diagram](docs/arch.png)`, and that one is
-the visible win: rewriting relative images to the first-party content-addressed
+the visible win: rewriting relative images to the first-party path-addressed
 asset route makes **committed images in READMEs work**, under `img-src 'self'`,
 with no CSP change.
 

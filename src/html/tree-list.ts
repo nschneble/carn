@@ -29,7 +29,7 @@ function trail(rev: string, path: string): string {
   return `${encodeURIComponent(rev)}/${segments}`;
 }
 
-function blobHref(repo: string, rev: string, path: string): string {
+export function blobHref(repo: string, rev: string, path: string): string {
   return `/r/${repo}/blob/${trail(rev, path)}`;
 }
 

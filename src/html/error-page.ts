@@ -32,6 +32,14 @@ export const noSuchFile = (path: string): Failure => ({
   path: "/404",
 });
 
+export const noBlobPath: Failure = {
+  title: "No path here · Càrn",
+  heading: "No path here",
+  said: "That URL names a ref but no file inside it.",
+  next: "A file URL ends with the path to a file. The repo page lists what's there.",
+  path: "/404",
+};
+
 export const noSuchTree = (path: string): Failure => ({
   title: `No directory at ${path} · Càrn`,
   heading: "No directory here",

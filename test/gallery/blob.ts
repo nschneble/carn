@@ -51,11 +51,17 @@ export const pngBody = Buffer.from(
 
 export const svgBody = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 1"><title>injected</title><rect width="4" height="1" /></svg>\n`;
 
+// the highlight cache keys on the oid, so two fixtures sharing one can
+// serve each other's markup; the path is what makes each fixture itself
+function fixtureOid(path: string): string {
+  return createHash("sha1").update(path).digest("hex");
+}
+
 function base(path: string, bytes: number): Omit<BlobView, "kind"> {
   return {
     rev: "main",
     path,
-    oid: "a".repeat(40),
+    oid: fixtureOid(path),
     bytes,
     format: null,
     source: null,
@@ -120,6 +126,13 @@ function frontLoadedSource(lines: number): string {
   return `export const data = "${dense}";\n${largeSource(lines)}`;
 }
 
+// a first line the source cap admits and the budget refuses: gzip cannot
+// fold it, so the shrink pass and the halving both run out on one line
+function deniedSource(lines: number): string {
+  const dense = noise(37_500).toString("base64");
+  return `export const data = "${dense}";\n${largeSource(lines)}`;
+}
+
 // one comment opening on line 2 and closing thousands of lines later, so a
 // cut inside it leaves markup unbalanced unless the source was cut first
 function spanningSource(lines: number): string {
@@ -142,6 +155,7 @@ export const spanningBlob = textBlob(
   "src/generated/notes.ts",
   spanningSource(6310),
 );
+export const deniedBlob = textBlob("src/generated/dense.ts", deniedSource(200));
 export const imageBlob = rasterBlob("assets/logo.png", pngBody);
 export const svgBlob = textBlob(".carn/header.svg", svgBody);
 

@@ -18,6 +18,7 @@ import { blobAssetPath, sniffRaster } from "../../src/repos/blob-asset.js";
 import { countLines } from "../../src/repos/blob-view.js";
 import {
   binaryBlob,
+  deniedBlob,
   frontLoadedBlob,
   hugeBlob,
   imageBlob,
@@ -157,6 +158,33 @@ test("a file whose first line outruns the cap says so, and is not blank", () => 
   );
   assert.ok(markup.includes("<dt>Lines</dt><dd>1</dd>"));
   assert.ok(markup.includes("<dt>Size</dt><dd>136.7 KB</dd>"));
+});
+
+// the decline above comes back from an empty cut. this one's first line is
+// well inside the source cap and still outweighs the room the chrome
+// leaves, so the shrink pass and the halving both run out on one line
+test("a file the cap admits and the budget refuses declines the same way", () => {
+  const view = { repo: "linklater", blob: deniedBlob };
+  const first = (deniedBlob.source ?? "").split("\n")[0] ?? "";
+
+  assert.ok(
+    Buffer.byteLength(first, "utf8") < sourceCapBytes(view),
+    "the first line already outruns the source cap, so this is the other decline",
+  );
+
+  const markup = blobPage(view);
+
+  assert.doesNotMatch(
+    markup,
+    /<pre class="src"/,
+    "the page rendered a source block with nothing in it",
+  );
+  assert.doesNotMatch(markup, noticePattern);
+  assert.match(markup, /<div class="empty">/);
+  assert.ok(
+    markup.includes("Its first line is longer than can be shown here."),
+    "the page went blank instead of declining",
+  );
 });
 
 test("a 0-byte file reports no lines, not the one a split invents", () => {

@@ -9,9 +9,14 @@ import assert from "node:assert";
 import { test } from "node:test";
 
 import { source } from "../../src/html/styles.js";
+import { languages } from "../../src/html/syntax.js";
 
-// highlight.js 11's documented class reference, by section, plus the
-// classes a dotted scope splits into: title.function emits both
+// the 40 classes the 18 registered languages can emit, walked out of their
+// definitions. a dotted scope does not split into two hljs- classes:
+// scopeToCSSClass prefixes the head only, so title.function emits
+// `hljs-title function_` and the tail is bare. hljs-class and hljs-function
+// are here because c, bash, cpp, go, javascript, and typescript each carry
+// the undotted scope as well
 const documented = [
   "hljs-addition",
   "hljs-attr",
@@ -22,22 +27,14 @@ const documented = [
   "hljs-class",
   "hljs-code",
   "hljs-comment",
-  "hljs-constant",
   "hljs-deletion",
-  "hljs-dispatch",
   "hljs-doctag",
   "hljs-emphasis",
-  "hljs-escape",
-  "hljs-formula",
   "hljs-function",
-  "hljs-inherited",
-  "hljs-invoke",
   "hljs-keyword",
-  "hljs-language",
   "hljs-link",
   "hljs-literal",
   "hljs-meta",
-  "hljs-meta-prompt",
   "hljs-name",
   "hljs-number",
   "hljs-operator",
@@ -57,25 +54,17 @@ const documented = [
   "hljs-subst",
   "hljs-symbol",
   "hljs-tag",
-  "hljs-template-tag",
   "hljs-template-variable",
   "hljs-title",
   "hljs-type",
   "hljs-variable",
 ];
 
-// deliberately unstyled: each takes .src's own --ink, or the color of the
-// styled class its dotted scope splits alongside, so a rule for one would
-// cost bytes and say nothing
+// deliberately unstyled: each takes .src's own --ink, so a rule for one
+// would cost bytes and say nothing
 const inheritsDefault = [
   "hljs-class",
-  "hljs-constant",
-  "hljs-dispatch",
-  "hljs-escape",
   "hljs-function",
-  "hljs-inherited",
-  "hljs-invoke",
-  "hljs-language",
   "hljs-operator",
   "hljs-params",
   "hljs-property",
@@ -147,6 +136,16 @@ function auditedColors(found: Rule[]): Map<string, string> {
 
   return seen;
 }
+
+// the list above is derived from the registry, so a nineteenth language
+// can emit a class nobody decided the color of and no test would say so
+test("the class list still describes the registry it was derived from", () => {
+  assert.strictEqual(
+    languages.size,
+    18,
+    "a language was registered or dropped, so the emittable class list needs re-deriving",
+  );
+});
 
 test("the source block is parseable and non-trivial", () => {
   assert.ok(parsed.length > 5, "the .src block parsed to almost nothing");

@@ -2,6 +2,8 @@
 
 import { createHash } from "node:crypto";
 
+import { minifyCss } from "./minify-css.js";
+
 function css(strings: TemplateStringsArray, ...values: unknown[]): string {
   return String.raw({ raw: strings }, ...values);
 }
@@ -546,7 +548,6 @@ export const source = css`.src {
 .hljs-char,
 .hljs-code,
 .hljs-deletion,
-.hljs-formula,
 .hljs-link,
 .hljs-literal,
 .hljs-number,
@@ -565,14 +566,12 @@ export const source = css`.src {
 .hljs-doctag,
 .hljs-keyword,
 .hljs-meta,
-.hljs-meta-prompt,
 .hljs-name,
 .hljs-section,
 .hljs-selector-class,
 .hljs-selector-id,
 .hljs-selector-tag,
 .hljs-tag,
-.hljs-template-tag,
 .hljs-title,
 .hljs-type {
   color: var(--accent-text);
@@ -1026,7 +1025,12 @@ main > h1 {
 
 export const stylesheet = `${faces}\n${tokens}\n${components}\n${identity}\n${source}\n${pages}\n`;
 
+export const servedStylesheet = minifyCss(stylesheet);
+
+// the hash covers what the route sends, not the source it came from: a
+// minifier change moves the served bytes without touching a single rule,
+// and the url is immutable for a year
 export const styleHref = `/carn.${createHash("sha256")
-  .update(stylesheet)
+  .update(servedStylesheet)
   .digest("hex")
   .slice(0, 16)}.css`;
