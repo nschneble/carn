@@ -28,6 +28,7 @@ A budget worth writing down, so it's a test rather than an aspiration:
 
 - **Zero client JavaScript on the critical path.** Progressive enhancement only — a diff that needs JS to render is a bug.
 - **Under 100 KB per page** including the highlighted blob, measured as **wire bytes** — gzip level 5, matching Caddy's default, with fonts counted whole because woff2 is already compressed. This is the real argument for highlight.js over Shiki (§04).
+- Measured in process at gzip level 5 until Caddy exists; Phase 2's `encode` must compress at least as well or the budget silently loosens.
 - **TTFB under 100 ms** on a warm repo page. Achievable given the measured numbers — the whole budget is 5–10 git subprocesses at ~2 ms each, so the pooled `cat-file --batch` matters more than anything else you'll do.
 - **Cache highlighted blobs by content hash**, and set `Cache-Control: public` on anything keyed by an immutable SHA — a commit page for `a1b2c3d` can be cached forever.
 

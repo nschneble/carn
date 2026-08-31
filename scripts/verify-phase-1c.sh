@@ -694,11 +694,12 @@ fi
 
 # 17
 # the budget catches unauthorised creep, so a later phase's authorised
-# additions belong in it: 1d's four are named in docs/phases/1d-design.md
+# additions belong in it: 1d's four and 1e's highlight.js are named in
+# docs/phases/1d-design.md and docs/phases/1e-views.md
 if node -e '
   const pkg = JSON.parse(require("fs").readFileSync("package.json", "utf8"))
   const budget = {
-    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2", "markdown-it"],
+    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2", "markdown-it", "highlight.js"],
     devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli", "@biomejs/biome", "@types/ssh2", "axe-core", "playwright", "tuffgal"],
   }
   const over = []

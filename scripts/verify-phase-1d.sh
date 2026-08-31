@@ -622,8 +622,9 @@ contract 10 "every BRAND.md token resolves non-empty on :root in both paths" 5 "
 
 # 11
 # served over real http, not set into about:blank, so the audit measures
-# Carn Sans and Carn Mono rather than whatever the host falls back to
-contract 11 "zero axe violations across both render paths, gallery included" 31 "" \
+# Carn Sans and Carn Mono rather than whatever the host falls back to.
+# 1e's five new views brought the file from 31 audits to 83
+contract 11 "zero axe violations across both render paths, gallery included" 83 "" \
   axe
 
 # 12
@@ -640,7 +641,7 @@ if require_daemon 12 "$TITLE_12" && require_seed 12 "$TITLE_12"; then
     contract 12 "$TITLE_12" 2 "index $index_bytes B, repo page $show_bytes B" \
       assets repo-page -- \
       "the whole page fits the budget with both families, images, and the sheet" \
-      "the repo page fits the weight budget, fonts and stylesheet in"
+      "the repo page fits the weight budget as wire bytes, fonts in"
   fi
 fi
 
@@ -686,10 +687,11 @@ fi
 # 15
 readonly TITLE_15="small caps keep the true lowercase and filenames carry lang"
 if require_daemon 15 "$TITLE_15" && require_seed 15 "$TITLE_15"; then
+  # 1e gave the rows somewhere to go, so the name is an anchor now
   wrong=""
-  grep -qF '<span class="nm t-item" lang="en">README.<span class="sc">md</span></span>' "$work/3.body" \
+  grep -qF '<a class="nm t-item" lang="en" href="/r/verify1d/blob/main/README.md">README.<span class="sc">md</span></a>' "$work/3.body" \
     || wrong="$wrong the README row is not the lang-stamped small-caps shape;"
-  grep -qF '<span class="nm t-item" lang="en"><span class="sc">docs</span>/</span>' "$work/3.body" \
+  grep -qF '<a class="nm t-item" lang="en" href="/r/verify1d/tree/main/docs"><span class="sc">docs</span>/</a>' "$work/3.body" \
     || wrong="$wrong the docs row is not the lang-stamped small-caps shape;"
   if [ -n "$wrong" ]; then
     record FAIL 15 "$TITLE_15" "$wrong"
@@ -711,7 +713,9 @@ rel_detail=""
 if [ "$seed_ok" = 1 ]; then
   rels=$(occurrences "$work/3.body" "$REL")
   bare=""
-  for local_link in '<a href="docs/BRAND.md">relative</a>' \
+  # 1e rewrites a relative destination onto the blob route; the other
+  # three name no path, so they are still left exactly as they were
+  for local_link in '<a href="/r/verify1d/blob/main/docs/BRAND.md">relative</a>' \
     '<a href="/r/verify1d">root-relative</a>' \
     '<a href="#notes">anchor</a>' \
     '<a href="mailto:hi@example.com">mail</a>'; do
@@ -799,11 +803,11 @@ else
 fi
 
 # 19
-readonly TITLE_19="dependencies are 1c's plus 1d's four, and no more"
+readonly TITLE_19="dependencies are 1c's plus 1d's four and 1e's one, and no more"
 if node -e '
   const pkg = JSON.parse(require("fs").readFileSync("package.json", "utf8"))
   const budget = {
-    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2", "markdown-it"],
+    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2", "markdown-it", "highlight.js"],
     devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli", "@biomejs/biome", "@types/ssh2", "axe-core", "playwright", "tuffgal"],
   }
   const over = []
@@ -812,7 +816,7 @@ if node -e '
       if (!allowed.includes(name)) over.push(`${name} (${field})`)
     }
   }
-  if (over.length) { console.error("1d adds four, but found: " + over.join(", ")); process.exit(1) }
+  if (over.length) { console.error("1d adds four and 1e one, but found: " + over.join(", ")); process.exit(1) }
   const placed = { "markdown-it": "dependencies", tuffgal: "devDependencies", "axe-core": "devDependencies", playwright: "devDependencies" }
   for (const [name, field] of Object.entries(placed)) {
     if (!pkg[field]?.[name]) { console.error(`${name} is not in ${field}`); process.exit(1) }
