@@ -4,6 +4,7 @@
 // readme, and the only page that is the root tree
 
 import type { Tree } from "../repos/tree.js";
+import { pathTrail, repoTrail } from "./breadcrumb.js";
 import { html } from "./index.js";
 import { page } from "./page.js";
 import { treeHref, treeList } from "./tree-list.js";
@@ -24,6 +25,7 @@ export function treePage(view: TreePage): string {
     title: `${tree.path} · ${repo} · Càrn`,
     description: `The files at ${tree.path} on ${rev} in ${repo}.`,
     path: href,
+    crumbs: [...repoTrail(repo), ...pathTrail(repo, rev, tree.path)],
     main: html`<h1 class="t-label" lang="en">${tree.path}</h1>
       ${treeList({
         repo,

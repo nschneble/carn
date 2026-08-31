@@ -7,6 +7,7 @@
 import type { Ref, RefKind, RefList } from "../repos/refs.js";
 import { sshRemote } from "../repos/remote.js";
 import { age } from "./age.js";
+import { repoTrail } from "./breadcrumb.js";
 import { commitsHref } from "./commit-log.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
@@ -100,6 +101,7 @@ function document(view: RefListPage, refs: Ref[], more: boolean): string {
     title: `${heading} · ${view.repo} · Càrn`,
     description: `The ${nouns[view.list.kind].many} in ${view.repo}.`,
     path: refsHref(view.repo, view.list.kind),
+    crumbs: [...repoTrail(view.repo), { label: heading, href: null }],
     main: html`<h1 class="t-label">${heading}</h1>
       ${refs.length === 0 ? empty(view) : table(view, refs, more)}`,
   });

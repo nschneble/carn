@@ -8,24 +8,29 @@
 import type { CommitLog } from "../repos/log.js";
 import { sshRemote } from "../repos/remote.js";
 import { age } from "./age.js";
+import { repoTrail } from "./breadcrumb.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
 
 export const shortShaChars = 7;
+
+export const commitsLabel = "Commits";
+
+export function commitsPath(repo: string): string {
+  return `/r/${repo}/commits`;
+}
 
 export function commitsHref(
   repo: string,
   ref: string,
   from?: string | null,
 ): string {
-  const query = `?ref=${encodeURIComponent(ref)}`;
-  return from
-    ? `/r/${repo}/commits${query}&from=${from}`
-    : `/r/${repo}/commits${query}`;
+  const query = `${commitsPath(repo)}?ref=${encodeURIComponent(ref)}`;
+  return from ? `${query}&from=${from}` : query;
 }
 
 export function commitHref(repo: string, sha: string): string {
-  return `/r/${repo}/commits/${sha}`;
+  return `${commitsPath(repo)}/${sha}`;
 }
 
 function row(
@@ -75,6 +80,7 @@ export function commitLogPage(view: {
     title: `Commits on ${log.ref} · ${repo} · Càrn`,
     description: `The commit log for ${log.ref} in ${repo}.`,
     path: commitsHref(repo, log.ref, view.from ?? null),
+    crumbs: [...repoTrail(repo), { label: commitsLabel, href: null }],
     main: html`<h1 class="t-label">Commits on ${log.ref}</h1>
       ${body}`,
   });

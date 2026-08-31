@@ -7,7 +7,13 @@
 
 import { type CommitDetail, type DiffFile, hunks } from "../repos/commit.js";
 import { ageMarkup } from "./age.js";
-import { commitHref, shortShaChars } from "./commit-log.js";
+import { type Crumb, repoTrail } from "./breadcrumb.js";
+import {
+  commitHref,
+  commitsLabel,
+  commitsPath,
+  shortShaChars,
+} from "./commit-log.js";
 import { html, type Raw, raw } from "./index.js";
 import { page } from "./page.js";
 import {
@@ -202,16 +208,32 @@ function head(view: CommitPage, linked: boolean): Raw {
       ${message(commit)}${meta(view)}`;
 }
 
-function shell(
-  view: CommitPage,
-  main: Raw,
-  named: string,
-  path: string,
-): string {
+// the log the commit sits in, then the commit itself; a file view hangs
+// its path off the commit that changed it
+function trail(view: CommitPage, file: string | null): Crumb[] {
+  const commit: Crumb[] = [
+    ...repoTrail(view.repo),
+    { label: commitsLabel, href: commitsPath(view.repo) },
+    {
+      label: short(view.commit.sha),
+      href: file === null ? null : commitHref(view.repo, view.commit.sha),
+    },
+  ];
+
+  return file === null ? commit : [...commit, { label: file, href: null }];
+}
+
+function shell(view: CommitPage, main: Raw, file: string | null): string {
+  const { repo, commit } = view;
+
   return page({
-    title: `${named} · ${view.repo} · Càrn`,
-    description: `${title(view.commit)} in ${view.repo}.`,
-    path,
+    title: `${file ?? title(commit)} · ${repo} · Càrn`,
+    description: `${title(commit)} in ${repo}.`,
+    path:
+      file === null
+        ? commitHref(repo, commit.sha)
+        : changeHref(repo, commit.sha, file),
+    crumbs: trail(view, file),
     main,
   });
 }
@@ -232,8 +254,7 @@ function render(view: CommitPage, shape: Shape, candidates: number[]): string {
     html`${head(view, false)}
       ${fileList(view, shape, new Set(inlined))}
       ${diffs}`,
-    title(commit),
-    commitHref(view.repo, commit.sha),
+    null,
   );
 }
 
@@ -319,7 +340,6 @@ function changeDocument(
     html`${head(view, true)}
       ${shown}`,
     file.path,
-    changeHref(view.repo, view.commit.sha, file.path),
   );
 }
 
@@ -336,7 +356,6 @@ function noDiff(view: CommitPage, file: DiffFile): string {
         <p class="t-body">${said}</p>
       </div>`,
     file.path,
-    changeHref(view.repo, view.commit.sha, file.path),
   );
 }
 

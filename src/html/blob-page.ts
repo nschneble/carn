@@ -7,6 +7,7 @@
 
 import { blobAssetPath } from "../repos/blob-asset.js";
 import { type BlobView, countLines } from "../repos/blob-view.js";
+import { pathTrail, repoTrail } from "./breadcrumb.js";
 import { smallCaps } from "./filename.js";
 import { html, type Raw, raw } from "./index.js";
 import { page } from "./page.js";
@@ -134,6 +135,7 @@ function shell(view: BlobPage, main: Raw): string {
     title: `${blob.path} · ${repo} · Càrn`,
     description: `${blob.path} at ${blob.rev} in ${repo}.`,
     path: `/r/${repo}/blob/${blob.rev}/${blob.path}`,
+    crumbs: [...repoTrail(repo), ...pathTrail(repo, blob.rev, blob.path)],
     main,
   });
 }

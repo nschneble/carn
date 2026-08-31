@@ -8,6 +8,7 @@ import { headerMarkup } from "../repos/header.js";
 import { headerAssetPath } from "../repos/header-asset.js";
 import { sshRemote } from "../repos/remote.js";
 import type { RepoView } from "../repos/show.js";
+import { site } from "./breadcrumb.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
 import { treeList } from "./tree-list.js";
@@ -77,6 +78,7 @@ export function repoShowPage(view: {
     title: `${repo.name} · Càrn`,
     description: `${description(repo)}`,
     path: `/r/${repo.name}`,
+    crumbs: [site, { label: repo.name, href: null }],
     main: html`${identity}
       <h1 class="vh">${repo.name}</h1>
       ${tree(repo, view.showAll, view.now)}
