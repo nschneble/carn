@@ -40,6 +40,22 @@ export const noSuchRef = (ref: string): Failure => ({
   path: "/404",
 });
 
+export const noSuchCommit = (sha: string): Failure => ({
+  title: `No commit ${sha} · Càrn`,
+  heading: "No commit here",
+  said: `There's no commit ${sha} in this repo.`,
+  next: "Check the id, or find it in the log.",
+  path: "/404",
+});
+
+export const noSuchChange = (path: string): Failure => ({
+  title: `No change to ${path} · Càrn`,
+  heading: "No change here",
+  said: `That commit doesn't change ${path}.`,
+  next: "Check the path, or read the whole commit.",
+  path: "/404",
+});
+
 export const unavailable: Failure = {
   title: "Unavailable · Càrn",
   heading: "Unavailable",

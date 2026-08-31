@@ -736,6 +736,72 @@ main > h1 {
   text-decoration: underline;
 }
 
+/* one commit */
+
+.sha {
+  color: var(--ink-faint);
+  margin: var(--s2) 0 0;
+}
+
+.cmsg {
+  font-family: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: var(--measure);
+  margin: var(--s4) 0 0;
+}
+
+.files {
+  list-style: none;
+  margin: var(--s6) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--ink);
+}
+
+@media (min-width: 640px) {
+  .files .row {
+    grid-template-columns: minmax(0, 1fr) 116px;
+  }
+}
+
+/* above the row-wide overlay, so the counts stay selectable */
+.files .cnt {
+  position: relative;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .files .cnt {
+    text-align: right;
+  }
+}
+
+.dpath {
+  color: var(--ink-soft);
+  margin: var(--s6) 0 0;
+  overflow-wrap: anywhere;
+}
+
+/* the + and the − carry direction; the tone is only the second signal */
+.diff {
+  color: var(--ink-mid);
+  margin: var(--s3) 0 0;
+}
+
+.diff .a,
+.diff .d {
+  color: var(--ink);
+}
+
+.diff .h {
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
 /* rendered READMEs */
 
 .readme {

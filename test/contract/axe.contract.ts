@@ -32,6 +32,13 @@ import {
   sampleSource,
   textBlob,
 } from "../gallery/blob.js";
+import {
+  binaryFile,
+  changeDocument,
+  commitDocument,
+  detail,
+  noisyFiles,
+} from "../gallery/commit.js";
 import { commits, log, logDocument } from "../gallery/commit-log.js";
 import { galleryCss, galleryDocument } from "../gallery/document.js";
 import { hoverSimulation, indexDocument } from "../gallery/repo-index.js";
@@ -227,6 +234,16 @@ const states = {
     log: log({ commits: commits(9), next: null }),
   }),
   "commits-none": logDocument({ log: log({ commits: [], next: null }) }),
+  commit: commitDocument(),
+  // the room is squeezed rather than the commit grown, for the reason the
+  // blob-cut fixture is: contrast nodes scale with the inlined lines, and
+  // a forty-file diff pins nothing stable while costing the audit a second
+  "commit-cut": commitDocument({
+    commit: detail({ files: noisyFiles(12, 8) }),
+    sheetWire: 26_000,
+  }),
+  "commit-binary": commitDocument({ commit: detail({ files: [binaryFile] }) }),
+  "commit-file": changeDocument("src/reader.ts"),
 };
 
 for (const [state, markup] of Object.entries(states)) {
@@ -490,6 +507,10 @@ const contrastNodes: Record<string, number> = {
   commits: 53,
   "commits-tail": 31,
   "commits-none": 6,
+  commit: 36,
+  "commit-cut": 129,
+  "commit-binary": 17,
+  "commit-file": 34,
 };
 
 for (const path of renderPaths) {
@@ -554,6 +575,26 @@ test("the truncated blob fixture is genuinely truncated", () => {
     states.blob,
     /id="blob-cut"/,
     "the whole-file fixture is truncated too, so the pair proves no contrast",
+  );
+});
+
+// the cut is squeezed out of the room rather than the commit's size, so a
+// formula change could leave this fixture rendering whole and the state
+// where an inlined diff sits beside a link would go unaudited
+test("the cut commit fixture really is cut", () => {
+  const cut = states["commit-cut"];
+  const inlined = [...cut.matchAll(/<pre class="src diff"/g)].length;
+  const linked = [
+    ...cut.matchAll(/href="\/r\/linklater\/commits\/[0-9a-f]+\//g),
+  ].length;
+
+  assert.ok(inlined > 0, "nothing inlined, so the page under audit is a list");
+  assert.ok(linked > 0, "nothing linked, so the whole commit fitted");
+  assert.strictEqual(
+    [...states.commit.matchAll(/href="\/r\/linklater\/commits\/[0-9a-f]+\//g)]
+      .length,
+    0,
+    "the whole-commit fixture links a file too, so the pair proves no contrast",
   );
 });
 

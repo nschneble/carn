@@ -24,7 +24,7 @@ export function commitsHref(
     : `/r/${repo}/commits${query}`;
 }
 
-function commitHref(repo: string, sha: string): string {
+export function commitHref(repo: string, sha: string): string {
   return `/r/${repo}/commits/${sha}`;
 }
 

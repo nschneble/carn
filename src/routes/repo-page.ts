@@ -7,10 +7,13 @@ import { config } from "../config.js";
 import { readBlob } from "../git/blob.js";
 import { blobPage } from "../html/blob-page.js";
 import { commitLogPage } from "../html/commit-log.js";
+import { commitFilePage, commitPage } from "../html/commit-page.js";
 import {
   badRepoName,
   errorPage,
   type Failure,
+  noSuchChange,
+  noSuchCommit,
   noSuchFile,
   noSuchRef,
   noSuchRepo,
@@ -20,6 +23,7 @@ import { repoShowPage } from "../html/repo-show.js";
 import { assetRoomBytes } from "../html/wire-weight.js";
 import { parseBlobAsset, sniffRaster } from "../repos/blob-asset.js";
 import { loadBlobView } from "../repos/blob-view.js";
+import { loadCommit } from "../repos/commit.js";
 import { type Header, maxHeaderBytes, resolveHeader } from "../repos/header.js";
 import {
   type HeaderAsset,
@@ -39,6 +43,8 @@ type LogRoute = {
   Params: { repo: string };
   Querystring: { ref?: string | string[]; from?: string | string[] };
 };
+type CommitRoute = { Params: { repo: string; sha: string } };
+type ChangeRoute = { Params: { repo: string; sha: string; "*": string } };
 
 const forever = "public, max-age=31536000, immutable";
 const noImage = "No such header image.\n";
@@ -233,6 +239,45 @@ async function showCommits(
   }
 }
 
+// :sha is a full object id and never a ref: /r/:repo/commits/:sha/* cannot
+// tell a ref carrying a slash from the path that follows it, and every
+// link the product generates already names the whole id
+async function showCommit(
+  request: FastifyRequest<CommitRoute | ChangeRoute>,
+  reply: FastifyReply,
+): Promise<FastifyReply> {
+  const { sha } = request.params;
+  const path = (request.params as ChangeRoute["Params"])["*"] ?? null;
+
+  try {
+    const found = await resolveRepo(request.params.repo);
+    if (found.status !== "found") {
+      const failure =
+        found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
+      return fail(request, reply, 404, failure);
+    }
+
+    const commit = await loadCommit({
+      repoPath: found.repo.path,
+      sha,
+      signal: abortWith(reply),
+    });
+
+    if (commit === null) return fail(request, reply, 404, noSuchCommit(sha));
+
+    const view = { repo: found.repo.name, commit, now: now() };
+    if (path === null) return sendPage(request, reply, commitPage(view));
+
+    const one = commitFilePage(view, path);
+    if (one === null) return fail(request, reply, 404, noSuchChange(path));
+
+    return sendPage(request, reply, one);
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the commit failed to render");
+    return fail(request, reply, 503, unavailable);
+  }
+}
+
 // the oid is the whole address, so the response is immutable. the guard is
 // that cat-file refuses anything that is not a blob of this repo, the read
 // is capped, and the bytes have to actually be the raster the url claims
@@ -275,5 +320,7 @@ export function repoPageRoutes(app: FastifyInstance): void {
   app.get<AssetRoute>("/r/:repo/blob-asset/:asset", serveBlobAsset);
   app.get<BlobRoute>("/r/:repo/blob/:rev/*", showBlob);
   app.get<LogRoute>("/r/:repo/commits", showCommits);
+  app.get<ChangeRoute>("/r/:repo/commits/:sha/*", showCommit);
+  app.get<CommitRoute>("/r/:repo/commits/:sha", showCommit);
   app.get<PageRoute>("/r/:repo", showRepo);
 }
