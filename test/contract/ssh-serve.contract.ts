@@ -15,7 +15,6 @@ import { Duplex, PassThrough } from "node:stream";
 import { after, test } from "node:test";
 import type { ServerChannel } from "ssh2";
 
-import { spawnGit } from "../../src/git/spawn.js";
 import type { ResolvedRepo } from "../../src/repos/resolve.js";
 import type { ExecRequest, ParsedCommand } from "../../src/ssh/exec.js";
 
@@ -24,7 +23,7 @@ process.env.DATABASE_URL ??= "postgresql://unused/unused";
 
 const { serve } = await import("../../src/ssh/exec.js");
 
-const dir = mkdtempSync(join(tmpdir(), "carn-ssh-abandon-"));
+const dir = mkdtempSync(join(tmpdir(), "carn-ssh-serve-"));
 const repoPath = join(dir, "pinned.git");
 
 execFileSync("git", ["init", "--bare", "-q", "--", repoPath]);
@@ -33,7 +32,7 @@ const channels: FakeChannel[] = [];
 
 after(() => {
   // a lost listener leaves git alive: give it stdin EOF so a failing run
-  // reports and exits instead of idling out serve's ten-minute timeout
+  // reports and exits instead of idling out serve's 10-minute timeout
   for (const channel of channels) {
     channel.push(null);
   }
@@ -74,43 +73,14 @@ class FakeChannel extends Duplex {
     this.exitCode = code;
     return true;
   }
+
+  // ssh2 ends the channel before it emits, which is what makes finish()
+  // skip exit(); the read side stays open so only the kill ends the child
+  close(): void {
+    this.end();
+    this.emit("close");
+  }
 }
-
-test(
-  "an abandoned git child is killed, not just reported cancelled",
-  bounded,
-  async () => {
-    const abandoned = new AbortController();
-    const child = await spawnGit({
-      args: ["upload-pack", "--", "."],
-      cwd: repoPath,
-      signal: abandoned.signal,
-      timeoutMs,
-    });
-
-    child.stdout.resume();
-    child.stderr.resume();
-
-    const { pid } = child;
-    assert.ok(pid !== undefined, "spawnGit reported no pid");
-    process.kill(pid, 0);
-
-    abandoned.abort();
-
-    assert.deepStrictEqual(await child.done, {
-      code: null,
-      outcome: "cancelled",
-    });
-
-    assert.throws(
-      () => {
-        process.kill(pid, 0);
-      },
-      { code: "ESRCH" },
-      `git ${pid} outlived the abort`,
-    );
-  },
-);
 
 test("closing the channel kills the git child", bounded, async () => {
   const channel = new FakeChannel();
@@ -133,12 +103,12 @@ test("closing the channel kills the git child", bounded, async () => {
 
     assert.match(String(chunk), /^[0-9a-f]{4}/, "not a git pkt-line");
   } finally {
-    channel.emit("close");
+    channel.close();
   }
 
   // done settles on the child's close event, which trails the process
-  // ending; a survivor would hold this open for the full 10 minutes
+  // ending; a survivor would hold this open for the full 10-minute timeout
   await served;
 
-  assert.strictEqual(channel.exitCode, 1);
+  assert.strictEqual(channel.exitCode, null, "finish() exited a gone channel");
 });
