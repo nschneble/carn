@@ -19,6 +19,7 @@ import {
   noSuchRepo,
   unavailable,
 } from "../html/error-page.js";
+import { refListPage } from "../html/ref-list.js";
 import { repoShowPage } from "../html/repo-show.js";
 import { assetRoomBytes } from "../html/wire-weight.js";
 import { parseBlobAsset, sniffRaster } from "../repos/blob-asset.js";
@@ -31,12 +32,14 @@ import {
   parseHeaderAsset,
 } from "../repos/header-asset.js";
 import { loadCommitLog } from "../repos/log.js";
+import { listRefs, type RefKind } from "../repos/refs.js";
 import { resolveRepo } from "../repos/resolve.js";
 import { loadRepoView } from "../repos/show.js";
 import { resolveTip } from "../repos/tree.js";
 import { sendPage, sendStatus } from "./cache.js";
 
 type PageRoute = { Params: { repo: string }; Querystring: { all?: string } };
+type RefRoute = { Params: { repo: string } };
 type AssetRoute = { Params: { repo: string; asset: string } };
 type BlobRoute = { Params: { repo: string; rev: string; "*": string } };
 type LogRoute = {
@@ -239,6 +242,41 @@ async function showCommits(
   }
 }
 
+async function showRefs(
+  request: FastifyRequest<RefRoute>,
+  reply: FastifyReply,
+  kind: RefKind,
+): Promise<FastifyReply> {
+  try {
+    const found = await resolveRepo(request.params.repo);
+    if (found.status !== "found") {
+      const failure =
+        found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
+      return fail(request, reply, 404, failure);
+    }
+
+    const list = await listRefs({
+      repoPath: found.repo.path,
+      kind,
+      signal: abortWith(reply),
+    });
+
+    return sendPage(
+      request,
+      reply,
+      refListPage({
+        repo: found.repo.name,
+        list,
+        defaultBranch: found.repo.defaultBranch,
+        now: now(),
+      }),
+    );
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the ref list failed");
+    return fail(request, reply, 503, unavailable);
+  }
+}
+
 // :sha is a full object id and never a ref: /r/:repo/commits/:sha/* cannot
 // tell a ref carrying a slash from the path that follows it, and every
 // link the product generates already names the whole id
@@ -319,6 +357,12 @@ export function repoPageRoutes(app: FastifyInstance): void {
   app.get<AssetRoute>("/r/:repo/header/:asset", serveHeader);
   app.get<AssetRoute>("/r/:repo/blob-asset/:asset", serveBlobAsset);
   app.get<BlobRoute>("/r/:repo/blob/:rev/*", showBlob);
+  app.get<RefRoute>("/r/:repo/branches", (request, reply) =>
+    showRefs(request, reply, "branch"),
+  );
+  app.get<RefRoute>("/r/:repo/tags", (request, reply) =>
+    showRefs(request, reply, "tag"),
+  );
   app.get<LogRoute>("/r/:repo/commits", showCommits);
   app.get<ChangeRoute>("/r/:repo/commits/:sha/*", showCommit);
   app.get<CommitRoute>("/r/:repo/commits/:sha", showCommit);

@@ -41,6 +41,12 @@ import {
 } from "../gallery/commit.js";
 import { commits, log, logDocument } from "../gallery/commit-log.js";
 import { galleryCss, galleryDocument } from "../gallery/document.js";
+import {
+  branches,
+  quietBranch,
+  refList,
+  refsDocument,
+} from "../gallery/refs.js";
 import { hoverSimulation, indexDocument } from "../gallery/repo-index.js";
 import { committedHeader, showDocument, view } from "../gallery/repo-show.js";
 import {
@@ -244,6 +250,17 @@ const states = {
   }),
   "commit-binary": commitDocument({ commit: detail({ files: [binaryFile] }) }),
   "commit-file": changeDocument("src/reader.ts"),
+  branches: refsDocument(),
+  // the note the shed leaves behind, without the rows it takes to earn one
+  "branches-cut": refsDocument({ list: refList("branch", { more: true }) }),
+  "branches-none": refsDocument({ list: refList("branch", { refs: [] }) }),
+  // an empty subject wrapped in an anchor is a link with no accessible
+  // name, and link-name is the rule that would have caught it
+  "branches-quiet": refsDocument({
+    list: refList("branch", { refs: [quietBranch, ...branches.slice(0, 2)] }),
+  }),
+  tags: refsDocument({ kind: "tag" }),
+  "tags-none": refsDocument({ list: refList("tag", { refs: [] }) }),
 };
 
 for (const [state, markup] of Object.entries(states)) {
@@ -511,6 +528,12 @@ const contrastNodes: Record<string, number> = {
   "commit-cut": 129,
   "commit-binary": 17,
   "commit-file": 34,
+  branches: 32,
+  "branches-cut": 33,
+  "branches-none": 6,
+  "branches-quiet": 16,
+  tags: 22,
+  "tags-none": 6,
 };
 
 for (const path of renderPaths) {
@@ -559,6 +582,63 @@ test("every link in a commit row reaches a target-size verdict", async (t) => {
       `${path.name}: target-size settled ${rows.length} of the ${logRowCap * 3} links sixteen commit rows carry`,
     );
     t.diagnostic(`${path.name}: ${rows.length} row targets settled`);
+  }
+});
+
+// three rules arrive with the first <table> in the product, and a clean
+// violations list reads the same whether they settled the markup or never
+// looked at it
+test("the ref tables put the table rules to work", async (t) => {
+  const rules = [
+    "empty-table-header",
+    "scope-attr-valid",
+    "table-duplicate-name",
+  ];
+
+  for (const path of renderPaths) {
+    for (const state of ["branches", "tags"]) {
+      const { results } = await fetched(`/${state}`, path.colorScheme);
+
+      for (const name of rules) {
+        const passed = results.passes.find((rule) => rule.id === name);
+
+        assert.ok(
+          passed && passed.nodes.length > 0,
+          `${name} settled nothing on the ${state} page, ${path.name}: it is inapplicable, so the <thead> it is meant to pin goes unmeasured`,
+        );
+        t.diagnostic(
+          `${state} ${path.name}: ${name} passed on ${passed.nodes.length}`,
+        );
+      }
+    }
+  }
+});
+
+// three links per row here too, and a table cell is where a target quietly
+// stops being 24px tall
+test("every link in a ref row reaches a target-size verdict", async (t) => {
+  for (const path of renderPaths) {
+    const { results } = await fetched("/branches", path.colorScheme);
+    const settled = (["violations", "passes"] as const).flatMap(
+      (bucket) =>
+        results[bucket].find((rule) => rule.id === "target-size")?.nodes ?? [],
+    );
+    const rows = settled.filter((node) =>
+      /commits\?ref=/.test(node.html),
+    ).length;
+
+    assert.strictEqual(
+      results.incomplete.find((rule) => rule.id === "target-size")?.nodes
+        .length ?? 0,
+      0,
+      `${path.name}: target-size reached no verdict on a ref row link`,
+    );
+    assert.strictEqual(
+      rows,
+      branches.length * 3,
+      `${path.name}: target-size settled ${rows} of the ${branches.length * 3} links ${branches.length} ref rows carry`,
+    );
+    t.diagnostic(`${path.name}: ${rows} ref row targets settled`);
   }
 });
 

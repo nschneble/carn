@@ -802,6 +802,73 @@ main > h1 {
   font-weight: 500;
 }
 
+/* branch and tag lists */
+
+.refs {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.refs th {
+  border-bottom: 1px solid var(--ink);
+  padding: 0 var(--s4) var(--s2) 0;
+  text-align: left;
+}
+
+.refs th:first-child {
+  width: 40%;
+}
+
+.refs th:last-child {
+  width: 54px;
+  padding-right: 0;
+  text-align: right;
+}
+
+.refs td {
+  border-bottom: 1px solid var(--rule-soft);
+  padding: 0;
+  vertical-align: baseline;
+}
+
+.refs tbody tr:hover,
+.refs tbody tr:focus-within {
+  background: var(--sunk);
+}
+
+/* the cell is the target, so the padding sits on the link inside it */
+.refs a {
+  display: block;
+  padding: 6px var(--s4) 6px 0;
+  text-decoration: none;
+}
+
+.refs .nm a {
+  color: var(--ink);
+}
+
+.refs .msg a,
+.refs .age a {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.refs .age a {
+  padding-right: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.refs a:hover,
+.refs a:focus-visible {
+  text-decoration: underline;
+}
+
 /* rendered READMEs */
 
 .readme {
