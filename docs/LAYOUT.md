@@ -99,7 +99,7 @@ Filenames take the display face. The repo name is a visually hidden `<h1>`: the 
 > _Pre-build mockup, archived: https://claude.ai/code/artifact/6a95e6fc-3a60-416b-a496-b713a5005be1 — the shipped pages have superseded it._
 
 - **Default rows** — **16**, then `Show all N →`. The median repo root holds 15 entries with about 8.5 directories, so sixteen shows most trees whole and always reaches files.
-- **Hit area** — The full row, with a `--sunk` background on hover and focus. **Not built.** `styles.ts` disables the `::after` overlay and the hover wash on `.tree` until 1e gives a file row somewhere to go; a wash with no click target is a false affordance. Live on the repo index today.
+- **Hit area** — The full row, with a `--sunk` background on hover and focus. **Not built.** `styles.ts` disables the `::after` overlay and the hover wash on `.tree` until 1e gives a file row somewhere to go; a wash with no click target is a false affordance. **1e is where it switches on** — file rows link to `/r/:repo/blob/:rev/*`, directory rows to `/r/:repo/tree/:rev/*`. Live on the repo index today.
 - **Directories** — Accent color, sorted first, trailing slash always.
 - **Right columns** — Last commit subject at 190px, age right-aligned at 46px with tabular numerals. Both mono, both `--ink-faint`. **Not built on the file tree**, whose grid collapses to one column; filling it needs a bounded `git log --name-status` walk, which is 1e's work. Live on the repo index, where the same two columns carry description and creation age.
 - **Truncation** — Ellipsis on the filename, never a wrap. Rows stay one line at every breakpoint.

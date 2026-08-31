@@ -40,6 +40,7 @@ New dependencies this phase: **`highlight.js` only.** Nothing else.
 
 ```
 GET /r/:repo/blob/:rev/*        highlighted source
+GET /r/:repo/tree/:rev/*        the tree at a path, below the root
 GET /r/:repo/commits            the log, ?ref= to scope, SHA-cursor paginated
 GET /r/:repo/commits/:sha       one commit: file list, then diffs
 GET /r/:repo/commits/:sha/*     one file's diff, for the ones that did not fit
@@ -462,6 +463,44 @@ told about. No JS — the rest are links, not a load-diff button.
 **Show the file list even for a one-file commit.** It carries the `+`/`−`
 counts, which the diff body does not summarise, and one rule beats two.
 
+## The tree route
+
+**Added to the phase after the brief was written.** `BRAND.md:719` says every
+breadcrumb segment is navigable — *"`src` goes to the tree at that path"* — and
+`LAYOUT.md:102` has been holding the file tree's hover wash and `::after`
+overlay switched off *"until 1e gives a file row somewhere to go."* Neither is
+satisfiable without a route that serves a tree below the root, and the phase did
+not have one. Nick added it rather than narrow the breadcrumb.
+
+`GET /r/:repo/tree/:rev/*`, mirroring the blob route exactly. It is one
+`ls-tree` at a path prefix — the same spawn the root tree already costs — and it
+falls out of `parseLsTree` once that extraction lands, which is why it is small
+enough to add here.
+
+- **No root form.** `/r/:repo` is the root tree and stays so. A breadcrumb's
+  repo segment links there; only genuinely nested segments use this route. Do
+  not add `/r/:repo/tree/:rev/` with an empty path.
+- **No README.** `/r/:repo` is the only page that renders one. A tree page is
+  the listing and nothing else.
+- **The sixteen-row cap and `?all=1` apply at every depth**, on the same code
+  path as the root. Do not special-case the root.
+- **A path that is not a tree is a 404** — a blob path included. Do not redirect
+  to the blob route. Every link the product generates is correct by
+  construction; a 404 here means someone typed it.
+
+**What the rows link to**, once this exists:
+
+| Row | Target |
+|---|---|
+| File | `/r/:repo/blob/:rev/<path>` |
+| Directory | `/r/:repo/tree/:rev/<path>` |
+| Gitlink | nothing — a plain row, per the decision already taken |
+
+Re-enable the hover wash and the `::after` overlay on `.tree` in the same
+commit. `LAYOUT.md:102` calls a wash with no click target a false affordance;
+the reverse — a click target with no wash — is just as wrong, and that line is
+the one that has been waiting.
+
 ## The breadcrumb
 
 `docs/BRAND.md` §05 now carries the spec. **Implement to it; do not design it.**
@@ -514,9 +553,10 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1d settled.
 14. Both lists are `<table>` with `<thead>` and `scope="col"`; no row overlay
     survives anywhere
 15. The breadcrumb: `»` is real DOM text and `aria-hidden`; every ancestor is a
-    link and the current segment is not; below 640px the middle segments are
-    absent from the layout **and** the accessibility tree, first-two and
-    last-two remaining
+    link, **every one of those links resolves to a real route** (assert a blob
+    three levels deep and follow each), and the current segment is not a link;
+    below 640px the middle segments are absent from the layout **and** the
+    accessibility tree, first-two and last-two remaining
 16. A 40-character name is accepted; a 41-character name is refused, with the
     refusal copy naming 40 — and the 41-character name is refused **by the
     database too**, asserted with a direct insert that the CHECK rejects
@@ -547,7 +587,13 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1d settled.
     naming the DSL construct it rejects
 29. `mayWrite` is tested against a fake `AccessStore` across all four cases,
     and the owner case asserts the fake was **never consulted**
-30. Running this script twice gives the same result, leaving no
+30. `GET /r/:repo/tree/:rev/*` renders a nested path with the same sixteen-row
+    cap and `?all=1` behaviour as the root, in one `ls-tree`; a path that is
+    not a tree 404s rather than redirecting
+31. File rows link to the blob route and directory rows to the tree route, both
+    at the current rev; a gitlink row links nowhere; the `.tree` hover wash and
+    `::after` overlay are live again now the rows have targets
+32. Running this script twice gives the same result, leaving no
     `carn_verify_%` database, no rows beyond the admin seed, and no directory
     under the temporary repo root
 

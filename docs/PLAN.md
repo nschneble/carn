@@ -541,6 +541,7 @@ File rows carry three constants: **directories in `--accent-text` with a trailin
 | `/`                     | Repo list  | The whole site index. Name, description, created.        |
 | `/r/:repo`              | Repo       | File tree + rendered README. The page that sells it.     |
 | `/r/:repo/blob/:rev/*`  | Blob       | Highlighted source. Raw link points at the blob origin.  |
+| `/r/:repo/tree/:rev/*`  | Tree       | The tree below the root. `/r/:repo` is the root itself.   |
 | `/r/:repo/commits`      | Log        | `?ref=` to scope. Paginated by SHA cursor, not `--skip`. |
 | `/r/:repo/commits/:sha` | Commit     | Diff + cross-refs resolved. Immutable — cache forever.   |
 | `/r/:repo/branches`     | Branches   | Each row links to the log scoped to that ref.            |
