@@ -17,6 +17,7 @@ import { after, before, test } from "node:test";
 import { type Browser, chromium } from "playwright";
 
 import { contentSecurityPolicy } from "../../src/app.js";
+import { readBlob } from "../../src/git/blob.js";
 import {
   badRepoName,
   errorPage,
@@ -28,10 +29,17 @@ import { html } from "../../src/html/index.js";
 import { repoShowPage } from "../../src/html/repo-show.js";
 import { stylesheet } from "../../src/html/styles.js";
 import { treeRowCap } from "../../src/html/tree-list.js";
-import { budgetBytes, pageWireBytes } from "../../src/html/wire-weight.js";
+import {
+  assetRoomBytes,
+  budgetBytes,
+  pageWireBytes,
+} from "../../src/html/wire-weight.js";
+import { sniffRaster } from "../../src/repos/blob-asset.js";
+import { findBlobEntry } from "../../src/repos/blob-view.js";
 import { headerAssetPath } from "../../src/repos/header-asset.js";
 import type { ResolvedRepo } from "../../src/repos/resolve.js";
 import { loadRepoView } from "../../src/repos/show.js";
+import { pngBody, svgBody } from "../gallery/blob.js";
 import {
   files,
   hostileReadme,
@@ -82,7 +90,7 @@ function tagsIn(markup: string): string[] {
   return markup.match(/<[a-z][^>]*>/gi) ?? [];
 }
 
-function build(tracked: Record<string, string>): ResolvedRepo {
+function build(tracked: Record<string, string | Buffer>): ResolvedRepo {
   const path = mkdtempSync(join(dir, "repo-"));
   execFileSync("git", ["init", "-q", "-b", "main", "--", path]);
 
@@ -199,8 +207,63 @@ test("a repo with no commits says what would be here and how to push it", () => 
   assert.doesNotMatch(empties(markup), /[!…]|Oops/);
 });
 
-test("a repo page render stays inside the spawn budget", async () => {
-  const repo = build({ "README.md": "# hi\n", "src/a.ts": "export {};\n" });
+// the raster the route serves, and the svg, the missing file, and the
+// traversal it 404s — where an <img> degrades to its alt text on its own
+test("the asset route resolves a path to the raster its bytes say it is", async () => {
+  const repo = build({
+    "docs/arch.png": pngBody,
+    "docs/arch.svg": svgBody,
+    "docs/notes.md": "# notes\n",
+  });
+
+  const png = await findBlobEntry({
+    repoPath: repo.path,
+    rev: "main",
+    path: "docs/arch.png",
+  });
+
+  assert.ok(png, "the png did not resolve");
+  const body = await readBlob({
+    repoPath: repo.path,
+    oid: png.oid,
+    limit: assetRoomBytes + 1,
+  });
+
+  assert.strictEqual(sniffRaster(body)?.type, "image/png");
+  assert.strictEqual(png.bytes, pngBody.length);
+
+  const svg = await findBlobEntry({
+    repoPath: repo.path,
+    rev: "main",
+    path: "docs/arch.svg",
+  });
+
+  assert.ok(svg, "the svg did not resolve");
+  assert.strictEqual(
+    sniffRaster(
+      await readBlob({
+        repoPath: repo.path,
+        oid: svg.oid,
+        limit: assetRoomBytes + 1,
+      }),
+    ),
+    null,
+    "an svg sniffed as a raster, so the route would serve repo-controlled active content",
+  );
+
+  for (const path of ["docs/gone.png", "../etc/passwd", "./docs/arch.png"]) {
+    assert.strictEqual(
+      await findBlobEntry({ repoPath: repo.path, rev: "main", path }),
+      null,
+      path,
+    );
+  }
+});
+
+// counts what the callback spawns, with a logging shim ahead of git
+async function counting(
+  run: (calls: () => string[]) => Promise<void>,
+): Promise<void> {
   const shim = mkdtempSync(join(dir, "shim-"));
   const log = join(shim, "calls");
   const originalPath = process.env.PATH;
@@ -214,10 +277,17 @@ test("a repo page render stays inside the spawn budget", async () => {
 
   process.env.PATH = `${shim}:${originalPath ?? ""}`;
 
-  const calls = () =>
-    readFileSync(log, "utf8").split("\n").filter(Boolean) as string[];
-
   try {
+    await run(() => readFileSync(log, "utf8").split("\n").filter(Boolean));
+  } finally {
+    process.env.PATH = originalPath;
+  }
+}
+
+test("a repo page render stays inside the spawn budget", async () => {
+  const repo = build({ "README.md": "# hi\n", "src/a.ts": "export {};\n" });
+
+  await counting(async (calls) => {
     await loadRepoView({ repo });
     const cold = calls();
 
@@ -251,9 +321,40 @@ test("a repo page render stays inside the spawn budget", async () => {
       cold.length < 12,
       "the page render broke CLAUDE.md's spawn budget",
     );
-  } finally {
-    process.env.PATH = originalPath;
-  }
+  });
+});
+
+// the rewrite is a string transform, so nothing is spawned until a browser
+// asks for the image, and then it is one ls-tree and one cat-file
+test("serving one readme image costs one ls-tree and one cat-file", async () => {
+  const repo = build({ "docs/arch.png": pngBody });
+
+  await counting(async (calls) => {
+    const entry = await findBlobEntry({
+      repoPath: repo.path,
+      rev: "main",
+      path: "docs/arch.png",
+    });
+
+    assert.ok(entry);
+    assert.strictEqual(
+      calls().length,
+      1,
+      `resolving the path cost more than one ls-tree:\n${calls().join("\n")}`,
+    );
+
+    await readBlob({
+      repoPath: repo.path,
+      oid: entry.oid,
+      limit: assetRoomBytes + 1,
+    });
+
+    const spawned = calls();
+
+    assert.strictEqual(spawned.length, 2, spawned.join("\n"));
+    assert.ok(spawned[0]?.startsWith("ls-tree "), spawned.join("\n"));
+    assert.ok(spawned[1]?.startsWith("cat-file "), spawned.join("\n"));
+  });
 });
 
 const sentinel = "carn-probe:";
@@ -267,6 +368,7 @@ const invalid = await app.inject({ method: "GET", url: "/r/-nope" });
 const valid = await app.inject({ method: "GET", url: "/r/linklater" });
 const rootTree = await app.inject({ method: "GET", url: "/r/linklater/tree/main/" });
 const nestedTree = await app.inject({ method: "GET", url: "/r/linklater/tree/main/src" });
+const asset = await app.inject({ method: "GET", url: "/r/linklater/asset/main/docs/arch.png" });
 await app.close();
 
 console.log("${sentinel}" + JSON.stringify({
@@ -274,6 +376,7 @@ console.log("${sentinel}" + JSON.stringify({
   valid: { status: valid.statusCode, body: valid.body },
   rootTree: { status: rootTree.statusCode, body: rootTree.body },
   nestedTree: { status: nestedTree.statusCode },
+  asset: { status: asset.statusCode },
 }));
 process.exit(0);
 `;
@@ -291,8 +394,16 @@ test("an invalid repo name is refused before any database query", () => {
 
   const line = output.split("\n").find((row) => row.startsWith(sentinel));
   assert.ok(line, `the probe printed no result:\n${output}`);
-  const { invalid, valid, rootTree, nestedTree } = JSON.parse(
+  const { invalid, valid, rootTree, nestedTree, asset } = JSON.parse(
     line.slice(sentinel.length),
+  );
+
+  // 503 is the asset route reaching the dead database; 404 here would mean
+  // it never routed at all and the image tests above prove nothing served
+  assert.strictEqual(
+    asset.status,
+    503,
+    "the readme image route is not registered",
   );
 
   // the tree route has no root form, and the url settles that without a
@@ -528,7 +639,12 @@ test("external readme links carry the rel and local ones do not", () => {
     );
   }
 
-  assert.ok(anchors.some((anchor) => anchor.includes('href="docs/BRAND.md"')));
+  assert.ok(
+    anchors.some((anchor) =>
+      anchor.includes('href="/r/linklater/blob/main/docs/BRAND.md"'),
+    ),
+    "the page did not hand the markdown layer its own repo and rev",
+  );
   assert.ok(anchors.some((anchor) => anchor.includes('href="/docs/spec"')));
   assert.ok(anchors.some((anchor) => anchor.includes('href="#type"')));
   assert.ok(anchors.some((anchor) => anchor.includes("mailto:")));

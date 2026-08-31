@@ -449,15 +449,32 @@ test("a tree page carries no readme and one h1", () => {
 
 // a blob path asked for as a tree comes back as nothing above, and the
 // handler turns nothing into a 404. the way that quietly becomes a 302 is
-// somebody adding a redirect to the page routes, so pin their absence
+// somebody adding a redirect to the page routes, so pin their absence.
+// 304 is the one 3xx that is not one: it answers if-none-match with the
+// body the client already has, which every revalidating route does
 test("no page route redirects", () => {
   const source = readFileSync(join(root, "src/routes/repo-page.ts"), "utf8");
+  const redirects = /\.redirect\(|code\(30[0-35-9]\)/;
 
   assert.doesNotMatch(
     source,
-    /\.redirect\(|code\(30\d\)/,
+    redirects,
     "a page route grew a redirect; a path that is not a tree is a 404",
   );
+
+  for (const planted of [
+    "reply.redirect(target)",
+    "reply.code(300)",
+    "reply.code(301)",
+    "reply.code(302)",
+    "reply.code(303)",
+    "reply.code(307)",
+    "reply.code(308)",
+  ]) {
+    assert.match(planted, redirects, planted);
+  }
+
+  assert.doesNotMatch("reply.code(304)", redirects);
 });
 
 test("a tree page stays inside the weight budget", () => {

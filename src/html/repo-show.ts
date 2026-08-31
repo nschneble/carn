@@ -49,7 +49,7 @@ function readme(view: RepoView): Raw {
   return html`<div class="readme">
 
 <!-- (⌐■_■) real punks don't indent their READMEs -->
-${renderMarkdown(view.readme)}
+${renderMarkdown(view.readme, { repo: view.name, rev: view.branch })}
       </div>`;
 }
 

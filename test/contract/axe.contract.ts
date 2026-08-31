@@ -157,7 +157,10 @@ const tableSource = `| Ref                    | Kind   | Note              |
 | \`14-conflict-output\` | branch | ahead by 3        |
 `;
 
-const renderedTable = renderMarkdown(tableSource).value;
+const renderedTable = renderMarkdown(tableSource, {
+  repo: "linklater",
+  rev: "main",
+}).value;
 
 // repoint at the shared page shell once a wave gives markdown one
 const readmeTable = `<!doctype html>

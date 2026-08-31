@@ -11,6 +11,8 @@ import { type RasterFormat, sniffRaster } from "./blob-asset.js";
 
 export type BlobKind = "text" | "raster" | "binary";
 
+export type BlobEntry = { oid: string; bytes: number };
+
 export type BlobView = {
   rev: string;
   path: string;
@@ -59,12 +61,14 @@ export function countLines(source: string): number {
   return source.endsWith("\n") ? breaks - 1 : breaks;
 }
 
-async function findEntry(options: {
+export async function findBlobEntry(options: {
   repoPath: string;
   rev: string;
   path: string;
   signal?: AbortSignal;
-}): Promise<{ oid: string; bytes: number } | null> {
+}): Promise<BlobEntry | null> {
+  if (!validRev(options.rev) || !validPath(options.path)) return null;
+
   const { code, stdout } = await captureGit({
     args: [
       "ls-tree",
@@ -99,9 +103,8 @@ export async function loadBlobView(options: {
   signal?: AbortSignal;
 }): Promise<BlobView | null> {
   const { repoPath, rev, path, signal } = options;
-  if (!validRev(rev) || !validPath(path)) return null;
 
-  const entry = await findEntry({ repoPath, rev, path, signal });
+  const entry = await findBlobEntry({ repoPath, rev, path, signal });
   if (entry === null) return null;
 
   const body = await readBlob({

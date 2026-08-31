@@ -26,7 +26,7 @@ import { repoShowPage } from "../html/repo-show.js";
 import { treePage } from "../html/tree-page.js";
 import { assetRoomBytes } from "../html/wire-weight.js";
 import { parseBlobAsset, sniffRaster } from "../repos/blob-asset.js";
-import { loadBlobView } from "../repos/blob-view.js";
+import { findBlobEntry, loadBlobView } from "../repos/blob-view.js";
 import { loadCommit } from "../repos/commit.js";
 import { type Header, maxHeaderBytes, resolveHeader } from "../repos/header.js";
 import {
@@ -39,7 +39,7 @@ import { listRefs, type RefKind } from "../repos/refs.js";
 import { resolveRepo } from "../repos/resolve.js";
 import { loadRepoView } from "../repos/show.js";
 import { listTree, resolveTip } from "../repos/tree.js";
-import { sendPage, sendStatus } from "./cache.js";
+import { revalidate, sendPage, sendStatus } from "./cache.js";
 
 type PageRoute = { Params: { repo: string }; Querystring: { all?: string } };
 type RefRoute = { Params: { repo: string } };
@@ -409,9 +409,62 @@ async function serveBlobAsset(
   }
 }
 
+// path-addressed, because a readme's relative image names a path and
+// resolving it to an oid at render time would cost a lookup per image. the
+// format is the one the bytes sniff as, never the one the name claims. a
+// path resolves elsewhere on another rev, so this revalidates on the oid
+async function serveAsset(
+  request: FastifyRequest<BlobRoute>,
+  reply: FastifyReply,
+): Promise<FastifyReply> {
+  const missing = () =>
+    reply.code(404).type("text/plain; charset=utf-8").send(noAsset);
+
+  try {
+    const found = await resolveRepo(request.params.repo);
+    if (found.status !== "found") return missing();
+
+    const signal = abortWith(reply);
+    const entry = await findBlobEntry({
+      repoPath: found.repo.path,
+      rev: request.params.rev,
+      path: request.params["*"],
+      signal,
+    });
+
+    if (entry === null || entry.bytes > assetRoomBytes) return missing();
+
+    const tag = `"${entry.oid}"`;
+    const stamped = () =>
+      reply.header("Cache-Control", revalidate).header("ETag", tag);
+
+    if (request.headers["if-none-match"] === tag) {
+      return stamped().code(304).send();
+    }
+
+    const body = await readBlob({
+      repoPath: found.repo.path,
+      oid: entry.oid,
+      limit: assetRoomBytes + 1,
+      signal,
+    }).catch(() => null);
+
+    if (body === null) return missing();
+
+    const format = sniffRaster(body);
+    if (format === null) return missing();
+
+    return stamped().type(format.type).send(body);
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the readme image failed");
+    return reply.code(503).type("text/plain; charset=utf-8").send(assetFailed);
+  }
+}
+
 export function repoPageRoutes(app: FastifyInstance): void {
   app.get<AssetRoute>("/r/:repo/header/:asset", serveHeader);
   app.get<AssetRoute>("/r/:repo/blob-asset/:asset", serveBlobAsset);
+  app.get<BlobRoute>("/r/:repo/asset/:rev/*", serveAsset);
   app.get<BlobRoute>("/r/:repo/blob/:rev/*", showBlob);
   app.get<TreeRoute>("/r/:repo/tree/:rev/*", showTree);
   app.get<RefRoute>("/r/:repo/branches", (request, reply) =>
