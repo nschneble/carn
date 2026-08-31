@@ -45,6 +45,20 @@ because the client's tag has *not* moved, `npm i prisma@latest
 never with a bare `npm update`. If `npm ci` ever resolves a Prisma package
 outside major 7, stop and report it rather than adapting the code.
 
+## Raw SQL is permitted only where the DSL is wrong or has no form
+
+> Raw SQL is permitted where the DSL is **wrong**, or where it has **no form**
+> for the statement at all. Nowhere else, and never for brevity. Every raw
+> query carries a comment naming the DSL construct it rejects and what that
+> construct would have done.
+
+Three call sites outside `src/generated` qualify. `resolveRepo` rejects
+`mode: "insensitive"`, which emits `ILIKE`: `_` is a wildcard there, and
+`ILIKE` cannot use `repos_name_lower_key`. `listRepos` rejects `orderBy`,
+which takes columns rather than expressions and would sort the `COLLATE "C"`
+column. The visual fixture's `TRUNCATE ... CASCADE` has no DSL form at all,
+and `deleteMany({})` is a different statement rather than a translation.
+
 ## Biome replaced Prettier and ESLint
 
 One binary for both jobs. The deciding factor was TypeScript 7:
