@@ -677,6 +677,52 @@ main > h1 {
   text-decoration: underline;
 }
 
+/* breadcrumb */
+
+/* one continuous inline run, so the separators are real selectable text
+   rather than a gap no Ctrl-F can match */
+.crumbs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: var(--ink-mid);
+  overflow-wrap: anywhere;
+}
+
+.crumbs li {
+  display: inline;
+}
+
+.crumbs a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.crumbs a:hover,
+.crumbs a:focus-visible {
+  text-decoration: underline;
+}
+
+/* Carn Mono ships two static faces, so the 500 is a weight, not an axis */
+.crumbs .here {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.crumbs .mid {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .crumbs .mid {
+    display: inline;
+  }
+
+  .crumbs .fold {
+    display: none;
+  }
+}
+
 /* repo show */
 
 .tree {
