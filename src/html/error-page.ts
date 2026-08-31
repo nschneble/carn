@@ -36,7 +36,7 @@ export const badRepoName: Failure = {
   title: "Not a repo name · Càrn",
   heading: "Not a repo name",
   said: "That URL doesn't carry a repo name this server can look up.",
-  next: "A name is letters, digits, dots, dashes, and underscores, up to 64 characters. Check the URL, or find the repo in all repos.",
+  next: "A name is letters, digits, dots, dashes, and underscores, up to 40 characters. Check the URL, or find the repo in all repos.",
   path: "/404",
 };
 
