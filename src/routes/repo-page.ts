@@ -2,15 +2,21 @@
 
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
+import { config } from "../config.js";
 import { readBlob } from "../git/blob.js";
+import { blobPage } from "../html/blob-page.js";
 import {
   badRepoName,
   errorPage,
   type Failure,
+  noSuchFile,
   noSuchRepo,
   unavailable,
 } from "../html/error-page.js";
 import { repoShowPage } from "../html/repo-show.js";
+import { assetRoomBytes } from "../html/wire-weight.js";
+import { parseBlobAsset, sniffRaster } from "../repos/blob-asset.js";
+import { loadBlobView } from "../repos/blob-view.js";
 import { type Header, maxHeaderBytes, resolveHeader } from "../repos/header.js";
 import {
   type HeaderAsset,
@@ -24,10 +30,13 @@ import { sendPage, sendStatus } from "./cache.js";
 
 type PageRoute = { Params: { repo: string }; Querystring: { all?: string } };
 type AssetRoute = { Params: { repo: string; asset: string } };
+type BlobRoute = { Params: { repo: string; rev: string; "*": string } };
 
 const forever = "public, max-age=31536000, immutable";
 const noImage = "No such header image.\n";
 const imageFailed = "The header image failed to load. Try again shortly.\n";
+const noAsset = "No such image.\n";
+const assetFailed = "The image failed to load. Try again shortly.\n";
 
 // the child dies with the response, never with the request body
 function abortWith(reply: FastifyReply): AbortSignal {
@@ -126,7 +135,84 @@ async function serveHeader(
   }
 }
 
+async function showBlob(
+  request: FastifyRequest<BlobRoute>,
+  reply: FastifyReply,
+): Promise<FastifyReply> {
+  const path = request.params["*"];
+
+  try {
+    const found = await resolveRepo(request.params.repo);
+    if (found.status !== "found") {
+      const failure =
+        found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
+      return fail(request, reply, 404, failure);
+    }
+
+    const blob = await loadBlobView({
+      repoPath: found.repo.path,
+      rev: request.params.rev,
+      path,
+      signal: abortWith(reply),
+    });
+
+    if (blob === null) return fail(request, reply, 404, noSuchFile(path));
+
+    return sendPage(
+      request,
+      reply,
+      blobPage({
+        repo: found.repo.name,
+        blob,
+        rawOrigin: config.rawOrigin,
+      }),
+    );
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the blob failed to render");
+    return fail(request, reply, 503, unavailable);
+  }
+}
+
+// the oid is the whole address, so the response is immutable. the guard is
+// that cat-file refuses anything that is not a blob of this repo, the read
+// is capped, and the bytes have to actually be the raster the url claims
+async function serveBlobAsset(
+  request: FastifyRequest<AssetRoute>,
+  reply: FastifyReply,
+): Promise<FastifyReply> {
+  const missing = () =>
+    reply.code(404).type("text/plain; charset=utf-8").send(noAsset);
+
+  try {
+    const asset = parseBlobAsset(request.params.asset);
+    if (asset === null) return missing();
+
+    const found = await resolveRepo(request.params.repo);
+    if (found.status !== "found") return missing();
+
+    const body = await readBlob({
+      repoPath: found.repo.path,
+      oid: asset.oid,
+      limit: assetRoomBytes + 1,
+      signal: abortWith(reply),
+    }).catch(() => null);
+
+    if (body === null || body.length > assetRoomBytes) return missing();
+    if (sniffRaster(body)?.type !== asset.format.type) return missing();
+
+    return reply
+      .header("Cache-Control", forever)
+      .type(asset.format.type)
+      .send(body);
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the blob asset failed");
+    return reply.code(503).type("text/plain; charset=utf-8").send(assetFailed);
+  }
+}
+
 export function repoPageRoutes(app: FastifyInstance): void {
   app.get<AssetRoute>("/r/:repo/header/:asset", serveHeader);
+  app.get<AssetRoute>("/r/:repo/blob-asset/:asset", serveBlobAsset);
+  app.get<BlobRoute>("/r/:repo/blob/:rev/*", showBlob);
   app.get<PageRoute>("/r/:repo", showRepo);
 }

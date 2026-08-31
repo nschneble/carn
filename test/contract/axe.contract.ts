@@ -12,7 +12,19 @@ import type { Page } from "playwright";
 import { errorPage, noSuchRepo } from "../../src/html/error-page.js";
 import { styleHref } from "../../src/html/styles.js";
 import { renderMarkdown } from "../../src/markdown/render.js";
+import {
+  blobAssetPath,
+  type RasterFormat,
+  sniffRaster,
+} from "../../src/repos/blob-asset.js";
 import { headerAssetPath } from "../../src/repos/header-asset.js";
+import {
+  binaryBlob,
+  blobDocument,
+  imageBlob,
+  pngBody,
+  rawOrigin,
+} from "../gallery/blob.js";
 import { galleryCss, galleryDocument } from "../gallery/document.js";
 import { hoverSimulation, indexDocument } from "../gallery/repo-index.js";
 import { committedHeader, showDocument, view } from "../gallery/repo-show.js";
@@ -172,6 +184,10 @@ const headerAssets: Record<string, ServedAsset> = {
     type: "image/svg+xml",
     body: fixtureHeaders.dark,
   },
+  [blobAssetPath("linklater", {
+    oid: imageBlob.oid,
+    format: sniffRaster(pngBody) as RasterFormat,
+  })]: { type: "image/png", body: pngBody },
 };
 
 // one document per state: nothing is stamped, so the two render paths
@@ -186,6 +202,16 @@ const states = {
   "show-new": showDocument({ repo: emptyRepo }),
   "show-header": showDocument({ repo: view({ header: committedHeader }) }),
   "not-found": errorPage({ failure: noSuchRepo("linklater") }),
+  blob: blobDocument(),
+  // the cap is squeezed rather than the file grown: contrast nodes scale
+  // with the rendered spans, and a thousand-line fixture pins nothing
+  // stable while costing the whole audit its runtime
+  "blob-cut": blobDocument({ rawOrigin, sheetWire: 29_000 }),
+  "blob-image": blobDocument({ blob: imageBlob, rawOrigin }),
+  "blob-binary": blobDocument({
+    blob: binaryBlob("media/clip.mp4", 4_404_019),
+    rawOrigin,
+  }),
 };
 
 for (const [state, markup] of Object.entries(states)) {
@@ -425,6 +451,10 @@ const contrastNodes: Record<string, number> = {
   "show-new": 5,
   "show-header": 58,
   "not-found": 7,
+  blob: 67,
+  "blob-cut": 20,
+  "blob-image": 11,
+  "blob-binary": 13,
 };
 
 for (const path of renderPaths) {
@@ -446,6 +476,22 @@ for (const path of renderPaths) {
     });
   }
 }
+
+// the cut is squeezed out of the cap rather than the file's length, so a
+// formula change could quietly leave this fixture rendering whole and the
+// truncated DOM shape would go unaudited with every gate still green
+test("the truncated blob fixture is genuinely truncated", () => {
+  const cut = states["blob-cut"];
+
+  assert.match(cut, /<p class="t-label" id="blob-cut">Showing the first /);
+  assert.match(cut, /aria-describedby="blob-cut"/);
+  assert.ok(cut.includes("Show entire file"));
+  assert.doesNotMatch(
+    states.blob,
+    /id="blob-cut"/,
+    "the whole-file fixture is truncated too, so the pair proves no contrast",
+  );
+});
 
 test("every audited fixture has a pinned contrast count", () => {
   assert.deepStrictEqual(
@@ -579,6 +625,48 @@ test("the rules above WCAG 2.0 report which of them found anything", async (t) =
     "target-size evaluated nothing, so wcag22aa pins no hit area and the repo row rests on the screenshot baseline alone",
   );
   t.diagnostic(`target-size evaluated ${hitAreas.nodes.length} hit areas`);
+});
+
+// the server cannot know a client's viewport or font metrics, so the
+// block carries tabindex unconditionally. that only proves anything while
+// the fixture's longest line really does overflow: with nothing to scroll
+// axe reports the rule inapplicable and the pin measures a bare page
+test("the source block is a focusable scroll region on the widest path", async (t) => {
+  for (const path of renderPaths) {
+    const { results } = await fetched("/blob", path.colorScheme);
+    const focusable = results.passes.find(
+      (rule) => rule.id === "scrollable-region-focusable",
+    );
+
+    assert.ok(
+      focusable && focusable.nodes.length > 0,
+      `scrollable-region-focusable evaluated nothing on the ${path.name} blob page, so the fixture's longest line no longer overflows and the tabindex it pins goes unproven`,
+    );
+    t.diagnostic(`${path.name}: ${focusable.nodes.length} scroll region`);
+  }
+
+  const page = await (await browser()).newPage();
+
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${site.origin}/blob`);
+
+    const overflow = await page.locator("pre.src").evaluate((node) => ({
+      scroll: node.scrollWidth,
+      client: node.clientWidth,
+      tabindex: node.getAttribute("tabindex"),
+      role: node.getAttribute("role"),
+    }));
+
+    assert.ok(
+      overflow.scroll > overflow.client,
+      `the block scrolls to ${overflow.scroll} inside ${overflow.client} at 1440px, so nothing overflows`,
+    );
+    assert.strictEqual(overflow.tabindex, "0");
+    assert.strictEqual(overflow.role, "region");
+  } finally {
+    await page.close();
+  }
 });
 
 test("a rendered README table exercises the table rules", async (t) => {

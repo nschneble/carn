@@ -24,6 +24,14 @@ export const noSuchRepo = (name: string): Failure => ({
   path: "/404",
 });
 
+export const noSuchFile = (path: string): Failure => ({
+  title: `No file at ${path} · Càrn`,
+  heading: "No file here",
+  said: `There's no file at ${path} on that ref.`,
+  next: "Check the path and the ref, or browse the repo.",
+  path: "/404",
+});
+
 export const unavailable: Failure = {
   title: "Unavailable · Càrn",
   heading: "Unavailable",

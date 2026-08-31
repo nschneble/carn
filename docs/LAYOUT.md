@@ -171,3 +171,22 @@ _The second button is not a button. Pushing to a repository that doesn't exist c
 - **New repo** — What are you making?
 - **New issue** — What's wrong?
 - **New PR** — What are you proposing?
+
+## 06 — BLOB VIEW · The filename
+
+is the title
+
+_The show shape, applied to a file_
+
+A blob page is the show view with a file as its subject, so the ordinary rule applies and the filename takes the display face — visibly, in small caps, as the `<h1>`. **This is the one show page whose `<h1>` is not `.vh`.** Section 02's exemption is conditional: the repo name hides because the header image or generated mark already carries identity on screen. A blob page has no mark, so nothing else carries it and the heading has to.
+
+The path renders through `smallCaps()`, the same function the file rows use, with `lang="en"` for the same reason. A breadcrumb ends in the filename too; path and title are different registers, not a repetition.
+
+- **Metadata** — Size, Lines, Language, in the meta block. A file that isn't shown carries Size and Type instead.
+- **The source block** — `<pre class="src" tabindex="0" role="region" aria-labelledby>`. Never a `<div tabindex="0">` around the `<pre>`, which fails `focus-order-semantics`. The `tabindex` is unconditional: the server cannot know whether the longest line will overflow at the reader's viewport and font metrics, and a scrollable region that cannot be focused fails 2.1.1.
+- **No line numbers.** Nothing goes inside `<pre>` but the file's own bytes.
+- **Four tones, not a theme.** `--ink` for code, `--ink-soft` for literals, `--ink-mid` for comments, `--accent-text` at `"wght" 500` for keywords and types. Not `--accent`, which misses 4.5:1 in light at code size, and never `--ink-faint`. The weight is what survives grayscale and `forced-colors`, where all four collapse to `CanvasText`.
+- **The cap is computed, never a constant.** `remaining = budget − (fonts + served stylesheet + chrome)`, measured as wire bytes at gzip level 5, so it tracks the stylesheet without anyone remembering to move it. The source is cut on a line boundary and then highlighted — cutting the rendered HTML instead would sever a scope's `<span>` and the browser would repair the document by restructuring everything after the cut.
+- **The truncation notice is not the escape hatch.** `Showing the first 1,842 lines of 6,310.` renders whenever a file is cut, whether or not `CARN_RAW_ORIGIN` is set. Without it a truncated file at MLP simply stops, with no signal to anyone.
+- **Escape hatches are absent, not disabled.** With no raw origin configured the link is not rendered at all. `aria-disabled` is a button pattern and has no place on an `<a>`.
+- **Inline preview is raster only** — PNG, JPEG, GIF, WebP, served first-party from the content-addressed asset route under `img-src 'self'`. An SVG is repo-controlled markup whose `<title>` would enter this page's accessibility tree, so it renders as source like any other text. The image carries `alt=""` and **no `loading="lazy"`**: nothing server-side can compute a committed image's dimensions, so no `width`/`height` can be emitted, and a lazily loaded image without them shifts the layout when it lands.

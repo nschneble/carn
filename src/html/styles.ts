@@ -516,6 +516,90 @@ export const identity = css`.hdr {
   }
 }`;
 
+export const source = css`.src {
+  background: var(--sunk);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  margin: var(--s5) 0 0;
+  padding: var(--s3) var(--s4);
+  overflow-x: auto;
+  tab-size: 2;
+}
+
+.src code {
+  font-family: inherit;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: var(--ink-mid);
+}
+
+.hljs-addition,
+.hljs-attr,
+.hljs-attribute,
+.hljs-bullet,
+.hljs-char,
+.hljs-code,
+.hljs-deletion,
+.hljs-formula,
+.hljs-link,
+.hljs-literal,
+.hljs-number,
+.hljs-regexp,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-string,
+.hljs-symbol,
+.hljs-template-variable,
+.hljs-variable {
+  color: var(--ink-soft);
+}
+
+/* 500 so the distinction survives grayscale and forced-colors */
+.hljs-built_in,
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta,
+.hljs-meta-prompt,
+.hljs-name,
+.hljs-section,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-tag,
+.hljs-tag,
+.hljs-template-tag,
+.hljs-title,
+.hljs-type {
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: 500;
+}
+
+.preview {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: var(--s5) 0 0;
+}
+
+/* the four tones collapse to one here; the weight and the border carry it */
+@media (forced-colors: active) {
+  .src {
+    border-color: CanvasText;
+  }
+}`;
+
 export const pages = css`a {
   color: var(--accent-text);
 }
@@ -724,7 +808,7 @@ main > h1 {
   border-bottom-color: var(--ink);
 }`;
 
-export const stylesheet = `${faces}\n${tokens}\n${components}\n${identity}\n${pages}\n`;
+export const stylesheet = `${faces}\n${tokens}\n${components}\n${identity}\n${source}\n${pages}\n`;
 
 export const styleHref = `/carn.${createHash("sha256")
   .update(stylesheet)
