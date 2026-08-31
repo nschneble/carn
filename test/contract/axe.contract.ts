@@ -22,6 +22,7 @@ import {
   sniffRaster,
 } from "../../src/repos/blob-asset.js";
 import { headerAssetPath } from "../../src/repos/header-asset.js";
+import { logRowCap } from "../../src/repos/log.js";
 import {
   binaryBlob,
   blobDocument,
@@ -31,6 +32,7 @@ import {
   sampleSource,
   textBlob,
 } from "../gallery/blob.js";
+import { commits, log, logDocument } from "../gallery/commit-log.js";
 import { galleryCss, galleryDocument } from "../gallery/document.js";
 import { hoverSimulation, indexDocument } from "../gallery/repo-index.js";
 import { committedHeader, showDocument, view } from "../gallery/repo-show.js";
@@ -218,6 +220,13 @@ const states = {
     blob: binaryBlob("media/clip.mp4", 4_404_019),
     rawOrigin,
   }),
+  // a full page carries the older link; the tail is the state where the
+  // only navigation on the page is the rows themselves
+  commits: logDocument(),
+  "commits-tail": logDocument({
+    log: log({ commits: commits(9), next: null }),
+  }),
+  "commits-none": logDocument({ log: log({ commits: [], next: null }) }),
 };
 
 for (const [state, markup] of Object.entries(states)) {
@@ -478,6 +487,9 @@ const contrastNodes: Record<string, number> = {
   "blob-cut": 20,
   "blob-image": 11,
   "blob-binary": 13,
+  commits: 53,
+  "commits-tail": 31,
+  "commits-none": 6,
 };
 
 for (const path of renderPaths) {
@@ -499,6 +511,35 @@ for (const path of renderPaths) {
     });
   }
 }
+
+// three targets in one row is the densest hit area in the product, and a
+// clean violations list would read the same whether target-size settled
+// every one of them or skipped the lot as inline
+test("every link in a commit row reaches a target-size verdict", async (t) => {
+  for (const path of renderPaths) {
+    const { results } = await fetched("/commits", path.colorScheme);
+    const settled = (["violations", "passes"] as const).flatMap(
+      (bucket) =>
+        results[bucket].find((rule) => rule.id === "target-size")?.nodes ?? [],
+    );
+    const rows = settled.filter((node) =>
+      /class="(nm t-mono|msg|age)"/.test(node.html),
+    );
+
+    assert.strictEqual(
+      results.incomplete.find((rule) => rule.id === "target-size")?.nodes
+        .length ?? 0,
+      0,
+      `${path.name}: target-size reached no verdict on a commit row link`,
+    );
+    assert.strictEqual(
+      rows.length,
+      logRowCap * 3,
+      `${path.name}: target-size settled ${rows.length} of the ${logRowCap * 3} links sixteen commit rows carry`,
+    );
+    t.diagnostic(`${path.name}: ${rows.length} row targets settled`);
+  }
+});
 
 // the cut is squeezed out of the cap rather than the file's length, so a
 // formula change could quietly leave this fixture rendering whole and the

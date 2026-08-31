@@ -2,14 +2,17 @@
 
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
+import { now } from "../clock.js";
 import { config } from "../config.js";
 import { readBlob } from "../git/blob.js";
 import { blobPage } from "../html/blob-page.js";
+import { commitLogPage } from "../html/commit-log.js";
 import {
   badRepoName,
   errorPage,
   type Failure,
   noSuchFile,
+  noSuchRef,
   noSuchRepo,
   unavailable,
 } from "../html/error-page.js";
@@ -23,6 +26,7 @@ import {
   headerType,
   parseHeaderAsset,
 } from "../repos/header-asset.js";
+import { loadCommitLog } from "../repos/log.js";
 import { resolveRepo } from "../repos/resolve.js";
 import { loadRepoView } from "../repos/show.js";
 import { resolveTip } from "../repos/tree.js";
@@ -31,6 +35,10 @@ import { sendPage, sendStatus } from "./cache.js";
 type PageRoute = { Params: { repo: string }; Querystring: { all?: string } };
 type AssetRoute = { Params: { repo: string; asset: string } };
 type BlobRoute = { Params: { repo: string; rev: string; "*": string } };
+type LogRoute = {
+  Params: { repo: string };
+  Querystring: { ref?: string | string[]; from?: string | string[] };
+};
 
 const forever = "public, max-age=31536000, immutable";
 const noImage = "No such header image.\n";
@@ -173,6 +181,58 @@ async function showBlob(
   }
 }
 
+// a ref the caller named and git cannot resolve is a 404, never a quiet
+// fall back to the default branch; only the unasked-for default is allowed
+// to come back empty, which is a repo with nothing pushed to it yet
+async function showCommits(
+  request: FastifyRequest<LogRoute>,
+  reply: FastifyReply,
+): Promise<FastifyReply> {
+  const asked = request.query.ref;
+  const from = request.query.from ?? null;
+
+  // a repeated query key parses to an array, so the pair is only the two
+  // strings the loader is typed for once the array case is refused here
+  if (Array.isArray(asked) || Array.isArray(from)) {
+    return fail(request, reply, 404, noSuchRef(String(asked ?? from)));
+  }
+
+  try {
+    const found = await resolveRepo(request.params.repo);
+    if (found.status !== "found") {
+      const failure =
+        found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
+      return fail(request, reply, 404, failure);
+    }
+
+    const ref = asked ?? found.repo.defaultBranch;
+    const log = await loadCommitLog({
+      repoPath: found.repo.path,
+      ref,
+      from,
+      signal: abortWith(reply),
+    });
+
+    if (log === null && (asked !== undefined || from !== null)) {
+      return fail(request, reply, 404, noSuchRef(from ?? ref));
+    }
+
+    return sendPage(
+      request,
+      reply,
+      commitLogPage({
+        repo: found.repo.name,
+        log: log ?? { ref, commits: [], next: null },
+        now: now(),
+        from,
+      }),
+    );
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the log failed to render");
+    return fail(request, reply, 503, unavailable);
+  }
+}
+
 // the oid is the whole address, so the response is immutable. the guard is
 // that cat-file refuses anything that is not a blob of this repo, the read
 // is capped, and the bytes have to actually be the raster the url claims
@@ -214,5 +274,6 @@ export function repoPageRoutes(app: FastifyInstance): void {
   app.get<AssetRoute>("/r/:repo/header/:asset", serveHeader);
   app.get<AssetRoute>("/r/:repo/blob-asset/:asset", serveBlobAsset);
   app.get<BlobRoute>("/r/:repo/blob/:rev/*", showBlob);
+  app.get<LogRoute>("/r/:repo/commits", showCommits);
   app.get<PageRoute>("/r/:repo", showRepo);
 }

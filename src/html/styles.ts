@@ -704,6 +704,38 @@ main > h1 {
   margin: var(--s3) 0 0;
 }
 
+/* commit log */
+
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--ink);
+}
+
+/* three links in the row, and the overlay would swallow two of them */
+.log .nm::after {
+  content: none;
+}
+
+@media (min-width: 640px) {
+  .log .row {
+    grid-template-columns: 9ch minmax(0, 1fr) 46px;
+  }
+}
+
+.log .msg,
+.log .age {
+  text-decoration: none;
+}
+
+.log .msg:hover,
+.log .msg:focus-visible,
+.log .age:hover,
+.log .age:focus-visible {
+  text-decoration: underline;
+}
+
 /* rendered READMEs */
 
 .readme {

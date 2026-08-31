@@ -32,6 +32,14 @@ export const noSuchFile = (path: string): Failure => ({
   path: "/404",
 });
 
+export const noSuchRef = (ref: string): Failure => ({
+  title: `No ref named ${ref} · Càrn`,
+  heading: "No ref here",
+  said: `There's no branch, tag, or commit named ${ref} in this repo.`,
+  next: "Check the ref, or browse the repo.",
+  path: "/404",
+});
+
 export const unavailable: Failure = {
   title: "Unavailable · Càrn",
   heading: "Unavailable",
