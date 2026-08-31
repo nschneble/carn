@@ -715,6 +715,8 @@ masthead convention, already shipped on the wordmark.
 the directory trailing slash and for the same reasons: generated content cannot
 be selected, is not found by Ctrl-F, and vanishes with CSS off. Each one takes
 `aria-hidden="true"`, so the accessible name is the path and not the punctuation.
+It inherits the trail's `--ink-mid`: hidden from the accessible name, it carries
+no information, so it doesn't earn its own level in the ink ramp.
 
 **Every path segment is navigable** — `src` goes to the tree at that path. A
 breadcrumb whose middle segments are decoration is a worse version of a title.
