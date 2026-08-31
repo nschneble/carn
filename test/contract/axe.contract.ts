@@ -9,7 +9,11 @@ import { createRequire } from "node:module";
 import { after, before, test } from "node:test";
 import type { AxeResults, NodeResult, Result } from "axe-core";
 import type { Page } from "playwright";
-import { errorPage, noSuchRepo } from "../../src/html/error-page.js";
+import {
+  errorPage,
+  noSuchFile,
+  noSuchRepo,
+} from "../../src/html/error-page.js";
 import { styleHref } from "../../src/html/styles.js";
 import { renderMarkdown } from "../../src/markdown/render.js";
 import {
@@ -24,6 +28,8 @@ import {
   imageBlob,
   pngBody,
   rawOrigin,
+  sampleSource,
+  textBlob,
 } from "../gallery/blob.js";
 import { galleryCss, galleryDocument } from "../gallery/document.js";
 import { hoverSimulation, indexDocument } from "../gallery/repo-index.js";
@@ -217,6 +223,23 @@ const states = {
 for (const [state, markup] of Object.entries(states)) {
   fixtures[`/${state}`] = markup;
 }
+
+// a path carries no space to break at, so whichever element holds one
+// decides on its own whether the page scrolls sideways
+const committedPath = "prisma/migrations/20260824223229_init/migration.sql";
+const requestedPath = `objects/pack/${"0123456789abcdef".repeat(5)}.pack`;
+
+const reflowCases = [
+  { path: "/error-long-path", selector: ".empty p" },
+  { path: "/blob-long-path", selector: "h1.t-item" },
+];
+
+fixtures["/blob-long-path"] = blobDocument({
+  blob: textBlob(committedPath, sampleSource),
+});
+fixtures["/error-long-path"] = errorPage({
+  failure: noSuchFile(requestedPath),
+});
 
 let site: Served;
 
@@ -664,6 +687,78 @@ test("the source block is a focusable scroll region on the widest path", async (
     );
     assert.strictEqual(overflow.tabindex, "0");
     assert.strictEqual(overflow.role, "region");
+  } finally {
+    await page.close();
+  }
+});
+
+// 1.4.10 asks for 320 CSS px with nothing lost and nothing scrolled in two
+// directions, which axe cannot see: it reads the DOM, not the layout
+test("a long path reflows at 320px rather than scrolling the page", async (t) => {
+  const page = await (await browser()).newPage();
+  const viewport = 320;
+
+  try {
+    await page.setViewportSize({ width: viewport, height: 900 });
+
+    const overflowing: string[] = [];
+
+    for (const { path, selector } of reflowCases) {
+      await page.goto(`${site.origin}${path}`);
+      await page.evaluate(() => document.fonts.ready);
+
+      const carrier = await page
+        .locator(selector)
+        .first()
+        .evaluate((node) => ({
+          scroll: node.scrollWidth,
+          client: node.clientWidth,
+        }));
+      const sideways = await page
+        .locator("html")
+        .evaluate((node) => node.scrollWidth);
+
+      if (carrier.scroll > carrier.client) {
+        overflowing.push(
+          `${selector} on ${path} wants ${carrier.scroll}px inside ${carrier.client}px, so the path never breaks`,
+        );
+      }
+      if (sideways > viewport) {
+        overflowing.push(
+          `${path} scrolls to ${sideways}px inside a ${viewport}px viewport`,
+        );
+      }
+
+      t.diagnostic(
+        `${path} ${selector}: ${carrier.scroll} in ${carrier.client}`,
+      );
+    }
+
+    assert.deepStrictEqual(overflowing, [], overflowing.join("\n"));
+  } finally {
+    await page.close();
+  }
+});
+
+// the ellipsis on a tree row is white-space: nowrap, which no wrapping
+// property can reach; the rule above must not have moved it
+test("the tree row still ellipsises rather than wrapping", async () => {
+  const page = await (await browser()).newPage();
+
+  try {
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto(`${site.origin}/show-all`);
+
+    const row = await page
+      .locator(".tree .nm")
+      .first()
+      .evaluate((node) => ({
+        wrap: getComputedStyle(node).whiteSpace,
+        clipped: getComputedStyle(node).textOverflow,
+      }));
+
+    assert.strictEqual(row.wrap, "nowrap");
+    assert.strictEqual(row.clipped, "ellipsis");
   } finally {
     await page.close();
   }

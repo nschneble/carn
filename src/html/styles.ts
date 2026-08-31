@@ -173,6 +173,7 @@ export const components = css`body {
   font-feature-settings: "case" 1;
   font-size: clamp(1.05rem, 2.5vw, 1.42rem);
   line-height: 1.18;
+  overflow-wrap: anywhere;
 }
 
 .t-body {
@@ -659,6 +660,7 @@ main > h1 {
 .empty p {
   max-width: var(--measure);
   margin: 0 0 var(--s4);
+  overflow-wrap: anywhere;
 }
 
 .empty code {

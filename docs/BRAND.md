@@ -172,6 +172,7 @@ body {
   font-feature-settings: "case" 1;
   font-size: clamp(1.05rem, 2.5vw, 1.42rem);
   line-height: 1.18;
+  overflow-wrap: anywhere;
 }
 
 .t-body {

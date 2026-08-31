@@ -15,8 +15,10 @@ import {
   stylesheetWireBytes,
 } from "../../src/html/wire-weight.js";
 import { blobAssetPath, sniffRaster } from "../../src/repos/blob-asset.js";
+import { countLines } from "../../src/repos/blob-view.js";
 import {
   binaryBlob,
+  frontLoadedBlob,
   hugeBlob,
   imageBlob,
   largeSource,
@@ -24,6 +26,7 @@ import {
   rasterBlob,
   rawOrigin,
   smallBlob,
+  spanningBlob,
   svgBlob,
   textBlob,
 } from "../gallery/blob.js";
@@ -102,6 +105,97 @@ test("the truncated block's markup is balanced, so nothing is repaired", () => {
       `${blob.path} left ${opened - closed} spans open, so the source was cut after highlighting rather than before`,
     );
   }
+});
+
+// the refinement model predicts from a per-line average, so a file whose
+// first line costs many times what the rest do can still be over when its
+// passes run out; what ships is measured, never predicted
+test("a front-loaded file never ships over a budget the model missed", () => {
+  const markup = blobPage({
+    repo: "linklater",
+    blob: frontLoadedBlob,
+    rawOrigin,
+  });
+  const weight = pageWireBytes(markup);
+
+  assert.ok(
+    weight <= budgetBytes,
+    `the front-loaded page weighs ${weight} wire bytes against a ${budgetBytes} B budget, so the loop shipped what its last pass measured rather than something that fits`,
+  );
+
+  const notice = noticePattern.exec(markup);
+  assert.ok(notice, "the front-loaded file rendered no notice");
+  assert.ok(
+    Number((notice[1] as string).replaceAll(",", "")) > 0,
+    "the page fits only by showing nothing, which the empty state says better",
+  );
+});
+
+// a minified bundle is one line, so the cap falls before the first break
+// and there is no boundary to cut on
+test("a file whose first line outruns the cap says so, and is not blank", () => {
+  const markup = blobPage({
+    repo: "linklater",
+    blob: textBlob(
+      "dist/bundle.js",
+      `const b = "${"payload".repeat(20_000)}";\n`,
+    ),
+  });
+
+  assert.doesNotMatch(
+    markup,
+    /<pre class="src"/,
+    "the page rendered a source block with nothing in it",
+  );
+  assert.doesNotMatch(markup, noticePattern);
+  assert.match(markup, /<div class="empty">/);
+  assert.ok(
+    markup.includes(
+      "Text file, 136.7 KB. Its first line is longer than can be shown here.",
+    ),
+    "the page declined without saying what it holds or why it declined",
+  );
+  assert.ok(markup.includes("<dt>Lines</dt><dd>1</dd>"));
+  assert.ok(markup.includes("<dt>Size</dt><dd>136.7 KB</dd>"));
+});
+
+test("a 0-byte file reports no lines, not the one a split invents", () => {
+  assert.strictEqual(countLines(""), 0);
+  assert.strictEqual(countLines("one\n"), 1);
+  assert.strictEqual(countLines("one\ntwo"), 2);
+
+  const markup = blobPage({
+    repo: "linklater",
+    blob: textBlob("src/empty.ts", ""),
+  });
+
+  assert.ok(
+    markup.includes("<dt>Lines</dt><dd>0</dd>"),
+    "an empty file claimed a line it does not have",
+  );
+});
+
+// every other truncation fixture closes each span on the line it opened,
+// so cutting rendered markup at a line boundary would stay balanced there
+test("a span opening lines before the cut still closes after it", () => {
+  const body = codeBody(blobPage({ repo: "linklater", blob: spanningBlob }));
+  const { opened, closed } = spans(body);
+
+  assert.match(
+    body,
+    /<span class="hljs-comment">\/\*/,
+    "the fixture's block comment is not one span, so the cut crosses nothing",
+  );
+  assert.ok(
+    !body.includes("*/"),
+    "the cut fell past the comment's close, so no span crosses it",
+  );
+  assert.ok(opened > 0, "the fixture highlighted to no spans at all");
+  assert.strictEqual(
+    opened,
+    closed,
+    `the block left ${opened - closed} spans open, so the source was cut after highlighting rather than before`,
+  );
 });
 
 // the truncation notice is the only signal a reader gets at MLP, where no
@@ -218,6 +312,10 @@ test("every rendered blob page fits the budget as real gzip-5 wire bytes", () =>
         blob: textBlob("src/wide.ts", largeSource(20_000)),
         rawOrigin,
       }),
+    ],
+    [
+      "span-crossing text",
+      blobPage({ repo: "linklater", blob: spanningBlob, rawOrigin }),
     ],
     [
       "inline raster",

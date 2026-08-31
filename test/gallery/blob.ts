@@ -1,8 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { createHash } from "node:crypto";
+
 import { type BlobPage, blobPage } from "../../src/html/blob-page.js";
 import { sniffRaster } from "../../src/repos/blob-asset.js";
-import { type BlobView, maxSourceBytes } from "../../src/repos/blob-view.js";
+import {
+  type BlobView,
+  countLines,
+  maxSourceBytes,
+} from "../../src/repos/blob-view.js";
 
 export const rawOrigin = "https://gelatinous-cube.example";
 
@@ -58,11 +64,6 @@ function base(path: string, bytes: number): Omit<BlobView, "kind"> {
   };
 }
 
-function countLines(source: string): number {
-  const breaks = source.split("\n").length;
-  return source.endsWith("\n") ? breaks - 1 : breaks;
-}
-
 export function textBlob(path: string, source: string): BlobView {
   const bytes = Buffer.byteLength(source, "utf8");
 
@@ -99,8 +100,48 @@ export function largeSource(lines: number): string {
   ).join("\n")}\n`;
 }
 
+// bytes gzip cannot shrink, from a seed rather than a source of entropy
+function noise(bytes: number): Buffer {
+  const blocks: Buffer[] = [];
+  let block = createHash("sha256").update("carn").digest();
+
+  for (let held = 0; held < bytes; held += block.length) {
+    blocks.push(block);
+    block = createHash("sha256").update(block).digest();
+  }
+
+  return Buffer.concat(blocks).subarray(0, bytes);
+}
+
+// a first line costing several times what the lines after it cost, which
+// is the shape a per-line average mis-predicts
+function frontLoadedSource(lines: number): string {
+  const dense = noise(24_000).toString("base64");
+  return `export const data = "${dense}";\n${largeSource(lines)}`;
+}
+
+// one comment opening on line 2 and closing thousands of lines later, so a
+// cut inside it leaves markup unbalanced unless the source was cut first
+function spanningSource(lines: number): string {
+  const body = Array.from(
+    { length: lines },
+    (_, index) =>
+      ` * symbol${index} weighs ${index * 31}, tagged t${index * 13}`,
+  ).join("\n");
+
+  return `export const opened = 1;\n/*\n${body}\n */\nexport const closed = 2;\n`;
+}
+
 export const smallBlob = textBlob("src/repos/page.ts", sampleSource);
 export const hugeBlob = textBlob("src/generated/rows.ts", largeSource(6310));
+export const frontLoadedBlob = textBlob(
+  "src/generated/embedded.ts",
+  frontLoadedSource(2000),
+);
+export const spanningBlob = textBlob(
+  "src/generated/notes.ts",
+  spanningSource(6310),
+);
 export const imageBlob = rasterBlob("assets/logo.png", pngBody);
 export const svgBlob = textBlob(".carn/header.svg", svgBody);
 

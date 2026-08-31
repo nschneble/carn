@@ -52,7 +52,9 @@ function binary(body: Buffer): boolean {
   return body.subarray(0, sniffBytes).includes(0);
 }
 
-function countLines(source: string): number {
+export function countLines(source: string): number {
+  if (source === "") return 0;
+
   const breaks = source.split("\n").length;
   return source.endsWith("\n") ? breaks - 1 : breaks;
 }

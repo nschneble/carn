@@ -10,7 +10,8 @@ import { test } from "node:test";
 
 import { source } from "../../src/html/styles.js";
 
-// highlight.js 11's documented class reference, by section
+// highlight.js 11's documented class reference, by section, plus the
+// classes a dotted scope splits into: title.function emits both
 const documented = [
   "hljs-addition",
   "hljs-attr",
@@ -18,13 +19,21 @@ const documented = [
   "hljs-built_in",
   "hljs-bullet",
   "hljs-char",
+  "hljs-class",
   "hljs-code",
   "hljs-comment",
+  "hljs-constant",
   "hljs-deletion",
+  "hljs-dispatch",
   "hljs-doctag",
   "hljs-emphasis",
+  "hljs-escape",
   "hljs-formula",
+  "hljs-function",
+  "hljs-inherited",
+  "hljs-invoke",
   "hljs-keyword",
+  "hljs-language",
   "hljs-link",
   "hljs-literal",
   "hljs-meta",
@@ -55,9 +64,18 @@ const documented = [
   "hljs-variable",
 ];
 
-// deliberately unstyled: these read as ordinary code and take .src's own
-// --ink, so a rule for each would cost bytes and say nothing
+// deliberately unstyled: each takes .src's own --ink, or the color of the
+// styled class its dotted scope splits alongside, so a rule for one would
+// cost bytes and say nothing
 const inheritsDefault = [
+  "hljs-class",
+  "hljs-constant",
+  "hljs-dispatch",
+  "hljs-escape",
+  "hljs-function",
+  "hljs-inherited",
+  "hljs-invoke",
+  "hljs-language",
   "hljs-operator",
   "hljs-params",
   "hljs-property",
@@ -89,30 +107,23 @@ function rules(css: string): Rule[] {
 
 const parsed = rules(source);
 
+// the value as written rather than the token inside it, so a literal is
+// something to fail on and not something that reads as no declaration
 function colorOf(body: string): string | null {
-  const declared = /(?:^|;)\s*color:\s*var\((--[a-z0-9-]+)\)\s*(?:;|$)/.exec(
-    body,
-  );
+  const declared = /(?:^|;)\s*color:\s*([^;]+?)\s*(?:;|$)/.exec(body);
   return declared === null ? null : (declared[1] as string);
 }
 
-test("the source block is parseable and non-trivial", () => {
-  assert.ok(parsed.length > 5, "the .src block parsed to almost nothing");
+function tokenOf(value: string | null): string | null {
+  if (value === null) return null;
+  return /^var\((--[a-z0-9-]+)\)$/.exec(value)?.[1] ?? null;
+}
 
-  const block = parsed.find((rule) => rule.selectors.includes(".src"));
-  assert.ok(block, ".src is not declared");
-  assert.strictEqual(
-    colorOf(block.body),
-    "--ink",
-    ".src sets no explicit color, so an unstyled hljs class falls to the UA default",
-  );
-});
-
-test("every hljs class the sheet colors resolves to one of four tokens", () => {
+function auditedColors(found: Rule[]): Map<string, string> {
   const seen = new Map<string, string>();
 
-  for (const rule of parsed) {
-    const token = colorOf(rule.body);
+  for (const rule of found) {
+    const value = colorOf(rule.body);
 
     for (const selector of rule.selectors) {
       const name = /^\.(hljs-[a-z_-]+)$/.exec(selector)?.[1];
@@ -123,16 +134,53 @@ test("every hljs class the sheet colors resolves to one of four tokens", () => {
         `${name} is colored in two places, so which one wins is a question of order`,
       );
 
-      if (token === null) continue;
+      if (value === null) continue;
+
+      const token = tokenOf(value);
       assert.ok(
-        permitted.includes(token),
-        `.${name} draws ${token}, which is not one of ${permitted.join(", ")}`,
+        token !== null && permitted.includes(token),
+        `.${name} draws ${value}, and the block's palette is ${permitted.join(", ")}`,
       );
       seen.set(name, token);
     }
   }
 
-  assert.ok(seen.size > 0, "the block colors no hljs class at all");
+  return seen;
+}
+
+test("the source block is parseable and non-trivial", () => {
+  assert.ok(parsed.length > 5, "the .src block parsed to almost nothing");
+
+  const block = parsed.find((rule) => rule.selectors.includes(".src"));
+  assert.ok(block, ".src is not declared");
+  assert.strictEqual(
+    tokenOf(colorOf(block.body)),
+    "--ink",
+    ".src sets no explicit color, so an unstyled hljs class falls to the UA default",
+  );
+});
+
+test("every hljs class the sheet colors resolves to one of four tokens", () => {
+  assert.ok(
+    auditedColors(parsed).size > 0,
+    "the block colors no hljs class at all",
+  );
+});
+
+// a hardcoded value used to read as no declaration at all and be skipped,
+// which is the shape an out-of-palette color would have shipped in
+test("a color outside the four tokens fails rather than going unread", () => {
+  for (const planted of [
+    "color: #ff0000",
+    "color: rgb(255 0 0)",
+    "color: var(--ink-faint)",
+  ]) {
+    assert.throws(
+      () => auditedColors(rules(`.hljs-keyword { ${planted}; }`)),
+      /hljs-keyword draws/,
+      `${planted} went unreported, so the check is measuring fewer rules than it looks like`,
+    );
+  }
 });
 
 // --accent measures 4.10:1 in light on the ground and code text owes 4.5;
@@ -200,7 +248,7 @@ test("the keyword group carries a weight as well as a color", () => {
   const keywords = parsed.find(
     (rule) =>
       rule.selectors.includes(".hljs-keyword") &&
-      colorOf(rule.body) === "--accent-text",
+      tokenOf(colorOf(rule.body)) === "--accent-text",
   );
 
   assert.ok(keywords, ".hljs-keyword no longer draws --accent-text");

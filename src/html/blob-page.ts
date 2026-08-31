@@ -6,7 +6,7 @@
 // and closing forty later would leave cut markup unbalanced
 
 import { blobAssetPath } from "../repos/blob-asset.js";
-import type { BlobView } from "../repos/blob-view.js";
+import { type BlobView, countLines } from "../repos/blob-view.js";
 import { smallCaps } from "./filename.js";
 import { html, type Raw, raw } from "./index.js";
 import { page } from "./page.js";
@@ -161,11 +161,13 @@ function sourceDocument(
   );
 }
 
-function declined(view: BlobPage, said: string): string {
+function declined(view: BlobPage, meta: Raw, why: string): string {
+  const said = `${typeName(view.blob)}, ${formatBytes(view.blob.bytes)}. ${why}`;
+
   return shell(
     view,
     html`${heading(view.blob)}
-      ${objectMeta(view.blob)}
+      ${meta}
       <div class="empty">
         <p class="t-body">${said}</p>
       </div>${hatch(view, "Open raw")}`,
@@ -187,12 +189,6 @@ function cutToBytes(source: string, capBytes: number): string {
 
   const feed = body.subarray(0, capBytes).lastIndexOf(0x0a);
   return feed === -1 ? "" : body.subarray(0, feed + 1).toString("utf8");
-}
-
-function countLines(source: string): number {
-  if (source === "") return 0;
-  const breaks = source.split("\n").length;
-  return source.endsWith("\n") ? breaks - 1 : breaks;
 }
 
 function joinLines(lines: string[], count: number): string {
@@ -239,34 +235,45 @@ function textPage(view: BlobPage, source: string): string {
   }
 
   const lines = source.split("\n");
-  let shown = countLines(cutToBytes(source, capBytes));
-  let rendered = "";
-
-  for (let pass = 0; pass < capPasses; pass += 1) {
-    const cut = joinLines(lines, shown);
-    rendered = sourceDocument(
+  const cut = (count: number) =>
+    sourceDocument(
       view,
       language,
-      highlighted(view.blob, cut, language),
-      shown,
+      highlighted(view.blob, joinLines(lines, count), language),
+      count,
     );
 
+  let shown = countLines(cutToBytes(source, capBytes));
+
+  for (let pass = 0; pass < capPasses && shown > 0; pass += 1) {
+    const rendered = cut(shown);
     const weight = pageWireBytes(rendered, sheetWire);
-    if (weight <= budgetBytes || shown === 0) return rendered;
+    if (weight <= budgetBytes) return rendered;
 
     const content = Math.max(1, weight - (budgetBytes - remaining));
     const fitted = Math.floor((shown * remaining) / content);
     shown = Math.max(0, Math.min(fitted, shown - 1));
   }
 
-  return rendered;
+  // the model above averages the lines, which a file whose first line
+  // dwarfs the rest defeats: halving measures instead, and reaches nothing
+  // in log2 of the lines the cap allowed
+  while (shown > 0) {
+    const rendered = cut(shown);
+    if (pageWireBytes(rendered, sheetWire) <= budgetBytes) return rendered;
+
+    shown = Math.floor(shown / 2);
+  }
+
+  return declined(
+    view,
+    sourceMeta(view.blob, language),
+    "Its first line is longer than can be shown here.",
+  );
 }
 
 export function blobPage(view: BlobPage): string {
   const { blob } = view;
-
-  const said = (why: string) =>
-    `${typeName(blob)}, ${formatBytes(blob.bytes)}. ${why}`;
 
   if (blob.kind === "raster") {
     const sheetWire = view.sheetWire ?? stylesheetWireBytes;
@@ -279,11 +286,15 @@ export function blobPage(view: BlobPage): string {
       );
     }
 
-    return declined(view, said("Too large to show here."));
+    return declined(view, objectMeta(blob), "Too large to show here.");
   }
 
-  if (!blob.whole) return declined(view, said("Too large to show here."));
-  if (blob.kind === "binary") return declined(view, said("Not shown here."));
+  if (!blob.whole) {
+    return declined(view, objectMeta(blob), "Too large to show here.");
+  }
+  if (blob.kind === "binary") {
+    return declined(view, objectMeta(blob), "Not shown here.");
+  }
 
   return textPage(view, blob.source ?? "");
 }
