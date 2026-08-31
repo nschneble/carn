@@ -573,7 +573,8 @@ blob, a log, and a commit with real content in them, in both schemes.
 
 - That `prisma migrate reset` is required on any existing dev database, and
   whether anything other than the init migration's checksum noticed
-- Which of `PLAN.md`'s 199 B/line and the measured 70 B/line was right
+- Whether the measured 111 B/line held up against the corpus you actually
+  highlighted, and what the wire figure came out at
 - The compression level the budget test settled on, and the Phase 2 obligation
   it creates
 - Anywhere the four corrected docs still disagreed
