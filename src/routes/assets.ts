@@ -6,7 +6,8 @@ import { join, resolve } from "node:path";
 
 import type { FastifyInstance } from "fastify";
 
-import { styleHref, stylesheet } from "../html/styles.js";
+import { styleHref } from "../html/styles.js";
+import { servedStylesheet } from "../html/wire-weight.js";
 
 const root = resolve(import.meta.dirname, "../../..");
 
@@ -48,7 +49,7 @@ export function assetRoutes(app: FastifyInstance): void {
     reply
       .header("Cache-Control", forever)
       .type("text/css; charset=utf-8")
-      .send(stylesheet);
+      .send(servedStylesheet);
   });
 
   app.get<{ Params: { face: string } }>("/fonts/:face", (request, reply) => {

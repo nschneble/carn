@@ -25,6 +25,7 @@ import { smallCaps } from "../../src/html/filename.js";
 import { html } from "../../src/html/index.js";
 import { repoShowPage, treeRowCap } from "../../src/html/repo-show.js";
 import { stylesheet } from "../../src/html/styles.js";
+import { budgetBytes, pageWireBytes } from "../../src/html/wire-weight.js";
 import { headerAssetPath } from "../../src/repos/header-asset.js";
 import type { ResolvedRepo } from "../../src/repos/resolve.js";
 import { loadRepoView } from "../../src/repos/show.js";
@@ -510,18 +511,10 @@ test("no repo page carries script, an inline style, or a style attribute", () =>
   }
 });
 
-test("the repo page fits the weight budget, fonts and stylesheet in", () => {
-  const faces = [
-    "carn-sans.woff2",
-    "carn-mono-400.woff2",
-    "carn-mono-500.woff2",
-  ];
-  const fixed =
-    faces.reduce(
-      (total, face) => total + statSync(join(root, "fonts", face)).size,
-      0,
-    ) + Buffer.byteLength(stylesheet, "utf8");
-
+// wire bytes at gzip level 5, which is what Caddy's `encode gzip` defaults
+// to, against the minified sheet the route actually serves. fonts count
+// whole because woff2 is brotli inside and does not shrink again
+test("the repo page fits the weight budget as wire bytes, fonts in", () => {
   for (const [state, markup] of [
     ["capped", showDocument()],
     ["show-all", showDocument({ showAll: true })],
@@ -532,13 +525,36 @@ test("the repo page fits the weight budget, fonts and stylesheet in", () => {
       }),
     ],
   ] as const) {
-    const weight = fixed + Buffer.byteLength(markup, "utf8");
+    const weight = pageWireBytes(markup);
 
     assert.ok(
-      weight < 100 * 1024,
-      `the ${state} repo page weighs ${weight} B against a 102400 B budget`,
+      weight <= budgetBytes,
+      `the ${state} repo page weighs ${weight} wire bytes against a ${budgetBytes} B budget`,
     );
   }
+});
+
+// the old methodology measured uncompressed markup against a budget that
+// describes a download; keep a check that the two are not the same number
+test("the wire measurement is a compression, not a rename", () => {
+  const markup = showDocument({ showAll: true });
+  const faces = [
+    "carn-sans.woff2",
+    "carn-mono-400.woff2",
+    "carn-mono-500.woff2",
+  ];
+  const uncompressed =
+    faces.reduce(
+      (total, face) => total + statSync(join(root, "fonts", face)).size,
+      0,
+    ) +
+    Buffer.byteLength(stylesheet, "utf8") +
+    Buffer.byteLength(markup, "utf8");
+
+  assert.ok(
+    pageWireBytes(markup) < uncompressed,
+    "the wire figure is not below the raw one, so nothing is being compressed",
+  );
 });
 
 test("the readme fixture is the one the assertions above assume", () => {
