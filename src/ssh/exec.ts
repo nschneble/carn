@@ -101,7 +101,7 @@ async function resolveTarget(
   return lookup.repo;
 }
 
-async function serve(
+export async function serve(
   request: ExecRequest,
   parsed: ParsedCommand,
   repo: ResolvedRepo,
