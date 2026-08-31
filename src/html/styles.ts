@@ -766,9 +766,19 @@ main > h1 {
   content: none;
 }
 
+/* stacked, each link is its own target and needs its own 24px band */
+.log .row a {
+  min-height: 24px;
+}
+
 @media (min-width: 640px) {
   .log .row {
     grid-template-columns: 9ch minmax(0, 1fr) 46px;
+  }
+
+  /* one line, three columns, and the offset alone carries the row */
+  .log .row a {
+    min-height: auto;
   }
 }
 

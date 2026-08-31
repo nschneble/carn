@@ -349,14 +349,27 @@ async function expectFonts(page: Page, where: string): Promise<void> {
   }
 }
 
+// Playwright's default viewport is 1280 wide, a width the product never
+// ships at and one that sits above the sheet's only breakpoint, so a rule
+// that bites in the stacked layout stays green there however often it
+// runs. Tuffgal captures 375 and 1440, and those bracket the breakpoint
+const narrowWidth = 375;
+const wideWidth = 1440;
+const auditWidths = [narrowWidth, wideWidth];
+
+// mirrors the sheet's one @media (min-width: 640px)
+const breakpoint = 640;
+
 async function audit(
   load: (page: Page) => Promise<void>,
   colorScheme: "light" | "dark",
   fonts: string | null,
+  width: number,
 ): Promise<Audit> {
   const page = await (await browser()).newPage();
 
   try {
+    await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme });
     await load(page);
     await page.evaluate(() => document.fonts.ready);
@@ -409,6 +422,7 @@ async function fetched(
   path: string,
   colorScheme: "light" | "dark",
   fonts: string | null = path,
+  width: number = wideWidth,
 ): Promise<Audit> {
   return audit(
     async (page) => {
@@ -417,6 +431,7 @@ async function fetched(
     },
     colorScheme,
     fonts,
+    width,
   );
 }
 
@@ -550,52 +565,118 @@ const contrastNodes: Record<string, number> = {
   "tree-sub": 22,
 };
 
-for (const path of renderPaths) {
-  for (const state of ["gallery", ...Object.keys(states)]) {
-    test(`no axe violations on the ${state} page, ${path.name}`, async () => {
-      const { results } = await fetched(`/${state}`, path.colorScheme);
+// below the breakpoint the breadcrumb folds its middle segments out of
+// the layout and the a11y tree, trading a separator and an ancestor link
+// for one .fold ellipsis. only the trails deep enough to have a middle
+// reach the fold, and each loses exactly one measured node
+const foldedContrastNodes: Record<string, number> = {
+  blob: 74,
+  "blob-cut": 23,
+  "commit-file": 41,
+};
 
-      assert.deepStrictEqual(
-        results.violations.map((rule) => rule.id),
-        [],
-        report(results.violations),
-      );
-      decided(results);
-      contrastPin(
-        results,
-        `${state} ${path.name}`,
-        contrastNodes[state] as number,
-      );
-    });
+for (const width of auditWidths) {
+  for (const path of renderPaths) {
+    for (const state of ["gallery", ...Object.keys(states)]) {
+      test(`no axe violations on the ${state} page, ${path.name} at ${width}px`, async () => {
+        const { results } = await fetched(
+          `/${state}`,
+          path.colorScheme,
+          `/${state}`,
+          width,
+        );
+
+        assert.deepStrictEqual(
+          results.violations.map((rule) => rule.id),
+          [],
+          report(results.violations),
+        );
+        decided(results);
+        contrastPin(
+          results,
+          `${state} ${path.name} at ${width}px`,
+          (width < breakpoint ? foldedContrastNodes[state] : undefined) ??
+            (contrastNodes[state] as number),
+        );
+      });
+    }
   }
 }
 
 // three targets in one row is the densest hit area in the product, and a
 // clean violations list would read the same whether target-size settled
-// every one of them or skipped the lot as inline
+// every one of them or skipped the lot as inline. the three stack below
+// the breakpoint, where the row is a column of three separate targets
 test("every link in a commit row reaches a target-size verdict", async (t) => {
-  for (const path of renderPaths) {
-    const { results } = await fetched("/commits", path.colorScheme);
-    const settled = (["violations", "passes"] as const).flatMap(
-      (bucket) =>
-        results[bucket].find((rule) => rule.id === "target-size")?.nodes ?? [],
-    );
-    const rows = settled.filter((node) =>
-      /class="(nm t-mono|msg|age)"/.test(node.html),
-    );
+  for (const width of auditWidths) {
+    for (const path of renderPaths) {
+      const { results } = await fetched(
+        "/commits",
+        path.colorScheme,
+        "/commits",
+        width,
+      );
+      const where = `${path.name} at ${width}px`;
+      const settled = (["violations", "passes"] as const).flatMap(
+        (bucket) =>
+          results[bucket].find((rule) => rule.id === "target-size")?.nodes ??
+          [],
+      );
+      const rows = settled.filter((node) =>
+        /class="(nm t-mono|msg|age)"/.test(node.html),
+      );
 
-    assert.strictEqual(
-      results.incomplete.find((rule) => rule.id === "target-size")?.nodes
-        .length ?? 0,
-      0,
-      `${path.name}: target-size reached no verdict on a commit row link`,
-    );
-    assert.strictEqual(
-      rows.length,
-      logRowCap * 3,
-      `${path.name}: target-size settled ${rows.length} of the ${logRowCap * 3} links sixteen commit rows carry`,
-    );
-    t.diagnostic(`${path.name}: ${rows.length} row targets settled`);
+      assert.strictEqual(
+        results.incomplete.find((rule) => rule.id === "target-size")?.nodes
+          .length ?? 0,
+        0,
+        `${where}: target-size reached no verdict on a commit row link`,
+      );
+      assert.strictEqual(
+        rows.length,
+        logRowCap * 3,
+        `${where}: target-size settled ${rows.length} of the ${logRowCap * 3} links sixteen commit rows carry`,
+      );
+      t.diagnostic(`${where}: ${rows.length} row targets settled`);
+    }
+  }
+});
+
+// the band is what makes the stacked row conform, and it is spacing at
+// the wide width where the three sit side by side; a sheet edit dropping
+// either half reads as a pass here only if both are measured
+test("a stacked commit row link is 24px tall and a wide one is not", async () => {
+  const page = await (await browser()).newPage();
+
+  try {
+    for (const [width, tall] of [
+      [narrowWidth, true],
+      [wideWidth, false],
+    ] as const) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${site.origin}/commits`);
+      await page.evaluate(() => document.fonts.ready);
+
+      const heights = await page
+        .locator(".log .row")
+        .first()
+        .evaluate((row) =>
+          [...row.querySelectorAll("a")].map(
+            (link) => link.getBoundingClientRect().height,
+          ),
+        );
+
+      assert.strictEqual(heights.length, 3, `${width}px: the row lost a link`);
+      for (const height of heights) {
+        assert.strictEqual(
+          height >= 24,
+          tall,
+          `${width}px: a row link is ${height}px tall, and the band ${tall ? "is missing" : "leaked past the breakpoint"}`,
+        );
+      }
+    }
+  } finally {
+    await page.close();
   }
 });
 
@@ -697,6 +778,13 @@ test("every audited fixture has a pinned contrast count", () => {
     Object.keys(contrastNodes).sort(),
     ["gallery", ...Object.keys(states)].sort(),
     "a fixture was added or dropped without its contrast count, so the loop above would pin undefined and settle nothing",
+  );
+  assert.deepStrictEqual(
+    Object.keys(foldedContrastNodes).filter(
+      (state) => !(state in contrastNodes),
+    ),
+    [],
+    "a folded count names a fixture that no longer exists, so it pins nothing at the narrow width",
   );
 });
 
