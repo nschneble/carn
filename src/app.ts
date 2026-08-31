@@ -2,10 +2,13 @@
 
 import Fastify, { type FastifyInstance } from "fastify";
 
+import { assetRoutes } from "./routes/assets.js";
 import { gitHttpRoutes } from "./routes/git-http.js";
 import { healthRoute } from "./routes/health.js";
+import { indexRoute } from "./routes/index-page.js";
+import { repoPageRoutes } from "./routes/repo-page.js";
 
-const contentSecurityPolicy =
+export const contentSecurityPolicy =
   "default-src 'none'; img-src 'self' data:; style-src 'self'; font-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
 
 export function buildApp(): FastifyInstance {
@@ -17,8 +20,11 @@ export function buildApp(): FastifyInstance {
     reply.header("Referrer-Policy", "no-referrer");
   });
 
+  assetRoutes(app);
   gitHttpRoutes(app);
   healthRoute(app);
+  indexRoute(app);
+  repoPageRoutes(app);
 
   return app;
 }

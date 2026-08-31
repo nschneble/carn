@@ -1,3 +1,7 @@
+<!-- This file is the source of truth. The artifact at
+     https://claude.ai/code/artifact/d6827af7-8151-4e7b-aace-e29617e51f99
+     is generated FROM it by scripts/docs-artifact.mjs — edit here, re-run that. -->
+
 # Stack currency
 
 _Latest-on-npm column verified 2026-08-25. Re-verify before writing each
@@ -16,14 +20,14 @@ Phase 1a, costing six amendments.
 | `@prisma/client` | `^7.9.1` | 7.10.0 | **7** | low | `latest` is still 7.10.0 — it does *not* track the CLI's tag. |
 | `@prisma/adapter-pg` | `^7.9.1` | 7.10.0 | **7** | low | Tracks the Prisma major. Owns `pg` transitively; never add `pg` directly. |
 | `fastify` | `^5.12.1` | 5.12.1 | **5** | low | The raw content-type parser for `application/x-git-*-request` (1c) is a v5 API. |
-| `ssh2` | `^1.17.0` | 1.17.0 | **1** | none | Verified end-to-end on the dev laptop in Phase 0. CLAUDE.md's three gotchas are confirmed against this exact version. |
+| `ssh2` | `^1.17.0` | 1.17.0 | **1** | none | Verified end-to-end on the dev laptop in Phase 0. CLAUDE.md's nine ssh2 gotchas are confirmed against this exact version. |
 | `@types/ssh2` | `^1.15.5` | 1.15.5 | **1** | low | `ssh2` ships no types of its own. |
 | `@biomejs/biome` | `^2.5.10` | 2.5.10 | **2** | low | Formatter and linter. Replaced Prettier; see below. |
 | `typescript` | `^7.0.2` | 7.0.2 | **7** | medium | The Go-native compiler. Fast, but much of the ecosystem has not caught up — see the Biome note. |
 | `@types/node` | `^26.3.0` | 26.3.0 | **26** | low | |
 | `squawk-cli` | `^2.62.0` | 2.63.0 | **2** | low | |
 | `highlight.js` | `—` | 11.12.0 | **11** | low | Major unchanged since 2021. Class-based output as assumed. |
-| `markdown-it` | `—` | 15.0.0 | **15** | **see below** | New major. Blocks Phase 3 until spiked. |
+| `markdown-it` | `^15.0.0` | 15.0.0 | **15** | low | Spiked in Phase 1d. Self-typed, so `@types/markdown-it` is not installed and must not be. Both below. |
 
 ## Prisma's `latest` tag points at a release candidate
 
@@ -62,37 +66,68 @@ Two things that bit us and will bite again:
   `--no-errors-on-unmatched`. `--files-ignore-unknown` is the flag that
   looks right and is not.
 
-## markdown-it 15 — unresolved, blocks Phase 3
+## markdown-it 15 — spiked in Phase 1d, resolved
 
-CLAUDE.md's markdown-it gotchas were written against 14.x. Version 15
-shipped 2026-07-30 and changes at least one thing that section depends on.
+Version 15 shipped 2026-07-30. CLAUDE.md's gotchas were written against
+14.x; Phase 1d spiked the installed 15.0.0 and CLAUDE.md now carries the
+measured behavior. Every API question below is answered by measurement.
+The `@types` dependency was the last open question; it is settled in the
+next section.
 
 **Confirmed changed in 15.0.0:**
 
 - `validateLink`, `normalizeLink`, and `normalizeLinkText` moved from
-  instance properties to **prototype methods**. CLAUDE.md's "replace
-  `validateLink` with an allowlist" may still work by instance assignment,
-  which shadows the prototype — but that must be tested, not assumed.
+  instance properties to **prototype methods**. Measured: `md.validateLink =
+  fn` still shadows the prototype, because an own property wins.
 - `linkify-it` upgraded to v6: no fuzzy links, no auth checks, Unicode
   punctuation terminates links. Low impact while only the `table` rule is
   enabled.
 - Package-internal subpath exports (`markdown-it/lib/*`) removed.
 - `text_join` now also processes image alt text.
 - `StateBlock#ddIndent` removed.
+- A `strip_references` core rule was added after `block`.
+- The bundled declarations export the class **as a type only**. The default
+  export is a callable wrapper, so `const md: MarkdownIt` — legal under
+  `@types/markdown-it@14`, which declared a class — is now `TS2749`. Import
+  the type by name:
+  `import MarkdownIt, { type MarkdownIt as MarkdownItInstance }`.
 
-**Not confirmed — verify before writing Phase 3:**
+**Confirmed unchanged, measured against 15.0.0:**
 
-- Whether `new MarkdownIt('commonmark')` still sets `html: true`. Passing
-  `{ html: false }` explicitly is correct either way, so the guidance is
-  safe even if the preset changed.
-- Whether `text_join` is still the last core rule, and whether
-  `md.core.ruler.before('text_join', ...)` still positions the
-  cross-reference autolinker correctly.
+- `new MarkdownIt('commonmark')` still sets `html: true`. Passing
+  `{ html: false }` explicitly stays correct and stays mandatory.
+- `text_join` is still the last core rule, and
+  `md.core.ruler.before('text_join', ...)` still places a rule immediately
+  ahead of it. An escaped `\#12` yields a `text_special` token before
+  `text_join` runs and a plain `#12` text token after, so registration order
+  is what decides whether the escape holds.
+- The default `validateLink` is a four-scheme blocklist,
+  `/^(vbscript|javascript|file|data):/`, so it still fails open.
 
-**Action for Phase 3:** the first task of that session is a spike against
-the installed markdown-it — assert the allowlist actually rejects
-`javascript:`, and that `#12` inside an escaped `\#12` is left alone. Only
-then write the pipeline.
+## Why `@types/markdown-it` is not installed
+
+**Settled in Phase 1d. Do not add it back.** It was installed briefly
+because the 1d brief called for it, and removed once measurement showed the
+brief was wrong. `docs/PLAN.md` §04, _Markdown — strict CommonMark, one deviation_, had it
+right from the start.
+
+15 bundles `dist/markdown-it.d.mts`, and the 15.0.0 changelog says to remove
+`@types/markdown-it`. TypeScript resolves a bare `import` to the bundled
+declarations and never consults `@types` — verified with `--traceResolution`.
+
+The hazard is subpaths. 15's `exports` map has no `./lib/*`, but
+`@types/markdown-it@14.2.0` exports `./*`, so TypeScript falls through to it
+and a subpath that does not exist at runtime type-checks clean:
+
+```
+import StateBlock from "markdown-it/lib/rules_block/state_block.mjs";
+  with @types/markdown-it@14   tsc --strict exit 0, node ERR_PACKAGE_PATH_NOT_EXPORTED
+  without it                   tsc --strict exit 1, TS2307
+```
+
+Both rows are measured, the second after the uninstall — the failing compile
+is what proves the trap is gone rather than merely unused. `@types` 14 also
+still declares `StateBlock#ddIndent`, which 15 removed.
 
 ## Known advisories
 

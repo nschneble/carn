@@ -1,8 +1,11 @@
 .claude/worktrees/
+build/
 dist/
 local/
 node_modules/
 src/generated/
+tuffgal/.cache/
+tuffgal/report/
 
 .DS_Store
 .env

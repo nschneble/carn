@@ -19,7 +19,7 @@ readonly SSH_FLAGS="-o IdentitiesOnly=yes -o IdentityAgent=none -o StrictHostKey
 readonly NO_WRITE="You don't have write access to $REPO_NAME. Ask the owner for a grant."
 readonly NO_REPO="There's no repo named absent1b. Push to it to create it."
 readonly BAD_COMMAND="This server runs git-upload-pack and git-receive-pack only. Use git clone or git push."
-readonly BAD_NAME="That's not a valid repo name. Names are up to 64 characters, starting with a letter or number, and containing only letters, numbers, dots, dashs, and underscores."
+readonly BAD_NAME="That's not a valid repo name. Names are up to 64 characters, starting with a letter or number, and containing only letters, numbers, dots, dashes, and underscores."
 
 work=$(mktemp -d) || work=""
 if [ -z "$work" ]; then
@@ -56,7 +56,10 @@ cleanup() {
   drop_scratch
   rm -rf "$work"
 }
+# signalled, exit rather than resume: a handler alone returns to the run
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # the verdict derives from this log, so a deleted FAIL trips the count
 record() {
@@ -606,11 +609,13 @@ else
 fi
 
 # 19
+# the budget catches unauthorised creep, so a later phase's authorised
+# additions belong in it: 1d's four are named in docs/phases/1d-design.md
 if node -e '
   const pkg = JSON.parse(require("fs").readFileSync("package.json", "utf8"))
   const budget = {
-    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2"],
-    devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli", "@biomejs/biome", "@types/ssh2"],
+    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2", "markdown-it"],
+    devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli", "@biomejs/biome", "@types/ssh2", "axe-core", "playwright", "tuffgal"],
   }
   const over = []
   for (const [field, allowed] of Object.entries(budget)) {
@@ -618,15 +623,15 @@ if node -e '
       if (!allowed.includes(name)) over.push(`${name} (${field})`)
     }
   }
-  if (over.length) { console.error("outside 1a plus ssh2: " + over.join(", ")); process.exit(1) }
+  if (over.length) { console.error("outside 1a plus ssh2 and the four 1d adds: " + over.join(", ")); process.exit(1) }
   for (const name of ["ssh2", "@types/ssh2"]) {
     const field = name.startsWith("@types/") ? "devDependencies" : "dependencies"
     if (!pkg[field]?.[name]) { console.error(`${name} is not in ${field}`); process.exit(1) }
   }
 ' > "$work/19" 2>&1; then
-  record PASS 19 "dependencies are 1a's plus ssh2 and @types/ssh2"
+  record PASS 19 "dependencies are 1a's plus ssh2, @types/ssh2, and 1d's four"
 else
-  record FAIL 19 "dependencies are 1a's plus ssh2 and @types/ssh2" "$(cat "$work/19")"
+  record FAIL 19 "dependencies are 1a's plus ssh2, @types/ssh2, and 1d's four" "$(cat "$work/19")"
 fi
 
 # 20

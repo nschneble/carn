@@ -1,4 +1,6 @@
-<!-- Generated from the Càrn build plan artifact. Source of truth: https://claude.ai/code/artifact/09768107-f0d7-422a-8839-a4119fd599f8 -->
+<!-- This file is the source of truth. The artifact at
+     https://claude.ai/code/artifact/bd38dee8-6822-4b2c-a602-bde753e498a3
+     is generated FROM it by scripts/docs-artifact.mjs — edit here, re-run that. -->
 
 **IMPLEMENTATION PLAN**
 
@@ -25,7 +27,7 @@ This one is nearly free, because of a consequence of the decisions above: **with
 A budget worth writing down, so it's a test rather than an aspiration:
 
 - **Zero client JavaScript on the critical path.** Progressive enhancement only — a diff that needs JS to render is a bug.
-- **Under 100 KB per page** including the highlighted blob. This is the real argument for highlight.js over Shiki (§04): 199 bytes/line vs 563.
+- **Under 100 KB per page** including the highlighted blob, measured as **wire bytes** — gzip level 5, matching Caddy's default, with fonts counted whole because woff2 is already compressed. This is the real argument for highlight.js over Shiki (§04).
 - **TTFB under 100 ms** on a warm repo page. Achievable given the measured numbers — the whole budget is 5–10 git subprocesses at ~2 ms each, so the pooled `cat-file --batch` matters more than anything else you'll do.
 - **Cache highlighted blobs by content hash**, and set `Cache-Control: public` on anything keyed by an immutable SHA — a commit page for `a1b2c3d` can be cached forever.
 
@@ -35,12 +37,12 @@ Security is covered throughout — UUID paths, `html: false`, blob origin isolat
 
 > **CONTRAST — MEASURED**
 >
-> **#E7156C on the #F4F6F6 ground is 4.11:1.** That passes AA for large text (3:1) and for non-text UI, but _misses_ the 4.5:1 threshold for body-size text. The pink is the brand colour — big type, rules, fills, the directory colour in a file list — and a darkened **#C9105C (5.22:1)** is the variant for inline links and small text. In dark mode, **#FF6EA8 on #0E0F0F is 7.39:1** and needs no adjustment.
+> **#E7156C on the #F4F6F6 ground is 4.10:1.** That passes AA for large text (3:1) and for non-text UI, but _misses_ the 4.5:1 threshold for body-size text. `--accent` carries only what owes 3:1 — big type, rules, the focus ring — and a darkened **#C9105C (5.22:1)** carries everything that owes 4.5:1: inline links, small type, directory names in a file list, and the fill behind a button, tag, or current chip. `docs/BRAND.md` §02 owns the token split and every measured ratio; this paragraph points at it rather than restating it. In dark mode, **#FF6EA8 on #0E0F0F is 7.36:1** and needs no adjustment.
 
-- **The display face never sets body text.** All-caps removes the ascender and descender profile that word-shape recognition depends on. Uppercase Archivo for titles and labels; the body face or mono for anything read as a sentence.
-- **Real semantics.** The file list is a `<table>` with headers, not a grid of divs. Diffs are tables with row scope. The timeline is an `<ol>`. This is also what makes the page work in a terminal browser, which suits the project.
+- **The display face never sets body text.** All-caps removes the ascender and descender profile that word-shape recognition depends on. Uppercase Carn Sans for titles and labels; Carn Sans at `"wght" 400`, or Carn Mono, for anything read as a sentence. There is no third family and no separate body face — see `docs/BRAND.md` §03.
+- **Real semantics.** Diffs are tables with row scope. The timeline is an `<ol>`. This is what makes the page work in a terminal browser, which suits the project. The file and repo lists shipped in 1d as `<ul role="list">` over a CSS grid (`src/html/repo-show.ts`, `src/html/repo-list.ts`) because they carried one column of real data. **1e moves both to `<table>`** — decided, not open. Once the commit-subject and age columns are filled the data is genuinely tabular, and a table is what renders everywhere: an old phone, a terminal browser, an email client, anything that never got the CSS.
 - **Keyboard first.** A skip link, visible focus on everything (already in the CSS here), and no hover-only affordances — a file row's actions must be reachable by tab.
-- **Don't encode meaning in colour alone.** Directory-vs-file is pink-vs-ink in the mockups; add a trailing `/` so it survives greyscale and colour blindness. Diff add/remove needs `+`/`−` glyphs, not just green and red.
+- **Don't encode meaning in color alone.** Directory-vs-file is pink-vs-ink in the mockups; add a trailing `/` so it survives grayscale and color blindness. Diff add/remove needs `+`/`−` glyphs, not just green and red.
 - **No motion at all.** A page that arrives in 80 ms with no JS to parse already _feels_ smooth. Animation is what slow sites use to disguise being slow. The only transitions worth having are hover and focus states, and those should be instant.
 
 ### Turning the tenets into tests — Tuffgal, and what it doesn't cover
@@ -89,7 +91,7 @@ These aren't a second test suite so much as four assertions that a screenshot is
 | **Weight**       | Page < 100 KB · zero client JS on the critical path                                                         | `size-limit` against the rendered HTML plus assets. A page can double in weight and look identical.                                                                                                |
 | **Subprocesses** | < 12 `spawn` calls per render                                                                               | A counter in the git layer, asserted per route. **The most valuable test in the plan** — see below.                                                                                                |
 | **Headers**      | Blob origin always returns `sandbox` CSP · never `Set-Cookie` · `javascript:` in markdown renders no anchor | Plain request assertions. Four of them, covering the three vulnerability classes in §11.                                                                                                           |
-| **a11y rules**   | Zero axe violations, both themes                                                                            | `axe-core` — complementary to the a11y tree, not redundant. The tree snapshot catches _structural_ drift; axe catches _rule_ violations like contrast and ARIA misuse, which a tree can't express. |
+| **a11y rules**   | Zero axe violations across both render paths · every token reads back non-empty in both                        | `axe-core` — complementary to the a11y tree, not redundant. The tree snapshot catches _structural_ drift; axe catches _rule_ violations like contrast and ARIA misuse, which a tree can't express. Neither sees a vanished token, so that is asserted separately. |
 
 The subprocess counter deserves the emphasis: it's the only test that catches the specific way this codebase will get slow. A well-meaning refactor that renders a file list by calling `cat-file` once per row passes every other check — the screenshots are pixel-identical, the HTML is byte-identical — and quietly turns a 40 ms page into a 400 ms one. Nothing else in the suite would notice.
 
@@ -139,9 +141,9 @@ _Settled — everything downstream assumes these_
 - **Highlighting:** highlight.js — Settled. Alternatives dropped from the doc.
 - **Themes:** Both, dark-first — Dark is the default and the one that's designed first.
 - **Method:** YAGNI — Nothing gets built before it's wanted. Web comments included.
-- **Licence:** AGPL-3.0-or-later — Server and CLI both. Closes the network loophole plain GPL leaves open.
+- **License:** AGPL-3.0-or-later — Server and CLI both. Closes the network loophole plain GPL leaves open.
 - **Testing:** Tuffgal stories — Visual regression as the primary suite, plus four contract tests. No unit tests.
-- **Write path:** CLI only — The web UI is read-only at MLP. Comments come over SSH.
+- **Write path:** CLI only — The web UI is read-only at MLP; the admin forms in §06 come after it. Comments come over SSH.
 - **Rate limiting:** At the edge — Caddy, three tiers, tightest on clone and archive.
 - **Layout:** One display rule — List items in the display face; titles on show views. Mockups in §06.
 
@@ -212,7 +214,7 @@ Spawning `git upload-pack --stateless-rpc` is right. Three corrections to the ob
 
 ### 4 · Reading repos — process spawn cost is the whole story
 
-Shell out to _plumbing_, not porcelain: `git diff-tree -r -M`, never `git diff` — porcelain honors `diff.external`, textconv, and colour config from whatever gitconfig the daemon happens to see. `ls-tree -z --long` for trees, `for-each-ref` for branch lists (one process instead of N), `rev-list --count` for pagination.
+Shell out to _plumbing_, not porcelain: `git diff-tree -r -M`, never `git diff` — porcelain honors `diff.external`, textconv, and color config from whatever gitconfig the daemon happens to see. `ls-tree -z --long` for trees, `for-each-ref` for branch lists (one process instead of N), `rev-list --count` for pagination.
 
 Measured: 200 separate `git cat-file` processes took **370 ms**; the same 200 lookups through one long-lived `git cat-file --batch` took **7 ms**. On small repos essentially all the cost is process startup — `rev-parse` costs the same as `log -n 20`. A page doing 5–10 spawns is fine; anything rendering N blobs needs a pooled `--batch` process per repo, recycled after each push.
 
@@ -279,9 +281,14 @@ With `html: false`, markdown-it's output vocabulary is fixed and small — that 
 
 What remains isn't XSS, and an HTML sanitizer wouldn't fix it either — it needs a URL policy:
 
-- **Third-party image loading.** `![x](http://evil.com/t.png)` renders, and every visitor to that README pings `evil.com`. On a public forge this is the thing most likely to actually be abused. Fix with a CSP `img-src` and/or an image proxy.
-- **Unbounded scheme allowlist.** `validateLink` is a blocklist of four, so `blob:`, `about:`, and custom app schemes all pass. Replace it with an allowlist of `https|http|mailto` plus the data-image forms, and reject protocol-relative `//`.
-- **No `rel`.** Add `rel="nofollow ugc"` to external links via a renderer rule override.
+- **Third-party image loading.** `![x](http://evil.com/t.png)` renders, and every visitor to that README pings `evil.com`. On a public forge this is the thing most likely to actually be abused. Fix with a CSP `img-src` and/or an image proxy. — _CSP half shipped in 1a: `img-src 'self' data:` in `src/app.ts`, pinned as an exact string by `verify-phase-1a.sh`. A README's remote image is blocked and degrades to its alt text; that is the intended behavior, not a rendering bug. The proxy half is deferred past MLP — it is what eventually renders remote images without leaking every visitor's IP to the image host._
+- **Unbounded scheme allowlist.** `validateLink` is a blocklist of four, so `blob:`, `about:`, and custom app schemes all pass. Replace it with an allowlist of `https|http|mailto` plus the data-image forms, and reject protocol-relative `//`. — _Shipped in 1d: `allowLink` in `src/markdown/render.ts`._
+- **No `rel`.** Add `rel="nofollow ugc"` to external links via a renderer rule override. — _Shipped in 1d: a `link_open` override in `src/markdown/render.ts`. Applies to absolute `http(s)` links only; relative links, anchors, and `mailto:` are untouched, and there is no same-host carve-out._
+- **Relative links resolve against the wrong page.** A README's `[docs](docs/BRAND.md)` renders as a link to `/r/:repo/docs/BRAND.md`, which is not a route. `allowLink` passes schemeless destinations through unmodified on purpose — that is ordinary README content, not a hole — but nothing rewrites them to `/r/:repo/blob/:rev/docs/BRAND.md`, which is where they belong. The same applies to **relative images**: `![diagram](docs/arch.png)` is schemeless, so it resolves wrong and renders broken, and rewriting it to the first-party content-addressed asset route makes committed images in READMEs work under `img-src 'self'` with no CSP change. — _1e, which is where `/r/:repo/blob/:rev/*` lands. It needs `renderMarkdown` to take a `{ repo, rev }` context — it is a pure function today with one call site at `src/html/repo-show.ts` — and it needs `test/contract/markdown.contract.ts`, which currently pins the unrewritten behavior as intentional, updated deliberately in the same commit. **Rewrite unconditionally**, without checking the tree: an existence check costs a nested-path lookup per link straight into the 12-spawn budget, makes the same README render differently on different refs, and buys nothing — a 404 on a link to a file that is not there is the correct answer, and better than silently leaving a link pointing somewhere else wrong._
+
+- **The social card is one static image for the whole site.** `og:image` and `twitter:image` point at `/images/preview.jpg` on every page, so a repo shares the index's card. The repo-shaped answer is the repo's own identity — its committed header at `/r/:repo/header/:asset`, or its generated wordmark rasterized — which needs a PNG or JPEG because no major crawler renders SVG for a card, and therefore needs a rasterizer the project does not have and a cache keyed on the tip OID. — _Post-MLP. Not 1e: it adds a dependency and a cache to a phase whose whole subject is staying inside a byte budget. The static card is correct until then, not a placeholder._
+
+The markdown layer and the response header deliberately disagree about remote images: `allowLink` permits an `https:` image URL that CSP then refuses to load. The parsing layer parses and the header enforces, so the enforcing layer being the stricter one is correct. Do not "fix" the mismatch by widening `img-src` — that undoes the control this section specifies, and fails `verify-phase-1a.sh`.
 
 > **IF YOU EVER DO REACH FOR A SANITIZER**
 >
@@ -301,9 +308,23 @@ Cross-Origin-Resource-Policy: same-site
 
 SVG is the special case — it's active content that can carry `<script>`. Either serve it as `text/plain` like everything else (safest, but your own README `<img>` tags won't render it) or give it `image/svg+xml` from the separate origin behind that CSP, which is what GitHub does. If you can't get a second hostname, `Content-Disposition: attachment` on everything is the fallback.
 
+**The origin does not exist until Phase 2.** The DNS records are a Phase 2
+pre-flight and nothing serves on `gelatinous-cube` yet, so `Show entire file`
+and `Open raw` are gated on `CARN_RAW_ORIGIN` in `config.ts`. Unset at MLP, the
+blob view simply omits the link; Phase 2 turns both on by setting one variable.
+No dead code in between.
+
+**Inline images do not come from that origin.** CSP is `img-src 'self' data:`,
+so a second hostname is blocked — and widening `img-src` to admit it would undo
+the isolation the origin exists to provide. A small image blob renders
+first-party through the content-addressed, immutable route that
+`/r/:repo/header/:asset` already established, with the same `committed()` guard
+that stops it reading an arbitrary OID. The second origin is for downloading
+untrusted content, not for embedding it.
+
 ### Syntax highlighting
 
-**highlight.js 11.12.0** — settled. Register only the languages you actually serve (`highlight.js/lib/core` plus explicit `registerLanguage`): 15 ms init, 56 MB resident, ~49k lines/sec, and **class-based output at 199 bytes per line**. The class-based part is what makes it right for the tenets — your theme lives in one cached stylesheet rather than being inlined into every blob, which for a 2,000-line file is the difference between ~400 KB of HTML and ~1.1 MB. It also means the two themes share one payload.
+**highlight.js 11.12.0** — settled. Register only the languages you actually serve (`highlight.js/lib/core` plus explicit `registerLanguage`): 15 ms init, 56 MB resident, ~49k lines/sec, and **class-based output at 111 bytes per line** — measured across 46 files sampled evenly through Linklater's 832-file TypeScript corpus, which gzips to **10.2 B/line, 9.2% of raw**. The class-based part is what makes it right for the tenets — your theme lives in one cached stylesheet rather than being inlined into every blob, which for a 2,000-line file is the difference between ~400 KB of HTML and ~1.1 MB. It also means the two themes share one payload.
 
 Wire it through markdown-it’s `highlight` option, whose return value is inserted verbatim — so return escaped HTML. And **cache highlighted blobs by content hash**: highlighting is pure, so a hash→HTML cache removes the cost entirely on repeat views and keeps you inside the TTFB budget.
 
@@ -340,7 +361,7 @@ Do the coarse limiting **at the edge, in Caddy**, so an abusive request never re
 >
 > **Set `ipv6_prefix 56`, not 64.** A /64 is one LAN, but residential subscribers are typically _delegated_ a /56 or /48 — so a per-/64 limit still leaves an attacker 256+ buckets to rotate through. /56 stops the realistic attack; loosen to /64 only if you get collateral-damage complaints.
 
-Keep a coarse in-app limit as defence in depth on the write paths — `rate-limiter-flexible` (v11, actively maintained, memory backend with no Redis needed) with per-key `blockDuration` so repeat abusers escalate. Note it's a "flexible fixed window," not a true sliding one; that's another argument for doing the real work at the edge. And add failed-auth banning on the SSH listener: N failures from an IP in a window, then a temporary block.
+Keep a coarse in-app limit as defense in depth on the write paths — `rate-limiter-flexible` (v11, actively maintained, memory backend with no Redis needed) with per-key `blockDuration` so repeat abusers escalate. Note it's a "flexible fixed window," not a true sliding one; that's another argument for doing the real work at the edge. And add failed-auth banning on the SSH listener: N failures from an IP in a window, then a temporary block.
 
 ### Git config for the box
 
@@ -372,7 +393,7 @@ Three limits, at three different layers, and only the first two need building:
 - **Per-repo:** a soft warning and a hard block, checked in `post-receive` against `git count-objects -vH`. Something like warn at 500 MB, refuse further pushes at 1 GB. Surface it as `carn repo size` and on the repo settings page so it's never a surprise.
 - **Per-file:** `core.bigFileThreshold = 16m` is already set and does half the job — files above it skip delta compression entirely, which removes most of the _CPU_ pain. It does nothing for clone size. If you want a real per-file cap, a `pre-receive` hook walking the pushed objects is the place, but I'd skip it initially: `maxInputSize` catches the same accidents with a tenth of the code.
 
-These are guardrails against accidents, not defences against attack — you're the only person who can push.
+These are guardrails against accidents, not defenses against attack — you're the only person who can push.
 
 And in the Caddy site block for the git routes: `flush_interval -1` (pack streaming is long-lived and chunked, and Caddy's auto-detection of streaming responses is undocumented — don't rely on it), don't let `encode` re-compress an already-compressed pack, and raise timeouts well above your largest clone.
 
@@ -456,7 +477,7 @@ Three parts:
 
 A PR needs no issue; plenty of changes are just changes. But an issue's _natural_ resolution is a PR that satisfies it, and that asymmetry is worth making visible rather than leaving implicit in a nullable foreign key.
 
-**Render it as a ladder on the issue page** — a four-step state showing exactly where a piece of work has got to:
+**Render it as a ladder on the issue page** — a five-step state showing exactly where a piece of work has got to:
 
 ```
 OPEN ─── BRANCH ─── PR #15 ─── MERGED ─── CLOSED
@@ -475,11 +496,11 @@ Issues and PRs are the same object with different attachments — a title, a bod
 
 _Nine views, one design language, no owner in the URL_
 
-Every page shape is drawn as a full mockup in the companion spec: [**Càrn Layout →**](https://claude.ai/code/artifact/6a95e6fc-3a60-416b-a496-b713a5005be1).
+The page shapes are specified in the companion study: [**Càrn Layout →**](https://claude.ai/code/artifact/587c7ac1-5712-4927-bb82-8e5a80731f80). The pre-build mockups that study was drawn against are archived at [the original artifact](https://claude.ai/code/artifact/6a95e6fc-3a60-416b-a496-b713a5005be1); the shipped pages have superseded them.
 
 One rule resolves every page: **the display face is worn by whatever the page is about.** On a list that's the items — filenames, repo names, issue titles. On a show page it's the single title. On a create page it's the question. Everything else is mono, small, and quiet.
 
-File rows carry three constants: **directories in the accent with a trailing slash** (the only accent on a repo page, and it survives greyscale), **full-row hit areas** with hover and focus states, and **last-commit subject plus age** in mono with tabular numerals. Sixteen rows, then `Show all N`.
+File rows carry three constants: **directories in `--accent-text` with a trailing slash** (it survives grayscale, and `-text` rather than `--accent` because a filename is bold at 16.8px where the clamp bottoms out and therefore owes 4.5:1), **full-row hit areas** with hover and focus states, and **last-commit subject plus age** in mono with tabular numerals. Sixteen rows, then `Show all N`. Of those three, only the first ships on the file tree today — see `docs/LAYOUT.md` §02, which owns what is built and what 1e still owes.
 
 #### The repo view
 
@@ -488,7 +509,7 @@ File rows carry three constants: **directories in the accent with a trailing sla
 │ SITE [Repos](/repos)     [Create new repo](/new) │
 ├──────────────────────────────────────────────────┤
 │                                                  │
-│ repo name (tiny)                                 │
+│ (repo name: visually hidden h1)                  │
 │                                                  │
 │ file preview                                list │
 │ lists                                    sidebar │
@@ -517,11 +538,13 @@ File rows carry three constants: **directories in the accent with a trailing sla
 
 | Route                   | View       | Notes                                                    |
 | ----------------------- | ---------- | -------------------------------------------------------- |
-| `/`                     | Repo list  | The whole site index. Name, description, last push.      |
+| `/`                     | Repo list  | The whole site index. Name, description, created.        |
 | `/r/:repo`              | Repo       | File tree + rendered README. The page that sells it.     |
 | `/r/:repo/blob/:rev/*`  | Blob       | Highlighted source. Raw link points at the blob origin.  |
 | `/r/:repo/commits`      | Log        | `?ref=` to scope. Paginated by SHA cursor, not `--skip`. |
 | `/r/:repo/commits/:sha` | Commit     | Diff + cross-refs resolved. Immutable — cache forever.   |
+| `/r/:repo/branches`     | Branches   | Each row links to the log scoped to that ref.            |
+| `/r/:repo/tags`         | Tags       | Same. A tag gets a page of its own in Phase 5.           |
 | `/r/:repo/issues`       | Issue list | Open/closed filter. Epics show children nested.          |
 | `/r/:repo/issues/:n`    | Issue      | Body, thread, timeline, "create branch" action.          |
 | `/r/:repo/prs`          | PR list    | Same shell as the issue list — same table underneath.    |
@@ -533,12 +556,16 @@ The complete surface outside the nine:
 
 | Route                                                  | Kind  | Note                                                                          |
 | ------------------------------------------------------ | ----- | ----------------------------------------------------------------------------- |
-| `/new` · `/settings` · `/r/:repo/settings`             | Web   | Admin forms. See the settings split below.                                    |
+| `/new` · `/settings` · `/r/:repo/settings`             | Web   | Post-MLP. Admin forms; see the settings split below.                          |
 | `/r/:repo/releases` · `/r/:repo/releases/:tag`         | Web   | Phase 5.                                                                      |
+| `/r/:repo/header/:asset`                               | Web   | The committed header image, addressed by blob OID. Immutable — cache forever. |
 | `/r/:repo/info/refs` · `POST /r/:repo/git-upload-pack` | Git   | Anonymous read only. No `git-receive-pack` over HTTP, ever — push is SSH.     |
 | `/r/:repo/archive/:rev.tar.gz`                         | Git   | `git archive` on demand. The tightest rate-limit zone.                        |
 | Any view + `.json`                                     | API   | Read API — the same view model, serialized. No separate route tree.           |
 | `POST /api/r/:repo/statuses/:sha`                      | API   | The one machine-callable write. GitHub-shaped. See §07.                       |
+| `/carn.<hash>.css`                                     | Asset | The stylesheet, hashed on its own bytes. Immutable — cache forever.           |
+| `/fonts/:face`                                         | Asset | The three woff2 faces. Not content-addressed, so a week with an ETag, not forever. |
+| `/images/:image`                                       | Asset | Four fixed files: the two favicons, the touch icon, the `og:image` card. Not content-addressed, so a week, not forever. |
 | `/health`                                              | Ops   | What Caddy health-checks and what the SIGTERM handler flips.                  |
 | `/robots.txt` · `/sitemap.xml`                         | Ops   | See below — both matter more here than on a normal site.                      |
 | `/r/:repo/commits.atom` and friends                    | Feeds | Atom per repo for commits, releases, and issues, plus a global activity feed. |
@@ -563,7 +590,7 @@ Three, in fact:
 
 - **Site settings** (`settings` table, key/value, admin-only): site title, the _default_ default-branch name for new repos, the reserved-name list, the mirror target _pattern_.
 - **Repo settings** (columns on `repos`): description, this repo's actual default branch, its specific mirror remote, archived flag.
-- **Viewer preferences** (a cookie): theme, diff view mode, tab width. There's no session to hang these on and no reason to want one — a cookie is the correct storage for a preference that belongs to a browser rather than a person.
+- **Viewer preferences** (a cookie): diff view mode, tab width. There's no session to hang these on and no reason to want one — a cookie is the correct storage for a preference that belongs to a browser rather than a person. The palette is not one of them: it follows `prefers-color-scheme` so that every page stays byte-identical for every visitor.
 
 The distinction: _default branch name_ is a site setting because it's a policy for repos that don't exist yet; _default branch_ is a repo setting because it's a fact about one repo. Same for mirrors — the site knows the pattern, the repo knows its remote.
 
@@ -647,9 +674,9 @@ Everything here blocks something later and is more annoying to do mid-build.
 - **Create the GitHub mirror repo** — as a plain new repo, _not_ a fork. A fork's commits never count toward your contribution graph.
 - **Generate a dedicated mirror deploy key** (ed25519), add it to the GitHub repo with write access, and keep it out of your laptop's agent.
 - **Generate a second personal SSH key and put it somewhere you won't lose** — a hardware token, a printout in a drawer, another machine. Not on the laptop. §11 has the full recovery story.
-- **Claim the npm name** `carn` — free as of this writing, and the neighbouring names filled up over a few months.
+- **Claim the npm name** `@nschneble/carn` — unscoped `carn` is refused by npm's similarity guard for being too close to `yarn`, `cron`, and `acorn`, which is why the package is scoped and the binary is not. See §07.
 - **Create the Càrn repo itself** — on GitHub for now; it migrates to Càrn the day Phase 1 ships, a useful first migration to rehearse.
-- **Build the Archivo subset** with the small-caps recipe, or the full ArchivoSC. Half an hour, and it unblocks the stylesheet.
+- **Build the Carn Sans subset** with the compensated small-caps recipe. Half an hour, and it unblocks the stylesheet. A second small-caps family is not an alternative — `docs/BRAND.md` §03 forecloses it in favour of merging `smcp`/`c2sc` into Carn Sans itself.
 
 > **GATE** — `ssh deploy@carn.fancyenchiladas.net` works and both hostnames resolve
 
@@ -940,7 +967,7 @@ No new mechanism is needed. Three layers, in order of how often you'd reach for 
 >
 > Four lines in the repo's README: how to reach the console, how to exec into the container, the exact command, how to verify. Recovery is always possible — you own the hardware. The failure mode is reverse-engineering your own `ssh_keys` table from memory at 11pm.
 
-**Revocation is instant.** Every SSH connection re-reads the key table, so deleting a row is sufficient — no cached authorization, no session to expire. Don't optimise that away with a key cache later.
+**Revocation is instant.** Every SSH connection re-reads the key table, so deleting a row is sufficient — no cached authorization, no session to expire. Don't optimize that away with a key cache later.
 
 ## 12 · Naming
 
@@ -964,7 +991,7 @@ _KAARN · masculine · cairn, heap of stones — also a verb: to heap, pile up, 
 
 Masculine noun, genitive and plural _cùirn_. A heap that _many passers-by each add one stone to_, and which _marks a route for those who follow_ — a commit history and a public repo in one image. It doubles as a verb: to heap, pile up, accumulate.
 
-`Càrn · carn.fancyenchiladas.net · npm: carn`
+`Càrn · carn.fancyenchiladas.net · npm: @nschneble/carn`
 
 ### Where each spelling goes
 
@@ -972,7 +999,8 @@ Masculine noun, genitive and plural _cùirn_. A heap that _many passers-by each 
 | ----------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | Page titles, nav, footer, README, docs    | **Càrn** | The real word. Nothing here is parsed by a machine.                                                                              |
 | Hostname, clone URLs, TLS cert, Caddyfile | `carn.`  | OpenSSH can't resolve IDN; Caddy fails silently on Unicode addresses.                                                            |
-| npm package and binary                    | `carn`   | npm forbids non-ASCII names outright. `cairn` and `cairn-cli` are both taken; the latter already claims the `cairn` binary name. |
+| npm package                               | `@nschneble/carn` | npm forbids non-ASCII names outright, and unscoped `carn` is refused by the similarity guard (`yarn`, `cron`, `acorn`). |
+| Binary on `$PATH`                         | `carn`   | A scope is a registry namespace, not a command name. `cairn` and `cairn-cli` are both taken; the latter already claims the `cairn` binary name. |
 | Repo, database, container names           | `carn`   | Anywhere a shell or a config file has to type it.                                                                                |
 
 Grave accents in Gaelic are meaning-bearing, not decorative — `obair` is "work," `òbair` is "retch." Only grave accents exist in modern Gaelic; acutes are pre-1981 and appear only in older dictionaries.
@@ -1010,7 +1038,7 @@ _After the MLP — each an explicit decision, not a drift_
 
 - Inline diff comments
 - Web writes via `carn web-login`
-- A variable ArchivoSC build
+- Real small caps merged into Carn Sans (`smcp`/`c2sc`)
 
 #### Never
 
@@ -1041,7 +1069,7 @@ Not useful as designed, and the reason is a genuine tension rather than a techni
 
 > **"PUBLIC AND OPEN SOURCE" + "ADMIN-CREATED ACCOUNTS ONLY" = READ-ONLY OPEN SOURCE**
 >
-> Anyone can read every repo, clone it, and fork it elsewhere. **Nobody can contribute back** — there's no signup, so there's no account, so there's no branch to open a PR from. That's the right position for a personal forge, but it means "open source by default" describes the _licence_ and the _visibility_, not the _participation_.
+> Anyone can read every repo, clone it, and fork it elsewhere. **Nobody can contribute back** — there's no signup, so there's no account, so there's no branch to open a PR from. That's the right position for a personal forge, but it means "open source by default" describes the _license_ and the _visibility_, not the _participation_.
 >
 > Three answers exist without changing the model: add them as a user, take a patch by email and `git am` it, or accept a pull request on the GitHub mirror. The third is the best — the mirror already exists for CI, and it makes GitHub the contribution front door while Càrn stays the canonical home.
 

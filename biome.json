@@ -20,6 +20,18 @@
       "preset": "recommended"
     }
   },
+  "overrides": [
+    {
+      "includes": ["images/**/*.svg"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noSvgWithoutTitle": "off"
+          }
+        }
+      }
+    }
+  ],
   "vcs": {
     "enabled": true,
     "clientKind": "git",

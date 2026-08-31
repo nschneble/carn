@@ -1,0 +1,4 @@
+{
+  "story": "A visitor reads the repo index, then a repo",
+  "actions": [{ "action": "repo-index" }, { "action": "repo-show" }]
+}

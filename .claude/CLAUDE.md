@@ -38,8 +38,9 @@ Rules for a coding session:
   be absorbed into AGPL works. Anything copyleft-incompatible,
   source-available-but-not-open, or with a field-of-use restriction is
   disqualified. This compounds the dependency rule above; stop and ask.
-- **The font is licensed separately.** Archivo is SIL OFL 1.1 and ships
-  with its own `fonts/OFL.txt`. Leave it alone.
+- **The fonts are licensed separately.** Archivo is SIL OFL 1.1. IBM Plex
+  Mono is SIL OFL 1.1 with a Reserved Font Name, so the subset ships as
+  Carn Mono (and Carn Sans to match). Leave both license files alone.
 - The web UI carries a source link as a license obligation; a network user
   must be able to get the source.
 
@@ -54,7 +55,9 @@ visitor. No sessions, no per-user rendering, no auth. Pages are genuinely
 cacheable, and it's why the budgets below are reachable and reasonable.
 
 **3. Secure and accessible.** Semantic HTML, keyboard-first, light and dark
-themes, WCAG 2.1 AA conformance. The display face never sets body copy.
+themes, WCAG 2.1 AA conformance. Gate runs 2.2 AA for `target-size`, which
+pins row hit area, and axe's `best-practice` set, which pins skip link,
+landmark shell, and the page's `<h1>`. Display face never sets body copy.
 
 ## Hard budgets
 
@@ -68,7 +71,15 @@ doesn't move a number that's currently failing, it doesn't get done.
 - **Fewer than 12 `spawn` calls per render.** This catches a specific way
   this codebase could get slow. A file list calling `cat-file` once per row
   is pixel-identical, byte-identical, and four times slower.
-- **Zero axe violations** across both light and dark themes.
+- **Zero axe violations across both render paths.** There's no theme cookie
+  so `prefers-color-scheme` is the only palette switch. The two paths are
+  `colorScheme: 'light'` and `colorScheme: 'dark'`. Dark is the state a
+  token defined only inside the light media query resolves to nothing in.
+  Every token must also read back non-empty on `:root` in both.
+
+The axe ruleset is `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`,
+and `best-practice`. The last rule isn't WCAG and widens the computed
+experimental force-enable list from five rules to seven.
 
 ## Tech stack (and the rules about adding to it)
 
@@ -104,9 +115,10 @@ Prisma, Passport, React, Tailwind (or any utility-CSS framework), Vite.
   cookie on that origin.
 - **Issues + PRs share one per-repo number sequence**, from a `next_number`
   column incremented in the same transaction. Never `MAX(number)+1`.
-- **`repos.owner_id` is immutable.** An admin can revoke any grant except the
-  owner's.
-- Theme is a cookie. The server knows it + picks. No client-side switching.
+- **`repos.owner_id` is immutable.** An admin can revoke any grant except
+  the owner's.
+- Theme only follows `prefers-color-scheme`. No cookie, no `data-theme`, no
+  `Vary`, and no client-side switching.
 
 ## Git subprocess rules
 
@@ -179,16 +191,40 @@ All of these are non-negotiable:
 - Fastify will eagerly consume the stream. Register a raw content-type
   parser for `application/x-git-*-request` or clones break confusingly.
 
-**markdown-it**
+**markdown-it** (measured against 15.0.0, not 14.x)
 
-- `new MarkdownIt('commonmark')` sets `html: true`. It's a spec-conformance
-  preset. Always `new MarkdownIt('commonmark', { html: false })`.
+- `new MarkdownIt('commonmark')` still sets `html: true` in 15. It's a
+  spec-conformance preset. Always use
+  `new MarkdownIt('commonmark', { html: false })`.
 - Only enable `table`. Fenced code info strings are already CommonMark.
 - Cross-reference auto-linking is a core rule registered in
   `before('text_join')`, never a post-render regex over HTML which produces
-  nested `<a>` tags. Registering after `text_join` breaks escaped `\#12`.
-- Replace `validateLink` with an allowlist (`https|http|mailto` plus
-  data-image forms); the default is a blocklist of four schemes.
+  nested `<a>` tags. `text_join` is still the last core rule in 15 and
+  `before()` still places a rule immediately ahead of it.
+- **Register before `text_join` or the escape stops working.** `\#12`
+  parses to `text("…") + text_special("#") + text("12 …")`, so a rule
+  scanning `text` tokens can't see `#12`. `text_join` merges them into one
+  token whose content is `#12`, indistinguishable from the unescaped form.
+- 15 inserts a `strip_references` core rule after `block`. The order is
+  `normalize, block, strip_references, inline, linkify, replacements,
+  smartquotes, text_join`.
+- Replace `validateLink` w/ allowlist: `https|http|mailto` + data-image
+  forms. Default is four-scheme blocklist: `vbscript|javascript|file|data`,
+  so it fails open on everything else.
+- **15 moved `validateLink` to a prototype method. `md.validateLink = fn`
+  still shadows it**, because an own property wins. Assign on the instance.
+- **A `javascript:` payload can't prove the allowlist is installed**, since
+  the default blocklist already rejects it. An unpatched instance passes
+  the same test. Discriminate with a scheme the default allows and the
+  allowlist denies, e.g. `ftp:`, then assert `javascript:` separately.
+- **15 bundles its own type declarations. Never add `@types/markdown-it`.**
+  A bare `import` resolves to markdown-it's own `.d.mts`. `@types` 14 is
+  redundant and wrong: 15 dropped its `lib/*` subpath exports while
+  `@types` still exports `./*`, so
+  `import "markdown-it/lib/rules_block/state_block.mjs"` type-checks clean
+  under `strict` and throws `ERR_PACKAGE_PATH_NOT_EXPORTED`. Import only
+  the package root. 15 also exports the class as a type only, so annotate
+  via `import MarkdownIt, { type MarkdownIt as MarkdownItInstance }`.
 
 **post-receive hooks**
 
@@ -216,9 +252,11 @@ Full system in `docs/BRAND.md`. The rules a coding session needs:
 - **The display face is worn by whatever the page is about.** On a list,
   it's the items. On a show page, the single title. On a create page, the
   question. Everything else is mono, small, and quiet.
-- Self-hosted Archivo and IBM Plex Mono. Two families, six roles.
-- One accent. `--accent` for large type + fills; `--accent-text` for inline
-  links + small text. Light-mode pink is 4.11:1, misses AA for body copy.
+- Self-hosted Carn Sans and Carn Mono, which are renamed subsets of Archivo
+  and IBM Plex Mono. Two families, eight roles.
+- One accent. `--accent` for large type, `--accent-text` for inline links
+  and small text, and `--accent-fill` for fills; resolves to `--accent` in
+  dark and `--accent-text` in light.
 - **No color-only signals.** Dirs get trailing `/`, diffs get `+`/`−`, and
   states get a word.
 - Radius 0 except the chip. No shadows. **No motion at all.**
@@ -227,6 +265,18 @@ Full system in `docs/BRAND.md`. The rules a coding session needs:
   not an opacity change. Use `aria-disabled`, not `disabled`.
 - **Prefer explaining over disabling.** A greyed-out Merge is unhelpful.
   "This branch has conflicts in 2 files" plus the fix commands is better.
+- **Repo headers are SVG only, 16 KB max.** JPEGs and PNGs are refused and
+  fall through to the generated mark. `.carn/header-{light,dark}.svg`, 4:1,
+  reference 1600×400, transparent ground. No processing; file is served
+  as-is and `object-fit: cover` absorbs small mismatches.
+- **Repo name is a visually hidden `<h1>`.** Header image and generated
+  mark are both decorative, and that's only defensible because `.vh`
+  carries the name as a real heading. Don't remove it to "clean up" the
+  markup, and don't give the mark an `alt`.
+- **Two render paths, not four.** There's no theme cookie and no stamped
+  state. `prefers-color-scheme` is the only palette switch, and Tuffgal
+  captures at 375 and 1440, which bracket the stylesheet's single
+  `min-width: 640px` query.
 
 ## Voice
 
@@ -236,6 +286,29 @@ to make one. A button names the action and the confirmation reuses the
 verb, e.g. "Merge" then "Merged", never "Merge" then "Success."
 
 No exclamation marks. No trailing ellipses. No emoji. No "Oops."
+
+## Nick's edits are not review findings
+
+**If a change would reverse something Nick wrote deliberately, stop and ask
+first.** Wording, naming, punctuation, comment prose, file structure; if
+the current text is there because he put it there, a preference for
+different text is a proposal.
+
+The test is whether the existing thing is *wrong* or merely *different*:
+
+- **Wrong:** It contradicts a measurement, a shipped binary, a doc that's
+  the source of truth, or it fails a check. Fix it + say the contradiction.
+- **Different:** It reads better to you, matches a convention you prefer, or
+  restores an earlier version you liked. Raise it. Don't do it.
+
+A brief or a plan is not consent. Instructions in `docs/phases/` were
+written by an assistant and can make this same mistake. An item that says
+"restore", "revert", or "change back" without naming what the current text
+contradicts is one to query rather than execute.
+
+Hedging doesn't help. "Your call, but…" followed by an instruction is still
+an instruction, and it'll be carried out. Either raise it as a question and
+stop, or leave it alone.
 
 ## Testing
 

@@ -1,0 +1,22 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+// first three functions are deliberately unsafe; the fixture extension
+// keeps it all uncompiled
+
+import { html } from "../../src/html/index.js";
+
+export function plantedBeforeValue(href: string) {
+  return html`<a href=${href}>go</a>`;
+}
+
+export function plantedUnquoted(name: string) {
+  return html`<a href=/r/${name}>go</a>`;
+}
+
+export function plantedAttrName(attrs: string) {
+  return html`<a ${attrs}>go</a>`;
+}
+
+export function safeAlongside(href: string, label: string) {
+  return html`<a href="${href}">${label}</a>`;
+}
