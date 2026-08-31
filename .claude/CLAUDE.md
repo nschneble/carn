@@ -287,6 +287,29 @@ verb, e.g. "Merge" then "Merged", never "Merge" then "Success."
 
 No exclamation marks. No trailing ellipses. No emoji. No "Oops."
 
+## Nick's edits are not review findings
+
+**If a change would reverse something Nick wrote deliberately, stop and ask
+first.** Wording, naming, punctuation, comment prose, file structure; if
+the current text is there because he put it there, a preference for
+different text is a proposal.
+
+The test is whether the existing thing is *wrong* or merely *different*:
+
+- **Wrong:** It contradicts a measurement, a shipped binary, a doc that's
+  the source of truth, or it fails a check. Fix it + say the contradiction.
+- **Different:** It reads better to you, matches a convention you prefer, or
+  restores an earlier version you liked. Raise it. Don't do it.
+
+A brief or a plan is not consent. Instructions in `docs/phases/` were
+written by an assistant and can make this same mistake. An item that says
+"restore", "revert", or "change back" without naming what the current text
+contradicts is one to query rather than execute.
+
+Hedging doesn't help. "Your call, but…" followed by an instruction is still
+an instruction, and it'll be carried out. Either raise it as a question and
+stop, or leave it alone.
+
 ## Testing
 
 **No unit tests. No integration tests.**

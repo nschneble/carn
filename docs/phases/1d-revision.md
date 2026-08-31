@@ -86,38 +86,45 @@ record, the sheet got **smaller** — 12,245 to 11,681 raw characters across the
 four blocks — because collapsing the axis declarations saved more than the
 blank lines cost. No budget impact.
 
-## 3 · The font recipe no longer builds the shipped font
+## 3 · The font casing · SETTLED, and this item overstepped
 
-`fonts/README.md` documents the `setName` calls that produced
-`fonts/carn-sans.woff2`. Five of them were re-cased:
+**Resolved: CamelCase stays.** `SemiBold`, `ExtraBold`, `SemiExpanded`. The
+tree is consistent as of `70d9d5b` — binary, recipe, and test all agree — and
+`fonts/README.md` now records the rule and why, so the next copy pass has
+something to read instead of a bare string.
 
-```
--n.setName("Carn Sans SemiBold", 1, 3, 1, 0x409)
--n.setName("2.001;NSCH;CarnSans-SemiBold", 3, 3, 1, 0x409)
--n.setName("Carn Sans SemiBold", 4, 3, 1, 0x409)
--n.setName("CarnSans-SemiBold", 6, 3, 1, 0x409)
--n.setName("SemiBold", 17, 3, 1, 0x409)
-+  … "Semibold" …
-```
+**This item originally said "revert both files", over a change Nick had made
+deliberately. That was wrong**, and it is left here corrected rather than
+deleted, because the reasoning is the useful part.
 
-`test/contract/fonts.contract.ts` was edited to match, and now fails against the
-binary, which still says `Carn Sans SemiBold`. Check 3 fails the same way: the
-test expects `"and isn't the original font."` where the font's description
-record says `"and is not the original font."`
+The defect was real: `fonts/README.md` documents the `setName` calls that
+produced `fonts/carn-sans.woff2`, five of them were re-cased to `Semibold`, and
+`test/contract/fonts.contract.ts` was edited to match — so both described a font
+that does not exist, while the binary still said `Carn Sans SemiBold`. Three
+things had to end up agreeing. Which one moved was a decision, and the item
+presented the cheap direction as the only correct one.
 
-**Revert both files to `SemiBold` and to `is not`.** The reasons, in order:
+Two things it also got wrong on the facts:
 
-1. The shipped binary is the artefact. A recipe that does not reproduce it is
-   wrong by definition, and ID 6 is the PostScript name — that is font
-   identity, not a label.
-2. `SemiBold` is the OpenType convention for weight 600 and is what Archivo
-   upstream uses.
-3. The test is a mirror of the binary. Editing the mirror does not change the
-   thing; it only stops the mirror from reporting. These name records are where
-   OFL attribution lives, and this check is what proves it survived the subset.
+- **It is thirteen strings, not five.** The recipe rewrites IDs 1, 3, 4, 6 and
+  17 by hand. `SemiBold` and `ExtraBold` also live at IDs 263 and 265, their
+  PostScript twins at 272 and 274, and `SemiExpanded` at 280 — all upstream,
+  and the `>= 256` loop replaces only `Archivo` with `CarnSans`. Re-casing the
+  hand-written five leaves the font disagreeing with itself, and ID 272 is a
+  `postscriptNameID`, which is what a PDF embeds for the 600 instance.
+- **"`SemiBold` is what Archivo upstream uses" was asserted, not checked.** It
+  turns out to be true — IDs 263 and 272 are upstream strings the rename never
+  touches — but that was luck. It is verified now.
 
-If the preference for `Semibold` is real, the font gets rebuilt and all three
-move together. That is not this PR.
+The reason CamelCase wins is not that it is better. It is that `Semibold`
+cannot travel alone: it sits beside `ExtraBold` and `SemiExpanded`, so the
+sentence-case rule costs `Semiexpanded`, and the alternative is one name
+breaking the pattern its two siblings keep inside a single `name` table.
+
+Still true and still in scope: **`test/contract/fonts.contract.ts` must expect
+`"and is not the original font."`**, matching name ID 10 in the binary, not the
+contracted form the copy pass gave it. That one is a straight mismatch with no
+decision attached.
 
 ## 4 · The licence arithmetic was deleted, and three checks depend on it
 

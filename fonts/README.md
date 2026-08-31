@@ -59,6 +59,10 @@ The loop that follows catches the six `fvar` instance PostScript names, at IDs 2
 
 The upstream prefix is `ArchivoRoman`, not `Archivo`, so the instances become `CarnSansRoman-*` and stay distinct from ID 6 the way upstream keeps them distinct.
 
+**The compound style names stay CamelCase — `SemiBold`, `ExtraBold`, `SemiExpanded` — and that is a decision, not an oversight.** Only five of the thirteen strings carrying a style name are written by hand above. The rest are upstream's: `SemiBold` and `ExtraBold` at IDs 263 and 265, their PostScript twins at 272 and 274, and `SemiExpanded` at 280. The loop replaces `Archivo` with `CarnSans` and nothing else, so the weight word passes straight through. Re-casing the five by hand therefore ships a font that disagrees with itself — family `Carn Sans Semibold` against instance `SemiBold` and PostScript `CarnSansRoman-SemiBold`, and that last one is a `postscriptNameID`, which is what a PDF embeds when it picks the 600 instance.
+
+Changing the casing is a thirteen-string change and a rebuild from upstream Archivo 2.001, not a copy edit — and the rule has to reach `Semiexpanded` too, or it is not a rule. `test/contract/fonts.contract.ts` asserts these strings against the shipped binary, so the test is the thing that notices; do not edit it to agree with a recipe the binary does not match.
+
 `--name-IDs+=` carries the Archivo Project Authors' trademark, foundry, designer, description, and license records through the subset. The pyftsubset default keeps IDs 0–6 and drops all of them. They cost 176 B.
 
 `recalcTimestamp=False` alone is not enough here. `varLib.instancer` re-stamps `head.modified` itself and has no flag to stop it, so the rename step copies the value back from the pinned upstream `Archivo.ttf`. Without both, two clean runs of this recipe produce different bytes. Same rule as the fixture repo's pinned commit dates.
