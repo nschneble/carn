@@ -562,42 +562,44 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1d settled.
     database too**, asserted with a direct insert that the CHECK rejects
 17. `renderPaths` is pinned by `deepStrictEqual`, and the verify script asserts
     the reported test count
-18. An escaped `\#12` survives un-linked; an unescaped `#12` resolves
-19. Tuffgal stories pass at **375 and 1440**, both schemes, against the pinned
+18. Tuffgal stories pass at **375 and 1440**, both schemes, against the pinned
     fixture and a frozen clock
-20. `captureGit` has exactly one definition and every git caller imports it;
+19. `captureGit` has exactly one definition and every git caller imports it;
     same for `parseLsTree` and for `mayWrite`. No file under `src/ssh/` imports
     `db` except `server.ts` — `git grep` it
-21. `git grep` finds no shell-enabled spawn — scoped form, positive control
-22. Every `.ts` under `src`, `test`, and `scripts` opens with the SPDX line
-23. `package.json` adds only `highlight.js`
-24. `npx squawk prisma/migrations/**/*.sql` exits 0
-25. 1a through 1d verify scripts all still pass in full
-26. A relative link and a relative image both resolve to the blob and asset
+20. `git grep` finds no shell-enabled spawn — scoped form, positive control
+21. Every `.ts` under `src`, `test`, and `scripts` opens with the SPDX line
+22. `package.json` adds only `highlight.js`
+23. `npx squawk prisma/migrations/**/*.sql` exits 0
+24. 1a through 1d verify scripts all still pass in full
+25. A relative link and a relative image both resolve to the blob and asset
     routes; an absolute link is untouched; an anchor-only or query-only
     destination is left alone
-27. `repos.name` collates as `C` — read it back from `pg_attribute` joined to
+26. `repos.name` collates as `C` — read it back from `pg_attribute` joined to
     `pg_collation` rather than assuming the migration took, and assert a repo
     named `ab-c` lists before one named `abc`. `src/repos/list.ts`'s comment
     names a keyset cursor on `lower(name)` — it already does, in Nick's
     wording; do not rewrite it — and `git grep` finds no `rev-list --count`
     outside the log's own code
-28. `git grep` finds `$queryRaw` and `$executeRaw` at exactly the three
+27. `git grep` finds `$queryRaw` and `$executeRaw` at exactly the three
     sanctioned call sites outside `src/generated`, each carrying a comment
     naming the DSL construct it rejects
-29. `mayWrite` is tested against a fake `AccessStore` across all four cases,
+28. `mayWrite` is tested against a fake `AccessStore` across all four cases,
     and the owner case asserts the fake was **never consulted**
-30. `GET /r/:repo/tree/:rev/*` renders a nested path with the same sixteen-row
+29. `GET /r/:repo/tree/:rev/*` renders a nested path with the same sixteen-row
     cap and `?all=1` behaviour as the root, in one `ls-tree`; a path that is
     not a tree 404s rather than redirecting
-31. File rows link to the blob route and directory rows to the tree route, both
+30. File rows link to the blob route and directory rows to the tree route, both
     at the current rev; a gitlink row links nowhere; the `.tree` hover wash and
     `::after` overlay are live again now the rows have targets
-32. Running this script twice gives the same result, leaving no
+31. Running this script twice gives the same result, leaving no
     `carn_verify_%` database, no rows beyond the admin seed, and no directory
     under the temporary repo root
 
-Checks 3, 6, 9, 10, and 27 are the phase's real gate. Each covers a failure that
+Cross-reference autolinking (`#12` resolution) is issues-phase scope, not
+1e's — see `PLAN.md:664`. Carried into this brief by mistake; dropped.
+
+Checks 3, 6, 9, 10, and 26 are the phase's real gate. Each covers a failure that
 is invisible when it happens: a hardcoded cap silently stops tracking the
 budget, `--skip` pagination is correct until a repo grows, a per-row `git log`
 is pixel-identical and an order of magnitude slower, a budget measured on the
