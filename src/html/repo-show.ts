@@ -8,18 +8,9 @@ import { headerMarkup } from "../repos/header.js";
 import { headerAssetPath } from "../repos/header-asset.js";
 import { sshRemote } from "../repos/remote.js";
 import type { RepoView } from "../repos/show.js";
-import type { TreeEntry } from "../repos/tree.js";
-import { smallCaps } from "./filename.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
-
-export const treeRowCap = 16;
-
-function row(entry: TreeEntry): Raw {
-  return entry.directory
-    ? html`<li class="row is-dir"><span class="nm t-item" lang="en">${smallCaps(entry.name)}/</span></li>`
-    : html`<li class="row"><span class="nm t-item" lang="en">${smallCaps(entry.name)}</span></li>`;
-}
+import { treeList } from "./tree-list.js";
 
 function noCommits(view: RepoView): Raw {
   return html`<div class="empty">
@@ -28,19 +19,19 @@ function noCommits(view: RepoView): Raw {
       </div>`;
 }
 
-function tree(view: RepoView, showAll: boolean): Raw {
+function tree(view: RepoView, showAll: boolean, now: Date): Raw {
   if (view.entries.length === 0) return noCommits(view);
 
-  const shown = showAll ? view.entries : view.entries.slice(0, treeRowCap);
-  const list = html`<h2 class="t-label">Files</h2>
-      <ul class="tree" role="list">
-        ${shown.map(row)}
-      </ul>`;
-
-  if (shown.length === view.entries.length) return list;
-
-  return html`${list}
-      <p class="showall"><a class="t-mono" href="/r/${view.name}?all=1">Show all ${view.entries.length}<span aria-hidden="true"> →</span></a></p>`;
+  return html`<h2 class="t-label">Files</h2>
+      ${treeList({
+        repo: view.name,
+        rev: view.branch,
+        path: "",
+        entries: view.entries,
+        showAll,
+        allHref: `/r/${view.name}?all=1`,
+        now,
+      })}`;
 }
 
 function noReadme(view: RepoView): Raw {
@@ -72,6 +63,7 @@ function description(view: RepoView): string {
 export function repoShowPage(view: {
   repo: RepoView;
   showAll: boolean;
+  now: Date;
 }): string {
   const { repo } = view;
 
@@ -87,7 +79,7 @@ export function repoShowPage(view: {
     path: `/r/${repo.name}`,
     main: html`${identity}
       <h1 class="vh">${repo.name}</h1>
-      ${tree(repo, view.showAll)}
+      ${tree(repo, view.showAll, view.now)}
       ${readme(repo)}`,
   });
 }

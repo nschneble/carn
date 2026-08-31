@@ -686,18 +686,21 @@ main > h1 {
   border-top: 1px solid var(--ink);
 }
 
-/* no blob view yet, so the row overlay would only block selection */
-.tree .nm::after {
+/* a submodule is pinned here, not browsable. the row offers nothing, so it
+   takes neither the wash nor the overlay, which on a span would only
+   swallow the selection */
+.tree .is-sub .nm::after {
   content: none;
 }
 
-.tree .row {
-  grid-template-columns: minmax(0, 1fr);
+.tree .is-sub:hover,
+.tree .is-sub:focus-within {
+  background: none;
 }
 
-/* no click target yet, so the hover wash would be a false affordance */
-.tree .row:hover {
-  background: none;
+.tree .pin {
+  position: relative;
+  color: var(--ink-mid);
 }
 
 .showall {

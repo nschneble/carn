@@ -49,6 +49,7 @@ import {
 } from "../gallery/refs.js";
 import { hoverSimulation, indexDocument } from "../gallery/repo-index.js";
 import { committedHeader, showDocument, view } from "../gallery/repo-show.js";
+import { treeDocument, wideTree, withSubmodule } from "../gallery/tree.js";
 import {
   type BrowserDocument,
   browser,
@@ -261,6 +262,12 @@ const states = {
   }),
   tags: refsDocument({ kind: "tag" }),
   "tags-none": refsDocument({ list: refList("tag", { refs: [] }) }),
+  tree: treeDocument(),
+  // the cap and the lift, at a nested depth rather than at the root
+  "tree-cut": treeDocument({ tree: wideTree }),
+  "tree-all": treeDocument({ tree: wideTree, showAll: true }),
+  // a row that links nowhere, beside rows that do
+  "tree-sub": treeDocument({ tree: withSubmodule }),
 };
 
 for (const [state, markup] of Object.entries(states)) {
@@ -511,11 +518,11 @@ const contrastNodes: Record<string, number> = {
   populated: 18,
   hover: 18,
   empty: 6,
-  show: 58,
-  "show-all": 116,
-  "show-bare": 32,
+  show: 88,
+  "show-all": 182,
+  "show-bare": 62,
   "show-new": 5,
-  "show-header": 58,
+  "show-header": 88,
   "not-found": 7,
   blob: 67,
   "blob-cut": 20,
@@ -534,6 +541,10 @@ const contrastNodes: Record<string, number> = {
   "branches-quiet": 16,
   tags: 22,
   "tags-none": 6,
+  tree: 42,
+  "tree-cut": 60,
+  "tree-all": 154,
+  "tree-sub": 16,
 };
 
 for (const path of renderPaths) {
@@ -921,6 +932,98 @@ test("the tree row still ellipsises rather than wrapping", async () => {
 
     assert.strictEqual(row.wrap, "nowrap");
     assert.strictEqual(row.clipped, "ellipsis");
+  } finally {
+    await page.close();
+  }
+});
+
+// a token reads back as the hex the sheet declares; a background reads
+// back as the rgb the browser resolved it to
+function rgb(token: string): string {
+  const hex = token.trim().replace("#", "");
+  const channels = [0, 2, 4].map((at) =>
+    Number.parseInt(hex.slice(at, at + 2), 16),
+  );
+
+  return `rgb(${channels.join(", ")})`;
+}
+
+// the wash and the overlay were switched off while a file row had nowhere
+// to go, and a sheet edit putting either back to none would leave the
+// markup linked and the affordance missing with every other gate green
+test("the tree row's wash and overlay are live now the rows link", async (t) => {
+  const page = await (await browser()).newPage();
+
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${site.origin}/show`);
+
+    const linked = await page.locator(".tree .row:not(.is-sub) .nm").first();
+    const overlay = await linked.evaluate((node) => ({
+      tag: node.tagName,
+      content: getComputedStyle(node, "::after").content,
+      inset: getComputedStyle(node, "::after").inset,
+      columns: getComputedStyle(node.parentElement as Element)
+        .gridTemplateColumns,
+    }));
+
+    assert.strictEqual(overlay.tag, "A", "a linking row is not an anchor");
+    assert.strictEqual(
+      overlay.content,
+      '""',
+      "the row-wide overlay is still switched off, so the wash covers more than the click target",
+    );
+    assert.strictEqual(overlay.inset, "0px");
+    assert.strictEqual(
+      overlay.columns.split(" ").length,
+      3,
+      `the tree row is laid out as ${overlay.columns}, so the subject and age columns collapsed`,
+    );
+
+    const row = page.locator(".tree .row").first();
+    const sunk = rgb(
+      await row.evaluate((node) =>
+        getComputedStyle(node).getPropertyValue("--sunk"),
+      ),
+    );
+
+    const rest = await row.evaluate(
+      (node) => getComputedStyle(node).backgroundColor,
+    );
+    await row.hover();
+    const washed = await row.evaluate(
+      (node) => getComputedStyle(node).backgroundColor,
+    );
+
+    assert.notStrictEqual(
+      washed,
+      rest,
+      "hovering a tree row changed nothing, so the wash is still switched off",
+    );
+    assert.strictEqual(washed, sunk, "the hover wash is not --sunk");
+    t.diagnostic(`tree row columns: ${overlay.columns}, wash ${washed}`);
+  } finally {
+    await page.close();
+  }
+});
+
+// a submodule offers nothing, so it takes neither the overlay nor the wash
+test("a gitlink row is inert", async () => {
+  const page = await (await browser()).newPage();
+
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${site.origin}/tree-sub`);
+
+    const inert = await page.locator(".tree .is-sub .nm").evaluate((node) => ({
+      tag: node.tagName,
+      content: getComputedStyle(node, "::after").content,
+      links: node.closest("li")?.querySelectorAll("a").length ?? 0,
+    }));
+
+    assert.strictEqual(inert.tag, "SPAN", "a gitlink row grew a link");
+    assert.strictEqual(inert.content, "none", "a gitlink row kept the overlay");
+    assert.strictEqual(inert.links, 0, "a gitlink row links somewhere");
   } finally {
     await page.close();
   }

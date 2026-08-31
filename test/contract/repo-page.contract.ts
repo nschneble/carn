@@ -6,6 +6,7 @@ import {
   chmodSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -20,11 +21,13 @@ import {
   badRepoName,
   errorPage,
   noSuchRepo,
+  noTreeRoot,
 } from "../../src/html/error-page.js";
 import { smallCaps } from "../../src/html/filename.js";
 import { html } from "../../src/html/index.js";
-import { repoShowPage, treeRowCap } from "../../src/html/repo-show.js";
+import { repoShowPage } from "../../src/html/repo-show.js";
 import { stylesheet } from "../../src/html/styles.js";
+import { treeRowCap } from "../../src/html/tree-list.js";
 import { budgetBytes, pageWireBytes } from "../../src/html/wire-weight.js";
 import { headerAssetPath } from "../../src/repos/header-asset.js";
 import type { ResolvedRepo } from "../../src/repos/resolve.js";
@@ -34,6 +37,7 @@ import {
   hostileReadme,
   readmeSource,
   showDocument,
+  treeNow,
   view,
   wide,
 } from "../gallery/repo-show.js";
@@ -49,7 +53,7 @@ const realGit = execFileSync("sh", ["-c", "command -v git"], {
   encoding: "utf8",
 }).trim();
 
-const rowPattern = /<li class="row(?: is-dir)?">/g;
+const rowPattern = /<li class="row(?: is-dir| is-sub)?">/g;
 
 after(() => {
   rmSync(dir, { recursive: true, force: true });
@@ -129,13 +133,15 @@ test("a real repo renders its tree and its readme", async () => {
     "the default branch resolved to nothing",
   );
   assert.deepStrictEqual(
-    loaded.entries.map((entry) => `${entry.name}${entry.directory ? "/" : ""}`),
+    loaded.entries.map(
+      (entry) => `${entry.name}${entry.kind === "directory" ? "/" : ""}`,
+    ),
     ["docs/", "src/", "README.md", "package.json"],
     "directories sort first, then files, each by name",
   );
   assert.ok(loaded.readme?.startsWith("# Linklater"));
 
-  const markup = repoShowPage({ repo: loaded, showAll: false });
+  const markup = repoShowPage({ repo: loaded, showAll: false, now: treeNow });
 
   assert.ok(markup.includes('<h1 class="vh">linklater</h1>'));
   assert.ok(markup.includes("<h1>Linklater</h1>"), "the readme did not render");
@@ -163,7 +169,7 @@ test("a repo with no readme renders the tree and says how to make one", async ()
 
   assert.strictEqual(loaded.readme, null);
 
-  const markup = repoShowPage({ repo: loaded, showAll: false });
+  const markup = repoShowPage({ repo: loaded, showAll: false, now: treeNow });
 
   assert.strictEqual(rows(markup), 1, "the tree vanished with the readme");
   assert.ok(markup.includes('<div class="empty">'));
@@ -201,7 +207,7 @@ test("a repo page render stays inside the spawn budget", async () => {
 
   writeFileSync(
     join(shim, "git"),
-    `#!/bin/sh\necho call >> ${log}\nexec ${realGit} "$@"\n`,
+    `#!/bin/sh\nprintf '%s\\n' "$*" >> ${log}\nexec ${realGit} "$@"\n`,
   );
   chmodSync(join(shim, "git"), 0o755);
   writeFileSync(log, "");
@@ -209,28 +215,42 @@ test("a repo page render stays inside the spawn budget", async () => {
   process.env.PATH = `${shim}:${originalPath ?? ""}`;
 
   const calls = () =>
-    execFileSync("wc", ["-l", log], { encoding: "utf8" })
-      .trim()
-      .split(/\s+/)[0];
+    readFileSync(log, "utf8").split("\n").filter(Boolean) as string[];
 
   try {
     await loadRepoView({ repo });
-    const cold = Number(calls());
+    const cold = calls();
 
     await loadRepoView({ repo });
-    const warm = Number(calls()) - cold;
+    const warm = calls().slice(cold.length);
 
     assert.strictEqual(
-      cold,
-      4,
-      "rev-parse, ls-tree .carn, ls-tree root, cat-file",
+      cold.length,
+      5,
+      `rev-parse, ls-tree .carn, ls-tree root, log, cat-file:\n${cold.join("\n")}`,
     );
     assert.strictEqual(
-      warm,
-      3,
+      warm.length,
+      4,
       "the header ls-tree is no longer cached on the tip",
     );
-    assert.ok(cold < 12, "the page render broke CLAUDE.md's spawn budget");
+
+    // the columns are the failure this counts: one log for the whole
+    // listing, never one per row, and one ls-tree for the entries
+    assert.strictEqual(
+      cold.filter((argv) => argv.startsWith("log ")).length,
+      1,
+      `the subject and age columns cost more than one walk:\n${cold.join("\n")}`,
+    );
+    assert.strictEqual(
+      cold.filter((argv) => argv.endsWith("-- .")).length,
+      1,
+      `the root listing cost more than one ls-tree:\n${cold.join("\n")}`,
+    );
+    assert.ok(
+      cold.length < 12,
+      "the page render broke CLAUDE.md's spawn budget",
+    );
   } finally {
     process.env.PATH = originalPath;
   }
@@ -245,11 +265,15 @@ const app = buildApp();
 
 const invalid = await app.inject({ method: "GET", url: "/r/-nope" });
 const valid = await app.inject({ method: "GET", url: "/r/linklater" });
+const rootTree = await app.inject({ method: "GET", url: "/r/linklater/tree/main/" });
+const nestedTree = await app.inject({ method: "GET", url: "/r/linklater/tree/main/src" });
 await app.close();
 
 console.log("${sentinel}" + JSON.stringify({
   invalid: { status: invalid.statusCode, body: invalid.body, headers: invalid.headers },
   valid: { status: valid.statusCode, body: valid.body },
+  rootTree: { status: rootTree.statusCode, body: rootTree.body },
+  nestedTree: { status: nestedTree.statusCode },
 }));
 process.exit(0);
 `;
@@ -267,7 +291,17 @@ test("an invalid repo name is refused before any database query", () => {
 
   const line = output.split("\n").find((row) => row.startsWith(sentinel));
   assert.ok(line, `the probe printed no result:\n${output}`);
-  const { invalid, valid } = JSON.parse(line.slice(sentinel.length));
+  const { invalid, valid, rootTree, nestedTree } = JSON.parse(
+    line.slice(sentinel.length),
+  );
+
+  // the tree route has no root form, and the url settles that without a
+  // lookup: the nested path reaching the dead database is what proves the
+  // empty one was refused rather than merely unrouted
+  assert.strictEqual(nestedTree.status, 503);
+  assert.strictEqual(rootTree.status, 404);
+  assert.ok(rootTree.body.includes(noTreeRoot.heading));
+  assert.doesNotMatch(rootTree.body, /127\.0\.0\.1|prisma|queryRaw/i);
 
   assert.strictEqual(
     valid.status,
@@ -328,15 +362,15 @@ test("a directory row carries the accent class and a trailing slash", () => {
 
   assert.ok(
     markup.includes(
-      '<li class="row is-dir"><span class="nm t-item" lang="en"><span class="sc">docs</span>/</span></li>',
+      '<a class="nm t-item" lang="en" href="/r/linklater/tree/main/docs"><span class="sc">docs</span>/</a>',
     ),
-    "a directory row lost its class, its lang, or its slash",
+    "a directory row lost its class, its lang, its slash, or its tree link",
   );
   assert.ok(
     markup.includes(
-      '<li class="row"><span class="nm t-item" lang="en">README.<span class="sc">md</span></span></li>',
+      '<a class="nm t-item" lang="en" href="/r/linklater/blob/main/README.md">README.<span class="sc">md</span></a>',
     ),
-    "a file row lost its small-caps split",
+    "a file row lost its small-caps split or its blob link",
   );
 });
 
@@ -601,7 +635,7 @@ test("the rendered dom holds the true filename under small caps", async () => {
 
     for (const [index, entry] of wide.entries()) {
       const found = read[index];
-      const expected = `${entry.name}${entry.directory ? "/" : ""}`;
+      const expected = `${entry.name}${entry.kind === "directory" ? "/" : ""}`;
 
       assert.ok(found, entry.name);
       assert.strictEqual(

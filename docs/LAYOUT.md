@@ -99,9 +99,9 @@ Filenames take the display face. The repo name is a visually hidden `<h1>`: the 
 > _Pre-build mockup, archived: https://claude.ai/code/artifact/6a95e6fc-3a60-416b-a496-b713a5005be1 — the shipped pages have superseded it._
 
 - **Default rows** — **16**, then `Show all N →`. The median repo root holds 15 entries with about 8.5 directories, so sixteen shows most trees whole and always reaches files.
-- **Hit area** — The full row, with a `--sunk` background on hover and focus. **Not built.** `styles.ts` disables the `::after` overlay and the hover wash on `.tree` until 1e gives a file row somewhere to go; a wash with no click target is a false affordance. **1e is where it switches on** — file rows link to `/r/:repo/blob/:rev/*`, directory rows to `/r/:repo/tree/:rev/*`. Live on the repo index today.
+- **Hit area** — The full row, with a `--sunk` background on hover and focus. **Live everywhere a row leads somewhere**, which 1e made true of the file tree — file rows link to `/r/:repo/blob/:rev/*`, directory rows to `/r/:repo/tree/:rev/*`. A gitlink row is the one exception and keeps neither the overlay nor the wash; a submodule is pinned rather than browsable, and a wash with no click target is a false affordance.
 - **Directories** — Accent color, sorted first, trailing slash always.
-- **Right columns** — Last commit subject at 190px, age right-aligned at 46px with tabular numerals. Both mono, both `--ink-faint`. **Not built on the file tree**, whose grid collapses to one column; filling it needs a bounded `git log --name-status` walk, which is 1e's work. Live on the repo index, where the same two columns carry description and creation age.
+- **Right columns** — Last commit subject at 190px, age right-aligned at 46px with tabular numerals. Both mono, both `--ink-faint`. On the file tree they come from one bounded `git log --name-status` walk per listing, never one per row; a path the bound never reaches renders blank rather than costing a longer walk. Live on the repo index too, where the same two columns carry description and creation age.
 - **Truncation** — Ellipsis on the filename, never a wrap. Rows stay one line at every breakpoint.
 
 _The same shape serves the repo index at `/`, the issue list, and the PR list — items in the display face, metadata in mono at the right._

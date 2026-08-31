@@ -17,10 +17,13 @@ import {
   noSuchFile,
   noSuchRef,
   noSuchRepo,
+  noSuchTree,
+  noTreeRoot,
   unavailable,
 } from "../html/error-page.js";
 import { refListPage } from "../html/ref-list.js";
 import { repoShowPage } from "../html/repo-show.js";
+import { treePage } from "../html/tree-page.js";
 import { assetRoomBytes } from "../html/wire-weight.js";
 import { parseBlobAsset, sniffRaster } from "../repos/blob-asset.js";
 import { loadBlobView } from "../repos/blob-view.js";
@@ -35,13 +38,17 @@ import { loadCommitLog } from "../repos/log.js";
 import { listRefs, type RefKind } from "../repos/refs.js";
 import { resolveRepo } from "../repos/resolve.js";
 import { loadRepoView } from "../repos/show.js";
-import { resolveTip } from "../repos/tree.js";
+import { listTree, resolveTip } from "../repos/tree.js";
 import { sendPage, sendStatus } from "./cache.js";
 
 type PageRoute = { Params: { repo: string }; Querystring: { all?: string } };
 type RefRoute = { Params: { repo: string } };
 type AssetRoute = { Params: { repo: string; asset: string } };
 type BlobRoute = { Params: { repo: string; rev: string; "*": string } };
+type TreeRoute = {
+  Params: { repo: string; rev: string; "*": string };
+  Querystring: { all?: string };
+};
 type LogRoute = {
   Params: { repo: string };
   Querystring: { ref?: string | string[]; from?: string | string[] };
@@ -95,7 +102,7 @@ async function showRepo(
     return sendPage(
       request,
       reply,
-      repoShowPage({ repo, showAll: request.query.all === "1" }),
+      repoShowPage({ repo, showAll: request.query.all === "1", now: now() }),
     );
   } catch (error) {
     request.log.error({ err: error }, "repo page: the page failed to render");
@@ -186,6 +193,55 @@ async function showBlob(
     );
   } catch (error) {
     request.log.error({ err: error }, "repo page: the blob failed to render");
+    return fail(request, reply, 503, unavailable);
+  }
+}
+
+// there is no root form: /r/:repo is the root tree, so a path is what this
+// route is for. a path that is not a tree is a 404 rather than a redirect
+// to the blob route, because every link the product generates is right by
+// construction and a miss here was typed
+async function showTree(
+  request: FastifyRequest<TreeRoute>,
+  reply: FastifyReply,
+): Promise<FastifyReply> {
+  const path = request.params["*"];
+
+  // the shape of the url settles this one, so it is answered before any
+  // lookup: /r/:repo is the root tree, and this route names below it
+  if (path === "") return fail(request, reply, 404, noTreeRoot);
+
+  try {
+    const found = await resolveRepo(request.params.repo);
+    if (found.status !== "found") {
+      const failure =
+        found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
+      return fail(request, reply, 404, failure);
+    }
+
+    const { rev } = request.params;
+    const tree = await listTree({
+      repoPath: found.repo.path,
+      rev,
+      path,
+      signal: abortWith(reply),
+    });
+
+    if (tree === null) return fail(request, reply, 404, noSuchTree(path));
+
+    return sendPage(
+      request,
+      reply,
+      treePage({
+        repo: found.repo.name,
+        rev,
+        tree,
+        showAll: request.query.all === "1",
+        now: now(),
+      }),
+    );
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the tree failed to render");
     return fail(request, reply, 503, unavailable);
   }
 }
@@ -357,6 +413,7 @@ export function repoPageRoutes(app: FastifyInstance): void {
   app.get<AssetRoute>("/r/:repo/header/:asset", serveHeader);
   app.get<AssetRoute>("/r/:repo/blob-asset/:asset", serveBlobAsset);
   app.get<BlobRoute>("/r/:repo/blob/:rev/*", showBlob);
+  app.get<TreeRoute>("/r/:repo/tree/:rev/*", showTree);
   app.get<RefRoute>("/r/:repo/branches", (request, reply) =>
     showRefs(request, reply, "branch"),
   );

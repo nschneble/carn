@@ -37,11 +37,12 @@ export async function loadRepoView(options: {
     };
   }
 
-  const [header, entries] = await Promise.all([
+  const [header, tree] = await Promise.all([
     resolveHeader({ repoPath: repo.path, commit: tip, signal }),
-    listTree({ repoPath: repo.path, commit: tip, signal }),
+    listTree({ repoPath: repo.path, rev: tip, signal }),
   ]);
 
+  const entries = tree?.entries ?? [];
   const found = findReadme(entries);
 
   return {
