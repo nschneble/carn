@@ -1,0 +1,52 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - navigation "Breadcrumb":
+    - list:
+      - listitem:
+        - link "Càrn":
+          - /url: /
+      - listitem: gantry
+- main:
+  - heading "gantry" [level=1]
+  - heading "Files" [level=2]
+  - list:
+    - listitem:
+      - link "apps/":
+        - /url: /r/gantry/tree/main/apps
+      - text: Reach the deep path Changed
+      - time: 3w
+    - listitem:
+      - link "assets/":
+        - /url: /r/gantry/tree/main/assets
+      - text: Bring the assets in Changed
+      - time: 3w
+    - listitem:
+      - link "src/":
+        - /url: /r/gantry/tree/main/src
+      - text: Generate the tables Changed
+      - time: 3w
+    - listitem:
+      - link "vendor/":
+        - /url: /r/gantry/tree/main/vendor
+      - text: Pin the vendored library Changed
+      - time: 3w
+    - listitem:
+      - link "README.md":
+        - /url: /r/gantry/blob/main/README.md
+      - text: Bump the version and say so Changed
+      - time: 3w
+    - listitem:
+      - link "package.json":
+        - /url: /r/gantry/blob/main/package.json
+      - text: Stand the gantry up Changed
+      - time: 3w
+  - heading "Gantry" [level=1]
+  - paragraph: A rig that holds the other rigs.
+  - paragraph: Version 2.
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

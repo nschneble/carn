@@ -1,0 +1,40 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - paragraph:
+    - link "Càrn":
+      - /url: /
+- main:
+  - heading "Repositories" [level=1]
+  - list:
+    - listitem:
+      - link "gantry":
+        - /url: /r/gantry
+      - text: A rig that holds the other rigs. Created
+      - time: 3w
+    - listitem:
+      - link "linklater":
+        - /url: /r/linklater
+      - text: Save a URL, read it later. Created
+      - time: 2w
+    - listitem:
+      - link "moonlight":
+        - /url: /r/moonlight
+      - text: Phases, tides, and a lunar calendar. Created
+      - time: 2d
+    - listitem:
+      - link "sparrow":
+        - /url: /r/sparrow
+      - text: Created
+      - time: 15m
+    - listitem:
+      - link "thicket":
+        - /url: /r/thicket
+      - text: A shell script and nothing else. Created
+      - time: 6h
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

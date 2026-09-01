@@ -7,10 +7,17 @@
 
 set -eu
 
+# .env is on the container's bind mount too, and its url is the host's
+supplied="${DATABASE_URL:-}"
+
 if [ -f .env ]; then
   set -a
   . ./.env
   set +a
+fi
+
+if [ -n "$supplied" ]; then
+  DATABASE_URL="$supplied"
 fi
 
 if [ -z "${DATABASE_URL:-}" ]; then
@@ -40,10 +47,13 @@ admin_url="$DATABASE_URL"
 # swap the database name, leaving any query string intact
 visual_url=$(printf '%s' "$DATABASE_URL" | sed -E "s#(://[^/]*)/[^/?]*#\1/$visual_db#")
 
-psql "$admin_url" --no-psqlrc -q -tAc \
-  "SELECT 1 FROM pg_database WHERE datname = '$visual_db'" \
-  | grep -q 1 \
-  || psql "$admin_url" --no-psqlrc -q -c "CREATE DATABASE \"$visual_db\""
+# the image ships none; scripts/visual-docker.sh makes the db instead
+if command -v psql > /dev/null 2>&1; then
+  psql "$admin_url" --no-psqlrc -q -tAc \
+    "SELECT 1 FROM pg_database WHERE datname = '$visual_db'" \
+    | grep -q 1 \
+    || psql "$admin_url" --no-psqlrc -q -c "CREATE DATABASE \"$visual_db\""
+fi
 
 DATABASE_URL="$visual_url" npx prisma migrate deploy >/dev/null
 DATABASE_URL="$visual_url"
@@ -64,7 +74,27 @@ if [ "${1:-}" = "--seed-only" ]; then
   exit 0
 fi
 
+# set -e on a CI-mode exit 2 would skip light entirely; rank 1 > 3 > 2 > 0
+worst=0
+
+rank() {
+  case "$1" in
+    1) echo 3 ;;
+    3) echo 2 ;;
+    2) echo 1 ;;
+    *) echo 0 ;;
+  esac
+}
+
 for scheme in dark light; do
   echo "== $scheme =="
-  CARN_VISUAL_SCHEME="$scheme" npx tuffgal run --manage-servers "$@"
+
+  code=0
+  CARN_VISUAL_SCHEME="$scheme" npx tuffgal run --manage-servers "$@" || code=$?
+
+  if [ "$(rank "$code")" -gt "$(rank "$worst")" ]; then
+    worst="$code"
+  fi
 done
+
+exit "$worst"

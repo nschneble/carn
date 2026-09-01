@@ -1,0 +1,10 @@
+{
+  "action": "error-no-change",
+  "steps": [
+    {
+      "kind": "navigate",
+      "path": "/r/gantry/commits/8b1756fa229718629a955bfc05571c5fb085626c/src/nope.ts"
+    }
+  ],
+  "expect": { "anyOf": [{ "role": "heading", "text": "No change here" }] }
+}

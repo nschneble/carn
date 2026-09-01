@@ -1,0 +1,31 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - navigation "Breadcrumb":
+    - list:
+      - listitem:
+        - link "Càrn":
+          - /url: /
+      - listitem:
+        - link "gantry":
+          - /url: /r/gantry
+      - listitem:
+        - link "src":
+          - /url: /r/gantry/tree/main/src
+      - listitem: index.ts
+- main:
+  - heading "src/index.ts" [level=1]
+  - term: Size
+  - definition: 26 B
+  - term: Lines
+  - definition: "1"
+  - term: Language
+  - definition: TypeScript
+  - region "src/index.ts":
+    - code: export const version = 3;
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

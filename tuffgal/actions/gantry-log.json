@@ -1,0 +1,5 @@
+{
+  "action": "gantry-log",
+  "steps": [{ "kind": "navigate", "path": "/r/gantry/commits" }],
+  "expect": { "anyOf": [{ "role": "link", "text": "Older" }] }
+}

@@ -1,0 +1,51 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - navigation "Breadcrumb":
+    - list:
+      - listitem:
+        - link "Càrn":
+          - /url: /
+      - listitem:
+        - link "gantry":
+          - /url: /r/gantry
+      - listitem:
+        - link "Commits":
+          - /url: /r/gantry/commits
+      - listitem: d74f649
+- main:
+  - heading "Bump the version and say so" [level=1]
+  - paragraph: d74f649
+  - term: Author
+  - definition:
+    - text: Nick Schneble authored
+    - time: 3w
+  - term: Parents
+  - definition:
+    - link "932f803":
+      - /url: /r/gantry/commits/932f8031708f25313a8c0cd1a8f93e73ba93fc87
+  - term: Changed
+  - definition: 2 files, +3 added −1 removed
+  - term: Signed
+  - definition: No signature
+  - list:
+    - listitem:
+      - link "README.md":
+        - /url: "#f-0"
+      - text: +2 added −0 removed
+    - listitem:
+      - link "src/index.ts":
+        - /url: "#f-1"
+      - text: +1 added −1 removed
+  - heading "README.md" [level=2]
+  - region "README.md":
+    - code: "@@ -1,3 +1,5 @@ # Gantry A rig that holds the other rigs. + +Version 2."
+  - heading "src/index.ts" [level=2]
+  - region "src/index.ts":
+    - code: "@@ -1 +1 @@ -export const version = 1; +export const version = 2;"
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

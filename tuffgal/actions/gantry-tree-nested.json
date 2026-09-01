@@ -1,0 +1,9 @@
+{
+  "action": "gantry-tree-nested",
+  "steps": [
+    { "kind": "click", "hint": { "role": "link", "text": "apps/" } },
+    { "kind": "click", "hint": { "role": "link", "text": "web/" } },
+    { "kind": "click", "hint": { "role": "link", "text": "src/" } }
+  ],
+  "expect": { "anyOf": [{ "role": "link", "text": "Show all 19" }] }
+}

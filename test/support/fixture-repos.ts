@@ -1,17 +1,46 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // the pinned world every visual story renders against: fixed uuids so the
-// tarball layout and the seeded rows agree, and fixed dates so the frozen
-// clock always reads the same relative ages
+// tarball layout and the seeded rows agree, fixed dates so the frozen
+// clock always reads the same ages, and an ordered commit run per repo so
+// a branch, a tag, and a second page of log have somewhere to point
 
-export type FixtureFile = { path: string; body: string };
+import { deflateSync } from "node:zlib";
+
+export type FixtureFile = {
+  path: string;
+  body: string | Buffer;
+  // a gitlink names the commit it pins and has no body of its own
+  gitlink?: string;
+};
+
+export type FixtureCommit = {
+  message: string;
+  at: string;
+  files: FixtureFile[];
+};
+
+export type FixtureBranch = { name: string; at: number };
+
+// lightweight inherits the commit's subject and date, annotated its own
+export type FixtureTag =
+  | { name: string; at: number; kind: "lightweight" }
+  | {
+      name: string;
+      at: number;
+      kind: "annotated";
+      message: string;
+      on: string;
+    };
 
 export type FixtureRepo = {
   id: string;
   name: string;
   description: string | null;
   createdAt: string;
-  commit: { message: string; at: string; files: FixtureFile[] } | null;
+  commits: FixtureCommit[];
+  branches?: FixtureBranch[];
+  tags?: FixtureTag[];
 };
 
 export const frozenNow = "2026-02-01T12:00:00.000Z";
@@ -77,57 +106,277 @@ export const fixtureHeaders = {
   dark: header("#f2f4f4", "#6c7272"),
 };
 
+function scramble(seed: number): number {
+  let h = Math.imul(seed, 2654435761) >>> 0;
+  h ^= h >>> 15;
+  h = Math.imul(h, 2246822507) >>> 0;
+  h ^= h >>> 13;
+  h = Math.imul(h, 3266489909) >>> 0;
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+function crcTable(): Int32Array {
+  const table = new Int32Array(256);
+
+  for (let n = 0; n < 256; n += 1) {
+    let c = n;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    table[n] = c;
+  }
+
+  return table;
+}
+
+function pngChunk(type: string, data: Buffer): Buffer {
+  const table = crcTable();
+  const body = Buffer.concat([Buffer.from(type, "ascii"), data]);
+
+  let c = -1;
+  for (const b of body) c = (table[(c ^ b) & 0xff] as number) ^ (c >>> 8);
+
+  const length = Buffer.alloc(4);
+  const sum = Buffer.alloc(4);
+  length.writeUInt32BE(data.length);
+  sum.writeUInt32BE((c ^ -1) >>> 0);
+
+  return Buffer.concat([length, body, sum]);
+}
+
+// level 0 is stored blocks, which a future zlib cannot re-encode smaller
+function png(side: number): Buffer {
+  const head = Buffer.alloc(13);
+  head.writeUInt32BE(side, 0);
+  head.writeUInt32BE(side, 4);
+  head[8] = 8;
+  head[9] = 2;
+
+  const stride = side * 3 + 1;
+  const rows = Buffer.alloc(side * stride);
+
+  for (let y = 0; y < side; y += 1) {
+    for (let x = 1; x < stride; x += 1) {
+      rows[y * stride + x] = scramble(y * stride + x) & 0xff;
+    }
+  }
+
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    pngChunk("IHDR", head),
+    pngChunk("IDAT", deflateSync(rows, { level: 0 })),
+    pngChunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+
+// .src never wraps, so 500-byte lines cap out at ~150 rows, not 2,500
+function tableSource(lines: number): string {
+  const rows = Array.from({ length: lines }, (_, row) => {
+    const cells = Array.from(
+      { length: 40 },
+      (_, cell) =>
+        `0x${scramble(row * 40 + cell)
+          .toString(16)
+          .padStart(8, "0")}`,
+    );
+
+    return `export const row${String(row).padStart(3, "0")} = [${cells.join(", ")}];`;
+  });
+
+  return `${rows.join("\n")}\n`;
+}
+
+const base64Alphabet =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+function unbreakableSource(lines: number, width: number): string {
+  const rows = Array.from({ length: lines }, (_, row) => {
+    const run = Array.from(
+      { length: width },
+      (_, at) =>
+        base64Alphabet[scramble(row * width + at) % base64Alphabet.length],
+    ).join("");
+
+    return `export const c${String(row).padStart(3, "0")} = "${run}";`;
+  });
+
+  return `${rows.join("\n")}\n`;
+}
+
+function modules(count: number): FixtureFile[] {
+  return Array.from({ length: count }, (_, at) => {
+    const name = `mod-${String(at).padStart(2, "0")}`;
+
+    return {
+      path: `apps/web/src/${name}.ts`,
+      body: `export function ${name.replace("-", "")}(): string {\n  return "${name}";\n}\n`,
+    };
+  });
+}
+
+const gantryStart = Date.parse("2026-01-05T09:00:00.000Z");
+const gantryStep = 3 * 60 * 60 * 1000;
+
+function gantryAt(index: number): string {
+  return new Date(gantryStart + index * gantryStep).toISOString();
+}
+
+function gantryCommits(): FixtureCommit[] {
+  const modular = modules(18).map((file, at) => ({
+    message: `Add ${file.path.split("/").pop()}`,
+    at: gantryAt(3 + at),
+    files: [file],
+  }));
+
+  return [
+    {
+      message: "Stand the gantry up",
+      at: gantryAt(0),
+      files: [
+        {
+          path: "README.md",
+          body: "# Gantry\n\nA rig that holds the other rigs.\n",
+        },
+        { path: "package.json", body: '{ "name": "gantry" }\n' },
+        { path: "src/index.ts", body: "export const version = 1;\n" },
+      ],
+    },
+    {
+      message: "Bring the assets in",
+      at: gantryAt(1),
+      files: [
+        { path: "assets/logo.png", body: png(8) },
+        { path: "assets/small.bin", body: Buffer.alloc(512) },
+      ],
+    },
+    {
+      message: "Pin the vendored library",
+      at: gantryAt(2),
+      files: [
+        {
+          path: "vendor/lib",
+          body: "",
+          gitlink: "0000000000000000000000000000000000000001",
+        },
+      ],
+    },
+    ...modular,
+    {
+      message: "Reach the deep path",
+      at: gantryAt(21),
+      files: [
+        {
+          path: "apps/web/src/deep.ts",
+          body: "export const depth = 3;\n",
+        },
+      ],
+    },
+    {
+      message: "Bump the version and say so",
+      at: gantryAt(22),
+      files: [
+        { path: "src/index.ts", body: "export const version = 2;\n" },
+        {
+          path: "README.md",
+          body: "# Gantry\n\nA rig that holds the other rigs.\n\nVersion 2.\n",
+        },
+      ],
+    },
+    // the page inlines a PREFIX of the diffs, so these two sort first
+    {
+      message: "Generate the tables",
+      at: gantryAt(23),
+      files: [
+        { path: "src/api.ts", body: "export const routes = ['/health'];\n" },
+        { path: "src/app.ts", body: "export const name = 'gantry';\n" },
+        { path: "src/big.ts", body: tableSource(240) },
+        { path: "src/index.ts", body: "export const version = 3;\n" },
+        {
+          path: "src/notes.md",
+          body: "# Notes\n\nThe tables are generated.\n",
+        },
+        { path: "src/wide.ts", body: unbreakableSource(75, 1180) },
+      ],
+    },
+  ];
+}
+
 export const fixtureRepos: FixtureRepo[] = [
   {
     id: "11111111-1111-4111-8111-111111111111",
     name: "linklater",
     description: "Save a URL, read it later.",
     createdAt: "2026-01-18T09:00:00.000Z",
-    commit: {
-      message: "Read the list back",
-      at: "2026-01-18T09:30:00.000Z",
-      files: [
-        { path: ".carn/header-dark.svg", body: fixtureHeaders.dark },
-        { path: ".carn/header-light.svg", body: fixtureHeaders.light },
-        { path: "README.md", body: readme },
-        { path: "docs/BRAND.md", body: "# Brand\n\nOne accent, no motion.\n" },
-        { path: "package.json", body: '{ "name": "linklater" }\n' },
-        { path: "src/index.ts", body: "export {};\n" },
-        { path: "src/store.ts", body: "export const rows = [];\n" },
-      ],
-    },
+    commits: [
+      {
+        message: "Read the list back",
+        at: "2026-01-18T09:30:00.000Z",
+        files: [
+          { path: ".carn/header-dark.svg", body: fixtureHeaders.dark },
+          { path: ".carn/header-light.svg", body: fixtureHeaders.light },
+          { path: "README.md", body: readme },
+          {
+            path: "docs/BRAND.md",
+            body: "# Brand\n\nOne accent, no motion.\n",
+          },
+          { path: "package.json", body: '{ "name": "linklater" }\n' },
+          { path: "src/index.ts", body: "export {};\n" },
+          { path: "src/store.ts", body: "export const rows = [];\n" },
+        ],
+      },
+    ],
   },
   {
     id: "22222222-2222-4222-8222-222222222222",
     name: "moonlight",
     description: "Phases, tides, and a lunar calendar.",
     createdAt: "2026-01-30T12:00:00.000Z",
-    commit: {
-      message: "First quarter",
-      at: "2026-01-30T12:20:00.000Z",
-      files: [
-        { path: "README.md", body: "# Moonlight\n\nPhases and tides.\n" },
-        { path: "phases.csv", body: "date,phase\n2026-02-01,waxing\n" },
-      ],
-    },
+    commits: [
+      {
+        message: "First quarter",
+        at: "2026-01-30T12:20:00.000Z",
+        files: [
+          { path: "README.md", body: "# Moonlight\n\nPhases and tides.\n" },
+          { path: "phases.csv", body: "date,phase\n2026-02-01,waxing\n" },
+        ],
+      },
+    ],
   },
   {
     id: "33333333-3333-4333-8333-333333333333",
     name: "sparrow",
     description: null,
     createdAt: "2026-02-01T11:45:00.000Z",
-    commit: null,
+    commits: [],
   },
   {
     id: "44444444-4444-4444-8444-444444444444",
     name: "thicket",
     description: "A shell script and nothing else.",
     createdAt: "2026-02-01T06:00:00.000Z",
-    commit: {
-      message: "Plant it",
-      at: "2026-02-01T06:10:00.000Z",
-      files: [{ path: "thicket.sh", body: "#!/bin/sh\necho thicket\n" }],
-    },
+    commits: [
+      {
+        message: "Plant it",
+        at: "2026-02-01T06:10:00.000Z",
+        files: [{ path: "thicket.sh", body: "#!/bin/sh\necho thicket\n" }],
+      },
+    ],
+  },
+  {
+    id: "55555555-5555-4555-8555-555555555555",
+    name: "gantry",
+    description: "A rig that holds the other rigs.",
+    createdAt: "2026-01-05T08:00:00.000Z",
+    commits: gantryCommits(),
+    branches: [{ name: "topic", at: 2 }],
+    tags: [
+      { name: "v1.0.0", at: 1, kind: "lightweight" },
+      {
+        name: "v1.1.0",
+        at: 22,
+        kind: "annotated",
+        message: "Version 2, with the deep path in place",
+        on: "2026-01-20T10:00:00.000Z",
+      },
+    ],
   },
 ];
 

@@ -1,0 +1,13 @@
+{
+  "action": "gantry-commit-inlined",
+  "steps": [
+    { "kind": "navigate", "path": "/r/gantry/commits" },
+    {
+      "kind": "click",
+      "hint": { "role": "link", "text": "Bump the version and say so" }
+    }
+  ],
+  "expect": {
+    "anyOf": [{ "role": "heading", "text": "Bump the version and say so" }]
+  }
+}

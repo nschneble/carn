@@ -1,0 +1,8 @@
+{
+  "story": "A visitor opens a binary the page declines, then one it draws",
+  "actions": [
+    { "action": "gantry-blob-binary" },
+    { "action": "gantry-blob-image" },
+    { "action": "gantry-tree-gitlink" }
+  ]
+}

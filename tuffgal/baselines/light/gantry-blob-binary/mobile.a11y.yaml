@@ -1,0 +1,28 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - navigation "Breadcrumb":
+    - list:
+      - listitem:
+        - link "Càrn":
+          - /url: /
+      - listitem:
+        - link "gantry":
+          - /url: /r/gantry
+      - listitem:
+        - link "assets":
+          - /url: /r/gantry/tree/main/assets
+      - listitem: small.bin
+- main:
+  - heading "assets/small.bin" [level=1]
+  - term: Size
+  - definition: 512 B
+  - term: Type
+  - definition: Binary file
+  - paragraph: Binary file, 512 B. Not shown here.
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

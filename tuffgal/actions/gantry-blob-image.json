@@ -1,0 +1,9 @@
+{
+  "action": "gantry-blob-image",
+  "steps": [
+    { "kind": "navigate", "path": "/r/gantry" },
+    { "kind": "click", "hint": { "role": "link", "text": "assets/" } },
+    { "kind": "click", "hint": { "role": "link", "text": "logo.png" } }
+  ],
+  "expect": { "anyOf": [{ "role": "heading", "text": "assets/logo.png" }] }
+}

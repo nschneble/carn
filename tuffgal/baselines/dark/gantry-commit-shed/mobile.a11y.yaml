@@ -1,0 +1,67 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - navigation "Breadcrumb":
+    - list:
+      - listitem:
+        - link "Càrn":
+          - /url: /
+      - listitem:
+        - link "gantry":
+          - /url: /r/gantry
+      - listitem:
+        - link "Commits":
+          - /url: /r/gantry/commits
+      - listitem: 8b1756f
+- main:
+  - heading "Generate the tables" [level=1]
+  - paragraph: 8b1756f
+  - term: Author
+  - definition:
+    - text: Nick Schneble authored
+    - time: 3w
+  - term: Parents
+  - definition:
+    - link "d74f649":
+      - /url: /r/gantry/commits/d74f649cecc4cbe16ba320433e0fb7cac7992d21
+  - term: Changed
+  - definition: 6 files, +321 added −1 removed
+  - term: Signed
+  - definition: No signature
+  - list:
+    - listitem:
+      - link "src/api.ts":
+        - /url: "#f-0"
+      - text: +1 added −0 removed
+    - listitem:
+      - link "src/app.ts":
+        - /url: "#f-1"
+      - text: +1 added −0 removed
+    - listitem:
+      - link "src/big.ts":
+        - /url: /r/gantry/commits/8b1756fa229718629a955bfc05571c5fb085626c/src/big.ts
+      - text: +240 added −0 removed
+    - listitem:
+      - link "src/index.ts":
+        - /url: /r/gantry/commits/8b1756fa229718629a955bfc05571c5fb085626c/src/index.ts
+      - text: +1 added −1 removed
+    - listitem:
+      - link "src/notes.md":
+        - /url: /r/gantry/commits/8b1756fa229718629a955bfc05571c5fb085626c/src/notes.md
+      - text: +3 added −0 removed
+    - listitem:
+      - link "src/wide.ts":
+        - /url: /r/gantry/commits/8b1756fa229718629a955bfc05571c5fb085626c/src/wide.ts
+      - text: +75 added −0 removed
+  - heading "src/api.ts" [level=2]
+  - region "src/api.ts":
+    - code: "@@ -0,0 +1 @@ +export const routes = ['/health'];"
+  - heading "src/app.ts" [level=2]
+  - region "src/app.ts":
+    - code: "@@ -0,0 +1 @@ +export const name = 'gantry';"
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

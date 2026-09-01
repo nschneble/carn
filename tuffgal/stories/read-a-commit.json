@@ -1,0 +1,8 @@
+{
+  "story": "A visitor reads a whole commit, then one whose tail is links",
+  "actions": [
+    { "action": "gantry-commit-inlined" },
+    { "action": "gantry-commit-shed" },
+    { "action": "gantry-change" }
+  ]
+}

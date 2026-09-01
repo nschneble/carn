@@ -40,7 +40,11 @@ function git(args: string[], cwd: string, env: NodeJS.ProcessEnv): string {
   }).trim();
 }
 
-function blob(body: string, gitDir: string, env: NodeJS.ProcessEnv): string {
+function blob(
+  body: string | Buffer,
+  gitDir: string,
+  env: NodeJS.ProcessEnv,
+): string {
   return execFileSync("git", ["hash-object", "-w", "--stdin"], {
     cwd: gitDir,
     encoding: "utf8",
@@ -53,6 +57,21 @@ function blob(body: string, gitDir: string, env: NodeJS.ProcessEnv): string {
   }).trim();
 }
 
+function stampOf(at: string): string {
+  return `${Math.floor(Date.parse(at) / 1000)} +0000`;
+}
+
+function identity(stamp: string): NodeJS.ProcessEnv {
+  return {
+    GIT_AUTHOR_NAME: fixtureAuthor.name,
+    GIT_AUTHOR_EMAIL: fixtureAuthor.email,
+    GIT_AUTHOR_DATE: stamp,
+    GIT_COMMITTER_NAME: fixtureAuthor.name,
+    GIT_COMMITTER_EMAIL: fixtureAuthor.email,
+    GIT_COMMITTER_DATE: stamp,
+  };
+}
+
 function buildRepo(stage: string, work: string): void {
   for (const repo of fixtureRepos) {
     const gitDir = join(stage, fixtureRepoPath(repo.id));
@@ -62,37 +81,86 @@ function buildRepo(stage: string, work: string): void {
     rmSync(join(gitDir, "hooks"), { recursive: true, force: true });
     rmSync(join(gitDir, "description"), { force: true });
 
-    if (repo.commit === null) continue;
+    if (repo.commits.length === 0) continue;
 
     const index = join(work, `${repo.name}.index`);
     const message = join(work, `${repo.name}.message`);
     const env = { GIT_DIR: gitDir, GIT_INDEX_FILE: index };
+    const written: string[] = [];
 
-    for (const file of repo.commit.files) {
-      const oid = blob(file.body, gitDir, env);
+    // the index carries forward, so a commit's diff is only what it names
+    for (const entry of repo.commits) {
+      for (const file of entry.files) {
+        const mode = file.gitlink === undefined ? "100644" : "160000";
+        const oid = file.gitlink ?? blob(file.body, gitDir, env);
+
+        git(
+          [
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            `${mode},${oid},${file.path}`,
+          ],
+          gitDir,
+          env,
+        );
+      }
+
+      const stamp = stampOf(entry.at);
+      const tree = git(["write-tree"], gitDir, env);
+      const parent = written.at(-1);
+
+      writeFileSync(message, `${entry.message}\n`);
+
+      written.push(
+        git(
+          [
+            "commit-tree",
+            tree,
+            ...(parent === undefined ? [] : ["-p", parent]),
+            "-F",
+            message,
+          ],
+          gitDir,
+          { ...env, ...identity(stamp) },
+        ),
+      );
+    }
+
+    git(
+      ["update-ref", "refs/heads/main", written.at(-1) as string],
+      gitDir,
+      env,
+    );
+
+    for (const branch of repo.branches ?? []) {
       git(
-        ["update-index", "--add", "--cacheinfo", `100644,${oid},${file.path}`],
+        [
+          "update-ref",
+          `refs/heads/${branch.name}`,
+          written[branch.at] as string,
+        ],
         gitDir,
         env,
       );
     }
 
-    const stamp = `${Math.floor(Date.parse(repo.commit.at) / 1000)} +0000`;
-    const tree = git(["write-tree"], gitDir, env);
+    for (const tag of repo.tags ?? []) {
+      const target = written[tag.at] as string;
 
-    writeFileSync(message, `${repo.commit.message}\n`);
+      if (tag.kind === "lightweight") {
+        git(["update-ref", `refs/tags/${tag.name}`, target], gitDir, env);
+        continue;
+      }
 
-    const commit = git(["commit-tree", tree, "-F", message], gitDir, {
-      ...env,
-      GIT_AUTHOR_NAME: fixtureAuthor.name,
-      GIT_AUTHOR_EMAIL: fixtureAuthor.email,
-      GIT_AUTHOR_DATE: stamp,
-      GIT_COMMITTER_NAME: fixtureAuthor.name,
-      GIT_COMMITTER_EMAIL: fixtureAuthor.email,
-      GIT_COMMITTER_DATE: stamp,
-    });
+      writeFileSync(message, `${tag.message}\n`);
 
-    git(["update-ref", "refs/heads/main", commit], gitDir, env);
+      // the tagger date is GIT_COMMITTER_DATE, never GIT_AUTHOR_DATE
+      git(["tag", "-a", "-F", message, tag.name, target], gitDir, {
+        ...env,
+        ...identity(stampOf(tag.on)),
+      });
+    }
   }
 }
 

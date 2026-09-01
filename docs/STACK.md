@@ -152,6 +152,37 @@ own `prisma.config.ts`. `@prisma/config` pins `deepmerge-ts` at exactly
 **Never run `npm audit fix --force`** — it downgrades to `prisma@6.12.0`,
 undoing the Prisma 7 migration entirely. Tracked in `local/TODOs.md`.
 
+## The visual capture image is pinned to the installed Playwright
+
+`compose.yaml`'s `visual` service runs
+**`mcr.microsoft.com/playwright:v1.62.1-noble`**, digest
+`sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e`
+for `linux/arm64`. It ships Node v24.18.1, satisfying `engines.node >=24`,
+and Chromium 151.0.7922.34.
+
+The tag carries the version because the committed baselines are only
+reproducible against one browser build. `playwright` in `package.json`
+resolves to exactly 1.62.1; if that moves, the image tag moves with it in
+the same commit and every baseline is re-shot.
+
+**The platform pin is `linux/arm64`, and it is not the usual choice.**
+GitHub's hosted x86_64 runners would argue for `linux/amd64`, but Chromium
+cannot run amd64-emulated under Colima on Apple silicon — the headless
+shell aborts inside QEMU (`Assertion failed: p_rcu_reader->depth != 0`,
+`/qemu/include/qemu/rcu.h`, SIGABRT), so amd64 is unavailable rather than
+slow. A workflow that later consumes these baselines must select an arm64
+runner or re-shoot them once.
+
+Two things diverge between a laptop and this image, and both change bytes:
+
+- **Text rasterisation.** CoreText and FreeType/Skia hint and antialias
+  differently, and the UI is a subset face at six weights.
+- **The gzip the budget is measured in.** Node 26 on the laptop links
+  zlib 1.2.12; the image's Node 24 links 1.3.1. The same blob page fits
+  **99** source lines on the laptop and **104** in the image, because the
+  cap is computed from real gzip-5 wire bytes. The container is the
+  authority: it is what CI runs.
+
 ## Not surveyed
 
 Node, Postgres, Caddy, and Docker Compose are pinned by `compose.yaml` and
