@@ -17,7 +17,8 @@ export type Header = { light: HeaderSource; dark: HeaderSource };
 
 export type HeaderSrc = (image: HeaderImage) => string;
 
-// what the 100 KB budget leaves after fonts and the page. BRAND.md 06
+// 16 KB, chosen with headroom under the budget BRAND.md 06 reconciles by
+// hand; not itself derived here, and not the same page's assetRoomBytes
 export const maxHeaderBytes = 16 * 1024;
 
 const listTimeoutMs = 5_000;

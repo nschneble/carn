@@ -1050,7 +1050,7 @@ fi
 # 13
 # served over real http, not set into about:blank, so the audit measures
 # Carn Sans and Carn Mono rather than whatever the host falls back to
-contract 13 "zero axe violations across both render paths, on every new view" 83 "" \
+contract 13 "zero axe violations across both render paths, on every new view" 146 "" \
   axe
 
 # 14
