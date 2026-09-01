@@ -7,30 +7,31 @@
 
 import { deflateSync } from "node:zlib";
 
-export type FixtureFile = {
+type FixtureFile = {
   path: string;
   body: string | Buffer;
-  // a gitlink names the commit it pins and has no body of its own
+  // a gitlink names the commit it pins, so its empty body is never hashed
   gitlink?: string;
 };
 
-export type FixtureCommit = {
+type FixtureCommit = {
   message: string;
   at: string;
   files: FixtureFile[];
 };
 
-export type FixtureBranch = { name: string; at: number };
+// commit is an ordinal into the repo's commits, unlike a commit's own at
+type FixtureBranch = { name: string; commit: number };
 
 // lightweight inherits the commit's subject and date, annotated its own
-export type FixtureTag =
-  | { name: string; at: number; kind: "lightweight" }
+type FixtureTag =
+  | { name: string; commit: number; kind: "lightweight" }
   | {
       name: string;
-      at: number;
+      commit: number;
       kind: "annotated";
       message: string;
-      on: string;
+      taggedAt: string;
     };
 
 export type FixtureRepo = {
@@ -115,29 +116,37 @@ function scramble(seed: number): number {
   return (h ^ (h >>> 16)) >>> 0;
 }
 
-function crcTable(): Int32Array {
+function buildCrcTable(): Int32Array {
   const table = new Int32Array(256);
 
-  for (let n = 0; n < 256; n += 1) {
-    let c = n;
-    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    table[n] = c;
+  for (let byte = 0; byte < 256; byte += 1) {
+    let crc = byte;
+
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
+    }
+
+    table[byte] = crc;
   }
 
   return table;
 }
 
+const crcTable = buildCrcTable();
+
 function pngChunk(type: string, data: Buffer): Buffer {
-  const table = crcTable();
   const body = Buffer.concat([Buffer.from(type, "ascii"), data]);
 
-  let c = -1;
-  for (const b of body) c = (table[(c ^ b) & 0xff] as number) ^ (c >>> 8);
+  let checksum = -1;
+  for (const byte of body) {
+    checksum =
+      (crcTable[(checksum ^ byte) & 0xff] as number) ^ (checksum >>> 8);
+  }
 
   const length = Buffer.alloc(4);
   const sum = Buffer.alloc(4);
   length.writeUInt32BE(data.length);
-  sum.writeUInt32BE((c ^ -1) >>> 0);
+  sum.writeUInt32BE((checksum ^ -1) >>> 0);
 
   return Buffer.concat([length, body, sum]);
 }
@@ -153,9 +162,9 @@ function png(side: number): Buffer {
   const stride = side * 3 + 1;
   const rows = Buffer.alloc(side * stride);
 
-  for (let y = 0; y < side; y += 1) {
-    for (let x = 1; x < stride; x += 1) {
-      rows[y * stride + x] = scramble(y * stride + x) & 0xff;
+  for (let row = 0; row < side; row += 1) {
+    for (let column = 1; column < stride; column += 1) {
+      rows[row * stride + column] = scramble(row * stride + column) & 0xff;
     }
   }
 
@@ -280,7 +289,7 @@ function gantryCommits(): FixtureCommit[] {
         },
       ],
     },
-    // the page inlines a PREFIX of the diffs, so these two sort first
+    // the page inlines a prefix of the diffs, so these two sort first
     {
       message: "Generate the tables",
       at: gantryAt(23),
@@ -366,15 +375,15 @@ export const fixtureRepos: FixtureRepo[] = [
     description: "A rig that holds the other rigs.",
     createdAt: "2026-01-05T08:00:00.000Z",
     commits: gantryCommits(),
-    branches: [{ name: "topic", at: 2 }],
+    branches: [{ name: "topic", commit: 2 }],
     tags: [
-      { name: "v1.0.0", at: 1, kind: "lightweight" },
+      { name: "v1.0.0", commit: 1, kind: "lightweight" },
       {
         name: "v1.1.0",
-        at: 22,
+        commit: 22,
         kind: "annotated",
         message: "Version 2, with the deep path in place",
-        on: "2026-01-20T10:00:00.000Z",
+        taggedAt: "2026-01-20T10:00:00.000Z",
       },
     ],
   },

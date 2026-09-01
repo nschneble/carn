@@ -3,5 +3,5 @@
   "steps": [
     { "kind": "click", "hint": { "role": "link", "text": "src/big.ts" } }
   ],
-  "expect": { "anyOf": [{ "text": "lines of this diff" }] }
+  "expect": { "anyOf": [{ "selector": "p.sha a" }] }
 }

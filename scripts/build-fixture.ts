@@ -72,7 +72,27 @@ function identity(stamp: string): NodeJS.ProcessEnv {
   };
 }
 
-function buildRepo(stage: string, work: string): void {
+// without this an out-of-range ordinal reaches execFileSync as undefined
+function commitAt(
+  written: string[],
+  repo: string,
+  ref: string,
+  ordinal: number,
+): string {
+  const oid = written.at(ordinal);
+
+  if (oid === undefined) {
+    throw new Error(
+      `${repo}: ${ref} names commit ${ordinal}, and only ${written.length} were written`,
+    );
+  }
+
+  return oid;
+}
+
+function buildRepo(stage: string, work: string): Map<string, string> {
+  const tips = new Map<string, string>();
+
   for (const repo of fixtureRepos) {
     const gitDir = join(stage, fixtureRepoPath(repo.id));
 
@@ -80,8 +100,6 @@ function buildRepo(stage: string, work: string): void {
     git(["init", "--bare", "--initial-branch=main", "."], gitDir, {});
     rmSync(join(gitDir, "hooks"), { recursive: true, force: true });
     rmSync(join(gitDir, "description"), { force: true });
-
-    if (repo.commits.length === 0) continue;
 
     const index = join(work, `${repo.name}.index`);
     const message = join(work, `${repo.name}.message`);
@@ -127,41 +145,43 @@ function buildRepo(stage: string, work: string): void {
       );
     }
 
-    git(
-      ["update-ref", "refs/heads/main", written.at(-1) as string],
-      gitDir,
-      env,
-    );
+    if (written.length > 0) {
+      const tip = commitAt(written, repo.name, "refs/heads/main", -1);
+
+      git(["update-ref", "refs/heads/main", tip], gitDir, env);
+      tips.set(repo.name, tip);
+    }
 
     for (const branch of repo.branches ?? []) {
+      const ref = `refs/heads/${branch.name}`;
+
       git(
-        [
-          "update-ref",
-          `refs/heads/${branch.name}`,
-          written[branch.at] as string,
-        ],
+        ["update-ref", ref, commitAt(written, repo.name, ref, branch.commit)],
         gitDir,
         env,
       );
     }
 
     for (const tag of repo.tags ?? []) {
-      const target = written[tag.at] as string;
+      const ref = `refs/tags/${tag.name}`;
+      const tagged = commitAt(written, repo.name, ref, tag.commit);
 
       if (tag.kind === "lightweight") {
-        git(["update-ref", `refs/tags/${tag.name}`, target], gitDir, env);
+        git(["update-ref", ref, tagged], gitDir, env);
         continue;
       }
 
       writeFileSync(message, `${tag.message}\n`);
 
       // the tagger date is GIT_COMMITTER_DATE, never GIT_AUTHOR_DATE
-      git(["tag", "-a", "-F", message, tag.name, target], gitDir, {
+      git(["tag", "-a", "-F", message, tag.name, tagged], gitDir, {
         ...env,
-        ...identity(stampOf(tag.on)),
+        ...identity(stampOf(tag.taggedAt)),
       });
     }
   }
+
+  return tips;
 }
 
 function walk(dir: string, base: string): string[] {
@@ -242,10 +262,14 @@ const stage = join(work, "repos");
 
 try {
   mkdirSync(stage, { recursive: true });
-  buildRepo(stage, work);
+
+  const tips = buildRepo(stage, work);
+
   writeFileSync(target, archive(stage));
+  console.log(`${relative(root, target)} — ${statSync(target).size} B`);
+
+  // tuffgal/actions pins a tip sha by hand, so a rebuild prints them all
+  for (const [name, tip] of tips) console.log(`  ${name} ${tip}`);
 } finally {
   rmSync(work, { recursive: true, force: true });
 }
-
-console.log(`${relative(root, target)} — ${statSync(target).size} B`);

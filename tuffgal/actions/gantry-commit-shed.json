@@ -7,5 +7,7 @@
       "hint": { "role": "link", "text": "Generate the tables" }
     }
   ],
-  "expect": { "anyOf": [{ "role": "link", "text": "src/big.ts" }] }
+  "expect": {
+    "anyOf": [{ "selector": "ul.files a[href^=\"/r/gantry/commits/\"]" }]
+  }
 }

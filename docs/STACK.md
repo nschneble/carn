@@ -161,9 +161,11 @@ for `linux/arm64`. It ships Node v24.18.1, satisfying `engines.node >=24`,
 and Chromium 151.0.7922.34.
 
 The tag carries the version because the committed baselines are only
-reproducible against one browser build. `playwright` in `package.json`
-resolves to exactly 1.62.1; if that moves, the image tag moves with it in
-the same commit and every baseline is re-shot.
+reproducible against one browser build. `package.json` declares the range
+`^1.62.1`; what makes it exact is `package-lock.json` pinning 1.62.1 and
+`scripts/visual-docker.sh` installing with `npm ci`, which honours the
+lockfile. If the lockfile moves, the image tag moves with it in the same
+commit and every baseline is re-shot.
 
 **The platform pin is `linux/arm64`, and it is not the usual choice.**
 GitHub's hosted x86_64 runners would argue for `linux/amd64`, but Chromium
@@ -172,6 +174,33 @@ shell aborts inside QEMU (`Assertion failed: p_rcu_reader->depth != 0`,
 `/qemu/include/qemu/rcu.h`, SIGABRT), so amd64 is unavailable rather than
 slow. A workflow that later consumes these baselines must select an arm64
 runner or re-shoot them once.
+
+**Nothing will flag the mismatch for you.** Tuffgal decides a baseline set
+needs re-approval by diffing `PIXEL_AFFECTING_KEYS` against the committed
+`manifest.json`. The only key in that list describing the machine is
+`platform`, taken from `process.platform`, which is `"linux"` on arm64 and
+amd64 alike; there is no architecture key, and none is written into the
+manifest. So an amd64 runner reports a Skia rasterisation delta as an
+ordinary pending baseline change (exit 2), indistinguishable from a real
+UI regression, rather than as an environment mismatch (exit 3).
+
+**`--force-color-profile=srgb` is not carried, and cannot be.** 1e's phase
+notes ask for it on the Chromium launch. `tuffgal@0.2.1-alpha.1` has no
+seam for it: `runner/run.js` calls `chromium.launch({ headless })` with no
+`args` and takes a launcher override only as an in-process test parameter,
+the config surface has no launch-options key, and `cli.js` throws on an
+unknown option rather than forwarding it. The practical risk is low — a
+headless Linux container has no display profile to be overridden away from
+sRGB, and two container runs came out byte-identical — but the requirement
+is unmet, not met by another route.
+
+**Inside the compose network Postgres is `postgres:5432`.** The host's
+`127.0.0.1:5433` is a published port and it is wrong in the container,
+which is why `compose.yaml` gives the `visual` service its own
+`DATABASE_URL` rather than letting the host's url through. `visual.sh`
+prefers an inherited `DATABASE_URL` over the one it reads from `.env` for
+the same reason: that file is on the container's bind mount, and its url
+is the host's.
 
 Two things diverge between a laptop and this image, and both change bytes:
 

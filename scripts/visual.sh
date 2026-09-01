@@ -47,7 +47,7 @@ admin_url="$DATABASE_URL"
 # swap the database name, leaving any query string intact
 visual_url=$(printf '%s' "$DATABASE_URL" | sed -E "s#(://[^/]*)/[^/?]*#\1/$visual_db#")
 
-# the image ships none; scripts/visual-docker.sh makes the db instead
+# the image ships none, and prisma migrate deploy makes the db anyway
 if command -v psql > /dev/null 2>&1; then
   psql "$admin_url" --no-psqlrc -q -tAc \
     "SELECT 1 FROM pg_database WHERE datname = '$visual_db'" \
