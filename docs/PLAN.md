@@ -856,6 +856,26 @@ Since the repos already mirror, the mirror _is_ the CI host.
 | Then  | Report status back to your forge                                               | 1 evening  | **The architectural step.** A final `if: always()` step curls your commit-status endpoint (§07).                                                                          |
 | Later | `forgejo-runner exec` on your own box                                          | 2 evenings | Runs GitHub-Actions-compatible YAML with _no forge at all_ — you invoke it, read the exit code. Same YAML, so both paths coexist.                                         |
 
+> **THE RUNNER MUST BE arm64, OR STAGE 2 RE-SHOOTS EVERY BASELINE**
+>
+> Càrn's Tuffgal baselines are captured in a container pinned to `linux/arm64`,
+> and that was availability rather than taste: amd64 Chromium does not merely
+> run slowly under emulation on Apple silicon, it aborts (`qemu/rcu.h`,
+> SIGABRT). `docs/STACK.md` records the pin and the crash.
+>
+> GitHub's `ubuntu-latest` is x86_64. A workflow that runs `tuffgal-action` on
+> the default runner rasterises through a different FreeType and Skia path than
+> the baselines were shot on, and on a product whose identity is a custom
+> subset webfont at six weights, essentially every glyph edge differs. The
+> first CI run would fail wholesale and the only fix would be re-shooting every
+> baseline — throwing away the one signal a baseline carries.
+>
+> **Select an arm64 runner for the Tuffgal job.** Confirm availability and
+> pricing on the plan of the day; hosted arm64 runners are recent enough that
+> the answer moves. If arm64 is genuinely unavailable, the decision is to
+> re-shoot the baselines on x86_64 **once, deliberately, in their own commit**
+> — not to discover the mismatch as a red build.
+
 Two things worth knowing before you build on this. **Mirror pushes do trigger GitHub Actions** — the famous "pushes with a token don't trigger workflows" restriction is scoped to pushes made _from inside an Actions run_ using the automatic `GITHUB_TOKEN`, to prevent recursion. A push from your VPS with a deploy key is an ordinary external push. Confirm it empirically in five minutes before you rely on it.
 
 > **NOT COUPLED TO GITHUB**
