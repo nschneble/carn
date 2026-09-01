@@ -310,14 +310,70 @@ Hedging doesn't help. "Your call, but…" followed by an instruction is still
 an instruction, and it'll be carried out. Either raise it as a question and
 stop, or leave it alone.
 
+## Phase size
+
+A phase is a unit of **review**, not a unit of work. It is the right size when
+Nick can read its PR in one sitting and still be attending at the end.
+
+Measured on Phase 1e — 70 files — the five views it was named for came to
+7 to 24 files each. Three quarters of the diff was everything else. So the
+rule is not "smaller features." It is:
+
+- **Carried decisions, refactors and doc corrections get their own phase,
+  ahead of the feature phase that motivated them.** In 1e that was 21 files
+  of extractions, a migration, budget machinery and recorded rules, none of
+  which was a view. This work is the cheapest to review and the easiest to
+  get wrong quietly, which is exactly why it should not arrive wearing a
+  feature's clothes.
+- **A cross-cutting change is its own phase.** The breadcrumb touched every
+  view. Anything that does is reviewed as one idea across the product, never
+  as a commit inside a phase about something else.
+- **One phase ships one view, or one system with its first consumer.**
+  Further consumers of that system are separate phases. 1d pairing the design
+  system with two pages was right; 1e adding five more views at once was one
+  phase doing five phases' work.
+- **Findings close in the phase that raised them**, or they become a phase.
+  Eight commits of batched findings at the end of 1e is a second phase that
+  never got named.
+
+The costs are real and worth naming: more phases mean more review rounds and
+more gate ceremony. Two things keep that cheap. Sub-phases **share one growing
+verify script** rather than each getting its own — checks are added, not
+rewritten. And once baselines exist, a phase that moves an **existing**
+baseline is telling you it is cross-cutting; that is a signal to read, not a
+number to approve.
+
 ## Testing
 
-**No unit tests. No integration tests.**
+**No unit tests. No integration tests.** Two prongs, and they answer to
+different people.
+
+**The verify script is how the agent proves its own work.** One per phase,
+PASS/FAIL per check, non-zero exit if any fail. It is the gate before a push.
+
+**The Tuffgal stories are how Nick proves it.** A phase that ships a view
+Nick cannot see in its interesting state has not shipped a reviewable
+phase, whatever the verify script says.
+
+**Contract tests fill the gaps the stories cannot reach. Nothing more.**
+Story first, always. A contract test earns its place only when a screenshot
+of a real page could not show the same thing — page weight, spawn count,
+response headers, axe rules, and arithmetic whose inputs never appear on
+screen. Before writing one, say which story would have covered it and why
+that story cannot exist. If the answer is "a story could show this, but a
+test is easier to write," write the story.
 
 - **Tuffgal stories** for journeys. The whole product is one flowing story:
   file issue → branch → open PR → merge → issue closes → branch gone.
-- **Contract tests** for the four things a screenshot cannot see: page
-  weight, spawn count, response headers, and axe rules.
+- When a story covers ground an existing contract test already holds,
+  **delete the contract test**. Two proofs of one fact is one proof and one
+  liability: the day they disagree, you have to work out which was right.
+- **The deletion follows an approved baseline, never a written story.** A
+  story proves nothing until it has a baseline Nick has looked at and
+  accepted — until then it is an intention. Write the story, capture the
+  baseline, get it approved, and remove the contract test after. In the
+  wave that introduces a story, propose the removals as a reasoned list and
+  stop; do not fold them into the same diff.
 - The fixture repo must be **byte-reproducible**. Build it once with
   `GIT_AUTHOR_DATE` and `GIT_COMMITTER_DATE` pinned and commit the bare
   repo as a tarball.

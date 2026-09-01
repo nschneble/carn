@@ -115,27 +115,73 @@ Cover, at minimum:
 - Tags, with both a lightweight and an annotated one
 - A tree containing the gitlink row
 
-Keep `/` and `/r/linklater` exactly as they are. Those baselines are 1d's
-approved pass and must not move.
+`/` and `/r/linklater` keep the actions and expectations they already have —
+those two are 1d's reviewed pages and their stories are not to be rewritten.
+They have no baselines to preserve, though: nothing has ever been captured, so
+they are shot for the first time in this wave alongside everything else. See
+§5.
 
-## 5 · What this costs, and what to do about it
+## 5 · The first baselines, and where they are shot
 
-**Every baseline re-shoots.** The fixture changes, so every existing capture
-changes with it. Both breakpoints, both schemes.
+**No baseline has ever been written.** `tuffgal/baselines/{dark,light}` hold
+nothing but `.gitkeep`, and there is no `.github/workflows/`. An earlier draft
+of this document told you to run the current baselines and confirm they pass;
+that instruction was wrong and is withdrawn. Nothing to re-shoot — these are
+the first.
 
-Do this in one wave, not several. Land the fixture, the tarball, the stories
-and the re-shot baselines together, so exactly one commit says "baselines
-re-shot" and the reason sits beside it. A phase that re-shoots baselines three
-times has thrown away the only signal a baseline carries.
+**They are captured in a Linux container matching what CI will run, not on the
+laptop.** Tuffgal's own principle is that CI is the sole writer of baselines,
+and the reason is not ceremony: macOS rasterises text through CoreText and
+Linux through FreeType and Skia, with different hinting, antialiasing and
+subpixel positioning. On a product whose identity is a custom subset webfont
+at six weights, essentially every glyph edge differs. Laptop-shot baselines
+would mismatch wholesale on the first CI run.
 
-Before re-shooting, run `npm run visual` on the **current** baselines and
-confirm they pass. If they do not, the tree has drifted since 1d's approval
-and that is a finding to report before any of this starts.
+This wave builds the capture environment. Not a CI pipeline — one compose
+service and a script, which the GitHub Actions workflow later invokes rather
+than reimplements.
+
+- **Pin the image to the installed Playwright.** `playwright` resolves to
+  **1.62.1**; use Microsoft's official image for that exact version and record
+  the full tag in `docs/STACK.md`. A floating tag makes the baselines
+  irreproducible, which is the whole point of shooting them here.
+- **Pin the architecture, and say which.** ~~`platform: linux/amd64` matches
+  the likely GitHub runner at the cost of emulation speed.~~ **Settled as
+  `linux/arm64`**: amd64 Chromium does not merely run slowly under Colima on
+  Apple silicon, it aborts (`qemu/rcu.h`, SIGABRT), so amd64 was unavailable
+  rather than expensive. `docs/STACK.md` records it. The consequence is real
+  and belongs to whoever writes the CI workflow: **it must select an arm64
+  runner, or these baselines are shot a second time.**
+- **Node is `>=24` per `package.json`.** Whatever the image ships must satisfy
+  that and must match what CI will use.
+- **Inside the compose network Postgres is `postgres:5432`, not
+  `127.0.0.1:5433`.** The published port is a host convenience. `DATABASE_URL`
+  differs inside the container and that is the first thing that will bite.
+- The visual server and Tuffgal both run inside the container, so
+  `visualOrigin` at `127.0.0.1:4173` needs no change.
+- ~~Carry `--force-color-profile=srgb`, as the 1d capture work
+  established.~~ **Not possible, and not a shortfall to chase.**
+  `tuffgal@0.2.1-alpha.1` exposes no seam for Chromium launch arguments —
+  `runner/run.js` calls `chromium.launch({ headless })` with no `args`, the
+  config has no launch-options key, and `cli.js` rejects unknown options.
+  `docs/STACK.md` has the detail. A headless Linux container has no display
+  profile to be forced away from sRGB, so the risk this flag guarded against
+  does not arise there; the requirement is unmet rather than met another
+  way. It becomes available if Tuffgal grows the seam.
+
+Land the fixture, the tarball, the stories, the capture environment and the
+baselines as one wave, with one commit that says **baselines shot for the
+first time** — which is the true sentence — and the reason beside it.
 
 ## 6 · Out of scope
 
 - Any change under `src/`. If a view cannot be exercised without a code
   change, that is a finding — report it, do not make it.
+- **A GitHub Actions workflow.** This wave builds the capture environment CI
+  will later use. It does not build CI.
+- **Deleting contract tests.** `.claude/CLAUDE.md` now says the deletion
+  follows an approved baseline, never a written story. Propose the removals
+  as a reasoned per-assertion list and stop.
 - New routes, new views, new copy.
 - Anything the contract tests already prove and the eye cannot see. Say what
   you left out and why.
@@ -145,6 +191,9 @@ and that is a finding to report before any of this starts.
 - The discovery table from §1, including which cases the contract tests
   already cover
 - Whether the tarball built byte-identically twice
-- Whether the current baselines passed before you re-shot them
+- The exact Playwright image tag and the architecture you pinned, and why
+- Whether the capture reproduced: shoot twice, and report whether the two
+  runs are byte-identical. If they are not, the environment is not pinned
+  and the baselines are not baselines
 - Any case in §2 you could not build, and what stopped you
 - The story and action count, before and after
