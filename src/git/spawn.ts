@@ -24,6 +24,7 @@ export type GitOptions = {
 };
 
 export type GitChild = {
+  pid: number | undefined;
   stdin: Writable;
   stdout: Readable;
   stderr: Readable;
@@ -109,6 +110,7 @@ export async function spawnGit(options: GitOptions): Promise<GitChild> {
   });
 
   return {
+    pid: child.pid,
     stdin: child.stdin,
     stdout: child.stdout,
     stderr: child.stderr,

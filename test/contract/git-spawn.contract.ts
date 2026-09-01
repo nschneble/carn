@@ -26,7 +26,15 @@ const repo = join(dir, "empty.git");
 
 execFileSync("git", ["init", "--bare", "-q", "--", repo]);
 
+const orphans: GitChild[] = [];
+
 after(() => {
+  // a lost kill leaves git alive: give it stdin EOF so a failing run
+  // reports and exits instead of idling out its own timeout
+  for (const child of orphans) {
+    child.stdin.end();
+  }
+
   rmSync(dir, { recursive: true, force: true });
 });
 
@@ -105,6 +113,11 @@ test(
   async () => {
     const abandoned = new AbortController();
     const child = await blocker(generous, abandoned.signal);
+    orphans.push(child);
+
+    const { pid } = child;
+    assert.ok(pid !== undefined, "spawnGit reported no pid");
+    process.kill(pid, 0);
 
     await delay(50);
     abandoned.abort();
@@ -113,6 +126,15 @@ test(
       code: null,
       outcome: "cancelled",
     });
+
+    // cancelled is spawn.ts's own word for it; ESRCH is the kernel's
+    assert.throws(
+      () => {
+        process.kill(pid, 0);
+      },
+      { code: "ESRCH" },
+      `git ${pid} outlived the abort`,
+    );
   },
 );
 
