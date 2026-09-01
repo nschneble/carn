@@ -45,7 +45,7 @@
     "playwright": "^1.62.1",
     "prisma": "^7.9.1",
     "squawk-cli": "^2.62.0",
-    "tuffgal": "0.2.1-alpha.1",
+    "tuffgal": "0.2.2-alpha.1",
     "typescript": "^7.0.2"
   }
 }

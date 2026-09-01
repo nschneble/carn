@@ -1,0 +1,11 @@
+{
+  "action": "gantry-blob-oversize",
+  "steps": [
+    { "kind": "navigate", "path": "/r/gantry" },
+    { "kind": "click", "hint": { "role": "link", "text": "assets/" } },
+    { "kind": "click", "hint": { "role": "link", "text": "large.png" } }
+  ],
+  "expect": {
+    "anyOf": [{ "text": "PNG image, 75.2 KB. Too large to show here." }]
+  }
+}

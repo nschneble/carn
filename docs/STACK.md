@@ -184,15 +184,18 @@ manifest. So an amd64 runner reports a Skia rasterisation delta as an
 ordinary pending baseline change (exit 2), indistinguishable from a real
 UI regression, rather than as an environment mismatch (exit 3).
 
-**`--force-color-profile=srgb` is not carried, and cannot be.** 1e's phase
-notes ask for it on the Chromium launch. `tuffgal@0.2.1-alpha.1` has no
-seam for it: `runner/run.js` calls `chromium.launch({ headless })` with no
-`args` and takes a launcher override only as an in-process test parameter,
-the config surface has no launch-options key, and `cli.js` throws on an
-unknown option rather than forwarding it. The practical risk is low — a
-headless Linux container has no display profile to be overridden away from
-sRGB, and two container runs came out byte-identical — but the requirement
-is unmet, not met by another route.
+**`--force-color-profile=srgb` is carried**, through
+`tuffgal.config.ts`'s `browserArgs`. The seam arrived in
+`tuffgal@0.2.2-alpha.1` (`nschneble/tuffgal#49`): `runner/run.js` launches
+with `resolveLaunchOptions`, which returns
+`{ headless, args: config.browserArgs }`. 0.2.1-alpha.1 called
+`chromium.launch({ headless })` flat and had no config key for it, which
+is why this file recorded the flag as unreachable.
+
+**Nothing flags its absence either.** `browserArgs` is not in
+`PIXEL_AFFECTING_KEYS` and is not written into `manifest.json` at all, so
+a run that dropped the flag would report the resulting shift as an
+ordinary pending baseline change, exactly as an amd64 runner would.
 
 **Inside the compose network Postgres is `postgres:5432`.** The host's
 `127.0.0.1:5433` is a published port and it is wrong in the container,

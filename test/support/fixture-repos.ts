@@ -252,6 +252,7 @@ function gantryCommits(): FixtureCommit[] {
       message: "Bring the assets in",
       at: gantryAt(1),
       files: [
+        { path: "assets/large.png", body: png(160) },
         { path: "assets/logo.png", body: png(8) },
         { path: "assets/small.bin", body: Buffer.alloc(512) },
       ],

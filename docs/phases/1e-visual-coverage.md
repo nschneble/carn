@@ -159,15 +159,12 @@ than reimplements.
   differs inside the container and that is the first thing that will bite.
 - The visual server and Tuffgal both run inside the container, so
   `visualOrigin` at `127.0.0.1:4173` needs no change.
-- ~~Carry `--force-color-profile=srgb`, as the 1d capture work
-  established.~~ **Not possible, and not a shortfall to chase.**
-  `tuffgal@0.2.1-alpha.1` exposes no seam for Chromium launch arguments —
-  `runner/run.js` calls `chromium.launch({ headless })` with no `args`, the
-  config has no launch-options key, and `cli.js` rejects unknown options.
-  `docs/STACK.md` has the detail. A headless Linux container has no display
-  profile to be forced away from sRGB, so the risk this flag guarded against
-  does not arise there; the requirement is unmet rather than met another
-  way. It becomes available if Tuffgal grows the seam.
+- **Carry `--force-color-profile=srgb`, as the 1d capture work
+  established.** ~~Not possible: `tuffgal@0.2.1-alpha.1` exposes no seam for
+  Chromium launch arguments.~~ **Settled as carried.** Tuffgal grew the
+  seam in `0.2.2-alpha.1` — a `browserArgs` config key that reaches
+  `chromium.launch()`, shipped as `nschneble/tuffgal#49`.
+  `tuffgal.config.ts` sets it and `docs/STACK.md` has the detail.
 
 Land the fixture, the tarball, the stories, the capture environment and the
 baselines as one wave, with one commit that says **baselines shot for the
