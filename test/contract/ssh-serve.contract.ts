@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// the chain an abandoned clone rides: the channel's close event aborts the
-// controller serve() hands to spawnGit, which SIGKILLs the child. lose it
-// and orphaned git processes hold semaphore slots until the 10-minute
-// timeout, one slot at a time, until the box stops serving
+// abandoned clone chain: channel close event aborts the controller serve()
+// hands to spawnGit, which SIGKILLs the child; lose it and orphaned git
+// processes hold semaphore slots 'til they timeout + the box stops serving
 
 import assert from "node:assert";
 import { execFileSync } from "node:child_process";
@@ -25,11 +24,9 @@ const { serve } = await import("../../src/ssh/exec.js");
 
 const dir = mkdtempSync(join(tmpdir(), "carn-ssh-serve-"));
 const repoPath = join(dir, "pinned.git");
-
 execFileSync("git", ["init", "--bare", "-q", "--", repoPath]);
 
 const channels: FakeChannel[] = [];
-
 after(() => {
   // a lost listener leaves git alive: give it stdin EOF so a failing run
   // reports and exits instead of idling out serve's 10-minute timeout
@@ -41,7 +38,6 @@ after(() => {
 });
 
 const owner = "66666666-6666-4666-8666-666666666666";
-
 const repo: ResolvedRepo = {
   id: "55555555-5555-4555-8555-555555555555",
   name: "pinned",
@@ -96,7 +92,6 @@ test("closing the channel kills the git child", bounded, async () => {
   const served = serve(request, parsed, repo);
 
   try {
-    // the ref advertisement is proof the child is up and holding a slot
     const [chunk] = await once(channel, "advertised", {
       signal: AbortSignal.timeout(timeoutMs),
     });
@@ -107,7 +102,7 @@ test("closing the channel kills the git child", bounded, async () => {
   }
 
   // done settles on the child's close event, which trails the process
-  // ending; a survivor would hold this open for the full 10-minute timeout
+  // ending; a survivor would hold this open for the full 10-min timeout
   await served;
 
   assert.strictEqual(channel.exitCode, null, "finish() exited a gone channel");
