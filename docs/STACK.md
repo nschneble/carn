@@ -184,18 +184,23 @@ manifest. So an amd64 runner reports a Skia rasterisation delta as an
 ordinary pending baseline change (exit 2), indistinguishable from a real
 UI regression, rather than as an environment mismatch (exit 3).
 
-**`--force-color-profile=srgb` is carried**, through
-`tuffgal.config.ts`'s `browserArgs`. The seam arrived in
-`tuffgal@0.2.2-alpha.1` (`nschneble/tuffgal#49`): `runner/run.js` launches
-with `resolveLaunchOptions`, which returns
-`{ headless, args: config.browserArgs }`. 0.2.1-alpha.1 called
-`chromium.launch({ headless })` flat and had no config key for it, which
-is why this file recorded the flag as unreachable.
+**`--force-color-profile=srgb` was never missing.** Playwright's own
+Chromium launch already carries it: `playwright-core@1.62.1` bundles it
+in the default `chromiumSwitches`, so a bare `chromium.launch({
+headless: true })` — the exact 0.2.1-alpha.1 shape — sets it on every
+run. An earlier pass of this document recorded the flag as unreachable
+without checking Playwright's own defaults first, which was wrong.
+`tuffgal.config.ts` carries no `browserArgs` entry for it; adding one
+would only duplicate a switch Chromium already takes.
 
-**Nothing flags its absence either.** `browserArgs` is not in
-`PIXEL_AFFECTING_KEYS` and is not written into `manifest.json` at all, so
-a run that dropped the flag would report the resulting shift as an
-ordinary pending baseline change, exactly as an amd64 runner would.
+`tuffgal@0.2.2-alpha.1` (`nschneble/tuffgal#49`) does add a real
+`browserArgs` config seam — `runner/run.js` launches with
+`resolveLaunchOptions`, which returns `{ headless, args:
+config.browserArgs }` — for the day a project genuinely needs a launch
+flag Playwright doesn't already set. This project doesn't need it for
+srgb. `browserArgs` is not in `PIXEL_AFFECTING_KEYS` and is not written
+into `manifest.json`, so if a future project use of it ever needs
+guarding against silent drift, that gap is still open then.
 
 **Inside the compose network Postgres is `postgres:5432`.** The host's
 `127.0.0.1:5433` is a published port and it is wrong in the container,

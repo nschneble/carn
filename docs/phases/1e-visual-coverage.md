@@ -161,10 +161,14 @@ than reimplements.
   `visualOrigin` at `127.0.0.1:4173` needs no change.
 - **Carry `--force-color-profile=srgb`, as the 1d capture work
   established.** ~~Not possible: `tuffgal@0.2.1-alpha.1` exposes no seam for
-  Chromium launch arguments.~~ **Settled as carried.** Tuffgal grew the
-  seam in `0.2.2-alpha.1` — a `browserArgs` config key that reaches
-  `chromium.launch()`, shipped as `nschneble/tuffgal#49`.
-  `tuffgal.config.ts` sets it and `docs/STACK.md` has the detail.
+  Chromium launch arguments.~~ **Settled as never missing.** Playwright's
+  own Chromium launch already carries this flag by default —
+  `playwright-core@1.62.1` bundles it in `chromiumSwitches`, so a bare
+  `chromium.launch({ headless: true })` sets it regardless of Tuffgal's
+  version. `tuffgal.config.ts` carries no `browserArgs` entry for it;
+  Tuffgal's real `browserArgs` seam (`0.2.2-alpha.1`,
+  `nschneble/tuffgal#49`) exists for a launch flag Playwright doesn't
+  already set, which this isn't. `docs/STACK.md` has the detail.
 
 Land the fixture, the tarball, the stories, the capture environment and the
 baselines as one wave, with one commit that says **baselines shot for the

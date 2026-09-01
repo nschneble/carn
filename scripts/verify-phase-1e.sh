@@ -1201,17 +1201,14 @@ if require_db 18 "$TITLE_18"; then
   frozen_pinned=$(grep -c 'frozenTime' tuffgal.config.ts)
   wide=$(grep -c 'width: 1440' tuffgal.config.ts)
   narrow=$(grep -c 'width: 375' tuffgal.config.ts)
-  # zlib/CoreText-vs-FreeType drift is undetectable pixel-by-pixel; this is the
-  # only thing standing between a dropped launch flag and 96 silent baseline changes
-  srgb_pinned=$(grep -c 'force-color-profile=srgb' tuffgal.config.ts)
   if [ "$visual_status" -ne 0 ]; then
     record FAIL 18 "$TITLE_18" "npm run visual exited $visual_status: $(grep -m1 'tuffgal error' "$work/18" || tail -3 "$work/18")"
   elif [ "$schemes" != "2" ]; then
     record FAIL 18 "$TITLE_18" "$schemes of 2 color-scheme runs started, so a palette went unphotographed"
   elif [ "$desktops" != "2" ] || [ "$mobiles" != "2" ]; then
     record FAIL 18 "$TITLE_18" "$desktops desktop and $mobiles mobile summaries, wanted 2 of each"
-  elif [ "$wide" -lt 1 ] || [ "$narrow" -lt 1 ] || [ "$frozen_pinned" -lt 1 ] || [ "$srgb_pinned" -lt 1 ]; then
-    record FAIL 18 "$TITLE_18" "tuffgal.config.ts declares 1440:$wide, 375:$narrow, frozenTime:$frozen_pinned, srgb:$srgb_pinned"
+  elif [ "$wide" -lt 1 ] || [ "$narrow" -lt 1 ] || [ "$frozen_pinned" -lt 1 ]; then
+    record FAIL 18 "$TITLE_18" "tuffgal.config.ts declares 1440:$wide, 375:$narrow, frozenTime:$frozen_pinned"
   else
     record PASS 18 "$TITLE_18" "2 palettes x 2 breakpoints, against the pinned fixture and $frozen_now"
   fi

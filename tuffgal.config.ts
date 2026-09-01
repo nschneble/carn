@@ -26,8 +26,6 @@ export default defineConfig({
   },
   baseUrl: visualOrigin,
   colorScheme: scheme,
-  // without it chromium renders through whatever icc profile the host has
-  browserArgs: ["--force-color-profile=srgb"],
   // the two that bracket the stylesheet's single min-width: 640px query.
   // BRAND.md's 1440 is not in Tuffgal's registry, whose desktop is 1280
   breakpoints: [
