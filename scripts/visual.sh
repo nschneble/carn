@@ -82,7 +82,9 @@ rank() {
     1) echo 3 ;;
     3) echo 2 ;;
     2) echo 1 ;;
-    *) echo 0 ;;
+    0) echo 0 ;;
+    # an undocumented code (a crash, a kill signal) outranks every known one
+    *) echo 4 ;;
   esac
 }
 
