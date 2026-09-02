@@ -458,7 +458,7 @@ test("every ancestor link on a blob three levels deep answers 200", async (t) =>
 
   assert.ok(
     listed.includes(
-      '<h1 class="t-item t-item--title" lang="en"><span class="sc">a</span>/<span class="sc">b</span></h1>',
+      '<h1 class="t-item t-item--title" lang="en"><span class="caps">a/b</span></h1>',
     ),
     "the a/b ancestor answered 200 with some other page",
   );

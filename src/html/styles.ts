@@ -225,6 +225,11 @@ export const components = css`body {
   font-size: 12.5px;
 }
 
+/* the whole name at full size; .sc nests inside it for the extension */
+.caps {
+  text-transform: uppercase;
+}
+
 /* compensated small caps (base wght 700, wdth 110) */
 .sc {
   text-transform: uppercase;

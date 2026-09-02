@@ -468,9 +468,9 @@ if require_daemon 3 "$TITLE_3" && require_seed 3 "$TITLE_3"; then
   status=$(fetch_page "/r/$REPO_NAME" "$work/3")
   tree_rows=$(occurrences "$work/3.body" '<li class="row')
   wrong=""
-  for entry in 'README.<span class="sc">md</span>' \
-    '<span class="sc">package</span>.<span class="sc">json</span>' \
-    '<span class="sc">docs</span>/' '<span class="sc">src</span>/'; do
+  for entry in '<span class="caps">README<span class="sc">.md</span></span>' \
+    '<span class="caps">package<span class="sc">.json</span></span>' \
+    '<span class="caps">docs</span>/' '<span class="caps">src</span>/'; do
     grep -qF "$entry" "$work/3.body" || wrong="$wrong missing tree entry '$entry';"
   done
   for rendered in '<div class="readme">' '<h1>Verify 1d</h1>' '<h2>Notes</h2>' '<table>'; do
@@ -689,9 +689,9 @@ readonly TITLE_15="small caps keep the true lowercase and filenames carry lang"
 if require_daemon 15 "$TITLE_15" && require_seed 15 "$TITLE_15"; then
   # 1e gave the rows somewhere to go, so the name is an anchor now
   wrong=""
-  grep -qF '<a class="nm t-item" lang="en" href="/r/verify1d/blob/main/README.md">README.<span class="sc">md</span></a>' "$work/3.body" \
+  grep -qF '<a class="nm t-item" lang="en" href="/r/verify1d/blob/main/README.md"><span class="caps">README<span class="sc">.md</span></span></a>' "$work/3.body" \
     || wrong="$wrong the README row is not the lang-stamped small-caps shape;"
-  grep -qF '<a class="nm t-item" lang="en" href="/r/verify1d/tree/main/docs"><span class="sc">docs</span>/</a>' "$work/3.body" \
+  grep -qF '<a class="nm t-item" lang="en" href="/r/verify1d/tree/main/docs"><span class="caps">docs</span>/</a>' "$work/3.body" \
     || wrong="$wrong the docs row is not the lang-stamped small-caps shape;"
   if [ -n "$wrong" ]; then
     record FAIL 15 "$TITLE_15" "$wrong"
@@ -700,7 +700,7 @@ if require_daemon 15 "$TITLE_15" && require_seed 15 "$TITLE_15"; then
       repo-page gallery -- \
       "the rendered dom holds the true filename under small caps" \
       "a directory row carries the accent class and a trailing slash" \
-      "small caps split lowercase runs and never insert whitespace" \
+      "small caps split at the extension and never insert whitespace" \
       "a directory's trailing slash is real text, and small caps are unspaced"
   fi
 fi

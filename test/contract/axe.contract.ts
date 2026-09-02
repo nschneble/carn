@@ -532,20 +532,20 @@ function contrastPin(results: AxeResults, where: string, pinned: number): void {
 // measured once per fixture, identical in both schemes: the two paths
 // audit the same bytes and differ only in which token block applies
 const contrastNodes: Record<string, number> = {
-  gallery: 62,
-  populated: 28,
-  hover: 28,
+  gallery: 60,
+  populated: 18,
+  hover: 18,
   empty: 6,
-  show: 93,
-  "show-all": 187,
-  "show-bare": 67,
+  show: 90,
+  "show-all": 165,
+  "show-bare": 64,
   "show-new": 10,
-  "show-header": 93,
+  "show-header": 90,
   "not-found": 7,
-  blob: 75,
-  "blob-cut": 24,
-  "blob-image": 17,
-  "blob-binary": 19,
+  blob: 73,
+  "blob-cut": 22,
+  "blob-image": 16,
+  "blob-binary": 17,
   commits: 57,
   "commits-tail": 35,
   "commits-none": 10,
@@ -553,16 +553,16 @@ const contrastNodes: Record<string, number> = {
   "commit-cut": 138,
   "commit-binary": 23,
   "commit-file": 42,
-  branches: 46,
-  "branches-cut": 47,
+  branches: 34,
+  "branches-cut": 35,
   "branches-none": 10,
-  "branches-quiet": 21,
+  "branches-quiet": 17,
   tags: 30,
   "tags-none": 10,
-  tree: 49,
-  "tree-cut": 67,
-  "tree-all": 161,
-  "tree-sub": 24,
+  tree: 45,
+  "tree-cut": 63,
+  "tree-all": 138,
+  "tree-sub": 22,
 };
 
 // below the breakpoint the breadcrumb folds its middle segments out of
@@ -570,11 +570,9 @@ const contrastNodes: Record<string, number> = {
 // for one .fold ellipsis. only the trails deep enough to have a middle
 // reach the fold, and each loses exactly one measured node
 const foldedContrastNodes: Record<string, number> = {
-  blob: 74,
-  "blob-cut": 23,
+  blob: 72,
+  "blob-cut": 21,
   "commit-file": 41,
-  populated: 24,
-  hover: 24,
 };
 
 for (const width of auditWidths) {

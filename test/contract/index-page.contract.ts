@@ -143,7 +143,7 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
 test("a repo name wears small caps like every other Row, and no tooltip", () => {
   const markup = indexDocument();
 
-  assert.match(markup, /class="sc"/);
+  assert.match(markup, /class="caps"/);
   assert.doesNotMatch(markup, /class="nm t-item"[^>]*title=/);
   assert.doesNotMatch(markup, /class="[^"]*is-dir/);
 });

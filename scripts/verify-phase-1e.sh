@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # Phase 1e exit checks, from docs/phases/1e-views.md, 1e-revision.md, and
-# 1e-revision-2.md. Prints PASS or FAIL for each of the 50 checks and exits
+# 1e-revision-2.md. Prints PASS or FAIL for each of the 51 checks and exits
 # non-zero if any fail. Reads
 # DATABASE_URL from the environment, falling back to ./.env. Check 24 runs
 # 1a, 1b, 1c and 1d, and each of those runs the ones before it, so a full
@@ -14,7 +14,7 @@ set -uo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root" || exit 1
 
-readonly EXPECTED_CHECKS=50
+readonly EXPECTED_CHECKS=51
 readonly REPO_NAME=verify1e
 readonly ABSENT_NAME=absent1e
 readonly DEFAULT_ROOT=./local/repos
@@ -1675,9 +1675,9 @@ fi
 readonly TITLE_39="an annotated tag row carries the marker, a lightweight one does not"
 if require_daemon 39 "$TITLE_39" && require_seed 39 "$TITLE_39"; then
   wrong=""
-  grep -qF '<span class="sc">v</span>1.1.0<span class="t-micro"> Annotated</span>' "$work/tags.body" \
+  grep -qF '<span class="caps">v1.1<span class="sc">.0</span></span><span class="t-micro"> Annotated</span>' "$work/tags.body" \
     || wrong="$wrong the annotated tag v1.1.0 carries no marker;"
-  grep -qF '<span class="sc">v</span>1.0.0<span class="t-micro"> Annotated</span>' "$work/tags.body" \
+  grep -qF '<span class="caps">v1.0<span class="sc">.0</span></span><span class="t-micro"> Annotated</span>' "$work/tags.body" \
     && wrong="$wrong the lightweight tag v1.0.0 carries the annotated marker;"
   if [ -n "$wrong" ]; then
     record FAIL 39 "$TITLE_39" "$wrong"
@@ -1732,10 +1732,10 @@ grep -qF "smallCaps(" src/html/ref-list.ts \
 grep -qF "smallCaps(" src/html/repo-list.ts \
   || wrong="$wrong repo-list.ts never calls smallCaps();"
 if require_daemon 42 "$TITLE_42" && require_seed 42 "$TITLE_42"; then
-  grep -qF '<span class="sc">' "$work/branches.body" \
-    || wrong="$wrong the rendered branch list carries no small-caps span;"
-  grep -qF '<span class="sc">' "$work/index.body" \
-    || wrong="$wrong the rendered repo index carries no small-caps span;"
+  grep -qF '<span class="caps">' "$work/branches.body" \
+    || wrong="$wrong the rendered branch list carries no small-caps wrapper;"
+  grep -qF '<span class="caps">' "$work/index.body" \
+    || wrong="$wrong the rendered repo index carries no small-caps wrapper;"
 fi
 if [ -n "$wrong" ]; then
   record FAIL 42 "$TITLE_42" "$wrong"
@@ -1900,6 +1900,28 @@ if [ -n "$wrong" ]; then
   record FAIL 50 "$TITLE_50" "$wrong"
 else
   record PASS 50 "$TITLE_50" "the notice follows </pre>, reading order matches where the file stops"
+fi
+
+# 51
+# the split is positional, so an .sc span always opens at the dot it split
+# on. one that opens on anything else is either empty or a name with no
+# extension that took the treatment anyway
+readonly TITLE_51="every rendered .sc span opens at a dot, and none is empty"
+wrong=""
+opened=0
+if require_daemon 51 "$TITLE_51" && require_seed 51 "$TITLE_51"; then
+  opened=$(grep -ohF '<span class="sc">.' "$work"/*.body 2>/dev/null | grep -c .)
+  stray=$(grep -ohE '<span class="sc">.' "$work"/*.body 2>/dev/null | grep -cv '\.$')
+  [ "$stray" = "0" ] || wrong="$wrong $stray .sc span(s) do not open at a dot;"
+  grep -qF '<span class="sc"></span>' "$work"/*.body 2>/dev/null \
+    && wrong="$wrong a body renders an empty .sc span;"
+  [ "$opened" != "0" ] \
+    || wrong="$wrong no body carries an .sc span at all, so nothing was measured;"
+fi
+if [ -n "$wrong" ]; then
+  record FAIL 51 "$TITLE_51" "$wrong"
+else
+  record PASS 51 "$TITLE_51" "$opened .sc span(s) rendered, every one opening at its dot"
 fi
 
 # 25, printed in its place

@@ -473,32 +473,41 @@ test("a directory row carries the accent class and a trailing slash", () => {
 
   assert.ok(
     markup.includes(
-      '<a class="nm t-item" lang="en" href="/r/linklater/tree/main/docs"><span class="sc">docs</span>/</a>',
+      '<a class="nm t-item" lang="en" href="/r/linklater/tree/main/docs"><span class="caps">docs</span>/</a>',
     ),
     "a directory row lost its class, its lang, its slash, or its tree link",
   );
   assert.ok(
     markup.includes(
-      '<a class="nm t-item" lang="en" href="/r/linklater/blob/main/README.md">README.<span class="sc">md</span></a>',
+      '<a class="nm t-item" lang="en" href="/r/linklater/blob/main/README.md"><span class="caps">README<span class="sc">.md</span></span></a>',
     ),
     "a file row lost its small-caps split or its blob link",
   );
 });
 
-test("small caps split lowercase runs and never insert whitespace", () => {
+test("small caps split at the extension and never insert whitespace", () => {
   const cases: [string, string][] = [
-    ["README.md", 'README.<span class="sc">md</span>'],
+    [
+      "README.md",
+      '<span class="caps">README<span class="sc">.md</span></span>',
+    ],
     [
       "Button.tsx",
-      'B<span class="sc">utton</span>.<span class="sc">tsx</span>',
+      '<span class="caps">Button<span class="sc">.tsx</span></span>',
     ],
-    [".github", '.<span class="sc">github</span>'],
-    ["docs", '<span class="sc">docs</span>'],
-    ["LICENSE", "LICENSE"],
+    [".github", '<span class="caps"><span class="sc">.github</span></span>'],
+    ["docs", '<span class="caps">docs</span>'],
+    ["LICENSE", '<span class="caps">LICENSE</span>'],
     [
       "package-lock.json",
-      '<span class="sc">package</span>-<span class="sc">lock</span>.<span class="sc">json</span>',
+      '<span class="caps">package-lock<span class="sc">.json</span></span>',
     ],
+    ["foo.", '<span class="caps">foo.</span>'],
+    [
+      "apps/v1.2/deep.ts",
+      '<span class="caps">apps/v1.2/deep<span class="sc">.ts</span></span>',
+    ],
+    [".github/workflows", '<span class="caps">.github/workflows</span>'],
   ];
 
   for (const [name, expected] of cases) {
@@ -525,6 +534,36 @@ test("small caps split lowercase runs and never insert whitespace", () => {
       name,
       `${name} is not what the DOM holds`,
     );
+  }
+});
+
+test("an .sc span appears exactly when a final segment carries an extension", () => {
+  const extended = ["README.md", ".github", "a.b", "src/.hidden", "x/y.z"];
+  const bare = ["LICENSE", "docs", "foo.", ".", "..", "src/", "v1.2/README"];
+
+  for (const name of extended) {
+    assert.match(
+      smallCaps(name).value,
+      /<span class="sc">[^<]/,
+      `${name} lost its extension span`,
+    );
+  }
+
+  for (const name of [...extended, ...bare]) {
+    const markup = smallCaps(name).value;
+
+    assert.doesNotMatch(
+      markup,
+      /<span class="sc"><\/span>/,
+      `${name} rendered an empty .sc span`,
+    );
+    if (bare.includes(name)) {
+      assert.doesNotMatch(
+        markup,
+        /class="sc"/,
+        `${name} has no extension but gained an .sc span`,
+      );
+    }
   }
 });
 

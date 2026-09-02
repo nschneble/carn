@@ -222,6 +222,11 @@ body {
   font-size: 12.5px;
 }
 
+/* the whole name at full size; .sc nests inside it for the extension */
+.caps {
+  text-transform: uppercase;
+}
+
 /* compensated small caps (base wght 700, wdth 110) */
 .sc {
   text-transform: uppercase;
@@ -625,7 +630,7 @@ Not every `.t-item` heading takes the modifier. A show page's title — a blob's
 
 ### Small caps
 
-Carn Sans has no `smcp`, so a Row's name column uses compensated synthetic small caps: lowercase runs wrapped in a span, uppercased by CSS, at 79% size with weight and width raised so the stems match. Browser synthesis scales the stems too, which leaves the faked caps visibly lighter than the ones beside them.
+Carn Sans has no `smcp`, so a Row's name column uses compensated synthetic small caps, and the split is positional rather than case-based. The whole name goes in a `.caps` span, uppercased by CSS at full size; the extension — everything from the last dot of the name's final segment — goes in an `.sc` span nested inside it, at 79% size with weight and width raised so the stems match. Browser synthesis scales the stems too, which leaves the faked caps visibly lighter than the ones beside them. Case is never read, so `README.md` and `package.json` divide the same way. A name with no dot is all stem and carries no `.sc` span at all, and so is one whose only dot is last (`foo.`) or sits in an earlier path segment (`.github/workflows`). A leading dot is the extension's own separator, not a stem: `.env` is an empty stem and one `.sc` run carrying `.env` whole.
 
 **The rule is the name column, not the filename.** A tree row's filename, a branch or tag's name, a repo's name in the index — anything sitting in a Row's own `.nm` slot takes `.t-item` and small caps together. Two columns carry a name without carrying small caps, and both are documented exceptions, not drift:
 
@@ -635,6 +640,7 @@ Carn Sans has no `smcp`, so a Row's name column uses compensated synthetic small
 ```
 .t-item { font-variation-settings:"wght" 700,"wdth" 110;
           font-feature-settings:"case" 1; }
+.caps   { text-transform:uppercase; }
 .sc     { text-transform:uppercase; font-size:.79em;
           font-variation-settings:"wght" 824,"wdth" 117;
           letter-spacing:.056em; margin-right:-.056em; }
@@ -642,7 +648,7 @@ Carn Sans has no `smcp`, so a Row's name column uses compensated synthetic small
 
 Measured against drawn small caps: stem 1.004, width 0.870, advance 0.900, height 0.790. Three details are load-bearing — `letter-spacing` stays, because real small caps keep _full-size_ sidebearings; `"case" 1` lifts `. - /` to cap alignment; and the DOM keeps the real lowercase, since `text-transform` is display-only by spec.
 
-Two rules about the markup. **`lang="en"` goes on the filename element**, once — the `<a class="nm">` or whatever carries `.t-item` — and the `.sc` spans inherit it. Under Turkish, `i` uppercases to `İ`. And **no whitespace between a plain run and an `.sc` span**: `README.<span class="sc">md</span>` is one word, and a newline or indent inside it becomes a space in the accessible name, in the clipboard, and in find-in-page. Never give an `.sc` span an `aria-label` — the DOM's true lowercase is already the right accessible name.
+Two rules about the markup. **`lang="en"` goes on the filename element**, once — the `<a class="nm">` or whatever carries `.t-item` — and the `.sc` spans inherit it. Under Turkish, `i` uppercases to `İ`. And **no whitespace between the stem and the `.sc` span**: `README<span class="sc">.md</span>` is one word, and a newline or indent inside it becomes a space in the accessible name, in the clipboard, and in find-in-page. Never give an `.sc` span an `aria-label` — the DOM's true lowercase is already the right accessible name.
 
 When the font pipeline exists, replace all of it with **real small caps merged into Carn Sans** — `smcp` and `c2sc` in the face we already ship, not a second family. Inside the face the CSS collapses to `font-variant-caps: small-caps`; a separate family would still need a `font-family` override on every run, plus its own `@font-face` and its own request on the critical path.
 

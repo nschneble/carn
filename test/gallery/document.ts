@@ -70,22 +70,22 @@ const chips = html`<section>
 const rows = html`<section>
   <h2 class="t-l">Row</h2>
   <div class="row is-dir">
-    <a class="nm t-item" lang="en" href="#row-dir"><span class="sc">docs</span>/</a>
+    <a class="nm t-item" lang="en" href="#row-dir"><span class="caps">docs</span>/</a>
     <span class="msg">Move the brand book out of the artifact</span>
     <span class="age">3d</span>
   </div>
   <div class="row is-dir is-hover">
-    <a class="nm t-item" lang="en" href="#row-hover"><span class="sc">src</span>/<span class="sc">components</span>/</a>
+    <a class="nm t-item" lang="en" href="#row-hover"><span class="caps">src/components</span>/</a>
     <span class="msg">Split the button out of the header</span>
     <span class="age">6h</span>
   </div>
   <div class="row">
-    <a class="nm t-item" lang="en" href="#row-file">README.<span class="sc">md</span></a>
+    <a class="nm t-item" lang="en" href="#row-file"><span class="caps">README<span class="sc">.md</span></span></a>
     <span class="msg">Say what it does before saying how to run it</span>
     <span class="age">2w</span>
   </div>
   <div class="row">
-    <a class="nm t-item" lang="en" href="#row-long">B<span class="sc">utton</span>.<span class="sc">tsx</span></a>
+    <a class="nm t-item" lang="en" href="#row-long"><span class="caps">Button<span class="sc">.tsx</span></span></a>
     <span class="msg">Reject refs beginning with a dash</span>
     <span class="age">14w</span>
   </div>
