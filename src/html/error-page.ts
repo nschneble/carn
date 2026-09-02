@@ -96,6 +96,15 @@ export const badRepoName: Failure = {
   path: "/404",
 };
 
+// no route matched, so there is no repo, ref, or path here to name
+export const noSuchRoute: Failure = {
+  title: "Nothing here · Càrn",
+  heading: "Nothing here",
+  said: "That URL doesn't match a route this server has.",
+  next: "Check the URL, or find it in all repos.",
+  path: "/404",
+};
+
 export function errorPage(view: { failure: Failure }): string {
   const { failure } = view;
 

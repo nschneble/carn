@@ -9,6 +9,17 @@
       - listitem: gantry
 - main:
   - heading "gantry" [level=1]
+  - navigation "Repo views":
+    - list:
+      - listitem:
+        - link "Commits":
+          - /url: /r/gantry/commits?ref=main
+      - listitem:
+        - link "Branches":
+          - /url: /r/gantry/branches
+      - listitem:
+        - link "Tags":
+          - /url: /r/gantry/tags
   - heading "Files" [level=2]
   - list:
     - listitem:

@@ -536,11 +536,11 @@ const contrastNodes: Record<string, number> = {
   populated: 18,
   hover: 18,
   empty: 6,
-  show: 90,
-  "show-all": 184,
-  "show-bare": 64,
-  "show-new": 7,
-  "show-header": 90,
+  show: 93,
+  "show-all": 187,
+  "show-bare": 67,
+  "show-new": 10,
+  "show-header": 93,
   "not-found": 7,
   blob: 75,
   "blob-cut": 24,
@@ -549,20 +549,20 @@ const contrastNodes: Record<string, number> = {
   commits: 57,
   "commits-tail": 35,
   "commits-none": 10,
-  commit: 42,
-  "commit-cut": 125,
+  commit: 43,
+  "commit-cut": 138,
   "commit-binary": 23,
   "commit-file": 42,
-  branches: 36,
-  "branches-cut": 37,
+  branches: 33,
+  "branches-cut": 34,
   "branches-none": 10,
-  "branches-quiet": 20,
+  "branches-quiet": 17,
   tags: 26,
   "tags-none": 10,
-  tree: 48,
-  "tree-cut": 66,
-  "tree-all": 160,
-  "tree-sub": 22,
+  tree: 49,
+  "tree-cut": 67,
+  "tree-all": 161,
+  "tree-sub": 23,
 };
 
 // below the breakpoint the breadcrumb folds its middle segments out of
@@ -677,35 +677,6 @@ test("a stacked commit row link is 24px tall and a wide one is not", async () =>
     }
   } finally {
     await page.close();
-  }
-});
-
-// three rules arrive with the first <table> in the product, and a clean
-// violations list reads the same whether they settled the markup or never
-// looked at it
-test("the ref tables put the table rules to work", async (t) => {
-  const rules = [
-    "empty-table-header",
-    "scope-attr-valid",
-    "table-duplicate-name",
-  ];
-
-  for (const path of renderPaths) {
-    for (const state of ["branches", "tags"]) {
-      const { results } = await fetched(`/${state}`, path.colorScheme);
-
-      for (const name of rules) {
-        const passed = results.passes.find((rule) => rule.id === name);
-
-        assert.ok(
-          passed && passed.nodes.length > 0,
-          `${name} settled nothing on the ${state} page, ${path.name}: it is inapplicable, so the <thead> it is meant to pin goes unmeasured`,
-        );
-        t.diagnostic(
-          `${state} ${path.name}: ${name} passed on ${passed.nodes.length}`,
-        );
-      }
-    }
   }
 });
 

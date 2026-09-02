@@ -68,6 +68,15 @@ function name(file: DiffFile): Raw {
   return html`${file.from}<span class="vh"> renamed to</span><span aria-hidden="true"> → </span>${file.path}`;
 }
 
+// binary carries no diff, so it gets no marker: nothing is ever inlined
+function destination(file: DiffFile, inlined: boolean): Raw {
+  if (binary(file)) return html``;
+
+  return inlined
+    ? html` <span class="t-micro">Below<span class="vh"> on this page</span></span>`
+    : html` <span class="t-micro">Own page</span>`;
+}
+
 function row(
   view: CommitPage,
   file: DiffFile,
@@ -79,12 +88,17 @@ function row(
     : changeHref(view.repo, view.commit.sha, file.path);
 
   return html`<li class="row">
-        <a class="nm t-mono" href="${href}">${name(file)}</a>
+        <a class="nm t-mono" href="${href}">${name(file)}${destination(file, inlined)}</a>
         <span class="cnt">${counts(file)}</span>
       </li>`;
 }
 
-function fileList(view: CommitPage, shape: Shape, inlined: Set<number>): Raw {
+function fileList(
+  view: CommitPage,
+  shape: Shape,
+  inlined: Set<number>,
+  totalDiffable: number,
+): Raw {
   const { files } = view.commit;
 
   if (files.length === 0) {
@@ -102,13 +116,20 @@ function fileList(view: CommitPage, shape: Shape, inlined: Set<number>): Raw {
       </div>`;
   }
 
-  const said =
+  const cutFiles =
     shape.files === files.length
       ? html``
       : html`<p class="t-label">Showing the first ${shape.files} of ${files.length} files.</p>
       `;
 
-  return html`${said}<ul class="files" role="list">
+  // the file list can stay whole while the diffs under it are still cut
+  const cutDiffs =
+    inlined.size === totalDiffable
+      ? html``
+      : html`<p class="t-label">Diffs for the first ${inlined.size} files are below. The rest have a page each.</p>
+      `;
+
+  return html`${cutFiles}${cutDiffs}<ul class="files" role="list">
         ${files
           .slice(0, shape.files)
           .map((file, index) => row(view, file, index, inlined.has(index)))}
@@ -203,7 +224,7 @@ function head(view: CommitPage, linked: boolean): Raw {
     ? html`<a class="t-mono" href="${commitHref(view.repo, commit.sha)}">${short(commit.sha)}</a>`
     : html`${short(commit.sha)}`;
 
-  return html`<h1 class="t-l">${title(commit)}</h1>
+  return html`<h1 class="t-item">${title(commit)}</h1>
       <p class="t-mono sha">${sha}</p>
       ${message(commit)}${meta(view)}`;
 }
@@ -252,7 +273,7 @@ function render(view: CommitPage, shape: Shape, candidates: number[]): string {
   return shell(
     view,
     html`${head(view, false)}
-      ${fileList(view, shape, new Set(inlined))}
+      ${fileList(view, shape, new Set(inlined), candidates.length)}
       ${diffs}`,
     null,
   );

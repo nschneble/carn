@@ -9,6 +9,17 @@
       - listitem: linklater
 - main:
   - heading "linklater" [level=1]
+  - navigation "Repo views":
+    - list:
+      - listitem:
+        - link "Commits":
+          - /url: /r/linklater/commits?ref=main
+      - listitem:
+        - link "Branches":
+          - /url: /r/linklater/branches
+      - listitem:
+        - link "Tags":
+          - /url: /r/linklater/tags
   - heading "Files" [level=2]
   - list:
     - listitem:

@@ -434,7 +434,9 @@ test("a tree page carries no readme and one h1", () => {
 
   assert.strictEqual([...markup.matchAll(/<h1[ >]/g)].length, 1);
   assert.ok(
-    markup.includes('<h1 class="t-label" lang="en">src/components</h1>'),
+    markup.includes(
+      '<h1 class="t-item" lang="en"><span class="sc">src</span>/<span class="sc">components</span></h1>',
+    ),
     "the heading is not the path",
   );
   assert.doesNotMatch(

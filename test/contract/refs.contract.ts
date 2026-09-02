@@ -11,7 +11,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { after, test } from "node:test";
 
 import { commitsHref } from "../../src/html/commit-log.js";
@@ -24,9 +24,11 @@ import {
   noisyRefs,
   refList,
   refsDocument,
+  tags,
   wideRefs,
 } from "../gallery/refs.js";
 
+const root = resolve(import.meta.dirname, "../../..");
 const dir = mkdtempSync(join(tmpdir(), "carn-refs-"));
 const shim = join(dir, "shim");
 const calls = join(shim, "calls");
@@ -213,35 +215,30 @@ test("one page render costs one spawn", async () => {
   assert.ok(argv.length < 12, "the render broke CLAUDE.md's spawn budget");
 });
 
-test("both lists are tables with a head and a scope on every column", () => {
+test("both lists are <li> rows, and no table survives", () => {
   for (const kind of ["branch", "tag"] as const) {
     const markup = refsDocument({ kind });
-    const heads = [...markup.matchAll(/<th class="t-label" scope="col">/g)];
+    const count = kind === "branch" ? branches.length : tags.length;
 
-    assert.strictEqual(markup.split('<table class="refs">').length, 2, kind);
-    assert.ok(markup.includes("<thead>"), kind);
-    assert.ok(markup.includes("<tbody>"), kind);
+    assert.doesNotMatch(
+      markup,
+      /<table|<thead|<tbody|<th[ >]|scope="col"/,
+      kind,
+    );
+    assert.ok(markup.includes('<ul class="refs" role="list">'), kind);
     assert.strictEqual(
-      heads.length,
-      3,
-      `${kind} rendered ${heads.length} <th>`,
+      [...markup.matchAll(/<li class="row">/g)].length,
+      count,
+      `${kind} rendered a different row count than it has refs`,
     );
-
-    const labels = [...markup.matchAll(/<th [^>]*>([^<]+)<\/th>/g)].map(
-      (found) => found[1] as string,
+    assert.ok(
+      markup.includes('<span class="vh">Subject </span>'),
+      `${kind} dropped the subject's accessible name with the thead`,
     );
-
-    assert.deepStrictEqual(labels, [
-      kind === "branch" ? "Branch" : "Tag",
-      "Subject",
-      "Age",
-    ]);
-    assert.strictEqual(
-      new Set(labels).size,
-      labels.length,
-      "two columns share an accessible name",
+    assert.ok(
+      markup.includes('<span class="vh">Updated </span>'),
+      `${kind} dropped the age's accessible name with the thead`,
     );
-    assert.doesNotMatch(markup, /<ul class="refs"|<li class="row"/, kind);
   }
 });
 
@@ -273,17 +270,38 @@ test("every row is three links to the log scoped to that ref", () => {
   );
 });
 
-// the overlay retires with the <ul>: a whole-row anchor would swallow two
-// of the three links, and position: relative on a <tr> is patchy in WebKit
-test("no row carries an overlay anchor", () => {
+// three links per row, all to the same commit log: the row-wide overlay
+// would swallow the other two, so the sheet opts .refs out of it by name
+test("three links per row, and no row overlay swallows the other two", () => {
   const markup = refsDocument();
+  const [first] = branches;
+  assert.ok(first);
 
-  assert.doesNotMatch(markup, /class="nm[^"]*" href/);
+  const href = commitsHref("linklater", first.name);
+
   assert.ok(
-    markup.includes('<td class="nm"><a class="t-item" href='),
-    "the name cell stopped being its own link",
+    markup.includes(`<a class="nm t-item" href="${href}">${first.name}`),
+    "the name is not a link to the ref's own log",
   );
-  assert.doesNotMatch(markup, /<tr[^>]+href|<tr class=/);
+  assert.ok(
+    markup.includes(
+      `<a class="msg" href="${href}"><span class="vh">Subject </span>${first.subject}</a>`,
+    ),
+    "the subject is not a link to the ref's own log",
+  );
+  assert.ok(
+    markup.includes(
+      `<a class="age" href="${href}"><span class="vh">Updated </span><time datetime="${first.at.toISOString()}">`,
+    ),
+    "the age is not a link, or lost its label",
+  );
+
+  const sheet = readFileSync(join(root, "src/html/styles.ts"), "utf8");
+
+  assert.ok(
+    sheet.includes(".refs .nm::after"),
+    "the sheet no longer opts refs rows out of the row overlay",
+  );
 });
 
 test("the branch table names the default branch, and the tag table does not", () => {
@@ -291,15 +309,42 @@ test("the branch table names the default branch, and the tag table does not", ()
   const tagged = refsDocument({ kind: "tag" });
 
   assert.ok(
-    marked.includes('main <span class="t-micro">Default</span></a>'),
-    "the default branch is not named in the branch table",
+    marked.includes('main<span class="t-micro"> Default</span></a>'),
+    "the default branch is not named in the branch list",
   );
   assert.strictEqual(
-    [...marked.matchAll(/>Default</g)].length,
+    [...marked.matchAll(/> Default</g)].length,
     1,
     "more than one branch claims to be the default",
   );
-  assert.doesNotMatch(tagged, />Default</);
+  assert.doesNotMatch(tagged, /Default</);
+});
+
+test("an annotated tag carries the marker, a lightweight one does not", () => {
+  const markup = refsDocument({ kind: "tag" });
+
+  const annotated = tags.filter((ref) => ref.annotated);
+  const lightweight = tags.filter((ref) => !ref.annotated);
+  assert.ok(annotated.length > 0 && lightweight.length > 0);
+
+  for (const ref of annotated) {
+    assert.ok(
+      markup.includes(`${ref.name}<span class="t-micro"> Annotated</span>`),
+      `${ref.name} is annotated but carries no marker`,
+    );
+  }
+  for (const ref of lightweight) {
+    assert.ok(
+      !markup.includes(`${ref.name}<span class="t-micro"> Annotated</span>`),
+      `${ref.name} is lightweight but carries the annotated marker`,
+    );
+  }
+
+  assert.doesNotMatch(
+    refsDocument(),
+    /Annotated/,
+    "a branch list carries a tag-only marker",
+  );
 });
 
 test("an empty list says what would be here and how to make one", () => {
@@ -316,7 +361,7 @@ test("an empty list says what would be here and how to make one", () => {
     assert.match(markup, /<div class="empty">/);
     assert.ok(markup.includes(opening), kind);
     assert.ok(markup.includes("git push "), kind);
-    assert.doesNotMatch(markup, /<table class="refs">/, kind);
+    assert.doesNotMatch(markup, /<ul class="refs"/, kind);
 
     const empties = [
       ...markup.matchAll(/<div class="empty">([\s\S]*?)<\/div>/g),
@@ -378,7 +423,7 @@ test("every state fits the budget as gzip-5 wire bytes", () => {
 test("a page that cannot fit sheds rows and says how many are left", () => {
   const refs = noisyRefs(maxRefs);
   const markup = refsDocument({ list: refList("branch", { refs }) });
-  const shown = [...markup.matchAll(/<td class="nm">/g)].length;
+  const shown = [...markup.matchAll(/<li class="row">/g)].length;
 
   assert.ok(
     shown < refs.length,
@@ -399,7 +444,7 @@ test("a page that cannot fit sheds rows and says how many are left", () => {
     /Showing the first/,
     "a list that fits claims to be truncated, so the pair proves no contrast",
   );
-  assert.strictEqual([...whole.matchAll(/<td class="nm">/g)].length, 20);
+  assert.strictEqual([...whole.matchAll(/<li class="row">/g)].length, 20);
 });
 
 // the shed's last stop is one row, and the loop returns that row without
@@ -430,7 +475,7 @@ test("the widest single row the loader can produce fits on its own", () => {
     weight <= budgetBytes,
     `one widest-case row weighs ${weight} wire bytes against a ${budgetBytes} B budget, so the shed has no floor that fits`,
   );
-  assert.strictEqual([...markup.matchAll(/<td class="nm">/g)].length, 1);
+  assert.strictEqual([...markup.matchAll(/<li class="row">/g)].length, 1);
 });
 
 test("a subject longer than a subject is bounded before it renders", async () => {
@@ -474,11 +519,11 @@ test("a commit with no message leaves the cell bare, not a nameless link", async
   const markup = refsDocument({ list });
 
   assert.ok(
-    markup.includes('<td class="msg"></td>'),
+    markup.includes('<span class="msg"></span>'),
     "an empty subject rendered as an anchor, which axe reads as a link with no accessible name",
   );
   assert.doesNotMatch(markup, /<a[^>]*><\/a>/);
-  assert.strictEqual([...markup.matchAll(/<td class="nm">/g)].length, 1);
+  assert.strictEqual([...markup.matchAll(/<li class="row">/g)].length, 1);
 });
 
 // a tag can name a blob or a tree; creatordate is empty on both, and
@@ -524,7 +569,7 @@ test("the two routes are the two nouns, and the page says which it is", () => {
 
   const markup = refsDocument({ kind: "tag" });
 
-  assert.ok(markup.includes('<h1 class="t-label">Tags</h1>'));
+  assert.ok(markup.includes('<h1 class="t-item">Tags</h1>'));
   assert.ok(markup.includes("<title>Tags · linklater · Càrn"));
   assert.ok(
     markup.includes(

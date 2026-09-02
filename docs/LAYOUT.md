@@ -96,6 +96,8 @@ _Sixteen rows · show-all · header image above_
 
 Filenames take the display face. The repo name is a visually hidden `<h1>`: the header image or generated mark carries identity on screen, and `.vh` keeps the name in the accessible name. Directories render in `--accent-text` with a trailing slash, so the distinction survives grayscale. Not `--accent` — a filename is bold at 16.8px where `.t-item`'s clamp bottoms out, under WCAG's 18.66px large-text threshold, so it owes 4.5:1 and light `--accent` measures 4.10:1.
 
+The exemption is conditional on the mark. A list view that carries no header image and no generated wordmark has nothing else holding identity, so its `<h1>` is visible and takes the display face at item size — the same treatment §06 gives the blob view, and for the same reason. `.t-label` is a caption class and never a page title; `.t-l` is headline size and belongs to the create view, where one question is the entire page.
+
 > _Pre-build mockup, archived: https://claude.ai/code/artifact/6a95e6fc-3a60-416b-a496-b713a5005be1 — the shipped pages have superseded it._
 
 - **Default rows** — **16**, then `Show all N →`. The median repo root holds 15 entries with about 8.5 directories, so sixteen shows most trees whole and always reaches files.
@@ -178,7 +180,7 @@ is the title
 
 _The show shape, applied to a file_
 
-A blob page is the show view with a file as its subject, so the ordinary rule applies and the filename takes the display face — visibly, in small caps, as the `<h1>`. **This is the one show page whose `<h1>` is not `.vh`.** Section 02's exemption is conditional: the repo name hides because the header image or generated mark already carries identity on screen. A blob page has no mark, so nothing else carries it and the heading has to.
+A blob page is the show view with a file as its subject, so the ordinary rule applies and the filename takes the display face — visibly, in small caps, as the `<h1>`. Section 02's exemption is conditional: the repo name hides because the header image or generated mark already carries identity on screen. A blob page has no mark, so nothing else carries it and the heading has to. **Blob is one of several pages under that rule, not a lone exception** — tree, the commit log, and branches and tags carry no mark either, and §02 gives all four the same visible `.t-item` treatment.
 
 The path renders through `smallCaps()`, the same function the file rows use, with `lang="en"` for the same reason. A breadcrumb ends in the filename too; path and title are different registers, not a repetition.
 

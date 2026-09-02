@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Phase 1e exit checks, from docs/phases/1e-views.md. Prints PASS or FAIL
-# for each of the 31 checks and exits non-zero if any fail. Reads
+# Phase 1e exit checks, from docs/phases/1e-views.md and 1e-revision.md.
+# Prints PASS or FAIL for each of the 40 checks and exits non-zero if any
+# fail. Reads
 # DATABASE_URL from the environment, falling back to ./.env. Check 24 runs
 # 1a, 1b, 1c and 1d, and each of those runs the ones before it, so a full
 # run takes tens of minutes.
@@ -13,7 +14,7 @@ set -uo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root" || exit 1
 
-readonly EXPECTED_CHECKS=31
+readonly EXPECTED_CHECKS=40
 readonly REPO_NAME=verify1e
 readonly ABSENT_NAME=absent1e
 readonly DEFAULT_ROOT=./local/repos
@@ -1050,36 +1051,38 @@ fi
 # 13
 # served over real http, not set into about:blank, so the audit measures
 # Carn Sans and Carn Mono rather than whatever the host falls back to
-contract 13 "zero axe violations across both render paths, on every new view" 146 "" \
+contract 13 "zero axe violations across both render paths, on every new view" 145 "" \
   axe
 
 # 14
-readonly TITLE_14="both lists are tables with a head and a scope, and no row overlay"
+# revision round one, part A item 4 moved this baseline: both lists are Row
+# lists now, the log's own shape, not a <table>
+readonly TITLE_14="both lists are Row lists like the commit log, and no row overlay"
 if require_daemon 14 "$TITLE_14" && require_seed 14 "$TITLE_14"; then
   wrong=""
   for page in branches tags; do
-    grep -qF '<table class="refs">' "$work/$page.body" \
-      || wrong="$wrong /$page is not a table;"
-    grep -qF '<thead>' "$work/$page.body" || wrong="$wrong /$page has no thead;"
-    [ "$(occurrences "$work/$page.body" 'scope="col"')" = "3" ] \
-      || wrong="$wrong /$page does not put scope=col on all three columns;"
-    grep -qF '<li class="row' "$work/$page.body" \
-      && wrong="$wrong /$page still draws list rows;"
+    grep -qE '<table|<thead|<th[ >]' "$work/$page.body" \
+      && wrong="$wrong /$page still carries table markup;"
+    grep -qF '<ul class="refs" role="list">' "$work/$page.body" \
+      || wrong="$wrong /$page is not a Row list;"
+    [ "$(occurrences "$work/$page.body" '<li class="row">')" -gt 0 ] \
+      || wrong="$wrong /$page draws no rows;"
   done
-  # position: relative on a <tr> is patchy in WebKit, so the overlay was
-  # retired rather than ported: the log opts out of it by name, and no
-  # rule under the tables reintroduces the anchor it would need
+  # position: relative on a <tr> is patchy in WebKit, so the table's overlay
+  # was never built; converting to <li> gave refs the same three-links-one-
+  # destination shape the log already has, so it opts out of the overlay
+  # the same way, by name, rather than colliding with the WebKit bug again
   grep -qF '.log .nm::after' src/html/styles.ts \
     || wrong="$wrong the sheet no longer opts the commit log out of the overlay;"
-  tr '\n' ' ' < src/html/styles.ts | grep -qE '(tr|\.refs)[^{}]*\{[^{}]*::after' \
-    && wrong="$wrong a table rule draws an ::after overlay;"
+  grep -qF '.refs .nm::after' src/html/styles.ts \
+    || wrong="$wrong the sheet no longer opts refs rows out of the overlay;"
   if [ -n "$wrong" ]; then
     record FAIL 14 "$TITLE_14" "$wrong"
   else
-    contract 14 "$TITLE_14" 3 "both served lists are tables, three scoped columns each" \
+    contract 14 "$TITLE_14" 3 "both served lists are Row lists, three links per row" \
       refs commit-log -- \
-      "both lists are tables with a head and a scope on every column" \
-      "no row carries an overlay anchor" \
+      "both lists are <li> rows, and no table survives" \
+      "three links per row, and no row overlay swallows the other two" \
       "a row carries three links to the commit and no row overlay"
   fi
 fi
@@ -1516,6 +1519,189 @@ if require_daemon 30 "$TITLE_30" && require_seed 30 "$TITLE_30"; then
       "the tree row's wash and overlay are live now the rows link" \
       "a gitlink row is inert"
   fi
+fi
+
+# 32
+# revision round one, part A item 2: one heading treatment across the six
+# routes that carry no mark. blob already carried .t-item, so it is in the
+# sweep for completeness rather than because anything changed under it
+readonly TITLE_32="every visible page title renders .t-item, never .t-l or a .t-label h1"
+if require_daemon 32 "$TITLE_32" && require_seed 32 "$TITLE_32"; then
+  wrong=""
+  for page in blob-text tree log1 branches tags commit-big commit-one; do
+    grep -qE '<h1 class="t-item"' "$work/$page.body" \
+      || wrong="$wrong $page carries no visible .t-item heading;"
+    grep -qE '<h1 class="t-l"|<h1 class="t-label"' "$work/$page.body" \
+      && wrong="$wrong $page still carries a .t-l or .t-label h1;"
+  done
+  if [ -n "$wrong" ]; then
+    record FAIL 32 "$TITLE_32" "$wrong"
+  else
+    record PASS 32 "$TITLE_32" "blob, tree, log, branches, tags and commit all agree"
+  fi
+fi
+
+# 33
+readonly TITLE_33="ref-list.ts emits no table, thead, or th"
+# comments are allowed to say why the shape changed; only markup counts
+markup_only=$(grep -vE '^\s*//' src/html/ref-list.ts)
+if printf '%s' "$markup_only" | grep -qE '<table|<thead|<th[ >]'; then
+  record FAIL 33 "$TITLE_33" "$(printf '%s' "$markup_only" | grep -nE '<table|<thead|<th[ >]')"
+else
+  record PASS 33 "$TITLE_33" "branches and tags are Row lists now"
+fi
+
+# 34
+readonly TITLE_34="--diff-add and --diff-del are in both palettes, and resolve differently"
+wrong=""
+[ "$(grep -c -- '--diff-add:' src/html/styles.ts)" = "2" ] \
+  || wrong="$wrong --diff-add is not declared exactly twice;"
+[ "$(grep -c -- '--diff-del:' src/html/styles.ts)" = "2" ] \
+  || wrong="$wrong --diff-del is not declared exactly twice;"
+grep -A1 '^\.diff \.a {' src/html/styles.ts | grep -qF 'var(--diff-add)' \
+  || wrong="$wrong .diff .a does not draw from --diff-add;"
+grep -A1 '^\.diff \.d {' src/html/styles.ts | grep -qF 'var(--diff-del)' \
+  || wrong="$wrong .diff .d does not draw from --diff-del;"
+dark_add=$(sed -nE 's/.*--diff-add: (#[0-9a-f]{6});.*/\1/p' src/html/styles.ts | sed -n 1p)
+dark_del=$(sed -nE 's/.*--diff-del: (#[0-9a-f]{6});.*/\1/p' src/html/styles.ts | sed -n 1p)
+light_add=$(sed -nE 's/.*--diff-add: (#[0-9a-f]{6});.*/\1/p' src/html/styles.ts | sed -n 2p)
+light_del=$(sed -nE 's/.*--diff-del: (#[0-9a-f]{6});.*/\1/p' src/html/styles.ts | sed -n 2p)
+[ -n "$dark_add" ] && [ -n "$dark_del" ] && [ -n "$light_add" ] && [ -n "$light_del" ] \
+  || wrong="$wrong a diff token did not resolve to a hex color;"
+[ "$dark_add" != "$dark_del" ] || wrong="$wrong dark --diff-add and --diff-del are the same color;"
+[ "$light_add" != "$light_del" ] || wrong="$wrong light --diff-add and --diff-del are the same color;"
+if [ -n "$wrong" ]; then
+  record FAIL 34 "$TITLE_34" "$wrong"
+else
+  record PASS 34 "$TITLE_34" "dark $dark_add/$dark_del, light $light_add/$light_del"
+fi
+
+# 35
+# tokens.contract.ts already asserts this verbatim; this check exists so a
+# drift between the two files names itself here too, not only in the suite
+readonly TITLE_35="docs/BRAND.md's token fence and styles.ts's tokens are byte-identical"
+if [ "$build_ok" != 1 ]; then
+  record FAIL 35 "$TITLE_35" "the build did not produce dist, see check 1"
+else
+  fence_check=$(node --input-type=module -e '
+    import { readFileSync } from "node:fs";
+    import { tokens } from "./dist/src/html/styles.js";
+
+    const brand = readFileSync("docs/BRAND.md", "utf8");
+    const match = /```css\n([\s\S]*?)\n```/.exec(brand);
+    if (!match) { console.log("NO_FENCE"); process.exit(0); }
+    console.log(match[1] === tokens ? "MATCH" : "DRIFT");
+  ' 2>&1)
+  if [ "$fence_check" = "MATCH" ]; then
+    record PASS 35 "$TITLE_35"
+  else
+    record FAIL 35 "$TITLE_35" "docs-artifact comparison reported: $fence_check"
+  fi
+fi
+
+# 36
+# the not-found handler is a route match too, so it owes the same onSend
+# headers as every other page; the git http transport's own 404s are
+# matched routes and never reach it, so a real one has to be fetched to
+# prove the handler did not swallow it
+readonly TITLE_36="an unmatched URL is the html error page, and the git transport is untouched"
+if require_daemon 36 "$TITLE_36"; then
+  miss_status=$(fetch_page "/this/matches/nothing" "$work/36miss")
+  miss_type=$(grep -i '^content-type:' "$work/36miss.head" | tr -d '\r')
+  miss_csp=$(grep -ic '^content-security-policy:' "$work/36miss.head")
+  git_status=$(fetch_page "/r/$ABSENT_NAME/info/refs?service=git-upload-pack" "$work/36git")
+  git_type=$(grep -i '^content-type:' "$work/36git.head" | tr -d '\r')
+  wrong=""
+  [ "$miss_status" = "404" ] || wrong="$wrong the unmatched url answered $miss_status;"
+  printf '%s' "$miss_type" | grep -qi 'text/html' \
+    || wrong="$wrong the unmatched url answered '$miss_type', not text/html;"
+  grep -qF '<h1 class="t-l">Nothing here</h1>' "$work/36miss.body" \
+    || wrong="$wrong the 404 page carries no Nothing here heading;"
+  grep -qF '{"message"' "$work/36miss.body" \
+    && wrong="$wrong the unmatched url still answers as fastify's default json 404;"
+  [ "$miss_csp" -ge 1 ] || wrong="$wrong the 404 page carries no Content-Security-Policy header;"
+  [ "$git_status" = "404" ] || wrong="$wrong the git transport's own 404 answered $git_status;"
+  printf '%s' "$git_type" | grep -qi 'text/plain' \
+    || wrong="$wrong the git transport's 404 answered '$git_type', not text/plain;"
+  grep -qF "There's no repo named $ABSENT_NAME. Push to it over SSH to create it." \
+    "$work/36git.body" || wrong="$wrong the git transport's refusal copy changed;"
+  if [ -n "$wrong" ]; then
+    record FAIL 36 "$TITLE_36" "$wrong"
+  else
+    record PASS 36 "$TITLE_36" "html 404 with security headers; git transport still text/plain"
+  fi
+fi
+
+# 37
+readonly TITLE_37="/r/:repo links to all three of commits, branches and tags"
+if require_daemon 37 "$TITLE_37" && require_seed 37 "$TITLE_37"; then
+  wrong=""
+  grep -qF "<nav class=\"repo-nav\" aria-label=\"Repo views\">" "$work/show.body" \
+    || wrong="$wrong the repo page carries no repo nav;"
+  grep -qF "href=\"/r/$REPO_NAME/commits?ref=main\"" "$work/show.body" \
+    || wrong="$wrong the repo page does not link to the commit log;"
+  grep -qF "href=\"/r/$REPO_NAME/branches\"" "$work/show.body" \
+    || wrong="$wrong the repo page does not link to branches;"
+  grep -qF "href=\"/r/$REPO_NAME/tags\"" "$work/show.body" \
+    || wrong="$wrong the repo page does not link to tags;"
+  if [ -n "$wrong" ]; then
+    record FAIL 37 "$TITLE_37" "$wrong"
+  else
+    record PASS 37 "$TITLE_37" "commits, branches and tags all reachable from the repo page"
+  fi
+fi
+
+# 38
+# 22 seeded commits over a 16-row page cap makes exactly two pages, so page
+# two is also the last one: Newer pops straight back to the bare ref
+readonly TITLE_38="page two of the log carries a Newer link, and page one does not"
+if require_daemon 38 "$TITLE_38" && require_seed 38 "$TITLE_38"; then
+  wrong=""
+  grep -qF 'Newer' "$work/log1.body" && wrong="$wrong page one offers a way back;"
+  grep -qF "href=\"/r/$REPO_NAME/commits?ref=main\"><span aria-hidden=\"true\">← </span>Newer" \
+    "$work/log2.body" || wrong="$wrong page two's Newer link does not land on the bare ref;"
+  if [ -n "$wrong" ]; then
+    record FAIL 38 "$TITLE_38" "$wrong"
+  else
+    record PASS 38 "$TITLE_38" "page one has no Newer, page two's Newer reaches page one"
+  fi
+fi
+
+# 39
+# the seed carries one lightweight tag (v1.0.0) and one annotated tag
+# (v1.1.0), planted by check 2's build_seed for exactly this
+readonly TITLE_39="an annotated tag row carries the marker, a lightweight one does not"
+if require_daemon 39 "$TITLE_39" && require_seed 39 "$TITLE_39"; then
+  wrong=""
+  grep -qF 'v1.1.0<span class="t-micro"> Annotated</span>' "$work/tags.body" \
+    || wrong="$wrong the annotated tag v1.1.0 carries no marker;"
+  grep -qF 'v1.0.0<span class="t-micro"> Annotated</span>' "$work/tags.body" \
+    && wrong="$wrong the lightweight tag v1.0.0 carries the annotated marker;"
+  if [ -n "$wrong" ]; then
+    record FAIL 39 "$TITLE_39" "$wrong"
+  else
+    record PASS 39 "$TITLE_39" "v1.1.0 marked, v1.0.0 not"
+  fi
+fi
+
+# 40
+# part A item 5, and part B item 7's row markers on a commit that both
+# inlines diffs and links the rest, which check 7 already proved happens
+readonly TITLE_40=".meta stacks to one column outside any media query, and diff rows say where"
+wrong=""
+tr '\n' ' ' < src/html/styles.ts \
+  | grep -qE '\.meta \{[[:space:]]+display: grid;[[:space:]]+grid-template-columns: 1fr;' \
+  || wrong="$wrong .meta's bare rule is not a single 1fr column;"
+if require_daemon 40 "$TITLE_40" && require_seed 40 "$TITLE_40"; then
+  grep -qF '<span class="t-micro">Below<span class="vh"> on this page</span></span>' \
+    "$work/commit-big.body" || wrong="$wrong no inlined row on the root commit says Below;"
+  grep -qF '<span class="t-micro">Own page</span>' "$work/commit-big.body" \
+    || wrong="$wrong no linked row on the root commit says Own page;"
+fi
+if [ -n "$wrong" ]; then
+  record FAIL 40 "$TITLE_40" "$wrong"
+else
+  record PASS 40 "$TITLE_40" ".meta is 1fr outside the query; Below and Own page both render"
 fi
 
 # 25, printed in its place

@@ -33,6 +33,10 @@ export const tokens = css`:root {
   --accent-wash: #331020;
   --on-accent: #0e0f0f;
 
+  /* diff */
+  --diff-add: #7ee08a; /* 9.98:1 on sunk — added lines */
+  --diff-del: #ffa070; /* 8.12:1 on sunk — removed lines */
+
   /* type */
   --f-display: "Carn Sans", "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --f-mono: "Carn Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -68,6 +72,8 @@ export const tokens = css`:root {
     --accent-fill: var(--accent-text);
     --accent-wash: #fbe2ed;
     --on-accent: #ffffff;
+    --diff-add: #1c6e2f; /* 5.36:1 on sunk — added lines */
+    --diff-del: #7a2900; /* 8.30:1 on sunk — removed lines */
   }
 }
 
@@ -415,9 +421,15 @@ export const components = css`body {
 
 .meta {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: 1fr;
   border-top: 1px solid var(--ink);
   margin: 0;
+}
+
+@media (min-width: 640px) {
+  .meta {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
 }
 
 .meta > div {
@@ -724,6 +736,31 @@ main > h1 {
 
 /* repo show */
 
+.repo-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0 0 var(--s6);
+  padding: 0;
+}
+
+.repo-nav a {
+  display: inline-block;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-mid);
+  text-decoration: none;
+  padding: 10px 14px;
+}
+
+.repo-nav a:hover,
+.repo-nav a:focus-visible {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
 .tree {
   list-style: none;
   margin: 0;
@@ -844,15 +881,22 @@ main > h1 {
   overflow-wrap: anywhere;
 }
 
-/* the + and the − carry direction; the tone is only the second signal */
+/* the tone is a second signal, separating added from removed too */
 .diff {
   color: var(--ink-mid);
   margin: var(--s3) 0 0;
 }
 
-.diff .a,
+.diff .a {
+  color: var(--diff-add);
+  border-left: 2px solid var(--diff-add);
+  padding-left: var(--s2);
+}
+
 .diff .d {
-  color: var(--ink);
+  color: var(--diff-del);
+  border-left: 2px solid var(--diff-del);
+  padding-left: var(--s2);
 }
 
 .diff .h {
@@ -863,68 +907,39 @@ main > h1 {
 /* branch and tag lists */
 
 .refs {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-
-.refs th {
-  border-bottom: 1px solid var(--ink);
-  padding: 0 var(--s4) var(--s2) 0;
-  text-align: left;
-}
-
-.refs th:first-child {
-  width: 40%;
-}
-
-.refs th:last-child {
-  width: 54px;
-  padding-right: 0;
-  text-align: right;
-}
-
-.refs td {
-  border-bottom: 1px solid var(--rule-soft);
+  list-style: none;
+  margin: 0;
   padding: 0;
-  vertical-align: baseline;
+  border-top: 1px solid var(--ink);
 }
 
-.refs tbody tr:hover,
-.refs tbody tr:focus-within {
-  background: var(--sunk);
+/* three links in the row, all to the same commit log, and the overlay
+   would swallow the other two */
+.refs .nm::after {
+  content: none;
 }
 
-/* the cell is the target, so the padding sits on the link inside it */
-.refs a {
-  display: block;
-  padding: 6px var(--s4) 6px 0;
+.refs .msg,
+.refs .age {
   text-decoration: none;
 }
 
-.refs .nm a {
-  color: var(--ink);
-}
-
-.refs .msg a,
-.refs .age a {
-  font-family: var(--f-mono);
-  font-size: 10px;
-  color: var(--ink-faint);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.refs .age a {
-  padding-right: 0;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.refs a:hover,
-.refs a:focus-visible {
+.refs .msg:hover,
+.refs .msg:focus-visible,
+.refs .age:hover,
+.refs .age:focus-visible {
   text-decoration: underline;
+}
+
+/* stacked, each link is its own target and needs its own 24px band */
+.refs .row a {
+  min-height: 24px;
+}
+
+@media (min-width: 640px) {
+  .refs .row a {
+    min-height: auto;
+  }
 }
 
 /* rendered READMEs */

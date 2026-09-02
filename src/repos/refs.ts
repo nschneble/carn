@@ -14,6 +14,7 @@ export type Ref = {
   name: string;
   subject: string;
   at: Date;
+  annotated: boolean;
 };
 
 export type RefList = {
@@ -39,8 +40,13 @@ function parse(listing: string): Ref[] {
   const refs: Ref[] = [];
 
   for (const record of listing.split("\n")) {
-    const [name, subject, seconds] = record.split("\0");
-    if (name === undefined || subject === undefined || seconds === undefined) {
+    const [name, subject, seconds, objecttype] = record.split("\0");
+    if (
+      name === undefined ||
+      subject === undefined ||
+      seconds === undefined ||
+      objecttype === undefined
+    ) {
       continue;
     }
 
@@ -54,6 +60,7 @@ function parse(listing: string): Ref[] {
       name,
       subject: subject.slice(0, maxSubjectChars),
       at: new Date(at * 1000),
+      annotated: objecttype === "tag",
     });
   }
 
@@ -72,7 +79,7 @@ export async function listRefs(options: {
       "for-each-ref",
       `--count=${maxRefs + 1}`,
       "--sort=-creatordate",
-      "--format=%(refname:short)%00%(contents:subject)%00%(creatordate:unix)",
+      "--format=%(refname:short)%00%(contents:subject)%00%(creatordate:unix)%00%(objecttype)",
       "--end-of-options",
       namespaces[kind],
     ],

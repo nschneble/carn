@@ -16,8 +16,10 @@ import { join } from "node:path";
 import { after, test } from "node:test";
 
 import {
+  backStackCap,
   commitLogPage,
   commitsHref,
+  parseBackStack,
   shortShaChars,
 } from "../../src/html/commit-log.js";
 import { noSuchRef } from "../../src/html/error-page.js";
@@ -467,11 +469,71 @@ test("the older link is a real url with an escaped separator", () => {
   assert.ok(markup.includes('Older<span aria-hidden="true"> →</span>'));
 });
 
+function sha(byte: number): string {
+  return byte.toString(16).padStart(2, "0").repeat(20);
+}
+
+test("Newer renders from page two on, and pops one cursor at a time", () => {
+  const first = logDocument();
+  assert.doesNotMatch(first, /Newer/, "page one offered a way back");
+
+  const second = logDocument({ from: sha(0xa) });
+  assert.ok(
+    second.includes(
+      `href="${commitsHref("linklater", "main").replace("&", "&amp;")}"><span aria-hidden="true">← </span>Newer`,
+    ),
+    "page two's Newer link does not land on the bare ref",
+  );
+
+  const third = logDocument({ from: sha(0xb), back: [sha(0xa)] });
+  assert.ok(
+    third.includes(
+      `href="${commitsHref("linklater", "main", sha(0xa)).replace("&", "&amp;")}"><span aria-hidden="true">← </span>Newer`,
+    ),
+    "page three's Newer link did not pop to the previous cursor",
+  );
+});
+
+test("the cursor stack caps at 32 entries, dropping the oldest", () => {
+  const full = Array.from({ length: 32 }, (_, index) => sha(index));
+  const markup = logDocument({ from: sha(32), back: full });
+
+  const older = [...markup.matchAll(/href="([^"]+)">Older/g)].map(
+    (found) => found[1] as string,
+  );
+  assert.strictEqual(older.length, 1, "no older link to read the stack off");
+
+  const back = new URL(
+    (older[0] as string).replace(/&amp;/g, "&"),
+    "http://x",
+  ).searchParams.get("back");
+  assert.ok(back);
+
+  const stack = back.split(",");
+  assert.strictEqual(stack.length, backStackCap);
+  assert.ok(!stack.includes(sha(0)), "the oldest cursor survived past the cap");
+  assert.ok(stack.includes(sha(32)), "the newest cursor was dropped instead");
+});
+
+test("one malformed back entry resets the stack rather than half-trusting it", () => {
+  assert.deepStrictEqual(parseBackStack(undefined), []);
+  assert.deepStrictEqual(parseBackStack([sha(0), sha(1)]), []);
+  assert.deepStrictEqual(
+    parseBackStack(`${sha(0)},not-a-sha`),
+    [],
+    "one bad entry should reject the whole list",
+  );
+  assert.deepStrictEqual(parseBackStack(`${sha(0)},${sha(1)}`), [
+    sha(0),
+    sha(1),
+  ]);
+});
+
 test("the ref reaches the heading, the title, and the canonical", () => {
   const markup = logDocument({ log: log({ ref: "14-conflict-output" }) });
 
   assert.ok(
-    markup.includes('<h1 class="t-label">Commits on 14-conflict-output</h1>'),
+    markup.includes('<h1 class="t-item">Commits on 14-conflict-output</h1>'),
   );
   assert.ok(
     markup.includes("<title>Commits on 14-conflict-output · linklater · Càrn"),

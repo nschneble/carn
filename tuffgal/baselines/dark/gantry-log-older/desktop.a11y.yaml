@@ -85,6 +85,9 @@
         - /url: /r/gantry/commits/884f2b92e5fb39ab992c2726719b80b998fa23f6
         - text: Committed
         - time: 3w
+  - paragraph:
+    - link "Newer":
+      - /url: /r/gantry/commits?ref=main
 - contentinfo:
   - paragraph:
     - text: Càrn ·

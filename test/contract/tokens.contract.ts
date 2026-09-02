@@ -113,6 +113,24 @@ test("every ink token clears AA on ground, surface, and sunk", () => {
   }
 });
 
+// diff text only ever renders on .src's --sunk background, so that is the
+// binding ground — not ground or surface, which the diff never sits on
+test("the diff tokens clear AA against --sunk, the ground they render on", () => {
+  for (const [name, palette] of palettes) {
+    for (const token of ["--diff-add", "--diff-del"]) {
+      const measured = contrast(
+        color(palette, token),
+        color(palette, "--sunk"),
+      );
+
+      assert.ok(
+        measured >= 4.5,
+        `${name} ${token} on --sunk is ${measured.toFixed(2)}:1, under 4.5`,
+      );
+    }
+  }
+});
+
 test("the accent pair clears its own threshold on all three grounds", () => {
   for (const [name, palette] of palettes) {
     for (const ground of grounds) {

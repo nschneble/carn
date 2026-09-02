@@ -362,6 +362,69 @@ test("the diffs stop at the first file that would overrun, and the rest are link
   assert.ok(!markup.includes("Showing the first"));
 });
 
+test("row markers say where a diff lives, and binary carries neither", () => {
+  const commit = detail({ files: noisyFiles(40) });
+  const markup = commitDocument({ commit, now: logNow });
+  const inlined = diffBlocks(markup).length;
+  const hrefs = rowHrefs(markup);
+
+  assert.ok(inlined > 0 && inlined < commit.files.length);
+
+  for (const [index, href] of hrefs.entries()) {
+    const below = href === `#f-${index}`;
+    assert.strictEqual(
+      below,
+      index < inlined,
+      `row ${index} links to ${href} but the cutoff is at ${inlined}`,
+    );
+
+    const path = (commit.files[index] as { path: string }).path;
+    const expected = below
+      ? `>${path} <span class="t-micro">Below<span class="vh"> on this page</span></span></a>`
+      : `>${path} <span class="t-micro">Own page</span></a>`;
+
+    assert.ok(
+      markup.includes(expected),
+      `row for ${path} does not carry the expected marker`,
+    );
+  }
+
+  const binaryMarkup = commitDocument({
+    commit: detail({ files: [binaryFile] }),
+    now: logNow,
+  });
+  assert.ok(
+    binaryMarkup.includes(">assets/logo.png</a>"),
+    "a binary file's row carries a marker it should not",
+  );
+  assert.doesNotMatch(binaryMarkup, /Own page|t-micro/);
+});
+
+test("a second sentence says how many diffs are below when the file list is not also cut", () => {
+  const commit = detail({ files: noisyFiles(40) });
+  const cut = commitDocument({ commit, now: logNow });
+  const inlined = diffBlocks(cut).length;
+
+  assert.doesNotMatch(
+    cut,
+    /Showing the first \d+ of \d+ files\./,
+    "the file list itself was cut too, so this fixture does not isolate the diff-only case",
+  );
+  assert.ok(
+    cut.includes(
+      `<p class="t-label">Diffs for the first ${inlined} files are below. The rest have a page each.</p>`,
+    ),
+    "the cut render does not say how many diffs are below",
+  );
+
+  const whole = commitDocument();
+  assert.doesNotMatch(
+    whole,
+    /Diffs for the first/,
+    "a commit whose diffs all fit still claims some are cut",
+  );
+});
+
 test("the page a cutoff produces is really under the budget, measured", () => {
   const states: [string, string][] = [
     ["one file", commitDocument()],
@@ -536,7 +599,7 @@ test("the heading, the title, and the canonical all name the commit", () => {
   const markup = commitDocument();
   const commit = detail();
 
-  assert.ok(markup.includes('<h1 class="t-l">Read the list back</h1>'));
+  assert.ok(markup.includes('<h1 class="t-item">Read the list back</h1>'));
   assert.ok(
     markup.includes(`<p class="t-mono sha">${commit.sha.slice(0, 7)}</p>`),
     "the short sha is missing from the header",

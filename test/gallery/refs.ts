@@ -32,22 +32,27 @@ const tagRows: [string, string][] = [
   ["mlp", "Pin the reading list to one table"],
 ];
 
-function rows(source: [string, string][]): Ref[] {
+// a mix, so the gallery exercises both kinds of tag object
+const annotatedTags = new Set(["v1.2.0", "v1.1.0", "v1.0.0"]);
+
+function rows(source: [string, string][], annotated: Set<string>): Ref[] {
   return source.map(([name, subject], index) => ({
     name,
     subject,
     at: new Date(refsNow.getTime() - (index + 1) * 9 * hour),
+    annotated: annotated.has(name),
   }));
 }
 
-export const branches = rows(branchRows);
-export const tags = rows(tagRows);
+export const branches = rows(branchRows, new Set());
+export const tags = rows(tagRows, annotatedTags);
 
 // git takes --allow-empty-message, so the subject cell has a bare state
 export const quietBranch: Ref = {
   name: "spike/no-message",
   subject: "",
   at: new Date(refsNow.getTime() - 4 * hour),
+  annotated: false,
 };
 
 export function wideRefs(count: number): Ref[] {
@@ -55,6 +60,7 @@ export function wideRefs(count: number): Ref[] {
     name: `${branchRows[index % branchRows.length]?.[0] as string}-${index}`,
     subject: `${tagRows[index % tagRows.length]?.[1] as string} ${index}`,
     at: new Date(refsNow.getTime() - (index + 1) * hour),
+    annotated: false,
   }));
 }
 
@@ -81,6 +87,7 @@ export function noisyRefs(count: number): Ref[] {
     name: noise(120),
     subject: noise(maxSubjectChars),
     at: new Date(refsNow.getTime() - (index + 1) * hour),
+    annotated: false,
   }));
 }
 

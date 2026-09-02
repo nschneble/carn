@@ -2,7 +2,9 @@
 
 import Fastify, { type FastifyInstance } from "fastify";
 
+import { errorPage, noSuchRoute } from "./html/error-page.js";
 import { assetRoutes } from "./routes/assets.js";
+import { sendStatus } from "./routes/cache.js";
 import { gitHttpRoutes } from "./routes/git-http.js";
 import { healthRoute } from "./routes/health.js";
 import { indexRoute } from "./routes/index-page.js";
@@ -25,6 +27,11 @@ export function buildApp(): FastifyInstance {
   healthRoute(app);
   indexRoute(app);
   repoPageRoutes(app);
+
+  // git http's own 404s are matched routes; only unmatched paths reach here
+  app.setNotFoundHandler((request, reply) =>
+    sendStatus(request, reply, 404, errorPage({ failure: noSuchRoute })),
+  );
 
   return app;
 }

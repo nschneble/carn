@@ -457,7 +457,9 @@ test("every ancestor link on a blob three levels deep answers 200", async (t) =>
   ).text();
 
   assert.ok(
-    listed.includes('<h1 class="t-label" lang="en">a/b</h1>'),
+    listed.includes(
+      '<h1 class="t-item" lang="en"><span class="sc">a</span>/<span class="sc">b</span></h1>',
+    ),
     "the a/b ancestor answered 200 with some other page",
   );
   assert.ok(listed.includes(`/r/${repoName}/blob/main/a/b/c.ts`));

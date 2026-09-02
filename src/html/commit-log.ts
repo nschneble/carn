@@ -5,6 +5,7 @@
 // the subject and the age become links to the commit here, which a
 // whole-row anchor would forbid
 
+import { oidPattern } from "../git/oid.js";
 import type { CommitLog } from "../repos/log.js";
 import { sshRemote } from "../repos/remote.js";
 import { age } from "./age.js";
@@ -16,6 +17,9 @@ export const shortShaChars = 7;
 
 export const commitsLabel = "Commits";
 
+// past this many page-start cursors, newer stops rather than the url growing
+export const backStackCap = 32;
+
 export function commitsPath(repo: string): string {
   return `/r/${repo}/commits`;
 }
@@ -24,9 +28,26 @@ export function commitsHref(
   repo: string,
   ref: string,
   from?: string | null,
+  back?: string[],
 ): string {
-  const query = `${commitsPath(repo)}?ref=${encodeURIComponent(ref)}`;
-  return from ? `${query}&from=${from}` : query;
+  let query = `${commitsPath(repo)}?ref=${encodeURIComponent(ref)}`;
+  if (from) query += `&from=${from}`;
+  if (back !== undefined && back.length > 0) query += `&back=${back.join(",")}`;
+  return query;
+}
+
+function capBack(back: string[]): string[] {
+  return back.length > backStackCap ? back.slice(-backStackCap) : back;
+}
+
+// one bad entry rejects the whole list, never half-trusts a partial one
+export function parseBackStack(raw: string | string[] | undefined): string[] {
+  if (raw === undefined || Array.isArray(raw)) return [];
+
+  const entries = raw.split(",");
+  return entries.every((entry) => oidPattern.test(entry))
+    ? capBack(entries)
+    : [];
 }
 
 export function commitHref(repo: string, sha: string): string {
@@ -54,11 +75,35 @@ function empty(repo: string, ref: string): Raw {
       </div>`;
 }
 
-function older(repo: string, log: CommitLog): Raw {
+function older(
+  repo: string,
+  log: CommitLog,
+  from: string | null,
+  back: string[],
+): Raw {
   if (log.next === null) return html``;
 
+  const nextBack = capBack(from === null ? back : [...back, from]);
+
   return html`
-      <p class="showall"><a class="t-mono" href="${commitsHref(repo, log.ref, log.next)}">Older<span aria-hidden="true"> →</span></a></p>`;
+      <p class="showall"><a class="t-mono" href="${commitsHref(repo, log.ref, log.next, nextBack)}">Older<span aria-hidden="true"> →</span></a></p>`;
+}
+
+// the cursor a step back is the stack's last entry, minus itself and it
+function newer(
+  repo: string,
+  ref: string,
+  from: string | null,
+  back: string[],
+): Raw {
+  if (from === null) return html``;
+
+  const walked = [...back, from];
+  walked.pop();
+  const target = walked.pop() ?? null;
+
+  return html`
+      <p class="showall"><a class="t-mono" href="${commitsHref(repo, ref, target, walked)}"><span aria-hidden="true">← </span>Newer</a></p>`;
 }
 
 export function commitLogPage(view: {
@@ -66,22 +111,25 @@ export function commitLogPage(view: {
   log: CommitLog;
   now: Date;
   from?: string | null;
+  back?: string[];
 }): string {
   const { repo, log } = view;
+  const from = view.from ?? null;
+  const back = view.back ?? [];
 
   const body =
     log.commits.length === 0
       ? empty(repo, log.ref)
       : html`<ul class="log" role="list">
         ${log.commits.map((commit) => row(repo, commit, view.now))}
-      </ul>${older(repo, log)}`;
+      </ul>${newer(repo, log.ref, from, back)}${older(repo, log, from, back)}`;
 
   return page({
     title: `Commits on ${log.ref} · ${repo} · Càrn`,
     description: `The commit log for ${log.ref} in ${repo}.`,
-    path: commitsHref(repo, log.ref, view.from ?? null),
+    path: commitsHref(repo, log.ref, from, back),
     crumbs: [...repoTrail(repo), { label: commitsLabel, href: null }],
-    main: html`<h1 class="t-label">Commits on ${log.ref}</h1>
+    main: html`<h1 class="t-item">Commits on ${log.ref}</h1>
       ${body}`,
   });
 }

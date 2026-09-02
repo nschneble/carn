@@ -44,6 +44,10 @@ only inside the query would be empty under dark, which is the default.
   --accent-wash: #331020;
   --on-accent: #0e0f0f;
 
+  /* diff */
+  --diff-add: #7ee08a; /* 9.98:1 on sunk — added lines */
+  --diff-del: #ffa070; /* 8.12:1 on sunk — removed lines */
+
   /* type */
   --f-display: "Carn Sans", "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --f-mono: "Carn Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -79,6 +83,8 @@ only inside the query would be empty under dark, which is the default.
     --accent-fill: var(--accent-text);
     --accent-wash: #fbe2ed;
     --on-accent: #ffffff;
+    --diff-add: #1c6e2f; /* 5.36:1 on sunk — added lines */
+    --diff-del: #7a2900; /* 8.30:1 on sunk — removed lines */
   }
 }
 
@@ -412,9 +418,15 @@ body {
 
 .meta {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: 1fr;
   border-top: 1px solid var(--ink);
   margin: 0;
+}
+
+@media (min-width: 640px) {
+  .meta {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
 }
 
 .meta > div {
@@ -743,6 +755,16 @@ destinations is still one level up in the tree.
 It carries `<nav aria-label="Breadcrumb">` and an ordered list. It does **not**
 replace the page's `<h1>`: on a repo page that is the `.vh` heading carrying the
 repo name, and it is what lets the header image stay decorative.
+
+### Repo nav
+
+_Commits, Branches, Tags — the hub every breadcrumb passes through._
+
+The repo page carries the only way in to the commit log, branches, and tags: nothing else on the product links to them. `<nav aria-label="Repo views">` wraps three plain links, never a tab widget — `role="tablist"` and `aria-selected` claim a single page swaps content in place, and each of these is a page load. `commitsHref` and `refsHref` are the only correct sources for the three URLs.
+
+Each link is `inline-block` with its own padding, not inline text, so it clears `target-size`'s 24×24 CSS px on its own rather than by the sentence exception the footer's inline links lean on.
+
+**In this revision the nav lives only on the repo page**, which is never itself one of the three destinations, so no entry is ever current. A later phase that carries the nav onto the destination pages marks the current entry with `aria-current="page"` and the Chip's `.chip--current` precedent — weight and a border, not color alone — and keeps it a real link rather than unlinking it the way the breadcrumb unlinks its current segment: `aria-current` already tells assistive technology which one is current without removing the target.
 
 ### Focus, and the two utilities
 

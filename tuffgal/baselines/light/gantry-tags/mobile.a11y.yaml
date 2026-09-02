@@ -12,35 +12,25 @@
       - listitem: Tags
 - main:
   - heading "Tags" [level=1]
-  - table:
-    - rowgroup:
-      - row "Tag Subject Age":
-        - columnheader "Tag"
-        - columnheader "Subject"
-        - columnheader "Age"
-    - rowgroup:
-      - row "v1.1.0 Version 2, with the deep path in place 1w":
-        - cell "v1.1.0":
-          - link "v1.1.0":
-            - /url: /r/gantry/commits?ref=v1.1.0
-        - cell "Version 2, with the deep path in place":
-          - link "Version 2, with the deep path in place":
-            - /url: /r/gantry/commits?ref=v1.1.0
-        - cell "1w":
-          - link "1w":
-            - /url: /r/gantry/commits?ref=v1.1.0
-            - time: 1w
-      - row "v1.0.0 Bring the assets in 3w":
-        - cell "v1.0.0":
-          - link "v1.0.0":
-            - /url: /r/gantry/commits?ref=v1.0.0
-        - cell "Bring the assets in":
-          - link "Bring the assets in":
-            - /url: /r/gantry/commits?ref=v1.0.0
-        - cell "3w":
-          - link "3w":
-            - /url: /r/gantry/commits?ref=v1.0.0
-            - time: 3w
+  - list:
+    - listitem:
+      - link "v1.1.0 Annotated":
+        - /url: /r/gantry/commits?ref=v1.1.0
+      - link "Subject Version 2, with the deep path in place":
+        - /url: /r/gantry/commits?ref=v1.1.0
+      - link "Updated 1w":
+        - /url: /r/gantry/commits?ref=v1.1.0
+        - text: Updated
+        - time: 1w
+    - listitem:
+      - link "v1.0.0":
+        - /url: /r/gantry/commits?ref=v1.0.0
+      - link "Subject Bring the assets in":
+        - /url: /r/gantry/commits?ref=v1.0.0
+      - link "Updated 3w":
+        - /url: /r/gantry/commits?ref=v1.0.0
+        - text: Updated
+        - time: 3w
 - contentinfo:
   - paragraph:
     - text: Càrn ·

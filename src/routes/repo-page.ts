@@ -6,7 +6,7 @@ import { now } from "../clock.js";
 import { config } from "../config.js";
 import { readBlob } from "../git/blob.js";
 import { blobPage } from "../html/blob-page.js";
-import { commitLogPage } from "../html/commit-log.js";
+import { commitLogPage, parseBackStack } from "../html/commit-log.js";
 import { commitFilePage, commitPage } from "../html/commit-page.js";
 import {
   badRepoName,
@@ -52,7 +52,11 @@ type TreeRoute = {
 };
 type LogRoute = {
   Params: { repo: string };
-  Querystring: { ref?: string | string[]; from?: string | string[] };
+  Querystring: {
+    ref?: string | string[];
+    from?: string | string[];
+    back?: string | string[];
+  };
 };
 type CommitRoute = { Params: { repo: string; sha: string } };
 type ChangeRoute = { Params: { repo: string; sha: string; "*": string } };
@@ -295,6 +299,7 @@ async function showCommits(
         log: log ?? { ref, commits: [], next: null },
         now: now(),
         from,
+        back: parseBackStack(request.query.back),
       }),
     );
   } catch (error) {

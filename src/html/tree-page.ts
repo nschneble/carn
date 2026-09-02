@@ -5,6 +5,7 @@
 
 import type { Tree } from "../repos/tree.js";
 import { pathTrail, repoTrail } from "./breadcrumb.js";
+import { smallCaps } from "./filename.js";
 import { html } from "./index.js";
 import { page } from "./page.js";
 import { treeHref, treeList } from "./tree-list.js";
@@ -26,7 +27,7 @@ export function treePage(view: TreePage): string {
     description: `The files at ${tree.path} on ${rev} in ${repo}.`,
     path: href,
     crumbs: [...repoTrail(repo), ...pathTrail(repo, rev, tree.path)],
-    main: html`<h1 class="t-label" lang="en">${tree.path}</h1>
+    main: html`<h1 class="t-item" lang="en">${smallCaps(tree.path)}</h1>
       ${treeList({
         repo,
         rev,

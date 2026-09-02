@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// three cells, three links, no row overlay. position: relative on a <tr>
-// is patchy in WebKit, and BRAND.md:618 draws the rule under a table
-// heading in --ink, so the design was already drawn for this markup
+// the log's own row shape: position: relative on a <tr> is patchy in
+// WebKit, and converting to <li> removes the problem rather than working
+// around it. .msg and .age keep vh labels so the accessible names the
+// <thead> used to carry survive its removal
 
 import type { Ref, RefKind, RefList } from "../repos/refs.js";
 import { sshRemote } from "../repos/remote.js";
@@ -20,12 +21,9 @@ export type RefListPage = {
   now: Date;
 };
 
-const nouns: Record<
-  RefKind,
-  { heading: string; column: string; many: string }
-> = {
-  branch: { heading: "Branches", column: "Branch", many: "branches" },
-  tag: { heading: "Tags", column: "Tag", many: "tags" },
+const nouns: Record<RefKind, { heading: string; many: string }> = {
+  branch: { heading: "Branches", many: "branches" },
+  tag: { heading: "Tags", many: "tags" },
 };
 
 export function refsHref(repo: string, kind: RefKind): string {
@@ -33,29 +31,30 @@ export function refsHref(repo: string, kind: RefKind): string {
 }
 
 function marker(view: RefListPage, ref: Ref): Raw {
-  if (view.list.kind !== "branch" || ref.name !== view.defaultBranch) {
-    return html``;
+  if (view.list.kind === "branch") {
+    return ref.name === view.defaultBranch
+      ? html`<span class="t-micro"> Default</span>`
+      : html``;
   }
 
-  return html` <span class="t-micro">Default</span>`;
+  return ref.annotated ? html`<span class="t-micro"> Annotated</span>` : html``;
 }
 
-// git takes an empty commit message, and a link wrapped around one has no
-// accessible name at all: the cell goes bare rather than nameless
+// git takes an empty message, so the row goes bare rather than nameless
 function subject(ref: Ref, href: string): Raw {
-  if (ref.subject === "") return html`<td class="msg"></td>`;
+  if (ref.subject === "") return html`<span class="msg"></span>`;
 
-  return html`<td class="msg"><a href="${href}">${ref.subject}</a></td>`;
+  return html`<a class="msg" href="${href}"><span class="vh">Subject </span>${ref.subject}</a>`;
 }
 
 function row(view: RefListPage, ref: Ref): Raw {
   const href = commitsHref(view.repo, ref.name);
 
-  return html`<tr>
-            <td class="nm"><a class="t-item" href="${href}">${ref.name}${marker(view, ref)}</a></td>
-            ${subject(ref, href)}
-            <td class="age"><a href="${href}"><time datetime="${ref.at.toISOString()}">${age(ref.at, view.now)}</time></a></td>
-          </tr>`;
+  return html`<li class="row">
+        <a class="nm t-item" href="${href}">${ref.name}${marker(view, ref)}</a>
+        ${subject(ref, href)}
+        <a class="age" href="${href}"><span class="vh">Updated </span><time datetime="${ref.at.toISOString()}">${age(ref.at, view.now)}</time></a>
+      </li>`;
 }
 
 function truncated(view: RefListPage, shown: number, more: boolean): Raw {
@@ -79,19 +78,10 @@ function empty(view: RefListPage): Raw {
       </div>`;
 }
 
-function table(view: RefListPage, refs: Ref[], more: boolean): Raw {
-  return html`${truncated(view, refs.length, more)}<table class="refs">
-        <thead>
-          <tr>
-            <th class="t-label" scope="col">${nouns[view.list.kind].column}</th>
-            <th class="t-label" scope="col">Subject</th>
-            <th class="t-label" scope="col">Age</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${refs.map((ref) => row(view, ref))}
-        </tbody>
-      </table>`;
+function list(view: RefListPage, refs: Ref[], more: boolean): Raw {
+  return html`${truncated(view, refs.length, more)}<ul class="refs" role="list">
+        ${refs.map((ref) => row(view, ref))}
+      </ul>`;
 }
 
 function document(view: RefListPage, refs: Ref[], more: boolean): string {
@@ -102,8 +92,8 @@ function document(view: RefListPage, refs: Ref[], more: boolean): string {
     description: `The ${nouns[view.list.kind].many} in ${view.repo}.`,
     path: refsHref(view.repo, view.list.kind),
     crumbs: [...repoTrail(view.repo), { label: heading, href: null }],
-    main: html`<h1 class="t-label">${heading}</h1>
-      ${refs.length === 0 ? empty(view) : table(view, refs, more)}`,
+    main: html`<h1 class="t-item">${heading}</h1>
+      ${refs.length === 0 ? empty(view) : list(view, refs, more)}`,
   });
 }
 

@@ -9,9 +9,22 @@ import { headerAssetPath } from "../repos/header-asset.js";
 import { sshRemote } from "../repos/remote.js";
 import type { RepoView } from "../repos/show.js";
 import { site } from "./breadcrumb.js";
+import { commitsHref } from "./commit-log.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
+import { refsHref } from "./ref-list.js";
 import { treeList } from "./tree-list.js";
+
+// the hub every breadcrumb passes through: nothing else reaches these three
+function repoNav(repo: string, branch: string): Raw {
+  return html`<nav class="repo-nav" aria-label="Repo views">
+      <ul role="list">
+        <li><a href="${commitsHref(repo, branch)}">Commits</a></li>
+        <li><a href="${refsHref(repo, "branch")}">Branches</a></li>
+        <li><a href="${refsHref(repo, "tag")}">Tags</a></li>
+      </ul>
+    </nav>`;
+}
 
 function noCommits(view: RepoView): Raw {
   return html`<div class="empty">
@@ -81,6 +94,7 @@ export function repoShowPage(view: {
     crumbs: [site, { label: repo.name, href: null }],
     main: html`${identity}
       <h1 class="vh">${repo.name}</h1>
+      ${repoNav(repo.name, repo.branch)}
       ${tree(repo, view.showAll, view.now)}
       ${readme(repo)}`,
   });

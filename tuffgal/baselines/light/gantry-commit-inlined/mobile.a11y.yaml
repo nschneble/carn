@@ -30,11 +30,11 @@
   - definition: No signature
   - list:
     - listitem:
-      - link "README.md":
+      - link "README.md Below on this page":
         - /url: "#f-0"
       - text: +2 added −0 removed
     - listitem:
-      - link "src/index.ts":
+      - link "src/index.ts Below on this page":
         - /url: "#f-1"
       - text: +1 added −1 removed
   - heading "README.md" [level=2]
