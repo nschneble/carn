@@ -343,6 +343,15 @@ rewritten. And once baselines exist, a phase that moves an **existing**
 baseline is telling you it is cross-cutting; that is a signal to read, not a
 number to approve.
 
+**A check that parses another tool's output matches the loosest pattern that
+still discriminates.** `verify-phase-1d.sh` check 16 read the color-scheme
+runs with an anchored `sed` that assumed one breakpoint, and broke the moment
+a second one existed — reporting a failure in code that was fine. 1e's check
+18 read the equivalent output with a tolerant `grep -c` and survived. A check
+is there to catch the thing it names; every character of precision beyond
+that is a future false failure, and a gate that cries wolf gets ignored
+exactly once before it is worthless.
+
 ## Testing
 
 **No unit tests. No integration tests.** Two prongs, and they answer to
