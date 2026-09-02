@@ -745,14 +745,14 @@ if require_db 16 "$TITLE_16"; then
   npm run visual > "$work/16" 2>&1
   visual_status=$?
   passes=$(grep -c '^== \(dark\|light\) ==$' "$work/16")
-  # one summary line per run, whatever verdict each reached
-  summaries=$(sed -n 's/^[^0-9]*\([0-9][0-9]* [a-z]* on "desktop" breakpoint\)$/\1/p' "$work/16")
+  desktops=$(grep -c 'on "desktop" breakpoint' "$work/16")
+  mobiles=$(grep -c 'on "mobile" breakpoint' "$work/16")
   if [ "$visual_status" -ne 0 ]; then
     record FAIL 16 "$TITLE_16" "npm run visual exited $visual_status: $(grep -m1 'tuffgal error' "$work/16" || tail -3 "$work/16")"
-  elif [ "$passes" != "2" ] || [ "$(printf '%s\n' "$summaries" | grep -c .)" != "2" ]; then
-    record FAIL 16 "$TITLE_16" "$passes of 2 color-scheme runs started and $(printf '%s\n' "$summaries" | grep -c .) of 2 reported, so a palette went unphotographed"
+  elif [ "$passes" != "2" ] || [ "$desktops" != "2" ] || [ "$mobiles" != "2" ]; then
+    record FAIL 16 "$TITLE_16" "$passes of 2 palettes started, $desktops of 2 desktop and $mobiles of 2 mobile reported"
   else
-    record PASS 16 "$TITLE_16" "$(printf '%s' "$summaries" | tr '\n' ';' | sed 's/;/; /g')"
+    record PASS 16 "$TITLE_16" "2 palettes x 2 breakpoints"
   fi
 fi
 
