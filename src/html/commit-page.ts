@@ -119,14 +119,14 @@ function fileList(
   const cutFiles =
     shape.files === files.length
       ? html``
-      : html`<p class="t-label">Showing the first ${shape.files} of ${files.length} files.</p>
+      : html`<p class="t-note">Showing the first ${shape.files} of ${files.length} files.</p>
       `;
 
   // the file list can stay whole while the diffs under it are still cut
   const cutDiffs =
     inlined.size === totalDiffable
       ? html``
-      : html`<p class="t-label">Diffs for the first ${inlined.size} files are below. The rest have a page each.</p>
+      : html`<p class="t-note">Diffs for the first ${inlined.size} files are below. The rest have a page each.</p>
       `;
 
   return html`${cutFiles}${cutDiffs}<ul class="files" role="list">
@@ -165,7 +165,7 @@ function cutBlock(
   const label = `f-${index}`;
 
   return html`<h2 class="t-mono dpath" id="${label}">${file.path}</h2>
-      <p class="t-label" id="${label}-cut">Showing the first ${cut} lines of this diff.</p>
+      <p class="t-note" id="${label}-cut">Showing the first ${cut} lines of this diff.</p>
       <pre class="src diff" tabindex="0" role="region" aria-labelledby="${label}" aria-describedby="${label}-cut"><code>${diffBody(text)}</code></pre>`;
 }
 

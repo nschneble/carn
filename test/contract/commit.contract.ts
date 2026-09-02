@@ -412,7 +412,7 @@ test("a second sentence says how many diffs are below when the file list is not 
   );
   assert.ok(
     cut.includes(
-      `<p class="t-label">Diffs for the first ${inlined} files are below. The rest have a page each.</p>`,
+      `<p class="t-note">Diffs for the first ${inlined} files are below. The rest have a page each.</p>`,
     ),
     "the cut render does not say how many diffs are below",
   );

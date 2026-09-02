@@ -85,7 +85,7 @@ test("a file over the cap is cut on a line boundary and says so", () => {
   assert.strictEqual(total, hugeBlob.lines);
   assert.ok(shown > 0 && shown < total, `${shown} of ${total} is not a cut`);
 
-  assert.match(markup, /<p class="t-label" id="blob-cut">/);
+  assert.match(markup, /<p class="t-note" id="blob-cut">/);
   assert.match(markup, /aria-describedby="blob-cut"/);
 
   assert.strictEqual(

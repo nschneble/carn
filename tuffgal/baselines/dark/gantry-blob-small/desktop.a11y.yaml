@@ -12,17 +12,17 @@
       - listitem:
         - link "src":
           - /url: /r/gantry/tree/main/src
-      - listitem: index.ts
+      - listitem: manifest.ts
 - main:
-  - heading "src/index.ts" [level=1]
+  - heading "src/manifest.ts" [level=1]
   - term: Size
-  - definition: 26 B
+  - definition: 1.3 KB
   - term: Lines
-  - definition: "1"
+  - definition: "50"
   - term: Language
   - definition: TypeScript
-  - region "src/index.ts":
-    - code: export const version = 3;
+  - region "src/manifest.ts":
+    - code: "// the manifest gantry reads at boot: one rig per slot, six slots on // the frame, and nothing else touches this file import { readFileSync } from \"node:fs\"; import { join } from \"node:path\"; export type Rig = { slot: string; name: string; weightKg: number; installed: string; }; const manifestPath = join(process.cwd(), \"rigs.json\"); const maxSlots = 6; function parseManifest(raw: string): Rig[] { const parsed = JSON.parse(raw) as unknown; if (!Array.isArray(parsed)) { throw new Error(\"rigs.json must be an array\"); } return parsed as Rig[]; } export function loadRigs(): Rig[] { const raw = readFileSync(manifestPath, \"utf8\"); const rigs = parseManifest(raw); if (rigs.length > maxSlots) { throw new Error(`gantry holds ${maxSlots} rigs, manifest lists ${rigs.length}`); } return rigs; } export function totalWeight(rigs: Rig[]): number { return rigs.reduce((sum, rig) => sum + rig.weightKg, 0); } export function slotFor(rigs: Rig[], name: string): string | null { const found = rigs.find((rig) => rig.name === name); return found?.slot ?? null; } // installed dates sort oldest first, so the newest rig prints last export function byInstalled(rigs: Rig[]): Rig[] { return [...rigs].sort((a, b) => a.installed.localeCompare(b.installed)); }"
 - contentinfo:
   - paragraph:
     - text: Càrn ·

@@ -363,9 +363,9 @@ test("rows link by kind, and a gitlink links nowhere", () => {
   );
   assert.ok(
     submodule.includes(
-      '<span class="nm t-item" lang="en"><span class="sc">vendor</span></span>',
+      '<span class="nm t-item" lang="en"><span class="sc">vendor</span><span class="t-micro"> Pinned</span></span>',
     ),
-    "the gitlink name is not a plain span",
+    "the gitlink name is not a plain span, or lost its marker",
   );
   assert.ok(
     submodule.includes(
@@ -435,7 +435,7 @@ test("a tree page carries no readme and one h1", () => {
   assert.strictEqual([...markup.matchAll(/<h1[ >]/g)].length, 1);
   assert.ok(
     markup.includes(
-      '<h1 class="t-item" lang="en"><span class="sc">src</span>/<span class="sc">components</span></h1>',
+      '<h1 class="t-item t-item--title" lang="en"><span class="sc">src</span>/<span class="sc">components</span></h1>',
     ),
     "the heading is not the path",
   );

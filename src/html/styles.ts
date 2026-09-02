@@ -184,6 +184,12 @@ export const components = css`body {
   overflow-wrap: anywhere;
 }
 
+/* a list page's own title, over its own rows: same face and size, tone
+   is the only separator — see 02 */
+.t-item--title {
+  color: var(--ink-soft);
+}
+
 .t-body {
   font-variation-settings: "wdth" 100, "wght" 400;
   font-size: 16.5px;
@@ -197,6 +203,13 @@ export const components = css`body {
   letter-spacing: 0.11em;
   text-transform: uppercase;
   color: var(--ink-faint);
+}
+
+/* a short explanatory sentence, not a caption — see 03 */
+.t-note {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  color: var(--ink-mid);
 }
 
 .t-micro {
@@ -368,7 +381,7 @@ export const components = css`body {
 
 @media (min-width: 640px) {
   .row {
-    grid-template-columns: minmax(0, 1fr) 190px 46px;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr) 46px;
   }
 }
 
@@ -744,7 +757,7 @@ main > h1 {
   display: flex;
   flex-wrap: wrap;
   list-style: none;
-  margin: 0 0 var(--s6);
+  margin: 0 0 var(--s7);
   padding: 0;
 }
 
@@ -754,15 +767,9 @@ main > h1 {
   font-size: 12px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--ink-mid);
-  text-decoration: none;
-  padding: 10px 14px;
-}
-
-.repo-nav a:hover,
-.repo-nav a:focus-visible {
-  color: var(--ink);
+  color: var(--accent-text);
   text-decoration: underline;
+  padding: 10px 14px;
 }
 
 .tree {
@@ -813,10 +820,6 @@ main > h1 {
 }
 
 @media (min-width: 640px) {
-  .log .row {
-    grid-template-columns: 9ch minmax(0, 1fr) 46px;
-  }
-
   /* one line, three columns, and the offset alone carries the row */
   .log .row a {
     min-height: auto;
@@ -904,7 +907,7 @@ main > h1 {
 }
 
 .diff .h {
-  color: var(--accent-text);
+  color: var(--ink-soft);
   font-weight: 500;
 }
 

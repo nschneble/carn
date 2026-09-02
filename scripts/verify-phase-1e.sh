@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Phase 1e exit checks, from docs/phases/1e-views.md and 1e-revision.md.
-# Prints PASS or FAIL for each of the 40 checks and exits non-zero if any
-# fail. Reads
+# Phase 1e exit checks, from docs/phases/1e-views.md, 1e-revision.md, and
+# 1e-revision-2.md. Prints PASS or FAIL for each of the 49 checks and exits
+# non-zero if any fail. Reads
 # DATABASE_URL from the environment, falling back to ./.env. Check 24 runs
 # 1a, 1b, 1c and 1d, and each of those runs the ones before it, so a full
 # run takes tens of minutes.
@@ -14,7 +14,7 @@ set -uo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root" || exit 1
 
-readonly EXPECTED_CHECKS=40
+readonly EXPECTED_CHECKS=49
 readonly REPO_NAME=verify1e
 readonly ABSENT_NAME=absent1e
 readonly DEFAULT_ROOT=./local/repos
@@ -705,7 +705,7 @@ if require_daemon 3 "$TITLE_3" && require_seed 3 "$TITLE_3"; then
   wrong=""
   [ "$(cat "$work/blob-cut.status")" = "200" ] \
     || wrong="$wrong the over-cap text blob answered $(cat "$work/blob-cut.status");"
-  grep -qE '<p class="t-label" id="blob-cut">Showing the first [0-9,]+ lines of 3,000\.</p>' \
+  grep -qE '<p class="t-note" id="blob-cut">Showing the first [0-9,]+ lines of 3,000\.</p>' \
     "$work/blob-cut.body" || wrong="$wrong the over-cap text blob shows no cut notice;"
   grep -qF 'id="blob-cut"' "$work/blob-text.body" \
     && wrong="$wrong the under-cap text blob was cut;"
@@ -1524,12 +1524,14 @@ fi
 # 32
 # revision round one, part A item 2: one heading treatment across the six
 # routes that carry no mark. blob already carried .t-item, so it is in the
-# sweep for completeness rather than because anything changed under it
+# sweep for completeness rather than because anything changed under it.
+# round two adds --title as an optional second class on the list pages'
+# titles (check 43 pins which pages carry it); the base face stays .t-item
 readonly TITLE_32="every visible page title renders .t-item, never .t-l or a .t-label h1"
 if require_daemon 32 "$TITLE_32" && require_seed 32 "$TITLE_32"; then
   wrong=""
   for page in blob-text tree log1 branches tags commit-big commit-one; do
-    grep -qE '<h1 class="t-item"' "$work/$page.body" \
+    grep -qE '<h1 class="t-item( t-item--title)?"' "$work/$page.body" \
       || wrong="$wrong $page carries no visible .t-item heading;"
     grep -qE '<h1 class="t-l"|<h1 class="t-label"' "$work/$page.body" \
       && wrong="$wrong $page still carries a .t-l or .t-label h1;"
@@ -1673,9 +1675,9 @@ fi
 readonly TITLE_39="an annotated tag row carries the marker, a lightweight one does not"
 if require_daemon 39 "$TITLE_39" && require_seed 39 "$TITLE_39"; then
   wrong=""
-  grep -qF 'v1.1.0<span class="t-micro"> Annotated</span>' "$work/tags.body" \
+  grep -qF '<span class="sc">v</span>1.1.0<span class="t-micro"> Annotated</span>' "$work/tags.body" \
     || wrong="$wrong the annotated tag v1.1.0 carries no marker;"
-  grep -qF 'v1.0.0<span class="t-micro"> Annotated</span>' "$work/tags.body" \
+  grep -qF '<span class="sc">v</span>1.0.0<span class="t-micro"> Annotated</span>' "$work/tags.body" \
     && wrong="$wrong the lightweight tag v1.0.0 carries the annotated marker;"
   if [ -n "$wrong" ]; then
     record FAIL 39 "$TITLE_39" "$wrong"
@@ -1702,6 +1704,175 @@ if [ -n "$wrong" ]; then
   record FAIL 40 "$TITLE_40" "$wrong"
 else
   record PASS 40 "$TITLE_40" ".meta is 1fr outside the query; Below and Own page both render"
+fi
+
+# 41
+# part A1: one grid for every three-column Row, no per-page override
+readonly TITLE_41="styles.ts declares one grid-template-columns for .row, and no .log override"
+wrong=""
+tr '\n' ' ' < src/html/styles.ts \
+  | grep -qE '\.row \{[[:space:]]+grid-template-columns: minmax\(0, auto\) minmax\(0, 1fr\) 46px;' \
+  || wrong="$wrong .row's converged three-column grid is missing;"
+grep -qF '.log .row {' src/html/styles.ts \
+  && wrong="$wrong .log .row still declares its own grid-template-columns;"
+if [ -n "$wrong" ]; then
+  record FAIL 41 "$TITLE_41" "$wrong"
+else
+  record PASS 41 "$TITLE_41" "one .row rule, no .log override reintroducing a second"
+fi
+
+# 42
+# part A2: the name column of a Row takes small caps, branches and tags
+# included, so ref-list.ts has to call the same function tree-list.ts does
+readonly TITLE_42="ref-list.ts calls smallCaps(), and a branch name renders in it"
+wrong=""
+grep -qF "smallCaps(" src/html/ref-list.ts \
+  || wrong="$wrong ref-list.ts never calls smallCaps();"
+if require_daemon 42 "$TITLE_42" && require_seed 42 "$TITLE_42"; then
+  grep -qF '<span class="sc">' "$work/branches.body" \
+    || wrong="$wrong the rendered branch list carries no small-caps span;"
+fi
+if [ -n "$wrong" ]; then
+  record FAIL 42 "$TITLE_42" "$wrong"
+else
+  record PASS 42 "$TITLE_42" "ref-list.ts calls smallCaps(), and the branch list renders it"
+fi
+
+# 43
+# part B: the title takes --ink-soft via a modifier class; the rows under
+# it keep the bare .t-item, so the marker appears exactly once per page
+readonly TITLE_43="every visible page title resolves to --ink-soft, and its rows stay --ink"
+wrong=""
+tr '\n' ' ' < src/html/styles.ts \
+  | grep -qE '\.t-item--title \{[[:space:]]+color: var\(--ink-soft\);' \
+  || wrong="$wrong .t-item--title does not resolve to --ink-soft;"
+if require_daemon 43 "$TITLE_43" && require_seed 43 "$TITLE_43"; then
+  for page in index tree branches tags; do
+    body="$work/$page.body"
+    [ -f "$body" ] || continue
+    count=$(occurrences "$body" 't-item--title')
+    [ "$count" = "1" ] \
+      || wrong="$wrong $page.body carries the title modifier $count times, wanted exactly 1;"
+  done
+fi
+if [ -n "$wrong" ]; then
+  record FAIL 43 "$TITLE_43" "$wrong"
+else
+  record PASS 43 "$TITLE_43" "the modifier resolves to --ink-soft and marks exactly one heading per page"
+fi
+
+# 44
+# part C4: a sentence takes .t-note; .t-label is left holding only captions
+readonly TITLE_44=".t-label appears in no template carrying more than two words"
+wrong=""
+label_sites=$(grep -rl 'class="t-label"' src/html/*.ts | wc -l | tr -d ' ')
+[ "$label_sites" = "1" ] \
+  || wrong="$wrong .t-label appears in $label_sites template files, wanted exactly 1 (repo-show.ts's Files caption);"
+grep -qF 'class="t-label"' src/html/repo-show.ts \
+  || wrong="$wrong repo-show.ts no longer carries the one surviving .t-label use;"
+if [ -n "$wrong" ]; then
+  record FAIL 44 "$TITLE_44" "$wrong"
+else
+  record PASS 44 "$TITLE_44" "repo-show.ts's Files caption is the one .t-label site left"
+fi
+
+# 45
+# part C1: the repo nav takes the same link treatment every other link in
+# the product carries, rather than a muted mono color with no decoration
+readonly TITLE_45="the repo nav entries resolve to the link colour"
+wrong=""
+tr '\n' ' ' < src/html/styles.ts \
+  | grep -qE '\.repo-nav a \{[^}]*color: var\(--accent-text\);[^}]*text-decoration: underline;' \
+  || wrong="$wrong .repo-nav a does not resolve to --accent-text, underlined;"
+grep -A8 -E '^\.repo-nav a \{' src/html/styles.ts | grep -q -- '--ink-mid' \
+  && wrong="$wrong .repo-nav a still carries the old muted color;"
+if [ -n "$wrong" ]; then
+  record FAIL 45 "$TITLE_45" "$wrong"
+else
+  record PASS 45 "$TITLE_45" ".repo-nav a resolves to --accent-text, underlined, like every other link"
+fi
+
+# 46
+# part C2: a gitlink row carries a state marker, the way Default and
+# Annotated already mark the branch and tag lists
+readonly TITLE_46="a gitlink row carries a .t-micro marker"
+wrong=""
+if require_daemon 46 "$TITLE_46" && require_seed 46 "$TITLE_46"; then
+  grep -qF '<span class="t-micro"> Pinned</span>' "$work/tree-sub.body" \
+    || wrong="$wrong the gitlink row carries no .t-micro marker;"
+fi
+if [ -n "$wrong" ]; then
+  record FAIL 46 "$TITLE_46" "$wrong"
+else
+  record PASS 46 "$TITLE_46" "the gitlink row is marked Pinned"
+fi
+
+# 47
+# part C3: the hunk header reads as structure, not as the parent-commit
+# link's own pink
+readonly TITLE_47=".diff .h does not resolve to --accent-text"
+wrong=""
+tr '\n' ' ' < src/html/styles.ts \
+  | grep -qE '\.diff \.h \{[[:space:]]+color: var\(--ink-soft\);[[:space:]]+font-weight: 500;' \
+  || wrong="$wrong .diff .h is not --ink-soft at weight 500;"
+if [ -n "$wrong" ]; then
+  record FAIL 47 "$TITLE_47" "$wrong"
+else
+  record PASS 47 "$TITLE_47" ".diff .h resolves to --ink-soft, weight 500"
+fi
+
+# 48
+# every decision this revision made has to be readable in BRAND.md, or the
+# next reviser rediscovers it from the CSS instead of the reasoning
+readonly TITLE_48="BRAND documents the nav, the widened small caps rule, both mono deviations, and the note class"
+wrong=""
+grep -qF "### Repo nav" docs/BRAND.md \
+  || wrong="$wrong BRAND carries no Repo nav section;"
+grep -qF "link treatment every other link in the product carries" docs/BRAND.md \
+  || wrong="$wrong BRAND does not record the nav's link treatment;"
+grep -qF "The rule is the name column, not the filename." docs/BRAND.md \
+  || wrong="$wrong BRAND still scopes small caps to filenames alone;"
+grep -qF "A SHA is a machine identifier" docs/BRAND.md \
+  || wrong="$wrong BRAND does not record the commit log's mono deviation;"
+grep -qF "would fight the diff blocks directly under it" docs/BRAND.md \
+  || wrong="$wrong BRAND does not record the file list's mono deviation;"
+grep -qF ".t-note" docs/BRAND.md \
+  || wrong="$wrong BRAND does not document .t-note;"
+if [ -n "$wrong" ]; then
+  record FAIL 48 "$TITLE_48" "$wrong"
+else
+  record PASS 48 "$TITLE_48" "nav, small caps, both deviations, and .t-note are all on the record"
+fi
+
+# 49
+# part D3: a uniform 3-hour step read every commit at the same age bucket;
+# the fixture now spreads them, so the column has a range to show
+readonly TITLE_49="the fixture's commit dates span more than one age unit"
+if [ -f dist/test/support/fixture-repos.js ]; then
+  units=$(node --input-type=module -e '
+    import { fixtureRepos } from "./dist/test/support/fixture-repos.js";
+    const gantry = fixtureRepos.find((r) => r.name === "gantry");
+    const frozen = Date.parse("2026-02-01T12:00:00.000Z");
+    const bucket = (at) => {
+      const seconds = (frozen - Date.parse(at)) / 1000;
+      if (seconds < 60) return "now";
+      if (seconds < 3600) return "m";
+      if (seconds < 86400) return "h";
+      if (seconds < 604800) return "d";
+      if (seconds < 31536000) return "w";
+      return "y";
+    };
+    const seen = new Set(gantry.commits.map((c) => bucket(c.at)));
+    process.stdout.write([...seen].sort().join(","));
+  ' 2>/dev/null)
+  unit_count=$(printf '%s' "$units" | tr ',' '\n' | grep -c . || true)
+  if [ "$unit_count" -ge 3 ]; then
+    record PASS 49 "$TITLE_49" "the fixture's commits land in $unit_count age buckets: $units"
+  else
+    record FAIL 49 "$TITLE_49" "the fixture's commits land in only $unit_count age bucket(s): $units"
+  fi
+else
+  record FAIL 49 "$TITLE_49" "dist/test/support/fixture-repos.js is missing, see check 1"
 fi
 
 # 25, printed in its place

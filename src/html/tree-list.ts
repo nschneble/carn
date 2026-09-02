@@ -51,7 +51,7 @@ function row(view: TreeListView, entry: TreeEntry): Raw {
 
   if (entry.kind === "gitlink") {
     return html`<li class="row is-sub">
-        <span class="nm t-item" lang="en">${smallCaps(entry.name)}</span>
+        <span class="nm t-item" lang="en">${smallCaps(entry.name)}<span class="t-micro"> Pinned</span></span>
         <span class="pin t-mono"><span class="vh">Submodule pinned at </span>${entry.oid.slice(0, shortShaChars)}</span>
       </li>`;
   }

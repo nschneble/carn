@@ -13,7 +13,7 @@
 - main:
   - heading "vendor" [level=1]
   - list:
-    - listitem: lib Submodule pinned at 0000000
+    - listitem: lib Pinned Submodule pinned at a3f29c8
 - contentinfo:
   - paragraph:
     - text: Càrn ·

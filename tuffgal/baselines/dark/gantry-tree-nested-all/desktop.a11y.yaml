@@ -23,7 +23,7 @@
       - link "deep.ts":
         - /url: /r/gantry/blob/main/apps/web/src/deep.ts
       - text: Reach the deep path Changed
-      - time: 3w
+      - time: 3d
     - listitem:
       - link "mod-00.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-00.ts
@@ -33,87 +33,87 @@
       - link "mod-01.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-01.ts
       - text: Add mod-01.ts Changed
-      - time: 3w
+      - time: 2w
     - listitem:
       - link "mod-02.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-02.ts
       - text: Add mod-02.ts Changed
-      - time: 3w
+      - time: 2w
     - listitem:
       - link "mod-03.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-03.ts
       - text: Add mod-03.ts Changed
-      - time: 3w
+      - time: 2w
     - listitem:
       - link "mod-04.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-04.ts
       - text: Add mod-04.ts Changed
-      - time: 3w
+      - time: 2w
     - listitem:
       - link "mod-05.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-05.ts
       - text: Add mod-05.ts Changed
-      - time: 3w
+      - time: 2w
     - listitem:
       - link "mod-06.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-06.ts
       - text: Add mod-06.ts Changed
-      - time: 3w
+      - time: 2w
     - listitem:
       - link "mod-07.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-07.ts
       - text: Add mod-07.ts Changed
-      - time: 3w
+      - time: 2w
     - listitem:
       - link "mod-08.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-08.ts
       - text: Add mod-08.ts Changed
-      - time: 3w
+      - time: 1w
     - listitem:
       - link "mod-09.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-09.ts
       - text: Add mod-09.ts Changed
-      - time: 3w
+      - time: 1w
     - listitem:
       - link "mod-10.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-10.ts
       - text: Add mod-10.ts Changed
-      - time: 3w
+      - time: 1w
     - listitem:
       - link "mod-11.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-11.ts
       - text: Add mod-11.ts Changed
-      - time: 3w
+      - time: 1w
     - listitem:
       - link "mod-12.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-12.ts
       - text: Add mod-12.ts Changed
-      - time: 3w
+      - time: 1w
     - listitem:
       - link "mod-13.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-13.ts
       - text: Add mod-13.ts Changed
-      - time: 3w
+      - time: 1w
     - listitem:
       - link "mod-14.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-14.ts
       - text: Add mod-14.ts Changed
-      - time: 3w
+      - time: 1w
     - listitem:
       - link "mod-15.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-15.ts
       - text: Add mod-15.ts Changed
-      - time: 3w
+      - time: 6d
     - listitem:
       - link "mod-16.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-16.ts
       - text: Add mod-16.ts Changed
-      - time: 3w
+      - time: 5d
     - listitem:
       - link "mod-17.ts":
         - /url: /r/gantry/blob/main/apps/web/src/mod-17.ts
       - text: Add mod-17.ts Changed
-      - time: 3w
+      - time: 4d
 - contentinfo:
   - paragraph:
     - text: Càrn ·

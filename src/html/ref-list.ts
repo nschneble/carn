@@ -10,6 +10,7 @@ import { sshRemote } from "../repos/remote.js";
 import { age } from "./age.js";
 import { repoTrail } from "./breadcrumb.js";
 import { commitsHref } from "./commit-log.js";
+import { smallCaps } from "./filename.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
 import { budgetBytes, pageWireBytes } from "./wire-weight.js";
@@ -51,7 +52,7 @@ function row(view: RefListPage, ref: Ref): Raw {
   const href = commitsHref(view.repo, ref.name);
 
   return html`<li class="row">
-        <a class="nm t-item" href="${href}">${ref.name}${marker(view, ref)}</a>
+        <a class="nm t-item" lang="en" href="${href}">${smallCaps(ref.name)}${marker(view, ref)}</a>
         ${subject(ref, href)}
         <a class="age" href="${href}"><span class="vh">Updated </span><time datetime="${ref.at.toISOString()}">${age(ref.at, view.now)}</time></a>
       </li>`;
@@ -60,7 +61,7 @@ function row(view: RefListPage, ref: Ref): Raw {
 function truncated(view: RefListPage, shown: number, more: boolean): Raw {
   if (!more) return html``;
 
-  return html`<p class="t-label">Showing the first ${shown} ${nouns[view.list.kind].many}.</p>
+  return html`<p class="t-note">Showing the first ${shown} ${nouns[view.list.kind].many}.</p>
       `;
 }
 
@@ -92,7 +93,7 @@ function document(view: RefListPage, refs: Ref[], more: boolean): string {
     description: `The ${nouns[view.list.kind].many} in ${view.repo}.`,
     path: refsHref(view.repo, view.list.kind),
     crumbs: [...repoTrail(view.repo), { label: heading, href: null }],
-    main: html`<h1 class="t-item">${heading}</h1>
+    main: html`<h1 class="t-item t-item--title">${heading}</h1>
       ${refs.length === 0 ? empty(view) : list(view, refs, more)}`,
   });
 }

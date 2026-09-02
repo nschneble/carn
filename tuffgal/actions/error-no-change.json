@@ -3,7 +3,7 @@
   "steps": [
     {
       "kind": "navigate",
-      "path": "/r/gantry/commits/6e8b63b74ed9c59bc730751e9fa6ec8f71c3edba/src/nope.ts"
+      "path": "/r/gantry/commits/c23c6f80cc4a7f55b02736f375c14ac9005fa377/src/nope.ts"
     }
   ],
   "expect": { "anyOf": [{ "role": "heading", "text": "No change here" }] }

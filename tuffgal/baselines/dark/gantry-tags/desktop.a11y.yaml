@@ -18,10 +18,10 @@
         - /url: /r/gantry/commits?ref=v1.1.0
       - link "Subject Version 2, with the deep path in place":
         - /url: /r/gantry/commits?ref=v1.1.0
-      - link "Updated 1w":
+      - link "Updated 1d":
         - /url: /r/gantry/commits?ref=v1.1.0
         - text: Updated
-        - time: 1w
+        - time: 1d
     - listitem:
       - link "v1.0.0":
         - /url: /r/gantry/commits?ref=v1.0.0

@@ -15,6 +15,7 @@ import { join, resolve } from "node:path";
 import { after, test } from "node:test";
 
 import { commitsHref } from "../../src/html/commit-log.js";
+import { smallCaps } from "../../src/html/filename.js";
 import { refsHref } from "../../src/html/ref-list.js";
 import { budgetBytes, pageWireBytes } from "../../src/html/wire-weight.js";
 import { maxSubjectChars } from "../../src/repos/log.js";
@@ -280,7 +281,9 @@ test("three links per row, and no row overlay swallows the other two", () => {
   const href = commitsHref("linklater", first.name);
 
   assert.ok(
-    markup.includes(`<a class="nm t-item" href="${href}">${first.name}`),
+    markup.includes(
+      `<a class="nm t-item" lang="en" href="${href}">${smallCaps(first.name).value}`,
+    ),
     "the name is not a link to the ref's own log",
   );
   assert.ok(
@@ -309,7 +312,9 @@ test("the branch table names the default branch, and the tag table does not", ()
   const tagged = refsDocument({ kind: "tag" });
 
   assert.ok(
-    marked.includes('main<span class="t-micro"> Default</span></a>'),
+    marked.includes(
+      `${smallCaps("main").value}<span class="t-micro"> Default</span></a>`,
+    ),
     "the default branch is not named in the branch list",
   );
   assert.strictEqual(
@@ -329,13 +334,17 @@ test("an annotated tag carries the marker, a lightweight one does not", () => {
 
   for (const ref of annotated) {
     assert.ok(
-      markup.includes(`${ref.name}<span class="t-micro"> Annotated</span>`),
+      markup.includes(
+        `${smallCaps(ref.name).value}<span class="t-micro"> Annotated</span>`,
+      ),
       `${ref.name} is annotated but carries no marker`,
     );
   }
   for (const ref of lightweight) {
     assert.ok(
-      !markup.includes(`${ref.name}<span class="t-micro"> Annotated</span>`),
+      !markup.includes(
+        `${smallCaps(ref.name).value}<span class="t-micro"> Annotated</span>`,
+      ),
       `${ref.name} is lightweight but carries the annotated marker`,
     );
   }
@@ -569,7 +578,7 @@ test("the two routes are the two nouns, and the page says which it is", () => {
 
   const markup = refsDocument({ kind: "tag" });
 
-  assert.ok(markup.includes('<h1 class="t-item">Tags</h1>'));
+  assert.ok(markup.includes('<h1 class="t-item t-item--title">Tags</h1>'));
   assert.ok(markup.includes("<title>Tags · linklater · Càrn"));
   assert.ok(
     markup.includes(

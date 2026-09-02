@@ -152,17 +152,17 @@ function pngChunk(type: string, data: Buffer): Buffer {
 }
 
 // level 0 is stored blocks, which a future zlib cannot re-encode smaller
-function png(side: number): Buffer {
+function png(width: number, height = width): Buffer {
   const head = Buffer.alloc(13);
-  head.writeUInt32BE(side, 0);
-  head.writeUInt32BE(side, 4);
+  head.writeUInt32BE(width, 0);
+  head.writeUInt32BE(height, 4);
   head[8] = 8;
   head[9] = 2;
 
-  const stride = side * 3 + 1;
-  const rows = Buffer.alloc(side * stride);
+  const stride = width * 3 + 1;
+  const rows = Buffer.alloc(height * stride);
 
-  for (let row = 0; row < side; row += 1) {
+  for (let row = 0; row < height; row += 1) {
     for (let column = 1; column < stride; column += 1) {
       rows[row * stride + column] = scramble(row * stride + column) & 0xff;
     }
@@ -210,6 +210,64 @@ function unbreakableSource(lines: number, width: number): string {
   return `${rows.join("\n")}\n`;
 }
 
+// an ordinary source file, long enough to show line-height, syntax color,
+// and the source block's proportions — the one-line index.ts proves the
+// truncation math but shows a reader nothing about the everyday page
+const manifestSource = [
+  "// the manifest gantry reads at boot: one rig per slot, six slots on",
+  "// the frame, and nothing else touches this file",
+  "",
+  'import { readFileSync } from "node:fs";',
+  'import { join } from "node:path";',
+  "",
+  "export type Rig = {",
+  "  slot: string;",
+  "  name: string;",
+  "  weightKg: number;",
+  "  installed: string;",
+  "};",
+  "",
+  'const manifestPath = join(process.cwd(), "rigs.json");',
+  "const maxSlots = 6;",
+  "",
+  "function parseManifest(raw: string): Rig[] {",
+  "  const parsed = JSON.parse(raw) as unknown;",
+  "",
+  "  if (!Array.isArray(parsed)) {",
+  '    throw new Error("rigs.json must be an array");',
+  "  }",
+  "",
+  "  return parsed as Rig[];",
+  "}",
+  "",
+  "export function loadRigs(): Rig[] {",
+  '  const raw = readFileSync(manifestPath, "utf8");',
+  "  const rigs = parseManifest(raw);",
+  "",
+  "  if (rigs.length > maxSlots) {",
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: literal source text for the fixture file, not an interpolation
+  "    throw new Error(`gantry holds ${maxSlots} rigs, manifest lists ${rigs.length}`);",
+  "  }",
+  "",
+  "  return rigs;",
+  "}",
+  "",
+  "export function totalWeight(rigs: Rig[]): number {",
+  "  return rigs.reduce((sum, rig) => sum + rig.weightKg, 0);",
+  "}",
+  "",
+  "export function slotFor(rigs: Rig[], name: string): string | null {",
+  "  const found = rigs.find((rig) => rig.name === name);",
+  "  return found?.slot ?? null;",
+  "}",
+  "",
+  "// installed dates sort oldest first, so the newest rig prints last",
+  "export function byInstalled(rigs: Rig[]): Rig[] {",
+  "  return [...rigs].sort((a, b) => a.installed.localeCompare(b.installed));",
+  "}",
+  "",
+].join("\n");
+
 function modules(count: number): FixtureFile[] {
   return Array.from({ length: count }, (_, at) => {
     const name = `mod-${String(at).padStart(2, "0")}`;
@@ -221,11 +279,23 @@ function modules(count: number): FixtureFile[] {
   });
 }
 
-const gantryStart = Date.parse("2026-01-05T09:00:00.000Z");
-const gantryStep = 3 * 60 * 60 * 1000;
+// minutes before frozenNow, oldest commit first — spread across the whole
+// window the repo has to give (createdAt to frozenNow) rather than a
+// uniform step, so the age column reads minutes through weeks instead of
+// one value twenty-six times over
+const gantryOffsetsMinutes = [
+  37440, 34560, 31680, 30240, 28800, 27360, 25920, 24480, 23040, 21600, 20160,
+  18720, 17280, 15840, 14400, 12960, 11520, 10080, 8640, 7200, 5760, 4320, 2880,
+  1440, 360, 25,
+];
 
 function gantryAt(index: number): string {
-  return new Date(gantryStart + index * gantryStep).toISOString();
+  const minutes = gantryOffsetsMinutes[index];
+  if (minutes === undefined) {
+    throw new Error(`gantry commit ${index} has no offset`);
+  }
+
+  return new Date(Date.parse(frozenNow) - minutes * 60_000).toISOString();
 }
 
 function gantryCommits(): FixtureCommit[] {
@@ -264,7 +334,7 @@ function gantryCommits(): FixtureCommit[] {
         {
           path: "vendor/lib",
           body: "",
-          gitlink: "0000000000000000000000000000000000000001",
+          gitlink: "a3f29c81de4b7205f16e8c93a0d5b7e2f1c4a9d6",
         },
       ],
     },
@@ -290,10 +360,20 @@ function gantryCommits(): FixtureCommit[] {
         },
       ],
     },
+    {
+      message: "Write the rig manifest",
+      at: gantryAt(23),
+      files: [{ path: "src/manifest.ts", body: manifestSource }],
+    },
+    {
+      message: "Add a cover image",
+      at: gantryAt(24),
+      files: [{ path: "assets/cover.png", body: png(400, 200) }],
+    },
     // the page inlines a prefix of the diffs, so these two sort first
     {
       message: "Generate the tables",
-      at: gantryAt(23),
+      at: gantryAt(25),
       files: [
         { path: "src/api.ts", body: "export const routes = ['/health'];\n" },
         { path: "src/app.ts", body: "export const name = 'gantry';\n" },
@@ -384,7 +464,7 @@ export const fixtureRepos: FixtureRepo[] = [
         commit: 22,
         kind: "annotated",
         message: "Version 2, with the deep path in place",
-        taggedAt: "2026-01-20T10:00:00.000Z",
+        taggedAt: "2026-01-31T12:00:00.000Z",
       },
     ],
   },

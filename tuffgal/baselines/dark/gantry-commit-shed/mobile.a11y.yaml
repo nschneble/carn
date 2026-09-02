@@ -12,18 +12,18 @@
       - listitem:
         - link "Commits":
           - /url: /r/gantry/commits
-      - listitem: 6e8b63b
+      - listitem: c23c6f8
 - main:
   - heading "Generate the tables" [level=1]
-  - paragraph: 6e8b63b
+  - paragraph: c23c6f8
   - term: Author
   - definition:
     - text: Nick Schneble authored
-    - time: 3w
+    - time: 25m
   - term: Parents
   - definition:
-    - link "51173f5":
-      - /url: /r/gantry/commits/51173f5fc7ca927c22a0a00fe796cbc925f089aa
+    - link "a045ed2":
+      - /url: /r/gantry/commits/a045ed2cf872604056a0abc63a215313d2cc55a9
   - term: Changed
   - definition: 6 files, +321 added −1 removed
   - term: Signed
@@ -40,19 +40,19 @@
       - text: +1 added −0 removed
     - listitem:
       - link "src/big.ts Own page":
-        - /url: /r/gantry/commits/6e8b63b74ed9c59bc730751e9fa6ec8f71c3edba/src/big.ts
+        - /url: /r/gantry/commits/c23c6f80cc4a7f55b02736f375c14ac9005fa377/src/big.ts
       - text: +240 added −0 removed
     - listitem:
       - link "src/index.ts Own page":
-        - /url: /r/gantry/commits/6e8b63b74ed9c59bc730751e9fa6ec8f71c3edba/src/index.ts
+        - /url: /r/gantry/commits/c23c6f80cc4a7f55b02736f375c14ac9005fa377/src/index.ts
       - text: +1 added −1 removed
     - listitem:
       - link "src/notes.md Own page":
-        - /url: /r/gantry/commits/6e8b63b74ed9c59bc730751e9fa6ec8f71c3edba/src/notes.md
+        - /url: /r/gantry/commits/c23c6f80cc4a7f55b02736f375c14ac9005fa377/src/notes.md
       - text: +3 added −0 removed
     - listitem:
       - link "src/wide.ts Own page":
-        - /url: /r/gantry/commits/6e8b63b74ed9c59bc730751e9fa6ec8f71c3edba/src/wide.ts
+        - /url: /r/gantry/commits/c23c6f80cc4a7f55b02736f375c14ac9005fa377/src/wide.ts
       - text: +75 added −0 removed
   - heading "src/api.ts" [level=2]
   - region "src/api.ts":

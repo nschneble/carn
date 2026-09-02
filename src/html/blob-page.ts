@@ -153,7 +153,7 @@ function sourceDocument(
   const block =
     shown === null
       ? html`<pre class="src" tabindex="0" role="region" aria-labelledby="blob-h"><code class="${cls}">${body}</code></pre>`
-      : html`<p class="t-label" id="blob-cut">Showing the first ${formatCount(shown)} lines of ${formatCount(blob.lines)}.</p>
+      : html`<p class="t-note" id="blob-cut">Showing the first ${formatCount(shown)} lines of ${formatCount(blob.lines)}.</p>
       <pre class="src" tabindex="0" role="region" aria-labelledby="blob-h" aria-describedby="blob-cut"><code class="${cls}">${body}</code></pre>`;
 
   return shell(

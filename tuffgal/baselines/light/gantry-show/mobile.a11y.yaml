@@ -26,17 +26,17 @@
       - link "apps/":
         - /url: /r/gantry/tree/main/apps
       - text: Reach the deep path Changed
-      - time: 3w
+      - time: 3d
     - listitem:
       - link "assets/":
         - /url: /r/gantry/tree/main/assets
-      - text: Bring the assets in Changed
-      - time: 3w
+      - text: Add a cover image Changed
+      - time: 6h
     - listitem:
       - link "src/":
         - /url: /r/gantry/tree/main/src
       - text: Generate the tables Changed
-      - time: 3w
+      - time: 25m
     - listitem:
       - link "vendor/":
         - /url: /r/gantry/tree/main/vendor
@@ -46,7 +46,7 @@
       - link "README.md":
         - /url: /r/gantry/blob/main/README.md
       - text: Bump the version and say so Changed
-      - time: 3w
+      - time: 2d
     - listitem:
       - link "package.json":
         - /url: /r/gantry/blob/main/package.json

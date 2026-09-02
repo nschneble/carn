@@ -51,7 +51,7 @@ small caps
 
 _Carn Sans · compensated · self-hosted_
 
-Carn Sans carries the display face throughout. Filenames additionally render in small caps, which collapses the ragged ascender and descender profile of lowercase into a uniform band — calmer to scan, and it buys a tighter line-height than lowercase tolerates.
+Carn Sans carries the display face throughout. A Row's name column — filenames, but also a branch or tag name, a repo name in the index — additionally renders in small caps, which collapses the ragged ascender and descender profile of lowercase into a uniform band — calmer to scan, and it buys a tighter line-height than lowercase tolerates.
 
 Carn Sans has no `smcp` table, and browser synthesis is not usable: scaling a capital to 79% scales its stems to 79% too, so the faked small caps read visibly lighter than the full caps beside them in the same word. The stems have to be compensated, which needs the variable axes and server-rendered markup — both of which we have.
 
@@ -98,12 +98,14 @@ Filenames take the display face. The repo name is a visually hidden `<h1>`: the 
 
 The exemption is conditional on the mark. A list view that carries no header image and no generated wordmark has nothing else holding identity, so its `<h1>` is visible and takes the display face at item size — the same treatment §06 gives the blob view, and for the same reason. `.t-label` is a caption class and never a page title; `.t-l` is headline size and belongs to the create view, where one question is the entire page.
 
+A visible title sitting over rows in the same face needs a second separator, since size and casing are both already spent making it a heading. **`.t-item--title` carries the difference in tone**: `color: var(--ink-soft)` on the title, `--ink` on the rows beneath it, no change to size or the display face. `--ink-soft` on `--ground` measures 11.61:1 in dark and 9.99:1 in light — clear of AA (4.5:1) with room to spare at `.t-item`'s size. The tree, the branch and tag lists, and the repo index all take the modifier; a show page's title does not, because nothing under a blob's filename or a commit's subject wears the same face for it to separate from.
+
 > _Pre-build mockup, archived: https://claude.ai/code/artifact/6a95e6fc-3a60-416b-a496-b713a5005be1 — the shipped pages have superseded it._
 
 - **Default rows** — **16**, then `Show all N →`. The median repo root holds 15 entries with about 8.5 directories, so sixteen shows most trees whole and always reaches files.
 - **Hit area** — The full row, with a `--sunk` background on hover and focus. **Live everywhere a row leads somewhere**, which 1e made true of the file tree — file rows link to `/r/:repo/blob/:rev/*`, directory rows to `/r/:repo/tree/:rev/*`. A gitlink row is the one exception and keeps neither the overlay nor the wash; a submodule is pinned rather than browsable, and a wash with no click target is a false affordance.
 - **Directories** — Accent color, sorted first, trailing slash always.
-- **Right columns** — Last commit subject at 190px, age right-aligned at 46px with tabular numerals. Both mono, both `--ink-faint`. On the file tree they come from one bounded `git log --name-status` walk per listing, never one per row; a path the bound never reaches renders blank rather than costing a longer walk. Live on the repo index too, where the same two columns carry description and creation age.
+- **Row grid** — `minmax(0, auto) minmax(0, 1fr) 46px`. Name sizes to its own content and still shrinks under pressure; the description column takes what's left; age holds 46px, right-aligned with tabular numerals. One grid for the tree, the commit log, and the branch and tag lists — none carries its own override, so a seven-character sha and a twelve-character filename share the same rule without a special case. Description and age are both mono, both `--ink-faint`. On the file tree they come from one bounded `git log --name-status` walk per listing, never one per row; a path the bound never reaches renders blank rather than costing a longer walk. Live on the repo index too, where the same two columns carry description and creation age.
 - **Truncation** — Ellipsis on the filename, never a wrap. Rows stay one line at every breakpoint.
 
 _The same shape serves the repo index at `/`, the issue list, and the PR list — items in the display face, metadata in mono at the right._

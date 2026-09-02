@@ -18,10 +18,10 @@
         - /url: /r/gantry/commits?ref=main
       - link "Subject Generate the tables":
         - /url: /r/gantry/commits?ref=main
-      - link "Updated 3w":
+      - link "Updated 25m":
         - /url: /r/gantry/commits?ref=main
         - text: Updated
-        - time: 3w
+        - time: 25m
     - listitem:
       - link "topic":
         - /url: /r/gantry/commits?ref=topic

@@ -36,7 +36,7 @@ export function repoListPage(view: {
     title: "Càrn",
     description: "Repositories",
     path: "/",
-    main: html`<h1 class="t-item">Repositories</h1>
+    main: html`<h1 class="t-item t-item--title">Repositories</h1>
 ${main}`,
   });
 }

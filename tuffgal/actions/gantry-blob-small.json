@@ -3,7 +3,7 @@
   "steps": [
     { "kind": "navigate", "path": "/r/gantry" },
     { "kind": "click", "hint": { "role": "link", "text": "src/" } },
-    { "kind": "click", "hint": { "role": "link", "text": "index.ts" } }
+    { "kind": "click", "hint": { "role": "link", "text": "manifest.ts" } }
   ],
-  "expect": { "anyOf": [{ "role": "heading", "text": "src/index.ts" }] }
+  "expect": { "anyOf": [{ "role": "heading", "text": "src/manifest.ts" }] }
 }

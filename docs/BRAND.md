@@ -181,6 +181,12 @@ body {
   overflow-wrap: anywhere;
 }
 
+/* a list page's own title, over its own rows: same face and size, tone
+   is the only separator — see 02 */
+.t-item--title {
+  color: var(--ink-soft);
+}
+
 .t-body {
   font-variation-settings: "wdth" 100, "wght" 400;
   font-size: 16.5px;
@@ -194,6 +200,13 @@ body {
   letter-spacing: 0.11em;
   text-transform: uppercase;
   color: var(--ink-faint);
+}
+
+/* a short explanatory sentence, not a caption — see 03 */
+.t-note {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  color: var(--ink-mid);
 }
 
 .t-micro {
@@ -365,7 +378,7 @@ body {
 
 @media (min-width: 640px) {
   .row {
-    grid-template-columns: minmax(0, 1fr) 190px 46px;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr) 46px;
   }
 }
 
@@ -578,14 +591,16 @@ No green-for-good, red-for-bad palette. A merged PR reads Merged and a closed on
 
 _Carn Sans variable · Carn Mono · self-hosted_
 
-Two families, eight roles. Carn Sans carries identity; Carn Mono carries anything a machine produced.
+Two families, nine roles. Carn Sans carries identity; Carn Mono carries anything a machine produced.
 
 - **t-xl · identity** — Linklater
 - **t-l · section** — Merge button
 - **t-item · list** — src/components/Button.tsx
+- **t-item--title · list title** — Branches, over its own rows
 - **t-m · subhead** — Ownership and admins
 - **t-body** — Save a URL, read it later. Self-hosted, and the whole thing is a Compose file.
 - **t-label** — Investment range
+- **t-note** — Showing the first 104 lines of 240.
 - **t-micro** — Opened 3 days ago
 - **t-mono** — git@carn.fancyenchiladas.net:linklater
 
@@ -595,9 +610,27 @@ Two families, eight roles. Carn Sans carries identity; Carn Mono carries anythin
 >
 > **The display face is worn by whatever the page is _about_.** On a list, the items — filenames, repo names, issue titles. On a show page, the single thing you came for. On a create page, the question being asked. Everything else is mono, small, and quiet. There is no third register.
 
+### A list's title, over its own rows
+
+On the tree, the branch and tag lists, and the repo index, the `<h1>` sits directly above rows in the same face — `.t-item`, at item size, small caps included. Same face, same size, same casing is one signal short: nothing separates the title from the row underneath it but the rule already drawn there.
+
+**`.t-item--title` carries the separation, in tone alone.** The title takes `color: var(--ink-soft)`; the rows stay `--ink`. No new step in the type scale — the title is still `.t-item`, just muted a shade against what it names.
+
+- dark `--ink-soft` on `--ground` — **11.61:1**
+- light `--ink-soft` on `--ground` — **9.99:1**
+
+Both clear AA (4.5:1) with more room than the type scale needs — `.t-item`'s clamp bottoms out well above the large-text threshold, so even the small-text bar is cleared several times over. `docs/LAYOUT.md` §02 carries the reasoning; this is the token.
+
+Not every `.t-item` heading takes the modifier. A show page's title — a blob's filename, a commit's subject — names the one thing the page is about, with nothing under it wearing the same face to separate from. The modifier exists only where a title and its rows would otherwise collide.
+
 ### Small caps
 
-Carn Sans has no `smcp`, so filenames use compensated synthetic small caps: lowercase runs wrapped in a span, uppercased by CSS, at 79% size with weight and width raised so the stems match. Browser synthesis scales the stems too, which leaves the faked caps visibly lighter than the ones beside them.
+Carn Sans has no `smcp`, so a Row's name column uses compensated synthetic small caps: lowercase runs wrapped in a span, uppercased by CSS, at 79% size with weight and width raised so the stems match. Browser synthesis scales the stems too, which leaves the faked caps visibly lighter than the ones beside them.
+
+**The rule is the name column, not the filename.** A tree row's filename, a branch or tag's name, a repo's name in the index — anything sitting in a Row's own `.nm` slot takes `.t-item` and small caps together. Two columns carry a name without carrying small caps, and both are documented exceptions, not drift:
+
+- **The commit log's `.nm` is a short SHA, in `.t-mono`.** A SHA is a machine identifier, not a name someone chose, and mono is what keeps seven hex characters scannable in a column of them.
+- **The commit page's file list is `.t-mono` throughout.** Its rows carry `+N −N` counts that only align in a monospaced face, and a 22px display-face name would fight the diff blocks directly under it.
 
 ```
 .t-item { font-variation-settings:"wght" 700,"wdth" 110;
@@ -614,6 +647,12 @@ Two rules about the markup. **`lang="en"` goes on the filename element**, once �
 When the font pipeline exists, replace all of it with **real small caps merged into Carn Sans** — `smcp` and `c2sc` in the face we already ship, not a second family. Inside the face the CSS collapses to `font-variant-caps: small-caps`; a separate family would still need a `font-family` override on every run, plus its own `@font-face` and its own request on the critical path.
 
 The license permits the splice; `fonts/README.md` carries the reasoning and the conditions that come with it.
+
+### A note, not a caption
+
+**`.t-label` is a caption class, for one or two words** — a `<dt>`, a section heading like Files, a marker like Default. It is 11px, uppercase, and tracked out at 0.11em, which reads fine at that length and turns hostile at sentence length: all-caps removes the ascender/descender profile word-shape recognition depends on, and the tracking only widens the damage.
+
+**`.t-note` is what a short explanatory sentence takes instead** — mono, sentence case, `--ink-mid`, no uppercase and no tracking. A truncation notice, a cutoff count, anything that says *why* a page looks the way it does in a full clause rather than a word. Same family as `.t-label`, same size, so the two still read as one register; only the caption treatment is gone.
 
 ### Fonts are self-hosted
 
@@ -695,6 +734,10 @@ _Full-row hit area. Directories in accent with a trailing slash, so the distinct
 
 `.msg` and `.age` sit above the overlay and stay directly selectable. Clicking the commit subject therefore falls through rather than following the row link — kept deliberately, because in 1e the subject and the age become links to the commit, which a whole-row anchor would make impossible.
 
+**One grid serves every three-column list.** `minmax(0, auto) minmax(0, 1fr) 46px` — the name sizes to its content and still shrinks under pressure, the description column takes what's left, age holds 46px. The tree, the commit log, and the branch and tag lists all draw from this one rule; none carries its own override. A gitlink row carries a `.t-micro` marker, `Pinned`, the same way the branch list marks `Default` — the only other signal on the row is the pinned sha sitting where a subject would go, and a pin alone reads as a rendering defect rather than a state.
+
+The commit page's file list is the one Row shape that legitimately diverges: two columns, not three — a name and a fixed-width `+N −N` count, with no subject or age to hold a third. Converging it onto the three-column rule would mean inventing a column it has no data for, which is a second grid wearing the first one's clothes.
+
 ### Meta block
 
 _Same component on every show view; only the keys change. Issue: Context / Wanted / Epic / Branch. PR: Source / Target / Strategy / Mergeability. Commit: Author / Parents / Changed / Signed._
@@ -763,6 +806,8 @@ _Commits, Branches, Tags — the hub every breadcrumb passes through._
 The repo page carries the only way in to the commit log, branches, and tags: nothing else on the product links to them. `<nav aria-label="Repo views">` wraps three plain links, never a tab widget — `role="tablist"` and `aria-selected` claim a single page swaps content in place, and each of these is a page load. `commitsHref` and `refsHref` are the only correct sources for the three URLs.
 
 Each link is `inline-block` with its own padding, not inline text, so it clears `target-size`'s 24×24 CSS px on its own rather than by the sentence exception the footer's inline links lean on.
+
+**The entries take the link treatment every other link in the product carries** — `--accent-text`, underlined — not a muted mono color with no decoration. Mono, uppercase, and letter-spaced stays: that's what marks it as navigation rather than prose. What changes is that it now reads as clickable at a glance, the same way the footer's `Source` link does, rather than sitting in the same faint, ruleless register as the `Files` caption directly under it. The `<ul>`'s bottom margin is `--s7`, wider than the spacing scale's default gap, so the nav and the section it precedes don't read as one group even before either colors in.
 
 **In this revision the nav lives only on the repo page**, which is never itself one of the three destinations, so no entry is ever current. A later phase that carries the nav onto the destination pages marks the current entry with `aria-current="page"` and the Chip's `.chip--current` precedent — weight and a border, not color alone — and keeps it a real link rather than unlinking it the way the breadcrumb unlinks its current segment: `aria-current` already tells assistive technology which one is current without removing the target.
 

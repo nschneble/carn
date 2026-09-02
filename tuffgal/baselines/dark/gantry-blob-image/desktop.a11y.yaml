@@ -12,13 +12,14 @@
       - listitem:
         - link "assets":
           - /url: /r/gantry/tree/main/assets
-      - listitem: logo.png
+      - listitem: cover.png
 - main:
-  - heading "assets/logo.png" [level=1]
+  - heading "assets/cover.png" [level=1]
   - term: Size
-  - definition: 268 B
+  - definition: 234.7 KB
   - term: Type
   - definition: PNG image
+  - paragraph: PNG image, 234.7 KB. Too large to show here.
 - contentinfo:
   - paragraph:
     - text: Càrn ·

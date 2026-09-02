@@ -553,16 +553,16 @@ const contrastNodes: Record<string, number> = {
   "commit-cut": 138,
   "commit-binary": 23,
   "commit-file": 42,
-  branches: 33,
-  "branches-cut": 34,
+  branches: 46,
+  "branches-cut": 47,
   "branches-none": 10,
-  "branches-quiet": 17,
-  tags: 26,
+  "branches-quiet": 21,
+  tags: 30,
   "tags-none": 10,
   tree: 49,
   "tree-cut": 67,
   "tree-all": 161,
-  "tree-sub": 23,
+  "tree-sub": 24,
 };
 
 // below the breakpoint the breadcrumb folds its middle segments out of
@@ -714,7 +714,7 @@ test("every link in a ref row reaches a target-size verdict", async (t) => {
 test("the truncated blob fixture is genuinely truncated", () => {
   const cut = states["blob-cut"];
 
-  assert.match(cut, /<p class="t-label" id="blob-cut">Showing the first /);
+  assert.match(cut, /<p class="t-note" id="blob-cut">Showing the first /);
   assert.match(cut, /aria-describedby="blob-cut"/);
   assert.ok(cut.includes("Show entire file"));
   assert.doesNotMatch(

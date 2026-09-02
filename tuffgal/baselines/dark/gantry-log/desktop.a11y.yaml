@@ -14,152 +14,152 @@
   - heading "Commits on main" [level=1]
   - list:
     - listitem:
-      - link "6e8b63b":
-        - /url: /r/gantry/commits/6e8b63b74ed9c59bc730751e9fa6ec8f71c3edba
+      - link "c23c6f8":
+        - /url: /r/gantry/commits/c23c6f80cc4a7f55b02736f375c14ac9005fa377
       - link "Generate the tables":
-        - /url: /r/gantry/commits/6e8b63b74ed9c59bc730751e9fa6ec8f71c3edba
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/6e8b63b74ed9c59bc730751e9fa6ec8f71c3edba
+        - /url: /r/gantry/commits/c23c6f80cc4a7f55b02736f375c14ac9005fa377
+      - link "Committed 25m":
+        - /url: /r/gantry/commits/c23c6f80cc4a7f55b02736f375c14ac9005fa377
         - text: Committed
-        - time: 3w
+        - time: 25m
     - listitem:
-      - link "51173f5":
-        - /url: /r/gantry/commits/51173f5fc7ca927c22a0a00fe796cbc925f089aa
+      - link "a045ed2":
+        - /url: /r/gantry/commits/a045ed2cf872604056a0abc63a215313d2cc55a9
+      - link "Add a cover image":
+        - /url: /r/gantry/commits/a045ed2cf872604056a0abc63a215313d2cc55a9
+      - link "Committed 6h":
+        - /url: /r/gantry/commits/a045ed2cf872604056a0abc63a215313d2cc55a9
+        - text: Committed
+        - time: 6h
+    - listitem:
+      - link "79cada1":
+        - /url: /r/gantry/commits/79cada111a06e1646ca6e2c7e0a60573b65ba2df
+      - link "Write the rig manifest":
+        - /url: /r/gantry/commits/79cada111a06e1646ca6e2c7e0a60573b65ba2df
+      - link "Committed 1d":
+        - /url: /r/gantry/commits/79cada111a06e1646ca6e2c7e0a60573b65ba2df
+        - text: Committed
+        - time: 1d
+    - listitem:
+      - link "3898b95":
+        - /url: /r/gantry/commits/3898b95d60c2ab76b13fe3a8be680c654c8a2be3
       - link "Bump the version and say so":
-        - /url: /r/gantry/commits/51173f5fc7ca927c22a0a00fe796cbc925f089aa
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/51173f5fc7ca927c22a0a00fe796cbc925f089aa
+        - /url: /r/gantry/commits/3898b95d60c2ab76b13fe3a8be680c654c8a2be3
+      - link "Committed 2d":
+        - /url: /r/gantry/commits/3898b95d60c2ab76b13fe3a8be680c654c8a2be3
         - text: Committed
-        - time: 3w
+        - time: 2d
     - listitem:
-      - link "65cb09c":
-        - /url: /r/gantry/commits/65cb09cfe3a97997d6ee00355003739a46db51db
+      - link "26a8970":
+        - /url: /r/gantry/commits/26a8970e0ade2d485bf30bb12bb32a95a5973ab5
       - link "Reach the deep path":
-        - /url: /r/gantry/commits/65cb09cfe3a97997d6ee00355003739a46db51db
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/65cb09cfe3a97997d6ee00355003739a46db51db
+        - /url: /r/gantry/commits/26a8970e0ade2d485bf30bb12bb32a95a5973ab5
+      - link "Committed 3d":
+        - /url: /r/gantry/commits/26a8970e0ade2d485bf30bb12bb32a95a5973ab5
         - text: Committed
-        - time: 3w
+        - time: 3d
     - listitem:
-      - link "10c0a61":
-        - /url: /r/gantry/commits/10c0a6184b57b451f45724b6516231f095a28c46
+      - link "a43d6d6":
+        - /url: /r/gantry/commits/a43d6d66d35c614301e8136848dcba97cf2d8f17
       - link "Add mod-17.ts":
-        - /url: /r/gantry/commits/10c0a6184b57b451f45724b6516231f095a28c46
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/10c0a6184b57b451f45724b6516231f095a28c46
+        - /url: /r/gantry/commits/a43d6d66d35c614301e8136848dcba97cf2d8f17
+      - link "Committed 4d":
+        - /url: /r/gantry/commits/a43d6d66d35c614301e8136848dcba97cf2d8f17
         - text: Committed
-        - time: 3w
+        - time: 4d
     - listitem:
-      - link "cd4b677":
-        - /url: /r/gantry/commits/cd4b6770c37cbf837f2a6f4fb9108992a08a996a
+      - link "008726b":
+        - /url: /r/gantry/commits/008726b7640e2169d3b9fd529d8134eb874e3d6a
       - link "Add mod-16.ts":
-        - /url: /r/gantry/commits/cd4b6770c37cbf837f2a6f4fb9108992a08a996a
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/cd4b6770c37cbf837f2a6f4fb9108992a08a996a
+        - /url: /r/gantry/commits/008726b7640e2169d3b9fd529d8134eb874e3d6a
+      - link "Committed 5d":
+        - /url: /r/gantry/commits/008726b7640e2169d3b9fd529d8134eb874e3d6a
         - text: Committed
-        - time: 3w
+        - time: 5d
     - listitem:
-      - link "ae38e31":
-        - /url: /r/gantry/commits/ae38e3133bc960522d3b883744dac11b64a4fb50
+      - link "b05dc44":
+        - /url: /r/gantry/commits/b05dc44b9d61f80ceee37a46bff70ae8a8242d71
       - link "Add mod-15.ts":
-        - /url: /r/gantry/commits/ae38e3133bc960522d3b883744dac11b64a4fb50
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/ae38e3133bc960522d3b883744dac11b64a4fb50
+        - /url: /r/gantry/commits/b05dc44b9d61f80ceee37a46bff70ae8a8242d71
+      - link "Committed 6d":
+        - /url: /r/gantry/commits/b05dc44b9d61f80ceee37a46bff70ae8a8242d71
         - text: Committed
-        - time: 3w
+        - time: 6d
     - listitem:
-      - link "8a2349f":
-        - /url: /r/gantry/commits/8a2349f6fbec6950d702f0cc1fa1c5e5041cc0ec
+      - link "ceb1f7a":
+        - /url: /r/gantry/commits/ceb1f7acda8920665f526075a224d8de171935fe
       - link "Add mod-14.ts":
-        - /url: /r/gantry/commits/8a2349f6fbec6950d702f0cc1fa1c5e5041cc0ec
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/8a2349f6fbec6950d702f0cc1fa1c5e5041cc0ec
+        - /url: /r/gantry/commits/ceb1f7acda8920665f526075a224d8de171935fe
+      - link "Committed 1w":
+        - /url: /r/gantry/commits/ceb1f7acda8920665f526075a224d8de171935fe
         - text: Committed
-        - time: 3w
+        - time: 1w
     - listitem:
-      - link "18e212c":
-        - /url: /r/gantry/commits/18e212cca006fdd6f2bcd02db1df494f852a8f74
+      - link "88ec10c":
+        - /url: /r/gantry/commits/88ec10cb961efb9ff1773114cd4a70f8f8549df2
       - link "Add mod-13.ts":
-        - /url: /r/gantry/commits/18e212cca006fdd6f2bcd02db1df494f852a8f74
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/18e212cca006fdd6f2bcd02db1df494f852a8f74
+        - /url: /r/gantry/commits/88ec10cb961efb9ff1773114cd4a70f8f8549df2
+      - link "Committed 1w":
+        - /url: /r/gantry/commits/88ec10cb961efb9ff1773114cd4a70f8f8549df2
         - text: Committed
-        - time: 3w
+        - time: 1w
     - listitem:
-      - link "f5187d6":
-        - /url: /r/gantry/commits/f5187d64a38ac80a51cdce7816ae67dd6efe2b58
+      - link "8afed01":
+        - /url: /r/gantry/commits/8afed0155ce95fd8562b8a29122b98bf0c300d29
       - link "Add mod-12.ts":
-        - /url: /r/gantry/commits/f5187d64a38ac80a51cdce7816ae67dd6efe2b58
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/f5187d64a38ac80a51cdce7816ae67dd6efe2b58
+        - /url: /r/gantry/commits/8afed0155ce95fd8562b8a29122b98bf0c300d29
+      - link "Committed 1w":
+        - /url: /r/gantry/commits/8afed0155ce95fd8562b8a29122b98bf0c300d29
         - text: Committed
-        - time: 3w
+        - time: 1w
     - listitem:
-      - link "c478bd0":
-        - /url: /r/gantry/commits/c478bd058bde89454b281178a4757d5f0856d09f
+      - link "3ff31ad":
+        - /url: /r/gantry/commits/3ff31add719b18929747e86569d8702a101517b8
       - link "Add mod-11.ts":
-        - /url: /r/gantry/commits/c478bd058bde89454b281178a4757d5f0856d09f
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/c478bd058bde89454b281178a4757d5f0856d09f
+        - /url: /r/gantry/commits/3ff31add719b18929747e86569d8702a101517b8
+      - link "Committed 1w":
+        - /url: /r/gantry/commits/3ff31add719b18929747e86569d8702a101517b8
         - text: Committed
-        - time: 3w
+        - time: 1w
     - listitem:
-      - link "43d7281":
-        - /url: /r/gantry/commits/43d72813e570a74179a230081ea401e02443f76c
+      - link "8b5a3cd":
+        - /url: /r/gantry/commits/8b5a3cd5330126fb2cbb5e4b82cad12b8c8ceac9
       - link "Add mod-10.ts":
-        - /url: /r/gantry/commits/43d72813e570a74179a230081ea401e02443f76c
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/43d72813e570a74179a230081ea401e02443f76c
+        - /url: /r/gantry/commits/8b5a3cd5330126fb2cbb5e4b82cad12b8c8ceac9
+      - link "Committed 1w":
+        - /url: /r/gantry/commits/8b5a3cd5330126fb2cbb5e4b82cad12b8c8ceac9
         - text: Committed
-        - time: 3w
+        - time: 1w
     - listitem:
-      - link "f30cce1":
-        - /url: /r/gantry/commits/f30cce148f7a7b624116b8768f8b2d5262701a90
+      - link "1ed7016":
+        - /url: /r/gantry/commits/1ed701661a791cb11fbce538250cb6ef77c43599
       - link "Add mod-09.ts":
-        - /url: /r/gantry/commits/f30cce148f7a7b624116b8768f8b2d5262701a90
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/f30cce148f7a7b624116b8768f8b2d5262701a90
+        - /url: /r/gantry/commits/1ed701661a791cb11fbce538250cb6ef77c43599
+      - link "Committed 1w":
+        - /url: /r/gantry/commits/1ed701661a791cb11fbce538250cb6ef77c43599
         - text: Committed
-        - time: 3w
+        - time: 1w
     - listitem:
-      - link "e7e5f36":
-        - /url: /r/gantry/commits/e7e5f367a9197d21a5e6519343a7d5c8bcbae88c
+      - link "789e6b5":
+        - /url: /r/gantry/commits/789e6b5316e8d947cb8fcab2287a7558b18b2be0
       - link "Add mod-08.ts":
-        - /url: /r/gantry/commits/e7e5f367a9197d21a5e6519343a7d5c8bcbae88c
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/e7e5f367a9197d21a5e6519343a7d5c8bcbae88c
+        - /url: /r/gantry/commits/789e6b5316e8d947cb8fcab2287a7558b18b2be0
+      - link "Committed 1w":
+        - /url: /r/gantry/commits/789e6b5316e8d947cb8fcab2287a7558b18b2be0
         - text: Committed
-        - time: 3w
+        - time: 1w
     - listitem:
-      - link "0f986aa":
-        - /url: /r/gantry/commits/0f986aa5cc2e0bbfc3f165d930076c182971f053
+      - link "dbc7ee8":
+        - /url: /r/gantry/commits/dbc7ee81024859822c961688284f45c137a0f60e
       - link "Add mod-07.ts":
-        - /url: /r/gantry/commits/0f986aa5cc2e0bbfc3f165d930076c182971f053
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/0f986aa5cc2e0bbfc3f165d930076c182971f053
+        - /url: /r/gantry/commits/dbc7ee81024859822c961688284f45c137a0f60e
+      - link "Committed 2w":
+        - /url: /r/gantry/commits/dbc7ee81024859822c961688284f45c137a0f60e
         - text: Committed
-        - time: 3w
-    - listitem:
-      - link "6e697f6":
-        - /url: /r/gantry/commits/6e697f605b0fd4b98db94eff3e336e20206d521d
-      - link "Add mod-06.ts":
-        - /url: /r/gantry/commits/6e697f605b0fd4b98db94eff3e336e20206d521d
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/6e697f605b0fd4b98db94eff3e336e20206d521d
-        - text: Committed
-        - time: 3w
-    - listitem:
-      - link "e6f20cb":
-        - /url: /r/gantry/commits/e6f20cbb2a7d4135490ff55cde013cef9f083e99
-      - link "Add mod-05.ts":
-        - /url: /r/gantry/commits/e6f20cbb2a7d4135490ff55cde013cef9f083e99
-      - link "Committed 3w":
-        - /url: /r/gantry/commits/e6f20cbb2a7d4135490ff55cde013cef9f083e99
-        - text: Committed
-        - time: 3w
+        - time: 2w
   - paragraph:
     - link "Older":
-      - /url: /r/gantry/commits?ref=main&from=964cd2cc6da385b4c051fae87e45c4ef644e3441
+      - /url: /r/gantry/commits?ref=main&from=357e1ed552aeb0226953f469f235fc5ede6168ac
 - contentinfo:
   - paragraph:
     - text: Càrn ·
