@@ -4,6 +4,7 @@ import assert from "node:assert";
 import { test } from "node:test";
 
 import { age } from "../../src/html/age.js";
+import { smallCaps } from "../../src/html/filename.js";
 import { repoListPage } from "../../src/html/repo-list.js";
 import { styleHref, stylesheet } from "../../src/html/styles.js";
 import type { RepoSummary } from "../../src/repos/list.js";
@@ -113,7 +114,9 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
 
   assert.ok(markup.includes('<ul class="repos" role="list">'));
   assert.ok(
-    markup.includes('<a class="nm t-item" href="/r/linklater">linklater</a>'),
+    markup.includes(
+      `<a class="nm t-item" lang="en" href="/r/linklater">${smallCaps("linklater").value}</a>`,
+    ),
   );
 
   const noDescription = populated.find((repo) => repo.description === null);
@@ -121,7 +124,7 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
   assert.match(
     markup,
     new RegExp(
-      `<a class="nm t-item" href="/r/${noDescription.name}">${noDescription.name}</a>\\s*<span class="msg"></span>`,
+      `<a class="nm t-item" lang="en" href="/r/${noDescription.name}">${smallCaps(noDescription.name).value}</a>\\s*<span class="msg"></span>`,
     ),
     "a repo with no description dropped its .msg span, so the grid columns no longer line up",
   );
@@ -137,10 +140,10 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
   );
 });
 
-test("a repo name wears the display face without small caps or a tooltip", () => {
+test("a repo name wears small caps like every other Row, and no tooltip", () => {
   const markup = indexDocument();
 
-  assert.doesNotMatch(markup, /class="sc"/);
+  assert.match(markup, /class="sc"/);
   assert.doesNotMatch(markup, /class="nm t-item"[^>]*title=/);
   assert.doesNotMatch(markup, /class="[^"]*is-dir/);
 });

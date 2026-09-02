@@ -533,8 +533,8 @@ function contrastPin(results: AxeResults, where: string, pinned: number): void {
 // audit the same bytes and differ only in which token block applies
 const contrastNodes: Record<string, number> = {
   gallery: 62,
-  populated: 18,
-  hover: 18,
+  populated: 28,
+  hover: 28,
   empty: 6,
   show: 93,
   "show-all": 187,
@@ -573,6 +573,8 @@ const foldedContrastNodes: Record<string, number> = {
   blob: 74,
   "blob-cut": 23,
   "commit-file": 41,
+  populated: 24,
+  hover: 24,
 };
 
 for (const width of auditWidths) {

@@ -3,12 +3,13 @@
 import type { RepoSummary } from "../repos/list.js";
 import { sshRemote } from "../repos/remote.js";
 import { ageMarkup } from "./age.js";
+import { smallCaps } from "./filename.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
 
 function row(repo: RepoSummary, now: Date): Raw {
   return html`<li class="row">
-        <a class="nm t-item" href="/r/${repo.name}">${repo.name}</a>
+        <a class="nm t-item" lang="en" href="/r/${repo.name}">${smallCaps(repo.name)}</a>
         <span class="msg">${repo.description}</span>
         ${ageMarkup("Created", repo.createdAt, now)}
       </li>`;

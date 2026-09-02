@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # Phase 1e exit checks, from docs/phases/1e-views.md, 1e-revision.md, and
-# 1e-revision-2.md. Prints PASS or FAIL for each of the 49 checks and exits
+# 1e-revision-2.md. Prints PASS or FAIL for each of the 50 checks and exits
 # non-zero if any fail. Reads
 # DATABASE_URL from the environment, falling back to ./.env. Check 24 runs
 # 1a, 1b, 1c and 1d, and each of those runs the ones before it, so a full
@@ -14,7 +14,7 @@ set -uo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root" || exit 1
 
-readonly EXPECTED_CHECKS=49
+readonly EXPECTED_CHECKS=50
 readonly REPO_NAME=verify1e
 readonly ABSENT_NAME=absent1e
 readonly DEFAULT_ROOT=./local/repos
@@ -1722,20 +1722,25 @@ else
 fi
 
 # 42
-# part A2: the name column of a Row takes small caps, branches and tags
-# included, so ref-list.ts has to call the same function tree-list.ts does
-readonly TITLE_42="ref-list.ts calls smallCaps(), and a branch name renders in it"
+# part A2: the name column of a Row takes small caps, branches, tags and the
+# repo index included, so ref-list.ts and repo-list.ts call the same
+# function tree-list.ts does
+readonly TITLE_42="ref-list.ts and repo-list.ts call smallCaps(), and a branch and a repo name render in it"
 wrong=""
 grep -qF "smallCaps(" src/html/ref-list.ts \
   || wrong="$wrong ref-list.ts never calls smallCaps();"
+grep -qF "smallCaps(" src/html/repo-list.ts \
+  || wrong="$wrong repo-list.ts never calls smallCaps();"
 if require_daemon 42 "$TITLE_42" && require_seed 42 "$TITLE_42"; then
   grep -qF '<span class="sc">' "$work/branches.body" \
     || wrong="$wrong the rendered branch list carries no small-caps span;"
+  grep -qF '<span class="sc">' "$work/index.body" \
+    || wrong="$wrong the rendered repo index carries no small-caps span;"
 fi
 if [ -n "$wrong" ]; then
   record FAIL 42 "$TITLE_42" "$wrong"
 else
-  record PASS 42 "$TITLE_42" "ref-list.ts calls smallCaps(), and the branch list renders it"
+  record PASS 42 "$TITLE_42" "ref-list.ts and repo-list.ts call smallCaps(), and both lists render it"
 fi
 
 # 43
@@ -1873,6 +1878,28 @@ if [ -f dist/test/support/fixture-repos.js ]; then
   fi
 else
   record FAIL 49 "$TITLE_49" "dist/test/support/fixture-repos.js is missing, see check 1"
+fi
+
+# 50
+# round 2 follow-up: the blob truncation notice reads after the file stops,
+# not before it starts, and sits next to the Show entire file hatch
+readonly TITLE_50="the blob truncation notice sits below the code block, beside the raw hatch"
+wrong=""
+if [ -f "$work/blob-cut.body" ]; then
+  pre_pos=$(grep -bo '</pre>' "$work/blob-cut.body" | head -1 | cut -d: -f1)
+  note_pos=$(grep -bo 'id="blob-cut"' "$work/blob-cut.body" | head -1 | cut -d: -f1)
+  if [ -z "$pre_pos" ] || [ -z "$note_pos" ]; then
+    wrong="$wrong could not find both </pre> and the blob-cut notice;"
+  elif [ "$note_pos" -lt "$pre_pos" ]; then
+    wrong="$wrong the notice still sits above </pre>, not below it;"
+  fi
+else
+  wrong="$wrong \$work/blob-cut.body is missing, see check 3;"
+fi
+if [ -n "$wrong" ]; then
+  record FAIL 50 "$TITLE_50" "$wrong"
+else
+  record PASS 50 "$TITLE_50" "the notice follows </pre>, reading order matches where the file stops"
 fi
 
 # 25, printed in its place

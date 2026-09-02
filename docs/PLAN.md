@@ -1061,6 +1061,9 @@ _After the MLP — each an explicit decision, not a drift_
 - Inline diff comments
 - Web writes via `carn web-login`
 - Real small caps merged into Carn Sans (`smcp`/`c2sc`)
+- Line wrapping in the blob view — a URL, not a control; there is no client JavaScript to toggle with
+- A rendered view of a blob that has one — markdown as prose, SVG as a picture
+- Owner and collaborator filters on the repo index — waiting on an index long enough to need them
 
 #### Never
 
@@ -1084,6 +1087,16 @@ _After the MLP — each an explicit decision, not a drift_
 They earn their place at work, where you're reviewing someone else's unfamiliar code and need to point at line 47. On a personal forge you're reviewing your own change from an hour ago, and a thread is enough.
 
 The cost is also higher than it looks. Anchoring a comment to a line means storing the blob SHA plus the line number and then deciding what happens when the branch is force-pushed and that line no longer exists — GitHub's "outdated" state exists because there's no good answer. The columns sit in `comments` if that changes; leave them empty.
+
+### The blob view shows one form of a file
+
+Two of the entries above are the same gap seen twice: a blob has more than one honest representation and the page offers no way to ask for the other one.
+
+**Wrapping.** `.src` is `overflow-x: auto`, so a line that cannot break scrolls sideways. That is right for code, where a wrapped line lies about its indentation, and wrong for prose committed as markdown or for a file with one 1,180-character line. With no client JavaScript the toggle is a URL — `?wrap=1`, re-rendered with `white-space: pre-wrap` — which makes it a second cache key on every blob and a second baseline on every story that covers one. Cheap to build, and it doubles a surface that is currently exactly one page per path.
+
+**Rendering.** A markdown file renders on the repo page and shows as source in the blob view, and nothing links the two. An SVG is further away than it looks: `src/repos/blob-asset.ts` serves rasters only, because an SVG blob is repo-controlled active content whose `<title>` and `<text>` would enter the host page's accessibility tree. It is excluded on purpose, not missing.
+
+**Both wait on the raw origin.** `gelatinous-cube` is where repo-controlled bytes are already going to be served sandboxed, and it is the same decision twice: once the origin exists, "show me the bytes" and "show me the rendering" become a pair, and building either half before then means building it again afterward.
 
 ### Cross-repo PRs
 
