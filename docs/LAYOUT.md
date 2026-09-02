@@ -51,7 +51,7 @@ small caps
 
 _Carn Sans · compensated · self-hosted_
 
-Carn Sans carries the display face throughout. A Row's name column — filenames, but also a branch or tag name, a repo name in the index — additionally renders in small caps, which collapses the ragged ascender and descender profile of lowercase into a uniform band — calmer to scan, and it buys a tighter line-height than lowercase tolerates.
+Carn Sans carries the display face throughout. A Row's name column — filenames, but also a branch or tag name, a repo name in the index — splits positionally: the stem renders at full size, the extension (everything from the last dot of the name's final segment) renders in small caps. Case is never read, so `README.md` and `package.json` divide the same way. This collapses the ragged ascender and descender profile of the extension into a uniform band — calmer to scan, and it marks where a name ends without touching the stem's weight.
 
 Carn Sans has no `smcp` table, and browser synthesis is not usable: scaling a capital to 79% scales its stems to 79% too, so the faked small caps read visibly lighter than the full caps beside them in the same word. The stems have to be compensated, which needs the variable axes and server-rendered markup — both of which we have.
 
@@ -59,6 +59,9 @@ Carn Sans has no `smcp` table, and browser synthesis is not usable: scaling a ca
 .t-item {
   font-variation-settings: "wght" 700, "wdth" 110;
   font-feature-settings: "case" 1;      /* lifts . - / to cap height */
+}
+.caps {
+  text-transform: uppercase;            /* the stem, full size */
 }
 .sc {
   text-transform: uppercase;            /* DOM keeps real lowercase */
