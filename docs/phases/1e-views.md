@@ -31,7 +31,7 @@ Verified 2026-08-28. If `npm install` resolves outside these majors,
 |---|---|---|---|
 | `highlight.js` | 11.12.0 | **11** | New this phase. Latest is still 11.12.0 — no drift since `STACK.md` recorded it. |
 | `markdown-it` | 15.0.1 | **15** | Patch bump from the pinned 15.0.0. Read the changelog before taking it; the 1d spike's four answers were measured against .0. |
-| `tuffgal` | 0.2.1-alpha.1 | **0** | Pin exactly. Still pre-1.0 with an unstable API. |
+| `tuffgal` | 0.2.2-alpha.1 | **0** | Pin exactly. Still pre-1.0 with an unstable API. Bumped from 0.2.1-alpha.1 during the visual-coverage wave for the `browserArgs` seam (`nschneble/tuffgal#49`). |
 | `prisma` | 7.x | **7** | `latest` is **8.0.0-rc.12**. The standing hazard: never install Prisma by tag. |
 
 New dependencies this phase: **`highlight.js` only.** Nothing else.
