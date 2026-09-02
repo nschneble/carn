@@ -35,7 +35,7 @@ export const tokens = css`:root {
 
   /* diff */
   --diff-add: #7ee08a; /* 9.98:1 on sunk — added lines */
-  --diff-del: #ffa070; /* 8.12:1 on sunk — removed lines */
+  --diff-del: #cf7848; /* 4.97:1 on sunk — removed lines */
 
   /* type */
   --f-display: "Carn Sans", "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -73,7 +73,7 @@ export const tokens = css`:root {
     --accent-wash: #fbe2ed;
     --on-accent: #ffffff;
     --diff-add: #1c6e2f; /* 5.36:1 on sunk — added lines */
-    --diff-del: #7a2900; /* 8.30:1 on sunk — removed lines */
+    --diff-del: #5a1c00; /* 11.12:1 on sunk — removed lines */
   }
 }
 
@@ -609,6 +609,10 @@ export const source = css`.src {
 @media (forced-colors: active) {
   .src {
     border-color: CanvasText;
+  }
+
+  .diff .d {
+    border-left-style: dashed;
   }
 }`;
 

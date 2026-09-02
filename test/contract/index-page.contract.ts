@@ -82,7 +82,7 @@ test("the skip link is the first focusable thing on the page", () => {
 test("one h1, the list's own label, and no other heading", () => {
   const markup = indexDocument();
 
-  assert.ok(markup.includes('<h1 class="t-label">Repositories</h1>'));
+  assert.ok(markup.includes('<h1 class="t-item">Repositories</h1>'));
   assert.strictEqual([...markup.matchAll(/<h[1-6][ >]/g)].length, 1);
   assert.doesNotMatch(markup, /class="[^"]*t-xl/);
 });
@@ -158,7 +158,7 @@ test("the empty state says what would be here and how to make one", () => {
   const markup = indexDocument({ repos: [] });
 
   assert.strictEqual(rows(markup), 0);
-  assert.ok(markup.includes('<h1 class="t-label">Repositories</h1>'));
+  assert.ok(markup.includes('<h1 class="t-item">Repositories</h1>'));
   assert.ok(markup.includes("<footer>"));
   assert.ok(
     markup.includes(

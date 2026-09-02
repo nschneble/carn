@@ -4,6 +4,7 @@
     { "action": "error-no-file" },
     { "action": "error-no-directory" },
     { "action": "error-no-ref" },
-    { "action": "error-no-change" }
+    { "action": "error-no-change" },
+    { "action": "error-no-route" }
   ]
 }

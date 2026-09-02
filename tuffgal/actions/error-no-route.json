@@ -1,0 +1,5 @@
+{
+  "action": "error-no-route",
+  "steps": [{ "kind": "navigate", "path": "/this/matches/nothing" }],
+  "expect": { "anyOf": [{ "role": "heading", "text": "Nothing here" }] }
+}

@@ -1,0 +1,19 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - paragraph:
+    - link "Càrn":
+      - /url: /
+- main:
+  - heading "Nothing here" [level=1]
+  - paragraph: That URL doesn't match a route this server has.
+  - paragraph: Check the URL, or find it in all repos.
+  - paragraph:
+    - link "All repos":
+      - /url: /
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

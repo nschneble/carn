@@ -202,6 +202,37 @@ test("a component's only boundary clears 3:1 and --rule does not", () => {
   }
 });
 
+// contrast() also measures luminance separation between two foreground
+// tokens, not just a token against a ground — greyscale collapses hue, so
+// this is what keeps added and removed apart once color is gone
+test("the diff tokens are separable in greyscale, not just by hue", () => {
+  for (const [name, palette] of palettes) {
+    const separation = contrast(
+      color(palette, "--diff-add"),
+      color(palette, "--diff-del"),
+    );
+    assert.ok(
+      separation >= 1.8,
+      `${name} --diff-add and --diff-del are ${separation.toFixed(2)}:1 apart in greyscale, under 1.8`,
+    );
+  }
+});
+
+test("the retired diff-del values would still fail the separation check", () => {
+  const retired = [
+    ["dark --diff-del", "#ffa070", color(dark, "--diff-add")],
+    ["light --diff-del", "#7a2900", color(light, "--diff-add")],
+  ] as const;
+
+  for (const [name, hex, add] of retired) {
+    const measured = contrast(hex, add);
+    assert.ok(
+      measured < 1.8,
+      `${name} ${hex} separates from --diff-add by ${measured.toFixed(2)}:1 — it is no longer a failure`,
+    );
+  }
+});
+
 test("the retired ink values would still fail, so the check discriminates", () => {
   const retired = [
     ["dark --ink-faint", "#6a7070", color(dark, "--sunk")],
