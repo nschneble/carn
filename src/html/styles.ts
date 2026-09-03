@@ -426,7 +426,7 @@ export const components = css`body {
   background: var(--sunk);
 }
 
-/* the cell is the target, so the box sits on the child that fills it */
+/* every cell is a target, so the box sits on the child that fills it */
 .tbl tbody th > *,
 .tbl tbody td > * {
   display: block;
@@ -452,6 +452,20 @@ export const components = css`body {
 
 .tbl .nm a:focus-visible {
   outline-offset: -2px;
+}
+
+/* one link in the row, so the row is its target rather than one cell */
+.tree tbody tr,
+.repos tbody tr {
+  position: relative;
+}
+
+/* absolute against the row, so the name's own overflow cannot clip it */
+.tree tbody .nm a::after,
+.repos tbody .nm a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
 }
 
 .tbl .is-dir .nm > * {

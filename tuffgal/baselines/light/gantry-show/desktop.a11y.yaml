@@ -24,10 +24,10 @@
   - table "Files":
     - caption: Files
     - rowgroup:
-      - row "Name Last commit Changed":
+      - row "Name Commit Age":
         - columnheader "Name"
-        - columnheader "Last commit"
-        - columnheader "Changed"
+        - columnheader "Commit"
+        - columnheader "Age"
     - rowgroup:
       - row "apps/ Reach the deep path 3d":
         - rowheader "apps/":

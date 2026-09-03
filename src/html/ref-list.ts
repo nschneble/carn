@@ -87,7 +87,7 @@ function list(view: RefListPage, refs: Ref[], more: boolean): Raw {
           <tr>
             <th class="nm t-label" scope="col">${column}</th>
             <th class="msg t-label" scope="col">Subject</th>
-            <th class="age t-label" scope="col">Updated</th>
+            <th class="age t-label" scope="col">Age</th>
           </tr>
         </thead>
         <tbody>

@@ -388,8 +388,8 @@ test("a row carries three links to the commit, one per cell", () => {
     ),
     "the age is not a link to the commit",
   );
-  // the Committed column header names the cell, so no vh label in it
-  assert.doesNotMatch(markup, /<span class="vh">Committed <\/span>/);
+  // the Age column header names the cell, so no vh label in it
+  assert.doesNotMatch(markup, /<span class="vh">(Age|Committed) <\/span>/);
   assert.ok(markup.includes('<caption class="vh">Commits</caption>'));
   assert.strictEqual([...markup.matchAll(/<h1[ >]/g)].length, 1);
 });

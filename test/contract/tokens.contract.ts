@@ -4,6 +4,12 @@ import assert from "node:assert";
 import { test } from "node:test";
 
 import { components, stylesheet, tokens } from "../../src/html/styles.js";
+import { commitDocument } from "../gallery/commit.js";
+import { logDocument } from "../gallery/commit-log.js";
+import { refsDocument } from "../gallery/refs.js";
+import { indexDocument } from "../gallery/repo-index.js";
+import { treeDocument } from "../gallery/tree.js";
+import { displayOverrides, tableTargets } from "../support/table-display.js";
 import {
   brand,
   dark,
@@ -15,6 +21,15 @@ import {
 } from "../support/tokens.js";
 
 const grounds = ["--ground", "--surface", "--sunk"] as const;
+
+// every table the product serves, so no class reaching one goes unread
+const servedTables = [
+  treeDocument(),
+  refsDocument(),
+  indexDocument(),
+  logDocument(),
+  commitDocument(),
+];
 
 function channel(value: number): number {
   const scaled = value / 255;
@@ -332,35 +347,50 @@ test("a state signal survives the accent being discarded", () => {
   assert.doesNotMatch(stylesheet, /content:\s*"\//);
 });
 
-// no display value on a table element, in either direction: the ban is
-// what keeps the native semantics, and a rule adding one back has to
-// fail here rather than only in a browser nobody runs the gate in
-test("no table element carries a display override", () => {
-  const tableElements = "table|thead|tbody|tfoot|tr|th|td|caption";
-  const blocks = [...stylesheet.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+// authored, not computed: the ban is what keeps the native semantics, but
+// <caption class="vh"> is out of flow and a ua blockifies an absolutely
+// positioned box whatever the sheet asked for. chromium keeps role=caption
+// through it, so what this reads is the ban a stylesheet can break
+test("no table element carries an authored display override", () => {
+  const targets = tableTargets(...servedTables);
 
-  for (const [, selector, body] of blocks) {
-    if (!/display:/.test(body as string)) continue;
+  assert.ok(
+    targets.classes.has("tbl") && targets.classes.has("row"),
+    "the markup sample carries no table, so the sheet is judged against nothing",
+  );
 
-    for (const one of (selector as string).split(",")) {
-      const last =
-        one
-          .trim()
-          .split(/[\s>+~]+/)
-          .pop() ?? "";
+  assert.deepStrictEqual(
+    displayOverrides(stylesheet, targets),
+    [],
+    "the stylesheet sets a display value on a table element",
+  );
 
-      assert.doesNotMatch(
-        last,
-        new RegExp(`^(${tableElements})\\b`),
-        `${one.trim()} sets a display value on a table element`,
-      );
-    }
+  // the class form is the one a type-only reader missed, and the shape .row
+  // was until this wave deleted it
+  for (const planted of [
+    ".tbl tbody td { display: grid; }",
+    ".tbl { display: block; }",
+    ".row { display: grid; }",
+    ".tbl .msg { display: flex; }",
+  ]) {
+    assert.deepStrictEqual(
+      displayOverrides(planted, targets).length,
+      1,
+      `the reader missed ${planted}, so a clean sheet proves nothing`,
+    );
   }
+
+  assert.deepStrictEqual(
+    displayOverrides(".btn { display: flex; }", targets),
+    [],
+    "the reader flags a class that sits on no table element",
+  );
 });
 
-test("the cell's own link is the hit area, and the row washes", () => {
+// two shapes, and which one a view takes is decided by its links: three
+// links cannot share one overlay, and one link should not hold a third
+test("the hit area covers the row, by overlay or by cell", () => {
   assert.match(rule(".tbl"), /table-layout: fixed;/);
-  assert.doesNotMatch(stylesheet, /\.nm::after/);
   assert.match(
     rule(".tbl tbody th > *,\n.tbl tbody td > *"),
     /display: block;/,
@@ -372,6 +402,17 @@ test("the cell's own link is the hit area, and the row washes", () => {
   assert.match(
     rule(".tbl tbody tr:hover,\n.tbl tbody tr:focus-within"),
     /background: var\(--sunk\);/,
+  );
+
+  assert.match(
+    rule(".tree tbody .nm a::after,\n.repos tbody .nm a::after"),
+    /position: absolute;\n {2}inset: 0;/,
+  );
+  assert.match(rule(".tree tbody tr,\n.repos tbody tr"), /position: relative;/);
+  assert.deepStrictEqual(
+    [...stylesheet.matchAll(/^.*::after/gm)].map(([one]) => one.trim()).sort(),
+    [".repos tbody .nm a::after", ".tree tbody .nm a::after"],
+    "a view with three links to keep apart grew a row overlay",
   );
 });
 

@@ -247,7 +247,7 @@ test("both lists are tables with a caption and a header row", () => {
     // would be announced a second time
     assert.doesNotMatch(
       markup,
-      /<span class="vh">(Subject|Updated) <\/span>/,
+      /<span class="vh">(Subject|Age|Updated) <\/span>/,
       `${kind} kept a vh column label the thead already carries`,
     );
   }

@@ -81,8 +81,8 @@ export function treeList(view: TreeListView): Raw {
         <thead>
           <tr>
             <th class="nm t-label" scope="col">Name</th>
-            <th class="msg t-label" scope="col">Last commit</th>
-            <th class="age t-label" scope="col">Changed</th>
+            <th class="msg t-label" scope="col">Commit</th>
+            <th class="age t-label" scope="col">Age</th>
           </tr>
         </thead>
         <tbody>

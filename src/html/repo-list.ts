@@ -35,7 +35,7 @@ export function repoListPage(view: {
           <tr>
             <th class="nm t-label" scope="col">Name</th>
             <th class="msg t-label" scope="col">About</th>
-            <th class="age t-label" scope="col">Created</th>
+            <th class="age t-label" scope="col">Age</th>
           </tr>
         </thead>
         <tbody>

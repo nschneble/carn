@@ -15,10 +15,10 @@
   - table "Files":
     - caption: Files
     - rowgroup:
-      - row "Name Last commit Changed":
+      - row "Name Commit Age":
         - columnheader "Name"
-        - columnheader "Last commit"
-        - columnheader "Changed"
+        - columnheader "Commit"
+        - columnheader "Age"
     - rowgroup:
       - row "lib Pinned Submodule pinned at a3f29c8":
         - rowheader "lib Pinned"

@@ -15,10 +15,10 @@
   - table "Branches":
     - caption: Branches
     - rowgroup:
-      - row "Branch Subject Updated":
+      - row "Branch Subject Age":
         - columnheader "Branch"
         - columnheader "Subject"
-        - columnheader "Updated"
+        - columnheader "Age"
     - rowgroup:
       - row "main Default Generate the tables 25m":
         - rowheader "main Default":

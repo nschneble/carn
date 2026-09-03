@@ -15,10 +15,10 @@
   - table "Commits":
     - caption: Commits
     - rowgroup:
-      - row "Commit Subject Committed":
+      - row "Commit Subject Age":
         - columnheader "Commit"
         - columnheader "Subject"
-        - columnheader "Committed"
+        - columnheader "Age"
     - rowgroup:
       - row "c23c6f8 Generate the tables 25m":
         - rowheader "c23c6f8":

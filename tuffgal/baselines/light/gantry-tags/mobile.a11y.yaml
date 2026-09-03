@@ -15,10 +15,10 @@
   - table "Tags":
     - caption: Tags
     - rowgroup:
-      - row "Tag Subject Updated":
+      - row "Tag Subject Age":
         - columnheader "Tag"
         - columnheader "Subject"
-        - columnheader "Updated"
+        - columnheader "Age"
     - rowgroup:
       - row "v1.1.0 Annotated Version 2, with the deep path in place 1d":
         - rowheader "v1.1.0 Annotated":

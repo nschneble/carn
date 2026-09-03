@@ -9,10 +9,10 @@
   - table "Repositories":
     - caption: Repositories
     - rowgroup:
-      - row "Name About Created":
+      - row "Name About Age":
         - columnheader "Name"
         - columnheader "About"
-        - columnheader "Created"
+        - columnheader "Age"
     - rowgroup:
       - row "gantry A rig that holds the other rigs. 3w":
         - rowheader "gantry":

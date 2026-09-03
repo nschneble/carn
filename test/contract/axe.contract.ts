@@ -983,7 +983,8 @@ test("a long path reflows at 320px rather than scrolling the page", async (t) =>
 });
 
 // the ellipsis on a tree row is white-space: nowrap, which no wrapping
-// property can reach; the rule above must not have moved it
+// property can reach; the rule above must not have moved it. the header
+// cell carries its own nowrap, so this reads a tbody cell's own child
 test("the tree row still ellipsises rather than wrapping", async () => {
   const page = await (await browser()).newPage();
 
@@ -992,7 +993,7 @@ test("the tree row still ellipsises rather than wrapping", async () => {
     await page.goto(`${site.origin}/show-all`);
 
     const row = await page
-      .locator(".tree .nm")
+      .locator(".tree tbody .row:not(.is-sub) .nm > *")
       .first()
       .evaluate((node) => ({
         wrap: getComputedStyle(node).whiteSpace,
@@ -1114,6 +1115,135 @@ test("a gitlink row is inert", async () => {
       inert.rest,
       "a gitlink row washes on hover, so it offers a target it does not have",
     );
+  } finally {
+    await page.close();
+  }
+});
+
+// 320 is below the narrowest width tuffgal captures, and a label cut to
+// COMM… reads as an abbreviation in a screenshot rather than as a defect
+const tableWidths = [320, narrowWidth, wideWidth];
+
+const tablePaths = ["/populated", "/tree", "/commits", "/branches", "/commit"];
+
+const tableColumns = 14;
+
+test("every column header is legible at every width", async (t) => {
+  const page = await (await browser()).newPage();
+
+  try {
+    for (const width of tableWidths) {
+      await page.setViewportSize({ width, height: 900 });
+      let counted = 0;
+
+      for (const path of tablePaths) {
+        await page.goto(`${site.origin}${path}`);
+        await page.evaluate(() => document.fonts.ready);
+
+        const columns = await page
+          .locator(".tbl thead")
+          .first()
+          .evaluate((head) =>
+            [...head.querySelectorAll("th")].map((cell) => ({
+              label: (cell.textContent ?? "").trim(),
+              scroll: cell.scrollWidth,
+              client: cell.clientWidth,
+            })),
+          );
+
+        for (const column of columns) {
+          assert.ok(
+            column.label.length > 0,
+            `${path} at ${width}px leaves a column unnamed`,
+          );
+          assert.ok(
+            column.scroll <= column.client,
+            `${path} at ${width}px cuts ${column.label} to ${column.client}px of the ${column.scroll}px it needs`,
+          );
+        }
+
+        counted += columns.length;
+      }
+
+      assert.strictEqual(
+        counted,
+        tableColumns,
+        `${width}px read ${counted} column headers, not the ${tableColumns} the five tables carry`,
+      );
+      t.diagnostic(`${width}px: ${counted} column headers whole`);
+    }
+  } finally {
+    await page.close();
+  }
+});
+
+const rowSamples = 40;
+
+// an overlay is a pseudo-element with no box to measure, so what a click
+// lands on is the only oracle there is: sample across the row and ask
+async function rowTargets(
+  page: Page,
+  path: string,
+  width: number,
+): Promise<{ width: number; covered: number; targets: number }> {
+  await page.setViewportSize({ width, height: 900 });
+  await page.goto(`${site.origin}${path}`);
+  await page.evaluate(() => document.fonts.ready);
+
+  return page
+    .locator(".tbl tbody tr")
+    .first()
+    .evaluate((row, samples) => {
+      const box = row.getBoundingClientRect();
+      const middle = box.top + box.height / 2;
+      const hit: Element[] = [];
+
+      for (let step = 0; step < samples; step += 1) {
+        const across = box.left + (box.width * (step + 0.5)) / samples;
+        const link = row.ownerDocument
+          .elementFromPoint(across, middle)
+          ?.closest("a");
+        if (link) hit.push(link);
+      }
+
+      return {
+        width: Math.round(box.width),
+        covered: hit.length,
+        targets: new Set(hit).size,
+      };
+    }, rowSamples);
+}
+
+// the two shapes the Table component has: three links cannot share one
+// overlay, and one link left alone covers half a row it washes whole
+test("a row leads somewhere end to end, by overlay or by cell", async (t) => {
+  const page = await (await browser()).newPage();
+
+  try {
+    for (const width of tableWidths) {
+      for (const [path, wanted] of [
+        ["/tree", 1],
+        ["/populated", 1],
+        ["/commits", 3],
+        ["/branches", 3],
+      ] as const) {
+        const read = await rowTargets(page, path, width);
+
+        assert.strictEqual(
+          read.covered,
+          rowSamples,
+          `${path} at ${width}px leads nowhere at ${rowSamples - read.covered} of ${rowSamples} points across a ${read.width}px row`,
+        );
+        assert.strictEqual(
+          read.targets,
+          wanted,
+          `${path} at ${width}px covers its row with ${read.targets} target(s), wanted ${wanted}`,
+        );
+        t.diagnostic(
+          `${path} at ${width}px: ${read.width}px row, ${read.targets} target(s)`,
+        );
+      }
+    }
   } finally {
     await page.close();
   }

@@ -1051,14 +1051,14 @@ fi
 # 13
 # served over real http, not set into about:blank, so the audit measures
 # Carn Sans and Carn Mono rather than whatever the host falls back to
-contract 13 "zero axe violations across both render paths, on every new view" 145 "" \
+contract 13 "zero axe violations across both render paths, on every new view" 147 "" \
   axe
 
 # 14
 # PLAN 00 says every index view is a table, and this wave brought the code
-# to it. the overlay went with the <li>: the hit area is each cell's own
-# link now, which is what lets the subject and the age be links of their own
-readonly TITLE_14="both lists are tables with three links per row, and no row overlay"
+# to it. a ref row carries three links, so the hit area is each cell's own
+# link; the overlay is left to the two views whose row holds a single link
+readonly TITLE_14="both lists are tables with three links per row, and no overlay over them"
 if require_daemon 14 "$TITLE_14" && require_seed 14 "$TITLE_14"; then
   wrong=""
   for page in branches tags; do
@@ -1069,8 +1069,11 @@ if require_daemon 14 "$TITLE_14" && require_seed 14 "$TITLE_14"; then
     [ "$(occurrences "$work/$page.body" '<tr class="row">')" -gt 0 ] \
       || wrong="$wrong /$page draws no rows;"
   done
-  grep -qE '\.nm::after' src/html/styles.ts \
-    && wrong="$wrong the sheet brought the row overlay back, and it swallows two links;"
+  overlays=$(grep -cE '^\.(tree|repos) tbody \.nm a::after' src/html/styles.ts)
+  [ "$overlays" = "2" ] \
+    || wrong="$wrong the row overlay covers $overlays selector(s), wanted the two single-link views;"
+  grep -qE '^\.(refs|log|files) [^{]*::after' src/html/styles.ts \
+    && wrong="$wrong a three-link view grew a row overlay, and it swallows two links;"
   if [ -n "$wrong" ]; then
     record FAIL 14 "$TITLE_14" "$wrong"
   else
@@ -1977,38 +1980,54 @@ fi
 
 # 53
 # a display value on a table element is what costs the native semantics,
-# and the ban is only worth having if the detector can catch one: a planted
-# override is run through the same reader before the real sheet is judged
+# and the ban is only worth having if the detector can catch one: two
+# planted overrides, one a type selector and one a class, are run through
+# the same reader the contract test uses before the real sheet is judged
 readonly TITLE_53="no table element carries a display override, and a planted one is caught"
 wrong=""
 verdict=""
-if [ -n "${sheet_href:-}" ] && [ -s "$work/sheet.body" ]; then
-  cat > "$work/planted.css" <<'PLANTED'
+readonly READER=dist/test/support/table-display.js
+if [ ! -s "$READER" ]; then
+  wrong="$wrong $READER is missing, see check 1;"
+elif [ -n "${sheet_href:-}" ] && [ -s "$work/sheet.body" ]; then
+  cat > "$work/planted-type.css" <<'PLANTED'
 .tbl tbody td { display: grid; }
 PLANTED
+  cat > "$work/planted-class.css" <<'PLANTED'
+.tbl { display: block; }
+PLANTED
+  # the served pages say which classes and ids reach a table element; css
+  # text alone cannot, which is the gap a type-only reader left open
   read_display() {
     node --input-type=module -e '
       import { readFileSync } from "node:fs";
-      const css = readFileSync(process.argv[1], "utf8");
-      const table = /^(table|thead|tbody|tfoot|tr|th|td|caption)\b/;
-      const hits = [];
-      for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-        if (!/display\s*:/.test(body)) continue;
-        for (const one of selector.split(",")) {
-          const last = one.trim().split(/[\s>+~]+/).pop() ?? "";
-          if (table.test(last)) hits.push(one.trim());
-        }
+      import { pathToFileURL } from "node:url";
+      const { displayOverrides, tableTargets } = await import(
+        pathToFileURL(process.argv[1]).href
+      );
+      const [css, ...pages] = process.argv.slice(2);
+      const targets = tableTargets(
+        ...pages.map((page) => readFileSync(page, "utf8")),
+      );
+      if (targets.classes.size === 0) {
+        process.stdout.write("no markup");
+      } else {
+        const hits = displayOverrides(readFileSync(css, "utf8"), targets);
+        process.stdout.write(hits.join(" ") || "none");
       }
-      process.stdout.write(hits.join(" ") || "none");
-    ' "$1" 2>/dev/null
+    ' "$READER" "$@" 2>/dev/null
   }
-  planted=$(read_display "$work/planted.css")
-  served=$(read_display "$work/sheet.body")
-  [ "$planted" = "none" ] \
-    && wrong="$wrong the reader missed a planted display override, so a clean sheet proves nothing;"
+  bodies=("$work"/*.body)
+  planted_type=$(read_display "$work/planted-type.css" "${bodies[@]}")
+  planted_class=$(read_display "$work/planted-class.css" "${bodies[@]}")
+  served=$(read_display "$work/sheet.body" "${bodies[@]}")
+  [ "$planted_type" = ".tbl tbody td" ] \
+    || wrong="$wrong the reader read a planted type override as '$planted_type';"
+  [ "$planted_class" = ".tbl" ] \
+    || wrong="$wrong the reader read a planted class override as '$planted_class';"
   [ "$served" = "none" ] \
     || wrong="$wrong the served sheet sets display on: $served;"
-  verdict="planted caught as '$planted', served sheet clean"
+  verdict="both planted overrides caught, served sheet clean"
 else
   wrong="$wrong no served stylesheet was read, see check 2;"
 fi
@@ -2088,8 +2107,8 @@ contract 56 "the four 1.4.12 spacing overrides cost the table nothing at 320px" 
   "the spacing overrides actually reach the table" \
   "no list view reflows into horizontal scroll at 320px" \
   "the spacing overrides move no column boundary" \
-  "the spacing overrides drop no row and shrink none" \
-  "every cell's link holds 24x24 under the spacing overrides" \
+  "the spacing overrides drop no row and clip no cell" \
+  "every cell's own box holds 24x24 under the spacing overrides" \
   "a name the spacing overrides ellipse is still whole in the DOM"
 
 # 25, printed in its place

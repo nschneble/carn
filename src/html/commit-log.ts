@@ -2,7 +2,7 @@
 
 // three cells, three links to the same commit: a whole-row anchor would
 // forbid the subject and the age being links of their own, which is why
-// BRAND.md's Table component puts the hit area on each cell's own link
+// this row's hit area is each cell's own link and not an overlay
 
 import { oidPattern } from "../git/oid.js";
 import type { CommitLog } from "../repos/log.js";
@@ -125,7 +125,7 @@ export function commitLogPage(view: {
           <tr>
             <th class="nm t-label" scope="col">Commit</th>
             <th class="msg t-label" scope="col">Subject</th>
-            <th class="age t-label" scope="col">Committed</th>
+            <th class="age t-label" scope="col">Age</th>
           </tr>
         </thead>
         <tbody>
