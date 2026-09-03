@@ -347,7 +347,7 @@ test("every cell's own box holds 24x24 under the spacing overrides", () => {
 // LAYOUT 02 splits the rule the tension came from: the name is the link
 // text and the row's accessible name, so it wraps and keeps every
 // character. the subject and the description are metadata reachable whole
-// elsewhere, so they ellipse under the overrides exactly as they do without
+// elsewhere, so the overrides ellipse them the same as they do without
 test("the spacing overrides cost the name column not one character", (t) => {
   for (const path of Object.keys(documents)) {
     const wanted = names[path] as string[];

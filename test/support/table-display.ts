@@ -53,7 +53,7 @@ function landsOnTable(compound: string, targets: TableTargets): boolean {
 // is a value that restyles a cell which is still there
 const allowed = /^(none|table-cell)$/i;
 
-// every declaration in the body, not just the first: a rule saying none and
+// every declaration in the body, not just the first: a rule saying none
 // then grid is the second one, and the first would have excused it
 function restyles(body: string): boolean {
   return [...body.matchAll(/display\s*:\s*([^;}]+)/gi)].some(

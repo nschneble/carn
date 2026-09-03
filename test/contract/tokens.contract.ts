@@ -218,9 +218,9 @@ test("a component's only boundary clears 3:1 and --rule does not", () => {
 });
 
 // contrast() also measures luminance separation between two foreground
-// tokens, not just a token against a ground — grayscale collapses hue, so
+// tokens, not just a token against a ground — greyscale collapses hue, so
 // this is what keeps added and removed apart once color is gone
-test("the diff tokens are separable in grayscale, not just by hue", () => {
+test("the diff tokens are separable in greyscale, not just by hue", () => {
   for (const [name, palette] of palettes) {
     const separation = contrast(
       color(palette, "--diff-add"),
@@ -228,7 +228,7 @@ test("the diff tokens are separable in grayscale, not just by hue", () => {
     );
     assert.ok(
       separation >= 1.8,
-      `${name} --diff-add and --diff-del are ${separation.toFixed(2)}:1 apart in grayscale, under 1.8`,
+      `${name} --diff-add and --diff-del are ${separation.toFixed(2)}:1 apart in greyscale, under 1.8`,
     );
   }
 });

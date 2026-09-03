@@ -1056,8 +1056,8 @@ contract 13 "zero axe violations across both render paths, on every new view" 14
 
 # 14
 # PLAN 00 says every index view is a table, and this wave brought the code
-# to it. a ref row carries three links, so the row is covered end to end and
-# washes whole; a one-link row washes its name cell and there is no overlay
+# to it. a ref row carries three links, so it washes whole and is covered
+# end to end; a one-link row washes its name cell and there is no overlay
 # anywhere, because a <tr> is not a containing block for one in Safari
 readonly TITLE_14="both lists are tables with three links per row, and no overlay anywhere"
 if require_daemon 14 "$TITLE_14" && require_seed 14 "$TITLE_14"; then

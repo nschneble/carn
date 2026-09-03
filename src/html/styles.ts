@@ -421,7 +421,7 @@ export const components = css`body {
   padding-left: var(--s2);
 }
 
-/* every cell of these two holds a link, so the row is genuinely the target */
+/* every cell here is a link, so the row is genuinely the target */
 .log tbody tr:hover,
 .log tbody tr:focus-within,
 .refs tbody tr:hover,
@@ -883,7 +883,7 @@ main > h1 {
 }
 
 /* a name and a fixed count, with no subject or age to hold a third
-   column, so the name takes the remainder rather than the shared 40% */
+   column, so the name takes the remainder rather than the shared split */
 .files .nm {
   width: auto;
 }

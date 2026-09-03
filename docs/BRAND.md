@@ -418,7 +418,7 @@ body {
   padding-left: var(--s2);
 }
 
-/* every cell of these two holds a link, so the row is genuinely the target */
+/* every cell here is a link, so the row is genuinely the target */
 .log tbody tr:hover,
 .log tbody tr:focus-within,
 .refs tbody tr:hover,

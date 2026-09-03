@@ -549,7 +549,7 @@ test("a subject longer than a subject is bounded before it renders", async () =>
 });
 
 // git takes --allow-empty-message, and every other cell would still render
-test("a commit with no message leaves the cell bare, not a nameless link", async () => {
+test("a commit with no message leaves the cell empty, not a nameless link", async () => {
   const quiet = mkdtempSync(join(dir, "quiet-"));
   execFileSync("git", ["init", "-q", "-b", "main", "--", quiet]);
   execFileSync(

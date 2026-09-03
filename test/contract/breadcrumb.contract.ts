@@ -255,7 +255,7 @@ test("a label is escaped into the trail", () => {
 });
 
 // the three signals BRAND.md asks for, read off the rendered page rather
-// than off the stylesheet: color, weight, and the absence of a target
+// than off the stylesheet: colour, weight, and the absence of a target
 test("the current segment is inked and weighted apart from its ancestors", async (t) => {
   const page = await (await browser()).newPage();
 
