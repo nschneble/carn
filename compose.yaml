@@ -13,7 +13,6 @@ services:
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
-      # Postgres 18 moved its volume up a level; /data is silently ignored
       - carn-postgres:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U carn -d carn"]
@@ -22,7 +21,6 @@ services:
       retries: 12
       start_period: 10s
 
-  # both pins, and why arm64 rather than amd64, are in docs/STACK.md
   visual:
     image: mcr.microsoft.com/playwright:v1.62.1-noble
     platform: linux/arm64
@@ -30,20 +28,18 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      # in here it is the service name and 5432; the host's 5433 is wrong
       DATABASE_URL: postgresql://carn:${POSTGRES_PASSWORD:-carn}@postgres:5432/carn
     working_dir: /carn
     volumes:
       - .:/carn
-      # the host's are darwin builds; neither side may clobber the other
-      - carn-visual-modules:/carn/node_modules
       - carn-visual-dist:/carn/dist
       - carn-visual-generated:/carn/src/generated
       - carn-visual-local:/carn/local
+      - carn-visual-modules:/carn/node_modules
 
 volumes:
   carn-postgres:
-  carn-visual-modules:
   carn-visual-dist:
   carn-visual-generated:
   carn-visual-local:
+  carn-visual-modules:
