@@ -74,7 +74,7 @@ Carn Sans has no `smcp` table, and browser synthesis is not usable: scaling a ca
 
 Measured against genuinely drawn small caps: stem 1.004, letterform width 0.870, advance 0.900, height 0.790.
 
-Three details are load-bearing. **`letter-spacing` stays** — real small caps keep their full-size sidebearings rather than scaling them, which is why they look tracked out. **`"case" 1`** raises `. - /` to cap alignment, which a path like `src/components/Button.tsx` needs. And **the DOM keeps the true lowercase**: `text-transform` is display-only by spec, so selection, copy-paste, Ctrl-F, and screen readers all get the real filename. Pin `lang="en"` on filenames — under Turkish, `i` uppercases to `İ`.
+Three details are load-bearing. **`letter-spacing` stays** — real small caps keep their full-size sidebearings rather than scaling them, which is why they look tracked out. **`"case" 1`** raises `. - /` to cap alignment, which a path like `src/components/Button.tsx` needs. And **the DOM keeps the true lowercase**: `text-transform` is display-only by spec, so selection, copy-paste, and Ctrl-F all get the real filename. A screen reader hears the rendered form instead — AccName computes the accessible name from rendered text, so `text-transform` reaches it too — which is fine, since the case change is presentational and not a WCAG violation on its own. Pin `lang="en"` on filenames — under Turkish, `i` uppercases to `İ`.
 
 > **REPLACE THIS WITH A REAL FONT WHEN THE PIPELINE EXISTS**
 >
