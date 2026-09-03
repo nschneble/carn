@@ -1057,7 +1057,7 @@ contract 13 "zero axe violations across both render paths, on every new view" 14
 # 14
 # PLAN 00 says every index view is a table, and this wave brought the code
 # to it. a ref row carries three links, so the hit area is each cell's own
-# link; the overlay is left to the two views whose row holds a single link
+# link; the overlay is left to the three views whose row holds a single link
 readonly TITLE_14="both lists are tables with three links per row, and no overlay over them"
 if require_daemon 14 "$TITLE_14" && require_seed 14 "$TITLE_14"; then
   wrong=""
@@ -1069,10 +1069,10 @@ if require_daemon 14 "$TITLE_14" && require_seed 14 "$TITLE_14"; then
     [ "$(occurrences "$work/$page.body" '<tr class="row">')" -gt 0 ] \
       || wrong="$wrong /$page draws no rows;"
   done
-  overlays=$(grep -cE '^\.(tree|repos) tbody \.nm a::after' src/html/styles.ts)
-  [ "$overlays" = "2" ] \
-    || wrong="$wrong the row overlay covers $overlays selector(s), wanted the two single-link views;"
-  grep -qE '^\.(refs|log|files) [^{]*::after' src/html/styles.ts \
+  overlays=$(grep -cE '^\.(tree|repos|files) tbody \.nm a::after' src/html/styles.ts)
+  [ "$overlays" = "3" ] \
+    || wrong="$wrong the row overlay covers $overlays selector(s), wanted the three single-link views;"
+  grep -qE '^\.(refs|log) [^{]*::after' src/html/styles.ts \
     && wrong="$wrong a three-link view grew a row overlay, and it swallows two links;"
   if [ -n "$wrong" ]; then
     record FAIL 14 "$TITLE_14" "$wrong"

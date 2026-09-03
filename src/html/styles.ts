@@ -456,13 +456,15 @@ export const components = css`body {
 
 /* one link in the row, so the row is its target rather than one cell */
 .tree tbody tr,
-.repos tbody tr {
+.repos tbody tr,
+.files tbody tr {
   position: relative;
 }
 
 /* absolute against the row, so the name's own overflow cannot clip it */
 .tree tbody .nm a::after,
-.repos tbody .nm a::after {
+.repos tbody .nm a::after,
+.files tbody .nm a::after {
   content: "";
   position: absolute;
   inset: 0;

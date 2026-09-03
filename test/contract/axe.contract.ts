@@ -1224,6 +1224,7 @@ test("a row leads somewhere end to end, by overlay or by cell", async (t) => {
       for (const [path, wanted] of [
         ["/tree", 1],
         ["/populated", 1],
+        ["/commit", 1],
         ["/commits", 3],
         ["/branches", 3],
       ] as const) {

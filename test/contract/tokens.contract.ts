@@ -405,13 +405,22 @@ test("the hit area covers the row, by overlay or by cell", () => {
   );
 
   assert.match(
-    rule(".tree tbody .nm a::after,\n.repos tbody .nm a::after"),
+    rule(
+      ".tree tbody .nm a::after,\n.repos tbody .nm a::after,\n.files tbody .nm a::after",
+    ),
     /position: absolute;\n {2}inset: 0;/,
   );
-  assert.match(rule(".tree tbody tr,\n.repos tbody tr"), /position: relative;/);
+  assert.match(
+    rule(".tree tbody tr,\n.repos tbody tr,\n.files tbody tr"),
+    /position: relative;/,
+  );
   assert.deepStrictEqual(
     [...stylesheet.matchAll(/^.*::after/gm)].map(([one]) => one.trim()).sort(),
-    [".repos tbody .nm a::after", ".tree tbody .nm a::after"],
+    [
+      ".files tbody .nm a::after",
+      ".repos tbody .nm a::after",
+      ".tree tbody .nm a::after",
+    ],
     "a view with three links to keep apart grew a row overlay",
   );
 });
