@@ -287,6 +287,24 @@ verb, e.g. "Merge" then "Merged", never "Merge" then "Success."
 
 No exclamation marks. No trailing ellipses. No emoji. No "Oops."
 
+## Spelling
+
+**American English everywhere.** Product copy, prose, docs, code, identifiers,
+comments, commit messages, test names, and anything else written to be read.
+
+color not colour, behavior not behaviour, gray not grey, defense not defence,
+license not licence, honor not honour, labeled not labelled, canceled not
+cancelled, normalize and optimize and localize not the -ise forms, and the same
+for every other -our, -ise, -re, and -ce variant.
+
+Two things keep the spelling they have, because they are not English words: the
+ARIA attribute `aria-labelledby`, and any external API, CSS property, or
+dependency name spelled the other way. Match the spec, not this rule.
+
+British spellings still in the repo are stale, not deliberate. Correct them
+when you are already editing the file for another reason. Don't open a pass to
+hunt them unless asked.
+
 ## Attribution
 
 **Nick is the author of everything in this repo. Nothing says otherwise.**
@@ -327,6 +345,17 @@ contradicts is one to query rather than execute.
 Hedging doesn't help. "Your call, but…" followed by an instruction is still
 an instruction, and it'll be carried out. Either raise it as a question and
 stop, or leave it alone.
+
+**Never revert first and flag afterward.** Undoing an uncommitted change you
+weren't briefed on is the exact failure this section exists to prevent, and
+reporting it in the same pass doesn't turn it into a proposal — the change is
+already gone, and the work of restoring it has moved to Nick. If the working
+tree holds edits your brief doesn't account for, leave them precisely as they
+are, say what you found, and carry on with your own scope. Stashing is not a
+safe harbor: it is still a revert, and it still has to be undone by hand.
+
+You cannot tell from a diff who made a change or why. An edit that looks like
+it contradicts a convention may be the convention changing.
 
 ## Phase size
 
