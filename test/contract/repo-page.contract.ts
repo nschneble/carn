@@ -61,7 +61,7 @@ const realGit = execFileSync("sh", ["-c", "command -v git"], {
   encoding: "utf8",
 }).trim();
 
-const rowPattern = /<li class="row(?: is-dir| is-sub)?">/g;
+const rowPattern = /<tr class="row(?: is-dir| is-sub)?">/g;
 
 after(() => {
   rmSync(dir, { recursive: true, force: true });
@@ -473,13 +473,13 @@ test("a directory row carries the accent class and a trailing slash", () => {
 
   assert.ok(
     markup.includes(
-      '<a class="nm t-item" lang="en" href="/r/linklater/tree/main/docs"><span class="caps">docs</span>/</a>',
+      '<a class="t-item" lang="en" href="/r/linklater/tree/main/docs"><span class="caps">docs</span>/</a>',
     ),
     "a directory row lost its class, its lang, its slash, or its tree link",
   );
   assert.ok(
     markup.includes(
-      '<a class="nm t-item" lang="en" href="/r/linklater/blob/main/README.md"><span class="caps">README<span class="sc">.md</span></span></a>',
+      '<a class="t-item" lang="en" href="/r/linklater/blob/main/README.md"><span class="caps">README<span class="sc">.md</span></span></a>',
     ),
     "a file row lost its small-caps split or its blob link",
   );
@@ -777,13 +777,17 @@ test("the rendered dom holds the true filename under small caps", async () => {
     await page.goto(`${site.origin}/show-all`);
 
     const read = await page.evaluate(() =>
-      Array.from(document.querySelectorAll(".tree .nm")).map((node) => ({
-        text: node.textContent ?? "",
-        lang: node.getAttribute("lang"),
-        caps: Array.from(node.querySelectorAll(".sc")).map(
-          (span) => getComputedStyle(span).textTransform,
-        ),
-      })),
+      // tbody only: the header row's own .nm cell names the column
+      Array.from(document.querySelectorAll(".tree tbody .nm")).map((cell) => {
+        const node = cell.firstElementChild as HTMLElement;
+        return {
+          text: node.textContent ?? "",
+          lang: node.getAttribute("lang"),
+          caps: Array.from(node.querySelectorAll(".sc")).map(
+            (span) => getComputedStyle(span).textTransform,
+          ),
+        };
+      }),
     );
 
     assert.strictEqual(read.length, wide.length);

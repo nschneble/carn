@@ -6,32 +6,49 @@
       - /url: /
 - main:
   - heading "Repositories" [level=1]
-  - list:
-    - listitem:
-      - link "gantry":
-        - /url: /r/gantry
-      - text: A rig that holds the other rigs. Created
-      - time: 3w
-    - listitem:
-      - link "linklater":
-        - /url: /r/linklater
-      - text: Save a URL, read it later. Created
-      - time: 2w
-    - listitem:
-      - link "moonlight":
-        - /url: /r/moonlight
-      - text: Phases, tides, and a lunar calendar. Created
-      - time: 2d
-    - listitem:
-      - link "sparrow":
-        - /url: /r/sparrow
-      - text: Created
-      - time: 15m
-    - listitem:
-      - link "thicket":
-        - /url: /r/thicket
-      - text: A shell script and nothing else. Created
-      - time: 6h
+  - table "Repositories":
+    - caption: Repositories
+    - rowgroup:
+      - row "Name About Created":
+        - columnheader "Name"
+        - columnheader "About"
+        - columnheader "Created"
+    - rowgroup:
+      - row "gantry A rig that holds the other rigs. 3w":
+        - rowheader "gantry":
+          - link "gantry":
+            - /url: /r/gantry
+        - cell "A rig that holds the other rigs."
+        - cell "3w":
+          - time: 3w
+      - row "linklater Save a URL, read it later. 2w":
+        - rowheader "linklater":
+          - link "linklater":
+            - /url: /r/linklater
+        - cell "Save a URL, read it later."
+        - cell "2w":
+          - time: 2w
+      - row "moonlight Phases, tides, and a lunar calendar. 2d":
+        - rowheader "moonlight":
+          - link "moonlight":
+            - /url: /r/moonlight
+        - cell "Phases, tides, and a lunar calendar."
+        - cell "2d":
+          - time: 2d
+      - row "sparrow 15m":
+        - rowheader "sparrow":
+          - link "sparrow":
+            - /url: /r/sparrow
+        - cell
+        - cell "15m":
+          - time: 15m
+      - row "thicket A shell script and nothing else. 6h":
+        - rowheader "thicket":
+          - link "thicket":
+            - /url: /r/thicket
+        - cell "A shell script and nothing else."
+        - cell "6h":
+          - time: 6h
 - contentinfo:
   - paragraph:
     - text: Càrn ·

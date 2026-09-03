@@ -149,8 +149,9 @@ function diffBlocks(markup: string): string[] {
 }
 
 function rowHrefs(markup: string): string[] {
-  const list = /<ul class="files"[\s\S]*?<\/ul>/.exec(markup)?.[0] ?? "";
-  return [...list.matchAll(/<a class="nm t-mono" href="([^"]+)"/g)].map(
+  const list =
+    /<table class="tbl files"[\s\S]*?<\/table>/.exec(markup)?.[0] ?? "";
+  return [...list.matchAll(/<a class="t-mono" href="([^"]+)"/g)].map(
     (found) => found[1] as string,
   );
 }
@@ -204,12 +205,15 @@ test("a binary file carries the word, never a bogus count", async () => {
     now: logNow,
   });
   const row =
-    /<li class="row">\s*<a[^>]*>logo\.png<\/a>\s*<span class="cnt">([^<]*)/.exec(
+    /<tr class="row">\s*<th[^>]*><a[^>]*>logo\.png<\/a><\/th>\s*<td class="cnt"><span>([^<]*)/.exec(
       markup,
     );
 
   assert.strictEqual(row?.[1], "Binary");
-  assert.doesNotMatch(markup, /logo\.png<\/a>\s*<span class="cnt">\+NaN/);
+  assert.doesNotMatch(
+    markup,
+    /logo\.png<\/a><\/th>\s*<td class="cnt"><span>\+NaN/,
+  );
   assert.ok(
     !markup.includes("NaN"),
     "a non-numeric numstat field reached the page as a number",
@@ -307,7 +311,7 @@ test("a one-file commit renders whole, and still shows the file list", () => {
   );
   assert.match(
     markup,
-    /<ul class="files" role="list">/,
+    /<table class="tbl files">/,
     "a one-file commit skipped the file list, so its +/− counts are nowhere",
   );
   assert.deepStrictEqual(rowHrefs(markup), ["#f-0"]);
@@ -466,16 +470,16 @@ test("the page a cutoff produces is really under the budget, measured", () => {
   }
 });
 
-// a <ul role="list"> with no <li> under it fails aria-required-children,
-// and squeezing the room far enough is the one thing that produces it
+// a header row naming columns nothing fills is the state to avoid, and
+// squeezing the room far enough is the one thing that produces it
 test("a commit too large to list at all says so rather than emitting an empty list", () => {
   const commit = detail({ files: noisyFiles(12, 8) });
   const markup = commitDocument({ commit, now: logNow, sheetWire: 29_500 });
 
   assert.doesNotMatch(
     markup,
-    /<ul class="files" role="list">\s*<\/ul>/,
-    "an empty list reached the page",
+    /<tbody>\s*<\/tbody>/,
+    "an empty table body reached the page",
   );
   assert.ok(markup.includes("more than this page can list"));
   assert.ok(markup.includes("git show --stat "));

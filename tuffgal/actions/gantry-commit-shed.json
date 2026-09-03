@@ -8,6 +8,6 @@
     }
   ],
   "expect": {
-    "anyOf": [{ "selector": "ul.files a[href^=\"/r/gantry/commits/\"]" }]
+    "anyOf": [{ "selector": ".files a[href^=\"/r/gantry/commits/\"]" }]
   }
 }

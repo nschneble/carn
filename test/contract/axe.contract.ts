@@ -532,47 +532,55 @@ function contrastPin(results: AxeResults, where: string, pinned: number): void {
 // measured once per fixture, identical in both schemes: the two paths
 // audit the same bytes and differ only in which token block applies
 const contrastNodes: Record<string, number> = {
-  gallery: 60,
-  populated: 18,
-  hover: 18,
+  gallery: 63,
+  populated: 21,
+  hover: 21,
   empty: 6,
-  show: 90,
-  "show-all": 165,
-  "show-bare": 64,
+  show: 93,
+  "show-all": 168,
+  "show-bare": 67,
   "show-new": 10,
-  "show-header": 90,
+  "show-header": 93,
   "not-found": 7,
   blob: 73,
   "blob-cut": 22,
   "blob-image": 16,
   "blob-binary": 17,
-  commits: 57,
-  "commits-tail": 35,
+  commits: 60,
+  "commits-tail": 38,
   "commits-none": 10,
-  commit: 43,
-  "commit-cut": 138,
-  "commit-binary": 23,
+  commit: 45,
+  "commit-cut": 140,
+  "commit-binary": 25,
   "commit-file": 42,
-  branches: 33,
-  "branches-cut": 34,
+  branches: 36,
+  "branches-cut": 37,
   "branches-none": 10,
-  "branches-quiet": 17,
-  tags: 26,
+  "branches-quiet": 20,
+  tags: 29,
   "tags-none": 10,
-  tree: 45,
-  "tree-cut": 63,
-  "tree-all": 138,
-  "tree-sub": 22,
+  tree: 48,
+  "tree-cut": 66,
+  "tree-all": 141,
+  "tree-sub": 25,
 };
 
-// below the breakpoint the breadcrumb folds its middle segments out of
-// the layout and the a11y tree, trading a separator and an ancestor link
-// for one .fold ellipsis. only the trails deep enough to have a middle
-// reach the fold, and each loses exactly one measured node
+// two ways a state measures one node fewer below the breakpoint. the
+// breadcrumb folds its middle segments out of the layout and the a11y
+// tree, which only the trails deep enough to have a middle reach; and a
+// name column narrow enough ellipses a filename's .sc extension span
+// away entirely, which is the truncation the Table component specifies
 const foldedContrastNodes: Record<string, number> = {
   blob: 72,
   "blob-cut": 21,
   "commit-file": 41,
+  show: 92,
+  "show-all": 167,
+  "show-bare": 66,
+  "show-header": 92,
+  tree: 47,
+  "tree-all": 140,
+  "tree-cut": 65,
 };
 
 for (const width of auditWidths) {
@@ -622,8 +630,10 @@ test("every link in a commit row reaches a target-size verdict", async (t) => {
           results[bucket].find((rule) => rule.id === "target-size")?.nodes ??
           [],
       );
+      // the cell carries the column class, not the link inside it, so the
+      // selector axe reports is what says which column a target sits in
       const rows = settled.filter((node) =>
-        /class="(nm t-mono|msg|age)"/.test(node.html),
+        node.target.some((target) => /\.(nm|msg|age)\b/.test(String(target))),
       );
 
       assert.strictEqual(
@@ -642,23 +652,20 @@ test("every link in a commit row reaches a target-size verdict", async (t) => {
   }
 });
 
-// the band is what makes the stacked row conform, and it is spacing at
-// the wide width where the three sit side by side; a sheet edit dropping
-// either half reads as a pass here only if both are measured
-test("a stacked commit row link is 24px tall and a wide one is not", async () => {
+// the three columns hold at every width now, so the band holds at every
+// width too — there is no breakpoint at which a row link stops being a
+// target of its own, which is what the grid's stacked column used to be
+test("a commit row link clears 24px at both widths", async (t) => {
   const page = await (await browser()).newPage();
 
   try {
-    for (const [width, tall] of [
-      [narrowWidth, true],
-      [wideWidth, false],
-    ] as const) {
+    for (const width of [narrowWidth, wideWidth]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${site.origin}/commits`);
       await page.evaluate(() => document.fonts.ready);
 
       const heights = await page
-        .locator(".log .row")
+        .locator(".log tbody .row")
         .first()
         .evaluate((row) =>
           [...row.querySelectorAll("a")].map(
@@ -668,12 +675,12 @@ test("a stacked commit row link is 24px tall and a wide one is not", async () =>
 
       assert.strictEqual(heights.length, 3, `${width}px: the row lost a link`);
       for (const height of heights) {
-        assert.strictEqual(
+        assert.ok(
           height >= 24,
-          tall,
-          `${width}px: a row link is ${height}px tall, and the band ${tall ? "is missing" : "leaked past the breakpoint"}`,
+          `${width}px: a row link is ${height}px tall, under the 24px floor`,
         );
       }
+      t.diagnostic(`${width}px: row links ${heights.join(", ")}px tall`);
     }
   } finally {
     await page.close();
@@ -810,9 +817,9 @@ test("the hover wash is measured under the two columns that sit on it", async (t
       `color-contrast evaluated nothing on the ${path.name} hover fixture, so the stylesheet never reached the page and a clean run proves nothing`,
     );
 
-    for (const column of ['class="msg"', "<time datetime="]) {
+    for (const column of [".msg", ".age"]) {
       const measured: number = contrast.nodes.filter((node) =>
-        node.html.includes(column),
+        node.target.some((target) => String(target).includes(column)),
       ).length;
 
       assert.ok(
@@ -1010,39 +1017,49 @@ function rgb(token: string): string {
   return `rgb(${channels.join(", ")})`;
 }
 
-// the wash and the overlay were switched off while a file row had nowhere
-// to go, and a sheet edit putting either back to none would leave the
-// markup linked and the affordance missing with every other gate green
-test("the tree row's wash and overlay are live now the rows link", async (t) => {
+// the wash was switched off while a file row had nowhere to go, and a
+// sheet edit putting it back to none would leave the markup linked and
+// the affordance missing with every other gate green
+test("the tree row's link fills its cell and the wash is live", async (t) => {
   const page = await (await browser()).newPage();
 
   try {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`${site.origin}/show`);
 
-    const linked = await page.locator(".tree .row:not(.is-sub) .nm").first();
-    const overlay = await linked.evaluate((node) => ({
-      tag: node.tagName,
-      content: getComputedStyle(node, "::after").content,
-      inset: getComputedStyle(node, "::after").inset,
-      columns: getComputedStyle(node.parentElement as Element)
-        .gridTemplateColumns,
-    }));
+    const cell = await page
+      .locator(".tree tbody .row:not(.is-sub) .nm")
+      .first();
+    const filled = await cell.evaluate((node) => {
+      const link = node.firstElementChild as HTMLElement;
+      return {
+        tag: link.tagName,
+        display: getComputedStyle(link).display,
+        // the overlay is gone, so the link's own box is the hit area
+        covers:
+          link.getBoundingClientRect().width /
+          node.getBoundingClientRect().width,
+        cells: node.parentElement?.children.length ?? 0,
+      };
+    });
 
-    assert.strictEqual(overlay.tag, "A", "a linking row is not an anchor");
+    assert.strictEqual(filled.tag, "A", "a linking row is not an anchor");
     assert.strictEqual(
-      overlay.content,
-      '""',
-      "the row-wide overlay is still switched off, so the wash covers more than the click target",
+      filled.display,
+      "block",
+      "the name link is not a block, so it no longer fills its own cell",
     );
-    assert.strictEqual(overlay.inset, "0px");
+    assert.ok(
+      filled.covers > 0.99,
+      `the name link covers ${filled.covers.toFixed(2)} of its cell`,
+    );
     assert.strictEqual(
-      overlay.columns.split(" ").length,
+      filled.cells,
       3,
-      `the tree row is laid out as ${overlay.columns}, so the subject and age columns collapsed`,
+      `the tree row lays out ${filled.cells} cells, so a column collapsed`,
     );
 
-    const row = page.locator(".tree .row").first();
+    const row = page.locator(".tree tbody .row").first();
     const sunk = rgb(
       await row.evaluate((node) =>
         getComputedStyle(node).getPropertyValue("--sunk"),
@@ -1063,13 +1080,13 @@ test("the tree row's wash and overlay are live now the rows link", async (t) => 
       "hovering a tree row changed nothing, so the wash is still switched off",
     );
     assert.strictEqual(washed, sunk, "the hover wash is not --sunk");
-    t.diagnostic(`tree row columns: ${overlay.columns}, wash ${washed}`);
+    t.diagnostic(`tree row cells: ${filled.cells}, wash ${washed}`);
   } finally {
     await page.close();
   }
 });
 
-// a submodule offers nothing, so it takes neither the overlay nor the wash
+// a submodule offers nothing, so the row takes no wash and no link
 test("a gitlink row is inert", async () => {
   const page = await (await browser()).newPage();
 
@@ -1077,15 +1094,26 @@ test("a gitlink row is inert", async () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`${site.origin}/tree-sub`);
 
-    const inert = await page.locator(".tree .is-sub .nm").evaluate((node) => ({
-      tag: node.tagName,
-      content: getComputedStyle(node, "::after").content,
-      links: node.closest("li")?.querySelectorAll("a").length ?? 0,
+    const row = page.locator(".tree tbody .is-sub").first();
+    const inert = await row.evaluate((node) => ({
+      tag: (node.querySelector(".nm")?.firstElementChild ?? node).tagName,
+      links: node.querySelectorAll("a").length,
+      rest: getComputedStyle(node).backgroundColor,
     }));
 
     assert.strictEqual(inert.tag, "SPAN", "a gitlink row grew a link");
-    assert.strictEqual(inert.content, "none", "a gitlink row kept the overlay");
     assert.strictEqual(inert.links, 0, "a gitlink row links somewhere");
+
+    await row.hover();
+    const washed = await row.evaluate(
+      (node) => getComputedStyle(node).backgroundColor,
+    );
+
+    assert.strictEqual(
+      washed,
+      inert.rest,
+      "a gitlink row washes on hover, so it offers a target it does not have",
+    );
   } finally {
     await page.close();
   }

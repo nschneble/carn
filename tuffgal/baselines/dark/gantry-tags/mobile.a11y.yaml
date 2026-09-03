@@ -12,25 +12,36 @@
       - listitem: Tags
 - main:
   - heading "Tags" [level=1]
-  - list:
-    - listitem:
-      - link "v1.1.0 Annotated":
-        - /url: /r/gantry/commits?ref=v1.1.0
-      - link "Subject Version 2, with the deep path in place":
-        - /url: /r/gantry/commits?ref=v1.1.0
-      - link "Updated 1d":
-        - /url: /r/gantry/commits?ref=v1.1.0
-        - text: Updated
-        - time: 1d
-    - listitem:
-      - link "v1.0.0":
-        - /url: /r/gantry/commits?ref=v1.0.0
-      - link "Subject Bring the assets in":
-        - /url: /r/gantry/commits?ref=v1.0.0
-      - link "Updated 3w":
-        - /url: /r/gantry/commits?ref=v1.0.0
-        - text: Updated
-        - time: 3w
+  - table "Tags":
+    - caption: Tags
+    - rowgroup:
+      - row "Tag Subject Updated":
+        - columnheader "Tag"
+        - columnheader "Subject"
+        - columnheader "Updated"
+    - rowgroup:
+      - row "v1.1.0 Annotated Version 2, with the deep path in place 1d":
+        - rowheader "v1.1.0 Annotated":
+          - link "v1.1.0 Annotated":
+            - /url: /r/gantry/commits?ref=v1.1.0
+        - cell "Version 2, with the deep path in place":
+          - link "Version 2, with the deep path in place":
+            - /url: /r/gantry/commits?ref=v1.1.0
+        - cell "1d":
+          - link "1d":
+            - /url: /r/gantry/commits?ref=v1.1.0
+            - time: 1d
+      - row "v1.0.0 Bring the assets in 3w":
+        - rowheader "v1.0.0":
+          - link "v1.0.0":
+            - /url: /r/gantry/commits?ref=v1.0.0
+        - cell "Bring the assets in":
+          - link "Bring the assets in":
+            - /url: /r/gantry/commits?ref=v1.0.0
+        - cell "3w":
+          - link "3w":
+            - /url: /r/gantry/commits?ref=v1.0.0
+            - time: 3w
 - contentinfo:
   - paragraph:
     - text: Càrn ·

@@ -443,7 +443,7 @@ if require_db 2 "$TITLE_2" && require_build 2 "$TITLE_2" && require_scratch 2 "$
         seed_ok=1
         status=$(fetch_page "/" "$work/2")
         rows=$(psql_scratch -c "select count(*) from repos")
-        listed=$(occurrences "$work/2.body" '<li class="row">')
+        listed=$(occurrences "$work/2.body" '<tr class="row">')
         missing=""
         for name in "$REPO_NAME" "$BARE_NAME"; do
           grep -qF "href=\"/r/$name\"" "$work/2.body" || missing="$missing $name"
@@ -466,7 +466,7 @@ fi
 readonly TITLE_3="a repo page answers 200 with its tree and its rendered readme"
 if require_daemon 3 "$TITLE_3" && require_seed 3 "$TITLE_3"; then
   status=$(fetch_page "/r/$REPO_NAME" "$work/3")
-  tree_rows=$(occurrences "$work/3.body" '<li class="row')
+  tree_rows=$(occurrences "$work/3.body" '<tr class="row')
   wrong=""
   for entry in '<span class="caps">README<span class="sc">.md</span></span>' \
     '<span class="caps">package<span class="sc">.json</span></span>' \
@@ -491,7 +491,7 @@ fi
 readonly TITLE_4="a repo with no readme draws the tree and says how to make one"
 if require_daemon 4 "$TITLE_4" && require_seed 4 "$TITLE_4"; then
   status=$(fetch_page "/r/$BARE_NAME" "$work/4")
-  tree_rows=$(occurrences "$work/4.body" '<li class="row')
+  tree_rows=$(occurrences "$work/4.body" '<tr class="row')
   if [ "$status" != "200" ]; then
     record FAIL 4 "$TITLE_4" "the page answered ${status:-nothing}: $(tail -3 "$work/4.err")"
   elif [ "$tree_rows" != "1" ]; then
@@ -687,11 +687,12 @@ fi
 # 15
 readonly TITLE_15="small caps keep the true lowercase and filenames carry lang"
 if require_daemon 15 "$TITLE_15" && require_seed 15 "$TITLE_15"; then
-  # 1e gave the rows somewhere to go, so the name is an anchor now
+  # 1e gave the rows somewhere to go, so the name is an anchor now, and
+  # the row's own header cell is what holds it
   wrong=""
-  grep -qF '<a class="nm t-item" lang="en" href="/r/verify1d/blob/main/README.md"><span class="caps">README<span class="sc">.md</span></span></a>' "$work/3.body" \
+  grep -qF '<a class="t-item" lang="en" href="/r/verify1d/blob/main/README.md"><span class="caps">README<span class="sc">.md</span></span></a>' "$work/3.body" \
     || wrong="$wrong the README row is not the lang-stamped small-caps shape;"
-  grep -qF '<a class="nm t-item" lang="en" href="/r/verify1d/tree/main/docs"><span class="caps">docs</span>/</a>' "$work/3.body" \
+  grep -qF '<a class="t-item" lang="en" href="/r/verify1d/tree/main/docs"><span class="caps">docs</span>/</a>' "$work/3.body" \
     || wrong="$wrong the docs row is not the lang-stamped small-caps shape;"
   if [ -n "$wrong" ]; then
     record FAIL 15 "$TITLE_15" "$wrong"

@@ -87,10 +87,10 @@ function row(
     ? `#f-${index}`
     : changeHref(view.repo, view.commit.sha, file.path);
 
-  return html`<li class="row">
-        <a class="nm t-mono" href="${href}">${name(file)}${destination(file, inlined)}</a>
-        <span class="cnt">${counts(file)}</span>
-      </li>`;
+  return html`<tr class="row">
+            <th class="nm" scope="row"><a class="t-mono" href="${href}">${name(file)}${destination(file, inlined)}</a></th>
+            <td class="cnt"><span>${counts(file)}</span></td>
+          </tr>`;
 }
 
 function fileList(
@@ -107,8 +107,8 @@ function fileList(
       </div>`;
   }
 
-  // an empty list is not a list: a <ul role="list"> with no <li> under it
-  // fails aria-required-children, so the state says so in words instead
+  // an empty table is not a table: a header row naming columns nothing
+  // fills is a worse answer than saying so in words
   if (shape.files === 0) {
     return html`<div class="empty">
         <p class="t-body">This commit changes ${files.length} files, more than this page can list.</p>
@@ -129,11 +129,20 @@ function fileList(
       : html`<p class="t-note">Diffs for the first ${inlined.size} files are below. The rest have a page each.</p>
       `;
 
-  return html`${cutFiles}${cutDiffs}<ul class="files" role="list">
-        ${files
-          .slice(0, shape.files)
-          .map((file, index) => row(view, file, index, inlined.has(index)))}
-      </ul>`;
+  return html`${cutFiles}${cutDiffs}<table class="tbl files">
+        <caption class="vh">Changed files</caption>
+        <thead>
+          <tr>
+            <th class="nm t-label" scope="col">File</th>
+            <th class="cnt t-label" scope="col">Changed</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${files
+            .slice(0, shape.files)
+            .map((file, index) => row(view, file, index, inlined.has(index)))}
+        </tbody>
+      </table>`;
 }
 
 // only a changed line is marked: the tone is a second signal behind the

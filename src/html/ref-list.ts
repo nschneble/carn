@@ -1,10 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// the log's own row shape: position: relative on a <tr> is patchy in
-// WebKit, and converting to <li> removes the problem rather than working
-// around it. .msg and .age keep vh labels so the accessible names the
-// <thead> used to carry survive its removal
-
 import type { Ref, RefKind, RefList } from "../repos/refs.js";
 import { sshRemote } from "../repos/remote.js";
 import { age } from "./age.js";
@@ -22,9 +17,12 @@ export type RefListPage = {
   now: Date;
 };
 
-const nouns: Record<RefKind, { heading: string; many: string }> = {
-  branch: { heading: "Branches", many: "branches" },
-  tag: { heading: "Tags", many: "tags" },
+const nouns: Record<
+  RefKind,
+  { heading: string; column: string; many: string }
+> = {
+  branch: { heading: "Branches", column: "Branch", many: "branches" },
+  tag: { heading: "Tags", column: "Tag", many: "tags" },
 };
 
 export function refsHref(repo: string, kind: RefKind): string {
@@ -41,21 +39,22 @@ function marker(view: RefListPage, ref: Ref): Raw {
   return ref.annotated ? html`<span class="t-micro"> Annotated</span>` : html``;
 }
 
-// git takes an empty message, so the row goes bare rather than nameless
+// git takes an empty message, and a link wrapped around one has no
+// accessible name at all, so the cell goes bare rather than nameless
 function subject(ref: Ref, href: string): Raw {
-  if (ref.subject === "") return html`<span class="msg"></span>`;
+  if (ref.subject === "") return html`<td class="msg"></td>`;
 
-  return html`<a class="msg" href="${href}"><span class="vh">Subject </span>${ref.subject}</a>`;
+  return html`<td class="msg"><a href="${href}">${ref.subject}</a></td>`;
 }
 
 function row(view: RefListPage, ref: Ref): Raw {
   const href = commitsHref(view.repo, ref.name);
 
-  return html`<li class="row">
-        <a class="nm t-item" lang="en" href="${href}">${plainName(ref.name)}${marker(view, ref)}</a>
-        ${subject(ref, href)}
-        <a class="age" href="${href}"><span class="vh">Updated </span><time datetime="${ref.at.toISOString()}">${age(ref.at, view.now)}</time></a>
-      </li>`;
+  return html`<tr class="row">
+            <th class="nm" scope="row"><a class="t-item" lang="en" href="${href}">${plainName(ref.name)}${marker(view, ref)}</a></th>
+            ${subject(ref, href)}
+            <td class="age"><a href="${href}"><time datetime="${ref.at.toISOString()}">${age(ref.at, view.now)}</time></a></td>
+          </tr>`;
 }
 
 function truncated(view: RefListPage, shown: number, more: boolean): Raw {
@@ -80,9 +79,21 @@ function empty(view: RefListPage): Raw {
 }
 
 function list(view: RefListPage, refs: Ref[], more: boolean): Raw {
-  return html`${truncated(view, refs.length, more)}<ul class="refs" role="list">
-        ${refs.map((ref) => row(view, ref))}
-      </ul>`;
+  const { heading, column } = nouns[view.list.kind];
+
+  return html`${truncated(view, refs.length, more)}<table class="tbl refs">
+        <caption class="vh">${heading}</caption>
+        <thead>
+          <tr>
+            <th class="nm t-label" scope="col">${column}</th>
+            <th class="msg t-label" scope="col">Subject</th>
+            <th class="age t-label" scope="col">Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${refs.map((ref) => row(view, ref))}
+        </tbody>
+      </table>`;
 }
 
 function document(view: RefListPage, refs: Ref[], more: boolean): string {

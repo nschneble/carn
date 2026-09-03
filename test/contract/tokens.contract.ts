@@ -271,11 +271,11 @@ test("each primitive draws from the token the contrast check measured", () => {
     rule(".chip--current"),
     /border: 2px solid var\(--accent-fill\);/,
   );
-  assert.match(rule(".row.is-dir .nm"), /color: var\(--accent-text\);/);
+  assert.match(rule(".tbl .is-dir .nm > *"), /color: var\(--accent-text\);/);
 
   assert.match(rule(":focus-visible"), /outline: 2px solid var\(--accent\);/);
   assert.match(rule(":focus-visible"), /outline-offset: 2px;/);
-  assert.match(rule(".row .nm:focus-visible"), /outline-offset: -2px;/);
+  assert.match(rule(".tbl .nm a:focus-visible"), /outline-offset: -2px;/);
   assert.doesNotMatch(stylesheet, /outline:\s*none/);
 });
 
@@ -332,12 +332,47 @@ test("a state signal survives the accent being discarded", () => {
   assert.doesNotMatch(stylesheet, /content:\s*"\//);
 });
 
-test("the row's overlay leaves its two columns selectable", () => {
-  assert.match(rule(".row"), /position: relative;/);
-  assert.match(rule(".row .nm::after"), /content: "";/);
-  assert.match(rule(".row .nm::after"), /position: absolute;/);
-  assert.match(rule(".row .nm::after"), /inset: 0;/);
-  assert.match(rule(".row .msg,\n.row .age"), /position: relative;/);
+// no display value on a table element, in either direction: the ban is
+// what keeps the native semantics, and a rule adding one back has to
+// fail here rather than only in a browser nobody runs the gate in
+test("no table element carries a display override", () => {
+  const tableElements = "table|thead|tbody|tfoot|tr|th|td|caption";
+  const blocks = [...stylesheet.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+
+  for (const [, selector, body] of blocks) {
+    if (!/display:/.test(body as string)) continue;
+
+    for (const one of (selector as string).split(",")) {
+      const last =
+        one
+          .trim()
+          .split(/[\s>+~]+/)
+          .pop() ?? "";
+
+      assert.doesNotMatch(
+        last,
+        new RegExp(`^(${tableElements})\\b`),
+        `${one.trim()} sets a display value on a table element`,
+      );
+    }
+  }
+});
+
+test("the cell's own link is the hit area, and the row washes", () => {
+  assert.match(rule(".tbl"), /table-layout: fixed;/);
+  assert.doesNotMatch(stylesheet, /\.nm::after/);
+  assert.match(
+    rule(".tbl tbody th > *,\n.tbl tbody td > *"),
+    /display: block;/,
+  );
+  assert.match(
+    rule(".tbl tbody th > *,\n.tbl tbody td > *"),
+    /min-height: 24px;/,
+  );
+  assert.match(
+    rule(".tbl tbody tr:hover,\n.tbl tbody tr:focus-within"),
+    /background: var\(--sunk\);/,
+  );
 });
 
 test("BRAND.md's stated ratios are the measured ones", () => {

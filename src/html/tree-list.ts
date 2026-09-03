@@ -6,7 +6,7 @@
 // would cost a cat-file and inherit markdown's scheme problem
 
 import type { TreeEntry } from "../repos/tree.js";
-import { ageMarkup } from "./age.js";
+import { ageCell } from "./age.js";
 import { shortShaChars } from "./commit-log.js";
 import { pathName } from "./filename.js";
 import { html, type Raw } from "./index.js";
@@ -37,23 +37,24 @@ export function treeHref(repo: string, rev: string, path: string): string {
   return `/r/${repo}/tree/${trail(rev, path)}`;
 }
 
-// both columns sit above the row-wide overlay, so they stay selectable
+// a path the bounded log walk never reached renders blank rather than
+// costing a longer one, so both cells have an empty state
 function columns(entry: TreeEntry, now: Date): Raw {
   if (entry.touched === null) {
-    return html`<span class="msg"></span><span class="age"></span>`;
+    return html`<td class="msg"></td><td class="age"></td>`;
   }
 
-  return html`<span class="msg">${entry.touched.subject}</span>${ageMarkup("Changed", entry.touched.at, now)}`;
+  return html`<td class="msg"><span>${entry.touched.subject}</span></td>${ageCell(entry.touched.at, now)}`;
 }
 
 function row(view: TreeListView, entry: TreeEntry): Raw {
   const path = view.path === "" ? entry.name : `${view.path}/${entry.name}`;
 
   if (entry.kind === "gitlink") {
-    return html`<li class="row is-sub">
-        <span class="nm t-item" lang="en">${pathName(entry.name)}<span class="t-micro"> Pinned</span></span>
-        <span class="pin t-mono"><span class="vh">Submodule pinned at </span>${entry.oid.slice(0, shortShaChars)}</span>
-      </li>`;
+    return html`<tr class="row is-sub">
+            <th class="nm" scope="row"><span class="t-item" lang="en">${pathName(entry.name)}<span class="t-micro"> Pinned</span></span></th>
+            <td class="pin" colspan="2"><span class="t-mono"><span class="vh">Submodule pinned at </span>${entry.oid.slice(0, shortShaChars)}</span></td>
+          </tr>`;
   }
 
   const href =
@@ -66,18 +67,28 @@ function row(view: TreeListView, entry: TreeEntry): Raw {
       ? html`${pathName(entry.name)}/`
       : pathName(entry.name);
 
-  return html`<li class="row${entry.kind === "directory" ? " is-dir" : ""}">
-        <a class="nm t-item" lang="en" href="${href}">${name}</a>
-        ${columns(entry, view.now)}
-      </li>`;
+  return html`<tr class="row${entry.kind === "directory" ? " is-dir" : ""}">
+            <th class="nm" scope="row"><a class="t-item" lang="en" href="${href}">${name}</a></th>
+            ${columns(entry, view.now)}
+          </tr>`;
 }
 
 export function treeList(view: TreeListView): Raw {
   const shown = view.showAll ? view.entries : view.entries.slice(0, treeRowCap);
 
-  const list = html`<ul class="tree" role="list">
-        ${shown.map((entry) => row(view, entry))}
-      </ul>`;
+  const list = html`<table class="tbl tree">
+        <caption class="vh">Files</caption>
+        <thead>
+          <tr>
+            <th class="nm t-label" scope="col">Name</th>
+            <th class="msg t-label" scope="col">Last commit</th>
+            <th class="age t-label" scope="col">Changed</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${shown.map((entry) => row(view, entry))}
+        </tbody>
+      </table>`;
 
   if (shown.length === view.entries.length) return list;
 

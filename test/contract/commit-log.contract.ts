@@ -337,7 +337,7 @@ test("a repo with no commits gets an empty state, not an error", async () => {
   assert.match(markup, /<div class="empty">/);
   assert.ok(markup.includes("No commits yet."));
   assert.ok(markup.includes("git push "));
-  assert.doesNotMatch(markup, /<ul class="log"/);
+  assert.doesNotMatch(markup, /<table class="tbl log"/);
   assert.doesNotMatch(markup, /class="showall"/);
 
   const empties = [...markup.matchAll(/<div class="empty">([\s\S]*?)<\/div>/g)]
@@ -363,7 +363,7 @@ test("one render costs one spawn", async () => {
   assert.ok(argv.length < 12, "the render broke CLAUDE.md's spawn budget");
 });
 
-test("a row carries three links to the commit and no row overlay", () => {
+test("a row carries three links to the commit, one per cell", () => {
   const markup = logDocument();
   const [first] = log().commits;
   assert.ok(first);
@@ -372,21 +372,25 @@ test("a row carries three links to the commit and no row overlay", () => {
 
   assert.ok(
     markup.includes(
-      `<a class="nm t-mono" href="${href}">${first.sha.slice(0, shortShaChars)}</a>`,
+      `<th class="nm" scope="row"><a class="t-mono" href="${href}">${first.sha.slice(0, shortShaChars)}</a></th>`,
     ),
     "the sha cell is not a mono link to the commit",
   );
   assert.ok(
-    markup.includes(`<a class="msg" href="${href}">${first.subject}</a>`),
+    markup.includes(
+      `<td class="msg"><a href="${href}">${first.subject}</a></td>`,
+    ),
     "the subject is not a link to the commit",
   );
   assert.ok(
     markup.includes(
-      `<a class="age" href="${href}"><span class="vh">Committed </span><time datetime="${first.at.toISOString()}">`,
+      `<td class="age"><a href="${href}"><time datetime="${first.at.toISOString()}">`,
     ),
-    "the age is not a link to the commit, or lost its label",
+    "the age is not a link to the commit",
   );
-  assert.doesNotMatch(markup, /<table|<thead|scope="col"/);
+  // the Committed column header names the cell, so no vh label in it
+  assert.doesNotMatch(markup, /<span class="vh">Committed <\/span>/);
+  assert.ok(markup.includes('<caption class="vh">Commits</caption>'));
   assert.strictEqual([...markup.matchAll(/<h1[ >]/g)].length, 1);
 });
 
@@ -396,7 +400,7 @@ test("the sixteen-row cap is the page size the walk uses", async () => {
   const page = await loadCommitLog({ repoPath, ref: "main" });
   assert.strictEqual(page?.commits.length, logRowCap);
 
-  const rows = [...logDocument({ log: page }).matchAll(/<li class="row">/g)]
+  const rows = [...logDocument({ log: page }).matchAll(/<tr class="row">/g)]
     .length;
   assert.strictEqual(rows, logRowCap);
 });

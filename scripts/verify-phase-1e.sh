@@ -14,7 +14,7 @@ set -uo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root" || exit 1
 
-readonly EXPECTED_CHECKS=51
+readonly EXPECTED_CHECKS=56
 readonly REPO_NAME=verify1e
 readonly ABSENT_NAME=absent1e
 readonly DEFAULT_ROOT=./local/repos
@@ -848,8 +848,8 @@ if require_daemon 7 "$TITLE_7" && require_seed 7 "$TITLE_7"; then
   wrong=""
   [ "$big_status" = "200" ] || wrong="$wrong the root commit answered $big_status;"
   [ "$one_status" = "200" ] || wrong="$wrong the tip commit answered $one_status;"
-  big_files=$(occurrences "$work/commit-big.body" '<li class="row">')
-  one_files=$(occurrences "$work/commit-one.body" '<li class="row">')
+  big_files=$(occurrences "$work/commit-big.body" '<tr class="row">')
+  one_files=$(occurrences "$work/commit-one.body" '<tr class="row">')
   # an inlined row anchors to the diff below it; the tail carries the
   # per-file route instead, so the two hrefs are what tell them apart
   inlined=$(occurrences "$work/commit-big.body" 'href="#f-')
@@ -921,7 +921,7 @@ if require_daemon 9 "$TITLE_9" && require_seed 9 "$TITLE_9"; then
   walks=$(grep -c 'name-status' "$spawn_log")
   bounded_walk=$(grep -c 'max-count' "$spawn_log")
   tree_spawns=$(spawns_of)
-  filled=$(occurrences "$work/tree.body" '<span class="msg">Lay the tree down</span>')
+  filled=$(occurrences "$work/tree.body" '<td class="msg"><span>Lay the tree down</span></td>')
   wrong=""
   [ "$tree_status" = "200" ] || wrong="$wrong the tree answered $tree_status;"
   [ "$tree_spawns" -gt 0 ] || wrong="$wrong the shim recorded no call, so it never reached the daemon's PATH;"
@@ -1055,35 +1055,30 @@ contract 13 "zero axe violations across both render paths, on every new view" 14
   axe
 
 # 14
-# revision round one, part A item 4 moved this baseline: both lists are Row
-# lists now, the log's own shape, not a <table>
-readonly TITLE_14="both lists are Row lists like the commit log, and no row overlay"
+# PLAN 00 says every index view is a table, and this wave brought the code
+# to it. the overlay went with the <li>: the hit area is each cell's own
+# link now, which is what lets the subject and the age be links of their own
+readonly TITLE_14="both lists are tables with three links per row, and no row overlay"
 if require_daemon 14 "$TITLE_14" && require_seed 14 "$TITLE_14"; then
   wrong=""
   for page in branches tags; do
-    grep -qE '<table|<thead|<th[ >]' "$work/$page.body" \
-      && wrong="$wrong /$page still carries table markup;"
-    grep -qF '<ul class="refs" role="list">' "$work/$page.body" \
-      || wrong="$wrong /$page is not a Row list;"
-    [ "$(occurrences "$work/$page.body" '<li class="row">')" -gt 0 ] \
+    grep -qF '<table class="tbl refs">' "$work/$page.body" \
+      || wrong="$wrong /$page is not a table;"
+    grep -qE '<ul class="refs"' "$work/$page.body" \
+      && wrong="$wrong /$page still carries Row list markup;"
+    [ "$(occurrences "$work/$page.body" '<tr class="row">')" -gt 0 ] \
       || wrong="$wrong /$page draws no rows;"
   done
-  # position: relative on a <tr> is patchy in WebKit, so the table's overlay
-  # was never built; converting to <li> gave refs the same three-links-one-
-  # destination shape the log already has, so it opts out of the overlay
-  # the same way, by name, rather than colliding with the WebKit bug again
-  grep -qF '.log .nm::after' src/html/styles.ts \
-    || wrong="$wrong the sheet no longer opts the commit log out of the overlay;"
-  grep -qF '.refs .nm::after' src/html/styles.ts \
-    || wrong="$wrong the sheet no longer opts refs rows out of the overlay;"
+  grep -qE '\.nm::after' src/html/styles.ts \
+    && wrong="$wrong the sheet brought the row overlay back, and it swallows two links;"
   if [ -n "$wrong" ]; then
     record FAIL 14 "$TITLE_14" "$wrong"
   else
-    contract 14 "$TITLE_14" 3 "both served lists are Row lists, three links per row" \
+    contract 14 "$TITLE_14" 3 "both served lists are tables, three links per row" \
       refs commit-log -- \
-      "both lists are <li> rows, and no table survives" \
-      "three links per row, and no row overlay swallows the other two" \
-      "a row carries three links to the commit and no row overlay"
+      "both lists are tables with a caption and a header row" \
+      "three links per row, one per cell, all to the ref's own log" \
+      "a row carries three links to the commit, one per cell"
   fi
 fi
 
@@ -1455,8 +1450,8 @@ if require_daemon 29 "$TITLE_29" && require_seed 29 "$TITLE_29"; then
   : > "$spawn_log"
   capped_status=$(fetch_page "/r/$REPO_NAME/tree/main/$NESTED_DIR" "$work/tree-capped")
   listings=$(grep -c 'ls-tree' "$spawn_log")
-  capped_rows=$(occurrences "$work/tree-capped.body" '<li class="row')
-  all_rows=$(occurrences "$work/tree.body" '<li class="row')
+  capped_rows=$(occurrences "$work/tree-capped.body" '<tr class="row')
+  all_rows=$(occurrences "$work/tree.body" '<tr class="row')
   not_tree=$(fetch_page "/r/$REPO_NAME/tree/main/README.md" "$work/tree-blob")
   no_root=$(fetch_page "/r/$REPO_NAME/tree/main/" "$work/tree-root")
   bad_ref=$(fetch_page "/r/$REPO_NAME/tree/nope/$NESTED_DIR" "$work/tree-ref")
@@ -1491,24 +1486,25 @@ readonly TITLE_30="rows link by kind, and the tree's wash and overlay are live"
 if require_daemon 30 "$TITLE_30" && require_seed 30 "$TITLE_30"; then
   sub_status=$(fetch_page "/r/$REPO_NAME/tree/main/vendor" "$work/tree-sub")
   wrong=""
-  grep -qF "<a class=\"nm t-item\" lang=\"en\" href=\"/r/$REPO_NAME/blob/main/README.md\">" \
+  grep -qF "<a class=\"t-item\" lang=\"en\" href=\"/r/$REPO_NAME/blob/main/README.md\">" \
     "$work/show.body" || wrong="$wrong a file row does not link to the blob route;"
-  grep -qF "<a class=\"nm t-item\" lang=\"en\" href=\"/r/$REPO_NAME/tree/main/docs\">" \
+  grep -qF "<a class=\"t-item\" lang=\"en\" href=\"/r/$REPO_NAME/tree/main/docs\">" \
     "$work/show.body" || wrong="$wrong a directory row does not link to the tree route;"
   [ "$sub_status" = "200" ] || wrong="$wrong the gitlink's own tree answered $sub_status;"
-  grep -qF '<li class="row is-sub">' "$work/tree-sub.body" \
+  grep -qF '<tr class="row is-sub">' "$work/tree-sub.body" \
     || wrong="$wrong the gitlink draws no is-sub row;"
   sub_row=$(tr '\n' ' ' < "$work/tree-sub.body" \
-    | sed 's/.*<li class="row is-sub">//' | sed 's|</li>.*||')
+    | sed 's/.*<tr class="row is-sub">//' | sed 's|</tr>.*||')
   printf '%s' "$sub_row" | grep -qF '<a ' \
     && wrong="$wrong the gitlink row carries a link;"
-  # the wash and the overlay, both switched back on for .tree in 1e
-  grep -qE '^\.row:hover,' src/html/styles.ts \
+  # the wash is on the row now, and the overlay is gone with the <li>:
+  # each cell's own link is the hit area, so all three stay reachable
+  grep -qE '^\.tbl tbody tr:hover,' src/html/styles.ts \
     || wrong="$wrong the sheet no longer washes a row on hover;"
-  grep -qE '^\.row \.nm::after \{' src/html/styles.ts \
-    || wrong="$wrong the sheet no longer draws the row overlay;"
-  grep -qE '\.tree \.row \.nm::after' src/html/styles.ts \
-    && wrong="$wrong the tree still opts every row out of the overlay;"
+  grep -qE '\.nm::after' src/html/styles.ts \
+    && wrong="$wrong the row overlay is back, and it swallows two of the three links;"
+  grep -qE '^\.tree \.is-sub:hover,' src/html/styles.ts \
+    || wrong="$wrong the sheet no longer keeps the gitlink row out of the wash;"
   if [ -n "$wrong" ]; then
     record FAIL 30 "$TITLE_30" "$wrong"
   else
@@ -1516,7 +1512,7 @@ if require_daemon 30 "$TITLE_30" && require_seed 30 "$TITLE_30"; then
       tree-page axe -- \
       "rows link by kind, and a gitlink links nowhere" \
       "a directory row links to the tree route, one level down" \
-      "the tree row's wash and overlay are live now the rows link" \
+      "the tree row's link fills its cell and the wash is live" \
       "a gitlink row is inert"
   fi
 fi
@@ -1544,13 +1540,23 @@ if require_daemon 32 "$TITLE_32" && require_seed 32 "$TITLE_32"; then
 fi
 
 # 33
-readonly TITLE_33="ref-list.ts emits no table, thead, or th"
-# comments are allowed to say why the shape changed; only markup counts
+# PLAN 00's rule reaches every index view, refs included: the <li> shape
+# 1e shipped first was the one that did not match the record
+readonly TITLE_33="ref-list.ts emits a captioned table, and no <li> row"
 markup_only=$(grep -vE '^\s*//' src/html/ref-list.ts)
-if printf '%s' "$markup_only" | grep -qE '<table|<thead|<th[ >]'; then
-  record FAIL 33 "$TITLE_33" "$(printf '%s' "$markup_only" | grep -nE '<table|<thead|<th[ >]')"
+wrong=""
+printf '%s' "$markup_only" | grep -qF '<table class="tbl refs">' \
+  || wrong="$wrong ref-list.ts emits no table;"
+printf '%s' "$markup_only" | grep -qF '<caption class="vh">' \
+  || wrong="$wrong ref-list.ts emits no caption;"
+printf '%s' "$markup_only" | grep -qF '<th class="nm" scope="row">' \
+  || wrong="$wrong a ref row's first cell is not its header;"
+printf '%s' "$markup_only" | grep -qE '<li|role="list"' \
+  && wrong="$wrong ref-list.ts still emits list markup;"
+if [ -n "$wrong" ]; then
+  record FAIL 33 "$TITLE_33" "$wrong"
 else
-  record PASS 33 "$TITLE_33" "branches and tags are Row lists now"
+  record PASS 33 "$TITLE_33" "branches and tags are captioned tables with row headers"
 fi
 
 # 34
@@ -1707,18 +1713,25 @@ else
 fi
 
 # 41
-# part A1: one grid for every three-column Row, no per-page override
-readonly TITLE_41="styles.ts declares one grid-template-columns for .row, and no .log override"
+# part A1 converged the three-column Row onto one rule; the table keeps
+# that, as column widths on one .tbl rather than a track list per view.
+# the two-column file list is the one documented divergence
+readonly TITLE_41="one .tbl rule widths every three-column table, and only .files overrides"
 wrong=""
-tr '\n' ' ' < src/html/styles.ts \
-  | grep -qE '\.row \{[[:space:]]+grid-template-columns: minmax\(0, auto\) minmax\(0, 1fr\) 46px;' \
-  || wrong="$wrong .row's converged three-column grid is missing;"
-grep -qF '.log .row {' src/html/styles.ts \
-  && wrong="$wrong .log .row still declares its own grid-template-columns;"
+sheet_flat=$(tr '\n' ' ' < src/html/styles.ts)
+printf '%s' "$sheet_flat" | grep -qE '\.tbl \.nm \{[[:space:]]*width: 40%;' \
+  || wrong="$wrong .tbl's shared name column width is missing;"
+printf '%s' "$sheet_flat" | grep -qE '\.tbl \.age \{[[:space:]]*width: 46px;' \
+  || wrong="$wrong .tbl's shared age column width is missing;"
+overrides=$(grep -cE '^\.(repos|tree|log|refs) \.(nm|msg|age) \{' src/html/styles.ts)
+[ "$overrides" = "0" ] \
+  || wrong="$wrong $overrides per-view column override(s) reintroduce a second rule;"
+grep -qE '^\.files \.nm \{' src/html/styles.ts \
+  || wrong="$wrong the two-column file list no longer takes the remainder;"
 if [ -n "$wrong" ]; then
   record FAIL 41 "$TITLE_41" "$wrong"
 else
-  record PASS 41 "$TITLE_41" "one .row rule, no .log override reintroducing a second"
+  record PASS 41 "$TITLE_41" "one .tbl width rule, no per-view override, .files the documented divergence"
 fi
 
 # 42
@@ -1929,6 +1942,155 @@ if [ -n "$wrong" ]; then
 else
   record PASS 51 "$TITLE_51" "$opened .sc span(s) rendered, every one opening at its dot"
 fi
+
+# 52
+# PLAN 00's rule, read off the wire: every index view is a table, and none
+# is still a Row list. the class pairs a table to the view it belongs to,
+# so a view rendering the wrong one is caught rather than merely counted
+readonly TITLE_52="every list view serves a table, and none serves a <ul> list"
+wrong=""
+tables=0
+if require_daemon 52 "$TITLE_52" && require_seed 52 "$TITLE_52"; then
+  for pair in index:repos show:tree tree:tree log1:log branches:refs \
+    tags:refs commit-big:files commit-one:files; do
+    page=${pair%%:*}
+    kind=${pair##*:}
+    [ -s "$work/$page.body" ] || { wrong="$wrong /$page was never fetched;"; continue; }
+    if grep -qF "<table class=\"tbl $kind\">" "$work/$page.body"; then
+      tables=$((tables + 1))
+    else
+      wrong="$wrong /$page serves no .tbl.$kind table;"
+    fi
+    grep -qE '<ul class="(repos|tree|log|refs|files)"' "$work/$page.body" \
+      && wrong="$wrong /$page still serves a Row list;"
+    grep -qE '<li class="row' "$work/$page.body" \
+      && wrong="$wrong /$page still serves <li> rows;"
+  done
+  [ "$tables" != "0" ] \
+    || wrong="$wrong no page served a table at all, so nothing was measured;"
+fi
+if [ -n "$wrong" ]; then
+  record FAIL 52 "$TITLE_52" "$wrong"
+else
+  record PASS 52 "$TITLE_52" "$tables served tables, no <ul> list and no <li> row left"
+fi
+
+# 53
+# a display value on a table element is what costs the native semantics,
+# and the ban is only worth having if the detector can catch one: a planted
+# override is run through the same reader before the real sheet is judged
+readonly TITLE_53="no table element carries a display override, and a planted one is caught"
+wrong=""
+verdict=""
+if [ -n "${sheet_href:-}" ] && [ -s "$work/sheet.body" ]; then
+  cat > "$work/planted.css" <<'PLANTED'
+.tbl tbody td { display: grid; }
+PLANTED
+  read_display() {
+    node --input-type=module -e '
+      import { readFileSync } from "node:fs";
+      const css = readFileSync(process.argv[1], "utf8");
+      const table = /^(table|thead|tbody|tfoot|tr|th|td|caption)\b/;
+      const hits = [];
+      for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+        if (!/display\s*:/.test(body)) continue;
+        for (const one of selector.split(",")) {
+          const last = one.trim().split(/[\s>+~]+/).pop() ?? "";
+          if (table.test(last)) hits.push(one.trim());
+        }
+      }
+      process.stdout.write(hits.join(" ") || "none");
+    ' "$1" 2>/dev/null
+  }
+  planted=$(read_display "$work/planted.css")
+  served=$(read_display "$work/sheet.body")
+  [ "$planted" = "none" ] \
+    && wrong="$wrong the reader missed a planted display override, so a clean sheet proves nothing;"
+  [ "$served" = "none" ] \
+    || wrong="$wrong the served sheet sets display on: $served;"
+  verdict="planted caught as '$planted', served sheet clean"
+else
+  wrong="$wrong no served stylesheet was read, see check 2;"
+fi
+if [ -n "$wrong" ]; then
+  record FAIL 53 "$TITLE_53" "$wrong"
+else
+  record PASS 53 "$TITLE_53" "$verdict"
+fi
+
+# 54
+# the caption and the header row are what a reader gets with the CSS off,
+# which is the whole reason PLAN 00 asks for a table. counted per table so
+# a view that grows a second one cannot ride on the first one's caption
+readonly TITLE_54="every served table carries a caption, a header row, and row headers"
+wrong=""
+counted=0
+if require_daemon 54 "$TITLE_54" && require_seed 54 "$TITLE_54"; then
+  for page in index show tree log1 branches tags commit-big commit-one; do
+    [ -s "$work/$page.body" ] || continue
+    opened=$(occurrences "$work/$page.body" '<table class="tbl')
+    [ "$opened" -gt 0 ] || continue
+    counted=$((counted + opened))
+    caps=$(occurrences "$work/$page.body" '<caption class="vh">')
+    # a rendered README carries its own <thead>, so the header row is
+    # counted by the name column's own marker rather than by the tag
+    heads=$(occurrences "$work/$page.body" '<th class="nm t-label" scope="col">')
+    [ "$caps" = "$opened" ] \
+      || wrong="$wrong /$page has $opened table(s) and $caps caption(s);"
+    [ "$heads" = "$opened" ] \
+      || wrong="$wrong /$page has $opened table(s) and $heads header row(s);"
+    rows=$(occurrences "$work/$page.body" '<tr class="row')
+    headers=$(occurrences "$work/$page.body" '<th class="nm" scope="row">')
+    [ "$rows" = "$headers" ] \
+      || wrong="$wrong /$page draws $rows row(s) but $headers row header(s);"
+    grep -qE '<th class="[a-z]+ t-label" scope="col">' "$work/$page.body" \
+      || wrong="$wrong /$page names no column in its header row;"
+  done
+  [ "$counted" != "0" ] \
+    || wrong="$wrong no served table was found, so nothing was measured;"
+fi
+if [ -n "$wrong" ]; then
+  record FAIL 54 "$TITLE_54" "$wrong"
+else
+  record PASS 54 "$TITLE_54" "$counted served table(s), each captioned and headed, every row led by its own header"
+fi
+
+# 55
+# the columns are widths on a fixed layout, not grid tracks. auto cannot
+# size a column under its min-content, so a name that does not wrap makes
+# the table wider than the viewport instead of ellipsing
+readonly TITLE_55="the row table lays out fixed, and the old row grid is gone"
+wrong=""
+if [ -s "$work/sheet.body" ]; then
+  grep -qF 'table-layout:fixed' "$work/sheet.body" \
+    || grep -qF 'table-layout: fixed' "$work/sheet.body" \
+    || wrong="$wrong the served sheet does not lay the row table out fixed;"
+  grep -qE 'grid-template-columns:[^;}]*46px' "$work/sheet.body" \
+    && wrong="$wrong the served sheet still carries the row grid's track list;"
+else
+  wrong="$wrong no served stylesheet was read, see check 2;"
+fi
+grep -qE '\.row\s*\{[^}]*display:\s*grid' src/html/styles.ts \
+  && wrong="$wrong styles.ts still lays a row out as a grid;"
+if [ -n "$wrong" ]; then
+  record FAIL 55 "$TITLE_55" "$wrong"
+else
+  record PASS 55 "$TITLE_55" "table-layout: fixed served, and no 46px grid track survives"
+fi
+
+# 56
+# the 1.4.12 gate is computed geometry at 320px, which no screenshot shows
+# and no other gate reaches: axe's avoid-inline-spacing looks for style
+# attributes fighting a user sheet, and this stylesheet sets none
+contract 56 "the four 1.4.12 spacing overrides cost the table nothing at 320px" 6 \
+  "columns hold, no row is lost, and every target stays 24px" \
+  text-spacing -- \
+  "the spacing overrides actually reach the table" \
+  "no list view reflows into horizontal scroll at 320px" \
+  "the spacing overrides move no column boundary" \
+  "the spacing overrides drop no row and shrink none" \
+  "every cell's link holds 24x24 under the spacing overrides" \
+  "a name the spacing overrides ellipse is still whole in the DOM"
 
 # 25, printed in its place
 readonly TITLE_25="relative links and images rewrite, and everything else is left alone"

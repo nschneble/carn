@@ -11,7 +11,7 @@ import type { RepoSummary } from "../../src/repos/list.js";
 import { sshRemote } from "../../src/repos/remote.js";
 import { frozen, indexDocument, populated } from "../gallery/repo-index.js";
 
-const rowPattern = /<li class="row(?: [a-z-]+)?">/g;
+const rowPattern = /<tr class="row(?: [a-z-]+)?">/g;
 
 function rows(markup: string): number {
   return [...markup.matchAll(rowPattern)].length;
@@ -112,10 +112,12 @@ test("the index lists every repo, with no cap and no show-all", () => {
 test("a row is an anchored name, a description slot, and a datetime", () => {
   const markup = indexDocument();
 
-  assert.ok(markup.includes('<ul class="repos" role="list">'));
+  assert.ok(markup.includes('<table class="tbl repos">'));
+  assert.ok(markup.includes('<caption class="vh">Repositories</caption>'));
+  assert.ok(markup.includes('<th class="nm t-label" scope="col">Name</th>'));
   assert.ok(
     markup.includes(
-      `<a class="nm t-item" lang="en" href="/r/linklater">${plainName("linklater").value}</a>`,
+      `<th class="nm" scope="row"><a class="t-item" lang="en" href="/r/linklater">${plainName("linklater").value}</a></th>`,
     ),
   );
 
@@ -124,27 +126,29 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
   assert.match(
     markup,
     new RegExp(
-      `<a class="nm t-item" lang="en" href="/r/${noDescription.name}">${plainName(noDescription.name).value}</a>\\s*<span class="msg"></span>`,
+      `<a class="t-item" lang="en" href="/r/${noDescription.name}">${plainName(noDescription.name).value}</a></th>\\s*<td class="msg"><span></span></td>`,
     ),
-    "a repo with no description dropped its .msg span, so the grid columns no longer line up",
+    "a repo with no description dropped its .msg cell, so the columns no longer line up",
   );
 
   assert.strictEqual(
-    [...markup.matchAll(/<span class="msg">/g)].length,
+    [...markup.matchAll(/<td class="msg">/g)].length,
     populated.length,
   );
+  // the Created column header names this cell, so it carries no vh label
   assert.ok(
     markup.includes(
-      '<span class="vh">Created </span><time datetime="2026-05-11T08:30:00.000Z">15w</time>',
+      '<td class="age"><time datetime="2026-05-11T08:30:00.000Z">15w</time></td>',
     ),
   );
+  assert.doesNotMatch(markup, /<span class="vh">Created <\/span>/);
 });
 
 test("a repo name wears the caps wrapper like every other Row, and no tooltip", () => {
   const markup = indexDocument();
 
   assert.match(markup, /class="caps"/);
-  assert.doesNotMatch(markup, /class="nm t-item"[^>]*title=/);
+  assert.doesNotMatch(markup, /class="t-item"[^>]*title=/);
   assert.doesNotMatch(markup, /class="[^"]*is-dir/);
 });
 
@@ -159,7 +163,7 @@ test("a dot in a repo name is part of the name, not an extension", () => {
   for (const repo of dotted) {
     assert.ok(
       markup.includes(
-        `<a class="nm t-item" lang="en" href="/r/${repo.name}"><span class="caps">${repo.name}</span></a>`,
+        `<a class="t-item" lang="en" href="/r/${repo.name}"><span class="caps">${repo.name}</span></a>`,
       ),
       `${repo.name} did not render whole`,
     );
@@ -173,10 +177,10 @@ test("a description is escaped, never interpolated raw", () => {
 
   assert.ok(
     markup.includes(
-      '<span class="msg">The blob origin. &quot;Say &lt;what&gt; it does&quot; &amp; why.</span>',
+      '<td class="msg"><span>The blob origin. &quot;Say &lt;what&gt; it does&quot; &amp; why.</span></td>',
     ),
   );
-  assert.doesNotMatch(markup, /<span class="msg">[^<]*<(?!\/span)/);
+  assert.doesNotMatch(markup, /<td class="msg"><span>[^<]*<(?!\/span)/);
 });
 
 test("the empty state says what would be here and how to make one", () => {

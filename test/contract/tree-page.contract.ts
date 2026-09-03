@@ -140,16 +140,16 @@ async function tip(): Promise<string> {
 }
 
 function rows(markup: string): number {
-  return [...markup.matchAll(/<li class="row(?: is-dir| is-sub)?">/g)].length;
+  return [...markup.matchAll(/<tr class="row(?: is-dir| is-sub)?">/g)].length;
 }
 
 function rowFor(markup: string, name: string): string {
   const found = markup
-    .split("<li ")
+    .split("<tr ")
     .find((block) => block.includes(`>${name}</`) || block.includes(name));
 
   assert.ok(found, `no row for ${name}`);
-  return found.slice(0, found.indexOf("</li>"));
+  return found.slice(0, found.indexOf("</tr>"));
 }
 
 function subjects(entries: TreeEntry[]): Record<string, string | null> {
@@ -279,13 +279,13 @@ test("the bounded walk attributes what it reaches and blanks the rest", async ()
   assert.strictEqual(rows(markup), 4, "an un-attributed row stopped rendering");
   assert.ok(
     rowFor(markup, "index.ts").includes(
-      '<span class="msg"></span><span class="age"></span>',
+      '<td class="msg"></td><td class="age"></td>',
     ),
     "an un-attributed row rendered something other than empty columns",
   );
   assert.ok(
     rowFor(markup, "store.ts").includes(
-      '<span class="msg">Seed the store</span>',
+      '<td class="msg"><span>Seed the store</span></td>',
     ),
     "the attributed row lost its subject",
   );
@@ -353,7 +353,7 @@ test("rows link by kind, and a gitlink links nowhere", () => {
 
   assert.ok(
     markup.includes(
-      '<a class="nm t-item" lang="en" href="/r/linklater/blob/main/src/components/.gitignore">',
+      '<a class="t-item" lang="en" href="/r/linklater/blob/main/src/components/.gitignore">',
     ),
     "a file row does not link to the blob route at the current rev",
   );
@@ -363,13 +363,13 @@ test("rows link by kind, and a gitlink links nowhere", () => {
   );
   assert.ok(
     submodule.includes(
-      '<span class="nm t-item" lang="en"><span class="caps">vendor</span><span class="t-micro"> Pinned</span></span>',
+      '<span class="t-item" lang="en"><span class="caps">vendor</span><span class="t-micro"> Pinned</span></span>',
     ),
     "the gitlink name is not a plain span, or lost its marker",
   );
   assert.ok(
     submodule.includes(
-      '<span class="pin t-mono"><span class="vh">Submodule pinned at </span>9999999</span>',
+      '<td class="pin" colspan="2"><span class="t-mono"><span class="vh">Submodule pinned at </span>9999999</span></td>',
     ),
     "the gitlink row lost its short sha",
   );
@@ -398,7 +398,7 @@ test("a directory row links to the tree route, one level down", () => {
 
   assert.ok(
     markup.includes(
-      '<a class="nm t-item" lang="en" href="/r/linklater/tree/main/src/components">',
+      '<a class="t-item" lang="en" href="/r/linklater/tree/main/src/components">',
     ),
     "a directory row does not link to the tree route",
   );

@@ -21,32 +21,49 @@
         - link "Tags":
           - /url: /r/linklater/tags
   - heading "Files" [level=2]
-  - list:
-    - listitem:
-      - link ".carn/":
-        - /url: /r/linklater/tree/main/.carn
-      - text: Read the list back Changed
-      - time: 2w
-    - listitem:
-      - link "docs/":
-        - /url: /r/linklater/tree/main/docs
-      - text: Read the list back Changed
-      - time: 2w
-    - listitem:
-      - link "src/":
-        - /url: /r/linklater/tree/main/src
-      - text: Read the list back Changed
-      - time: 2w
-    - listitem:
-      - link "README.md":
-        - /url: /r/linklater/blob/main/README.md
-      - text: Read the list back Changed
-      - time: 2w
-    - listitem:
-      - link "package.json":
-        - /url: /r/linklater/blob/main/package.json
-      - text: Read the list back Changed
-      - time: 2w
+  - table "Files":
+    - caption: Files
+    - rowgroup:
+      - row "Name Last commit Changed":
+        - columnheader "Name"
+        - columnheader "Last commit"
+        - columnheader "Changed"
+    - rowgroup:
+      - row ".carn/ Read the list back 2w":
+        - rowheader ".carn/":
+          - link ".carn/":
+            - /url: /r/linklater/tree/main/.carn
+        - cell "Read the list back"
+        - cell "2w":
+          - time: 2w
+      - row "docs/ Read the list back 2w":
+        - rowheader "docs/":
+          - link "docs/":
+            - /url: /r/linklater/tree/main/docs
+        - cell "Read the list back"
+        - cell "2w":
+          - time: 2w
+      - row "src/ Read the list back 2w":
+        - rowheader "src/":
+          - link "src/":
+            - /url: /r/linklater/tree/main/src
+        - cell "Read the list back"
+        - cell "2w":
+          - time: 2w
+      - row "README.md Read the list back 2w":
+        - rowheader "README.md":
+          - link "README.md":
+            - /url: /r/linklater/blob/main/README.md
+        - cell "Read the list back"
+        - cell "2w":
+          - time: 2w
+      - row "package.json Read the list back 2w":
+        - rowheader "package.json":
+          - link "package.json":
+            - /url: /r/linklater/blob/main/package.json
+        - cell "Read the list back"
+        - cell "2w":
+          - time: 2w
   - heading "Linklater" [level=1]
   - paragraph: Save a URL, read it later. Linklater keeps a reading list you can push to from anywhere, with no account and no client-side JavaScript.
   - heading "Install" [level=2]
