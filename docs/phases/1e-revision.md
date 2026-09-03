@@ -105,7 +105,7 @@ count — check that it still doesn't.
 With item 2 applied, `/r/gantry/tree/main/apps/web/src` reads
 `Càrn » gantry » apps » web » src` in mono, then `APPS/WEB/SRC` in small caps.
 §06 already blesses this for the blob view — "path and title are different
-registers, not a repetition" — and the same defence holds here, so **keep both
+registers, not a repetition" — and the same defense holds here, so **keep both
 and let the register carry it.** Do not shorten the heading to the last segment:
 the `<title>` and the `og:title` use the full path, and a heading that
 disagrees with the tab is worse than one that agrees with the crumb.
@@ -149,7 +149,7 @@ Convert to the log's shape exactly:
 - Keep `refListPage`'s halving loop unchanged. It measures whatever `document()`
   renders and does not care what the markup is.
 
-Once this lands, `.msg`/`.age` hover behaviour is identical across log and
+Once this lands, `.msg`/`.age` hover behavior is identical across log and
 refs, and the tree — whose `.msg`/`.age` are `<span>`s, correctly, since a tree
 row's whole target is the file — is the only one that doesn't underline. That
 difference is meaningful and stays.
@@ -196,7 +196,7 @@ before editing.
 
 # Part B · The diff component
 
-## 6 · Added and removed lines are the same colour
+## 6 · Added and removed lines are the same color
 
 `src/html/styles.ts:853` — `.diff .a, .diff .d { color: var(--ink); }`. Both.
 The comment above it says "the + and the − carry direction; the tone is only
@@ -216,8 +216,8 @@ are enforced or enforceable:
   `background: var(--sunk)` at `styles.ts:523` and diff text is 12.5px, so it
   is small text on the sunk ground and owes AA. `--ground` is not the binding
   constraint here.
-- Separable in greyscale, so they differ in **lightness as well as hue**. The
-  `+` and `−` characters stay as the non-colour signal, and 1.4.1 is satisfied
+- Separable in grayscale, so they differ in **lightness as well as hue**. The
+  `+` and `−` characters stay as the non-color signal, and 1.4.1 is satisfied
   by them, but a reader with either form of red-green deficiency should still
   see two tones rather than one.
 - `--diff-del` must not read as brand pink. `--accent-text` is `#ff6ea8` dark
@@ -232,8 +232,8 @@ fence (line 21) and `tokens` in `src/html/styles.ts`.** Both files change, byte
 for byte, in the same commit. Editing one is a failing test, which is the
 point.
 
-Draw the tone on the text and add a 2px `border-left` in the same colour, so
-the mark survives a rendering that flattens colour:
+Draw the tone on the text and add a 2px `border-left` in the same color, so
+the mark survives a rendering that flattens color:
 
 ```css
 .diff .a { color: var(--diff-add); border-left: 2px solid var(--diff-add); padding-left: var(--s2); }
@@ -304,7 +304,7 @@ The section needs to settle, at minimum:
   `aria-selected`, since each destination is a page load
 - Whether the current page's own entry appears and how it is marked. The Chip
   component's `.chip--current` rule (`docs/BRAND.md:670`) is the precedent:
-  weight and border, not colour alone
+  weight and border, not color alone
 - `target-size` — the gate runs WCAG 2.2 AA, so every entry needs the hit area
   the Row component already documents
 

@@ -1819,7 +1819,7 @@ fi
 # 45
 # part C1: the repo nav takes the same link treatment every other link in
 # the product carries, rather than a muted mono color with no decoration
-readonly TITLE_45="the repo nav entries resolve to the link colour"
+readonly TITLE_45="the repo nav entries resolve to the link color"
 wrong=""
 tr '\n' ' ' < src/html/styles.ts \
   | grep -qE '\.repo-nav a \{[^}]*color: var\(--accent-text\);[^}]*text-decoration: underline;' \

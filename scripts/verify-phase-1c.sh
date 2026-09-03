@@ -693,7 +693,7 @@ else
 fi
 
 # 17
-# the budget catches unauthorised creep, so a later phase's authorised
+# the budget catches unauthorized creep, so a later phase's authorized
 # additions belong in it: 1d's four and 1e's highlight.js are named in
 # docs/phases/1d-design.md and docs/phases/1e-views.md
 if node -e '

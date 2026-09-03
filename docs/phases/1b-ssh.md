@@ -187,7 +187,7 @@ Session requests other than `exec` are refused: `shell`, `pty`, and
 The one rule that matters, from CLAUDE.md: **no user-controlled string ever
 reaches a filesystem path.**
 
-Parse the exec command with the Phase 0 regex, then normalise what the
+Parse the exec command with the Phase 0 regex, then normalize what the
 client asked for: strip a leading `/`, strip a trailing `.git`. What
 remains is a candidate name.
 

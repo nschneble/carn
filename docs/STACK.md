@@ -163,7 +163,7 @@ and Chromium 151.0.7922.34.
 The tag carries the version because the committed baselines are only
 reproducible against one browser build. `package.json` declares the range
 `^1.62.1`; what makes it exact is `package-lock.json` pinning 1.62.1 and
-`scripts/visual-docker.sh` installing with `npm ci`, which honours the
+`scripts/visual-docker.sh` installing with `npm ci`, which honors the
 lockfile. If the lockfile moves, the image tag moves with it in the same
 commit and every baseline is re-shot.
 

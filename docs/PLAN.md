@@ -684,7 +684,7 @@ Everything here blocks something later and is more annoying to do mid-build.
 - **Generate a second personal SSH key and put it somewhere you won't lose** — a hardware token, a printout in a drawer, another machine. Not on the laptop. §11 has the full recovery story.
 - **Claim the npm name** `@nschneble/carn` — unscoped `carn` is refused by npm's similarity guard for being too close to `yarn`, `cron`, and `acorn`, which is why the package is scoped and the binary is not. See §07.
 - **Create the Càrn repo itself** — on GitHub for now; it migrates to Càrn the day Phase 1 ships, a useful first migration to rehearse.
-- **Build the Carn Sans subset** with the compensated small-caps recipe. Half an hour, and it unblocks the stylesheet. A second small-caps family is not an alternative — `docs/BRAND.md` §03 forecloses it in favour of merging `smcp`/`c2sc` into Carn Sans itself.
+- **Build the Carn Sans subset** with the compensated small-caps recipe. Half an hour, and it unblocks the stylesheet. A second small-caps family is not an alternative — `docs/BRAND.md` §03 forecloses it in favor of merging `smcp`/`c2sc` into Carn Sans itself.
 
 > **GATE** — `ssh deploy@carn.fancyenchiladas.net` works and both hostnames resolve
 

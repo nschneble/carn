@@ -15,7 +15,7 @@ Read `.claude/CLAUDE.md` in full, then `docs/BRAND.md`, `docs/LAYOUT.md`,
 already regenerated through `scripts/docs-artifact.mjs`.
 
 **Do not treat any item here as a formatting preference to be re-applied
-elsewhere.** Every one is a behaviour or contract change that arrived inside a
+elsewhere.** Every one is a behavior or contract change that arrived inside a
 formatting pass, which is exactly why they need naming.
 
 ---
@@ -66,7 +66,7 @@ from the shipped hexes against `--ground` and `--sunk`, they are exactly
 
 This is not cosmetic. Check 13 parses those comments and recomputes the ratios
 from the hex values, which is the mechanism that stops the contrast figures
-drifting from the colours — the drift that already happened once, when 4.11 sat
+drifting from the colors — the drift that already happened once, when 4.11 sat
 in three documents against a measured 4.10. With the comments gone the check
 finds zero annotations and stops discriminating entirely.
 
@@ -126,7 +126,7 @@ Still true and still in scope: **`test/contract/fonts.contract.ts` must expect
 contracted form the copy pass gave it. That one is a straight mismatch with no
 decision attached.
 
-## 4 · The licence arithmetic was deleted, and three checks depend on it
+## 4 · The license arithmetic was deleted, and three checks depend on it
 
 `test/contract/fonts-budget.contract.ts` checks 2, 3 and 4 fail with
 `fonts/README.md no longer states the subset comparison`. One sentence was cut
@@ -137,7 +137,7 @@ from the RFN paragraph:
 > With the sans face that is 133,940 B, so it blows the 100 KB page budget on
 > fonts alone. Renaming is the only route that ships.
 
-Restore it. It is not colour commentary: it is the recorded arithmetic proving
+Restore it. It is not color commentary: it is the recorded arithmetic proving
 the rename was **necessary** rather than convenient, which is the whole
 justification for shipping IBM Plex Mono under another name. Three checks grep
 those three figures against the bytes actually on disk, which is what keeps the

@@ -202,7 +202,7 @@ concept rather than becoming a Safari bug.
 stylesheet's single `min-width: 640px` query, which is a complete test of the
 only responsive decision the CSS makes. 375 is tuffgal's `mobile`; 1440 is a
 project override of its `desktop`, which the registry puts at 1280. Four
-captures per story once the two colour schemes are counted. **Every baseline
+captures per story once the two color schemes are counted. **Every baseline
 re-shoots** — do this before capturing anything else in the phase.
 
 ## The name column, and why it is edited in place
@@ -467,7 +467,7 @@ to learn, and it degrades by size rather than by a mode switch anyone has to be
 told about. No JS — the rest are links, not a load-diff button.
 
 **Show the file list even for a one-file commit.** It carries the `+`/`−`
-counts, which the diff body does not summarise, and one rule beats two.
+counts, which the diff body does not summarize, and one rule beats two.
 
 ## The tree route
 
@@ -516,7 +516,7 @@ The parts most likely to be got wrong:
   it is a single current segment and nothing about that page changes.
 - `»` is real DOM text, `aria-hidden`, never `content:`.
 - Ancestors `--ink-mid` and linked; current segment `--ink`, `"wght" 500`, not a
-  link. Three signals, because colour alone dies under forced-colors.
+  link. Three signals, because color alone dies under forced-colors.
 - The 640px collapse is CSS, `display: none`, and the hidden segments leaving
   the accessibility tree is **deliberate** — pointer, keyboard, and screen
   reader then agree on what exists. Do not "fix" it with a scroller.
@@ -593,7 +593,7 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1d settled.
 28. `mayWrite` is tested against a fake `AccessStore` across all four cases,
     and the owner case asserts the fake was **never consulted**
 29. `GET /r/:repo/tree/:rev/*` renders a nested path with the same sixteen-row
-    cap and `?all=1` behaviour as the root, in one `ls-tree`; a path that is
+    cap and `?all=1` behavior as the root, in one `ls-tree`; a path that is
     not a tree 404s rather than redirecting
 30. File rows link to the blob route and directory rows to the tree route, both
     at the current rev; a gitlink row links nowhere; the `.tree` hover wash and
@@ -638,4 +638,4 @@ blob, a log, and a commit with real content in them, in both schemes.
 If something here is wrong about the world, **stop and say so.** Every phase so
 far has had defects in the brief rather than the code — including one that
 would have killed git on every clone, and one that told three documents to use
-a colour that fails contrast.
+a color that fails contrast.
