@@ -3,7 +3,8 @@
 // a display value on a table element is what costs the native semantics.
 // css alone cannot say which tag a class sits on, so the markup is read
 // first and the sheet is judged against the classes and ids it puts on a
-// table element — the shape .row was, and a type-only reader misses
+// table element — the shape .row was, and a type-only reader misses.
+// none and table-cell are exempt: see BRAND.md 12 for why
 
 const tableTag = "table|thead|tbody|tfoot|tr|th|td|caption";
 
@@ -34,7 +35,7 @@ export function tableTargets(...markup: string[]): TableTargets {
 
 // the last compound is where the rule lands, so > * lands on the child
 function landsOnTable(compound: string, targets: TableTargets): boolean {
-  if (new RegExp(`^(${tableTag})\\b`).test(compound)) return true;
+  if (new RegExp(`^(${tableTag})\\b`, "i").test(compound)) return true;
 
   for (const [, token] of compound.matchAll(/\.([A-Za-z0-9_-]+)/g)) {
     if (targets.classes.has(token as string)) return true;
@@ -47,11 +48,24 @@ function landsOnTable(compound: string, targets: TableTargets): boolean {
   return false;
 }
 
+// none takes the cell out of layout entirely, semantics and all, and
+// table-cell is the value it already had. what costs the native semantics
+// is a value that restyles a cell which is still there
+const allowed = /^(none|table-cell)$/i;
+
+// every declaration in the body, not just the first: a rule saying none and
+// then grid is the second one, and the first would have excused it
+function restyles(body: string): boolean {
+  return [...body.matchAll(/display\s*:\s*([^;}]+)/gi)].some(
+    ([, value]) => !allowed.test((value as string).trim()),
+  );
+}
+
 export function displayOverrides(css: string, targets: TableTargets): string[] {
   const found: string[] = [];
 
   for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-    if (!/display\s*:/.test(body as string)) continue;
+    if (!restyles(body as string)) continue;
 
     for (const one of (selector as string).split(",")) {
       const compound =

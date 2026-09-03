@@ -218,9 +218,9 @@ test("a component's only boundary clears 3:1 and --rule does not", () => {
 });
 
 // contrast() also measures luminance separation between two foreground
-// tokens, not just a token against a ground — greyscale collapses hue, so
+// tokens, not just a token against a ground — grayscale collapses hue, so
 // this is what keeps added and removed apart once color is gone
-test("the diff tokens are separable in greyscale, not just by hue", () => {
+test("the diff tokens are separable in grayscale, not just by hue", () => {
   for (const [name, palette] of palettes) {
     const separation = contrast(
       color(palette, "--diff-add"),
@@ -228,7 +228,7 @@ test("the diff tokens are separable in greyscale, not just by hue", () => {
     );
     assert.ok(
       separation >= 1.8,
-      `${name} --diff-add and --diff-del are ${separation.toFixed(2)}:1 apart in greyscale, under 1.8`,
+      `${name} --diff-add and --diff-del are ${separation.toFixed(2)}:1 apart in grayscale, under 1.8`,
     );
   }
 });
@@ -366,12 +366,16 @@ test("no table element carries an authored display override", () => {
   );
 
   // the class form is the one a type-only reader missed, and the shape .row
-  // was until this wave deleted it
+  // was until 1e deleted it. TD and DISPLAY are the case forms the reader
+  // was blind to; table is the value the exemption must not have let in
   for (const planted of [
     ".tbl tbody td { display: grid; }",
     ".tbl { display: block; }",
     ".row { display: grid; }",
     ".tbl .msg { display: flex; }",
+    ".tbl tbody TD { DISPLAY: grid; }",
+    ".tbl .msg { display: table; }",
+    ".tbl .msg { display: none; display: grid; }",
   ]) {
     assert.deepStrictEqual(
       displayOverrides(planted, targets).length,
@@ -385,11 +389,30 @@ test("no table element carries an authored display override", () => {
     [],
     "the reader flags a class that sits on no table element",
   );
+
+  // the exemption is not a dead branch: the sheet really does hide the
+  // description column below the breakpoint and hand it back above one
+  assert.match(
+    stylesheet,
+    /\.repos \.msg,\n\.tree \.msg \{\n {2}display: none;\n\}/,
+    "nothing in the sheet takes the exemption, so it excuses only a future mistake",
+  );
+  assert.match(
+    stylesheet,
+    /\.repos \.msg,\n {2}\.tree \.msg \{\n {4}display: table-cell;\n {2}\}/,
+  );
+
+  // the two views whose middle column is a link are hidden at no width: a
+  // dropped subject there is the row's only way to reach that commit
+  assert.doesNotMatch(stylesheet, /\.(log|refs) \.msg[^{]*\{[^}]*display:/);
 });
 
-// two shapes, and which one a view takes is decided by its links: three
-// links cannot share one overlay, and one link should not hold a third
-test("the hit area covers the row, by overlay or by cell", () => {
+// the wash covers what is clickable and never more, so which shape a view
+// takes is decided by its links: three links wash the row, one link washes
+// its own cell. an overlay would be a third shape, and Safari has never
+// made a <tr> a containing block for one — WebKit 240961, fixed 2026 and
+// absent from every shipping build older than that
+test("the wash covers what takes a click, by row or by cell", () => {
   assert.match(rule(".tbl"), /table-layout: fixed;/);
   assert.match(
     rule(".tbl tbody th > *,\n.tbl tbody td > *"),
@@ -399,29 +422,29 @@ test("the hit area covers the row, by overlay or by cell", () => {
     rule(".tbl tbody th > *,\n.tbl tbody td > *"),
     /min-height: 24px;/,
   );
-  assert.match(
-    rule(".tbl tbody tr:hover,\n.tbl tbody tr:focus-within"),
-    /background: var\(--sunk\);/,
-  );
 
   assert.match(
     rule(
-      ".tree tbody .nm a::after,\n.repos tbody .nm a::after,\n.files tbody .nm a::after",
+      ".log tbody tr:hover,\n.log tbody tr:focus-within,\n.refs tbody tr:hover,\n.refs tbody tr:focus-within",
     ),
-    /position: absolute;\n {2}inset: 0;/,
+    /background: var\(--sunk\);/,
   );
   assert.match(
-    rule(".tree tbody tr,\n.repos tbody tr,\n.files tbody tr"),
-    /position: relative;/,
+    rule(
+      ".tree tbody .nm:hover,\n.tree tbody .nm:focus-within,\n.repos tbody .nm:hover,\n.repos tbody .nm:focus-within,\n.files tbody .nm:hover,\n.files tbody .nm:focus-within",
+    ),
+    /background: var\(--sunk\);/,
+  );
+
+  assert.doesNotMatch(
+    stylesheet,
+    /tbody tr[^{]*\{[^}]*position: relative/,
+    "a row is positioned again, which is what an overlay needs and Safari does not honor",
   );
   assert.deepStrictEqual(
-    [...stylesheet.matchAll(/^.*::after/gm)].map(([one]) => one.trim()).sort(),
-    [
-      ".files tbody .nm a::after",
-      ".repos tbody .nm a::after",
-      ".tree tbody .nm a::after",
-    ],
-    "a view with three links to keep apart grew a row overlay",
+    [...stylesheet.matchAll(/^.*::after/gm)].map(([one]) => one.trim()),
+    [],
+    "a row overlay is back; it sizes against the viewport in shipping Safari",
   );
 });
 

@@ -1056,9 +1056,10 @@ contract 13 "zero axe violations across both render paths, on every new view" 14
 
 # 14
 # PLAN 00 says every index view is a table, and this wave brought the code
-# to it. a ref row carries three links, so the hit area is each cell's own
-# link; the overlay is left to the three views whose row holds a single link
-readonly TITLE_14="both lists are tables with three links per row, and no overlay over them"
+# to it. a ref row carries three links, so the row is covered end to end and
+# washes whole; a one-link row washes its name cell and there is no overlay
+# anywhere, because a <tr> is not a containing block for one in Safari
+readonly TITLE_14="both lists are tables with three links per row, and no overlay anywhere"
 if require_daemon 14 "$TITLE_14" && require_seed 14 "$TITLE_14"; then
   wrong=""
   for page in branches tags; do
@@ -1069,11 +1070,11 @@ if require_daemon 14 "$TITLE_14" && require_seed 14 "$TITLE_14"; then
     [ "$(occurrences "$work/$page.body" '<tr class="row">')" -gt 0 ] \
       || wrong="$wrong /$page draws no rows;"
   done
-  overlays=$(grep -cE '^\.(tree|repos|files) tbody \.nm a::after' src/html/styles.ts)
-  [ "$overlays" = "3" ] \
-    || wrong="$wrong the row overlay covers $overlays selector(s), wanted the three single-link views;"
-  grep -qE '^\.(refs|log) [^{]*::after' src/html/styles.ts \
-    && wrong="$wrong a three-link view grew a row overlay, and it swallows two links;"
+  overlays=$(grep -cE '::after' src/html/styles.ts)
+  [ "$overlays" = "0" ] \
+    || wrong="$wrong the sheet carries $overlays ::after rule(s); an overlay sizes against the viewport in shipping Safari;"
+  grep -qE '^\.(log|refs) tbody tr:hover,' src/html/styles.ts \
+    || wrong="$wrong a three-link view no longer washes its row;"
   if [ -n "$wrong" ]; then
     record FAIL 14 "$TITLE_14" "$wrong"
   else
@@ -1485,7 +1486,7 @@ if require_daemon 29 "$TITLE_29" && require_seed 29 "$TITLE_29"; then
 fi
 
 # 30
-readonly TITLE_30="rows link by kind, and the tree's wash and overlay are live"
+readonly TITLE_30="rows link by kind, and the tree's name-cell wash is live"
 if require_daemon 30 "$TITLE_30" && require_seed 30 "$TITLE_30"; then
   sub_status=$(fetch_page "/r/$REPO_NAME/tree/main/vendor" "$work/tree-sub")
   wrong=""
@@ -1500,14 +1501,15 @@ if require_daemon 30 "$TITLE_30" && require_seed 30 "$TITLE_30"; then
     | sed 's/.*<tr class="row is-sub">//' | sed 's|</tr>.*||')
   printf '%s' "$sub_row" | grep -qF '<a ' \
     && wrong="$wrong the gitlink row carries a link;"
-  # the wash is on the row now, and the overlay is gone with the <li>:
-  # each cell's own link is the hit area, so all three stay reachable
+  # the tree row holds one link, the name, so the wash is on the name cell.
+  # the earlier pattern here was .nm::after, which never matched the
+  # .nm a::after the sheet actually shipped, so it never fired either way
+  grep -qE '^\.tree tbody \.nm:hover,' src/html/styles.ts \
+    || wrong="$wrong the sheet no longer washes the tree's name cell on hover;"
   grep -qE '^\.tbl tbody tr:hover,' src/html/styles.ts \
-    || wrong="$wrong the sheet no longer washes a row on hover;"
-  grep -qE '\.nm::after' src/html/styles.ts \
-    && wrong="$wrong the row overlay is back, and it swallows two of the three links;"
-  grep -qE '^\.tree \.is-sub:hover,' src/html/styles.ts \
-    || wrong="$wrong the sheet no longer keeps the gitlink row out of the wash;"
+    && wrong="$wrong a one-link row washes whole again, over columns that take no click;"
+  grep -qE '^\.tree \.is-sub \.nm:hover,' src/html/styles.ts \
+    || wrong="$wrong the sheet no longer keeps the gitlink name out of the wash;"
   if [ -n "$wrong" ]; then
     record FAIL 30 "$TITLE_30" "$wrong"
   else
@@ -1515,7 +1517,7 @@ if require_daemon 30 "$TITLE_30" && require_seed 30 "$TITLE_30"; then
       tree-page axe -- \
       "rows link by kind, and a gitlink links nowhere" \
       "a directory row links to the tree route, one level down" \
-      "the tree row's link fills its cell and the wash is live" \
+      "the tree row's link fills its cell and the wash stops there" \
       "a gitlink row is inert"
   fi
 fi
@@ -1718,15 +1720,26 @@ fi
 # 41
 # part A1 converged the three-column Row onto one rule; the table keeps
 # that, as column widths on one .tbl rather than a track list per view.
-# the two-column file list is the one documented divergence
+# the two-column file list is the one documented divergence. the name
+# width sits inside the 640 query, where the subject column takes the
+# other share; below it the name takes everything but the age. the drop
+# is the one per-view split, and it is a split by kind: .tree and .repos
+# carry description text, .log and .refs carry the row's link
 readonly TITLE_41="one .tbl rule widths every three-column table, and only .files overrides"
 wrong=""
 sheet_flat=$(tr '\n' ' ' < src/html/styles.ts)
-printf '%s' "$sheet_flat" | grep -qE '\.tbl \.nm \{[[:space:]]*width: 40%;' \
-  || wrong="$wrong .tbl's shared name column width is missing;"
+# two spaces of indent is the nesting: a top-level rule starts at column 0
+grep -A1 -E '^  \.tbl \.nm \{$' src/html/styles.ts | grep -qF 'width: 65%;' \
+  || wrong="$wrong .tbl's shared name column width is missing from the 640 query;"
+grep -qE '^\.tbl \.nm \{$' src/html/styles.ts \
+  && wrong="$wrong the name column is widthed outside the query, where no subject column exists;"
+printf '%s' "$sheet_flat" | grep -qE '\.repos \.msg, \.tree \.msg \{[[:space:]]*display: none;' \
+  || wrong="$wrong the description column is no longer dropped below the breakpoint;"
+printf '%s' "$sheet_flat" | grep -qE '\.(log|refs) \.msg[^{]*\{[^}]*display:' \
+  && wrong="$wrong a view whose subject is the row's link drops it at some width;"
 printf '%s' "$sheet_flat" | grep -qE '\.tbl \.age \{[[:space:]]*width: 46px;' \
   || wrong="$wrong .tbl's shared age column width is missing;"
-overrides=$(grep -cE '^\.(repos|tree|log|refs) \.(nm|msg|age) \{' src/html/styles.ts)
+overrides=$(grep -cE '^\.(repos|tree|log|refs) \.(nm|age) \{' src/html/styles.ts)
 [ "$overrides" = "0" ] \
   || wrong="$wrong $overrides per-view column override(s) reintroduce a second rule;"
 grep -qE '^\.files \.nm \{' src/html/styles.ts \
@@ -2101,15 +2114,16 @@ fi
 # the 1.4.12 gate is computed geometry at 320px, which no screenshot shows
 # and no other gate reaches: axe's avoid-inline-spacing looks for style
 # attributes fighting a user sheet, and this stylesheet sets none
-contract 56 "the four 1.4.12 spacing overrides cost the table nothing at 320px" 6 \
-  "columns hold, no row is lost, and every target stays 24px" \
+contract 56 "the four 1.4.12 spacing overrides cost the table nothing at 320px" 7 \
+  "columns hold, no row is lost, and the name keeps every character" \
   text-spacing -- \
   "the spacing overrides actually reach the table" \
   "no list view reflows into horizontal scroll at 320px" \
   "the spacing overrides move no column boundary" \
   "the spacing overrides drop no row and clip no cell" \
+  "no cell in any served table is childless" \
   "every cell's own box holds 24x24 under the spacing overrides" \
-  "a name the spacing overrides ellipse is still whole in the DOM"
+  "the spacing overrides cost the name column not one character"
 
 # 25, printed in its place
 readonly TITLE_25="relative links and images rewrite, and everything else is left alone"

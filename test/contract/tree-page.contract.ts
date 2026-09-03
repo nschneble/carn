@@ -277,9 +277,11 @@ test("the bounded walk attributes what it reaches and blanks the rest", async ()
   });
 
   assert.strictEqual(rows(markup), 4, "an un-attributed row stopped rendering");
+  // blank, but not childless: the 24px floor sits on the cell's child, so
+  // a cell that emits nothing holds no height and shortens its row
   assert.ok(
     rowFor(markup, "index.ts").includes(
-      '<td class="msg"></td><td class="age"></td>',
+      '<td class="msg"><span></span></td><td class="age"><span></span></td>',
     ),
     "an un-attributed row rendered something other than empty columns",
   );

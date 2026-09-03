@@ -40,9 +40,10 @@ function marker(view: RefListPage, ref: Ref): Raw {
 }
 
 // git takes an empty message, and a link wrapped around one has no
-// accessible name at all, so the cell goes bare rather than nameless
+// accessible name at all, so the cell holds an empty span rather than a
+// nameless link — a childless cell measures nothing and shortens its row
 function subject(ref: Ref, href: string): Raw {
-  if (ref.subject === "") return html`<td class="msg"></td>`;
+  if (ref.subject === "") return html`<td class="msg"><span></span></td>`;
 
   return html`<td class="msg"><a href="${href}">${ref.subject}</a></td>`;
 }

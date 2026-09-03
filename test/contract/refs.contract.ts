@@ -283,7 +283,7 @@ test("every row is three links to the log scoped to that ref", () => {
 
 // three cells, three links, all to the same commit log: a row-wide
 // anchor would forbid two of them, which is why the hit area is each
-// cell's own link rather than one overlay
+// cell's own link and why this row washes whole
 test("three links per row, one per cell, all to the ref's own log", () => {
   const markup = refsDocument();
   const [first] = branches;
@@ -312,10 +312,12 @@ test("three links per row, one per cell, all to the ref's own log", () => {
 
   const sheet = readFileSync(join(root, "src/html/styles.ts"), "utf8");
 
+  // the pattern was .nm::after, which never matched the .nm a::after the
+  // sheet actually shipped; any ::after at all is the honest tripwire
   assert.doesNotMatch(
     sheet,
-    /\.nm::after/,
-    "the row-wide overlay is back, and it swallows two of the three links",
+    /::after/,
+    "an overlay is back, and it swallows two of the three links",
   );
 });
 
@@ -574,8 +576,10 @@ test("a commit with no message leaves the cell bare, not a nameless link", async
 
   const markup = refsDocument({ list });
 
+  // a span, not an empty cell: the 24px floor sits on the child, so a
+  // childless cell holds no height and shortens its row
   assert.ok(
-    markup.includes('<td class="msg"></td>'),
+    markup.includes('<td class="msg"><span></span></td>'),
     "an empty subject rendered as an anchor, which axe reads as a link with no accessible name",
   );
   assert.doesNotMatch(markup, /<a[^>]*><\/a>/);

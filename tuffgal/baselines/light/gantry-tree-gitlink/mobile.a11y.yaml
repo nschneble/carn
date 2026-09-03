@@ -15,9 +15,8 @@
   - table "Files":
     - caption: Files
     - rowgroup:
-      - row "Name Commit Age":
+      - row "Name Age":
         - columnheader "Name"
-        - columnheader "Commit"
         - columnheader "Age"
     - rowgroup:
       - row "lib Pinned Submodule pinned at a3f29c8":

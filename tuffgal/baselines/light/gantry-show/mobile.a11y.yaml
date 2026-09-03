@@ -24,51 +24,44 @@
   - table "Files":
     - caption: Files
     - rowgroup:
-      - row "Name Commit Age":
+      - row "Name Age":
         - columnheader "Name"
-        - columnheader "Commit"
         - columnheader "Age"
     - rowgroup:
-      - row "apps/ Reach the deep path 3d":
+      - row "apps/ 3d":
         - rowheader "apps/":
           - link "apps/":
             - /url: /r/gantry/tree/main/apps
-        - cell "Reach the deep path"
         - cell "3d":
           - time: 3d
-      - row "assets/ Add a cover image 6h":
+      - row "assets/ 6h":
         - rowheader "assets/":
           - link "assets/":
             - /url: /r/gantry/tree/main/assets
-        - cell "Add a cover image"
         - cell "6h":
           - time: 6h
-      - row "src/ Generate the tables 25m":
+      - row "src/ 25m":
         - rowheader "src/":
           - link "src/":
             - /url: /r/gantry/tree/main/src
-        - cell "Generate the tables"
         - cell "25m":
           - time: 25m
-      - row "vendor/ Pin the vendored library 3w":
+      - row "vendor/ 3w":
         - rowheader "vendor/":
           - link "vendor/":
             - /url: /r/gantry/tree/main/vendor
-        - cell "Pin the vendored library"
         - cell "3w":
           - time: 3w
-      - row "README.md Bump the version and say so 2d":
+      - row "README.md 2d":
         - rowheader "README.md":
           - link "README.md":
             - /url: /r/gantry/blob/main/README.md
-        - cell "Bump the version and say so"
         - cell "2d":
           - time: 2d
-      - row "package.json Stand the gantry up 3w":
+      - row "package.json 3w":
         - rowheader "package.json":
           - link "package.json":
             - /url: /r/gantry/blob/main/package.json
-        - cell "Stand the gantry up"
         - cell "3w":
           - time: 3w
   - heading "Gantry" [level=1]

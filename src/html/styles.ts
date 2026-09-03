@@ -421,8 +421,21 @@ export const components = css`body {
   padding-left: var(--s2);
 }
 
-.tbl tbody tr:hover,
-.tbl tbody tr:focus-within {
+/* every cell of these two holds a link, so the row is genuinely the target */
+.log tbody tr:hover,
+.log tbody tr:focus-within,
+.refs tbody tr:hover,
+.refs tbody tr:focus-within {
+  background: var(--sunk);
+}
+
+/* the name is the only link, so the wash stops where the click does */
+.tree tbody .nm:hover,
+.tree tbody .nm:focus-within,
+.repos tbody .nm:hover,
+.repos tbody .nm:focus-within,
+.files tbody .nm:hover,
+.files tbody .nm:focus-within {
   background: var(--sunk);
 }
 
@@ -443,31 +456,14 @@ export const components = css`body {
   text-decoration: underline;
 }
 
+/* the name is the link text and the row's accessible name, so it wraps
+   rather than truncating — see LAYOUT 02 */
 .tbl .nm > * {
   color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .tbl .nm a:focus-visible {
   outline-offset: -2px;
-}
-
-/* one link in the row, so the row is its target rather than one cell */
-.tree tbody tr,
-.repos tbody tr,
-.files tbody tr {
-  position: relative;
-}
-
-/* absolute against the row, so the name's own overflow cannot clip it */
-.tree tbody .nm a::after,
-.repos tbody .nm a::after,
-.files tbody .nm a::after {
-  content: "";
-  position: absolute;
-  inset: 0;
 }
 
 .tbl .is-dir .nm > * {
@@ -484,8 +480,16 @@ export const components = css`body {
   white-space: nowrap;
 }
 
-.tbl .nm {
-  width: 40%;
+/* the metadata reads as one right-hand segment, against the name */
+.tbl thead .msg,
+.tbl .msg > * {
+  text-align: right;
+}
+
+/* metadata goes below the breakpoint; a subject that is a link stays */
+.repos .msg,
+.tree .msg {
+  display: none;
 }
 
 .tbl .age {
@@ -496,6 +500,17 @@ export const components = css`body {
   padding-right: 0;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 640px) {
+  .repos .msg,
+  .tree .msg {
+    display: table-cell;
+  }
+
+  .tbl .nm {
+    width: 65%;
+  }
 }
 
 /* meta blocks (labeled fields on show views) */
@@ -833,10 +848,10 @@ main > h1 {
   padding: 10px 14px;
 }
 
-/* a submodule is pinned here, not browsable, so the row takes no wash: a
+/* a submodule is pinned here, not browsable, so its name takes no wash: a
    wash with no click target under it is a false affordance */
-.tree .is-sub:hover,
-.tree .is-sub:focus-within {
+.tree .is-sub .nm:hover,
+.tree .is-sub .nm:focus-within {
   background: none;
 }
 

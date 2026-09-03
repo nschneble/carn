@@ -38,10 +38,11 @@ export function treeHref(repo: string, rev: string, path: string): string {
 }
 
 // a path the bounded log walk never reached renders blank rather than
-// costing a longer one, so both cells have an empty state
+// costing a longer one, so both cells have an empty state. the span is
+// what carries the row's height: a childless cell measures nothing
 function columns(entry: TreeEntry, now: Date): Raw {
   if (entry.touched === null) {
-    return html`<td class="msg"></td><td class="age"></td>`;
+    return html`<td class="msg"><span></span></td><td class="age"><span></span></td>`;
   }
 
   return html`<td class="msg"><span>${entry.touched.subject}</span></td>${ageCell(entry.touched.at, now)}`;

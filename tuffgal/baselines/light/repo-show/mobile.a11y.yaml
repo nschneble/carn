@@ -24,44 +24,38 @@
   - table "Files":
     - caption: Files
     - rowgroup:
-      - row "Name Commit Age":
+      - row "Name Age":
         - columnheader "Name"
-        - columnheader "Commit"
         - columnheader "Age"
     - rowgroup:
-      - row ".carn/ Read the list back 2w":
+      - row ".carn/ 2w":
         - rowheader ".carn/":
           - link ".carn/":
             - /url: /r/linklater/tree/main/.carn
-        - cell "Read the list back"
         - cell "2w":
           - time: 2w
-      - row "docs/ Read the list back 2w":
+      - row "docs/ 2w":
         - rowheader "docs/":
           - link "docs/":
             - /url: /r/linklater/tree/main/docs
-        - cell "Read the list back"
         - cell "2w":
           - time: 2w
-      - row "src/ Read the list back 2w":
+      - row "src/ 2w":
         - rowheader "src/":
           - link "src/":
             - /url: /r/linklater/tree/main/src
-        - cell "Read the list back"
         - cell "2w":
           - time: 2w
-      - row "README.md Read the list back 2w":
+      - row "README.md 2w":
         - rowheader "README.md":
           - link "README.md":
             - /url: /r/linklater/blob/main/README.md
-        - cell "Read the list back"
         - cell "2w":
           - time: 2w
-      - row "package.json Read the list back 2w":
+      - row "package.json 2w":
         - rowheader "package.json":
           - link "package.json":
             - /url: /r/linklater/blob/main/package.json
-        - cell "Read the list back"
         - cell "2w":
           - time: 2w
   - heading "Linklater" [level=1]

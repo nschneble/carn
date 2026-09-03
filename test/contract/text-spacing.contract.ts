@@ -11,7 +11,12 @@ import { after, before, test } from "node:test";
 import { shortShaChars } from "../../src/html/commit-log.js";
 import { commitDocument, detail } from "../gallery/commit.js";
 import { commits, logDocument } from "../gallery/commit-log.js";
-import { branches, refsDocument } from "../gallery/refs.js";
+import {
+  branches,
+  quietBranch,
+  refList,
+  refsDocument,
+} from "../gallery/refs.js";
 import { indexDocument, populated } from "../gallery/repo-index.js";
 import { files } from "../gallery/repo-show.js";
 import { treeDocument } from "../gallery/tree.js";
@@ -35,9 +40,14 @@ const paragraphMargin = 2;
 const reflowWidth = 320;
 const minTarget = 24;
 
+// the tree's unwalked row and the ref with no message are the two cells
+// that can legitimately hold nothing, so both are served here
+const quiet = [quietBranch, ...branches.slice(0, 2)];
+
 const documents: Record<string, string> = {
   "/tree": treeDocument(),
   "/refs": refsDocument(),
+  "/refs-quiet": refsDocument({ list: refList("branch", { refs: quiet }) }),
   "/index": indexDocument(),
   "/log": logDocument(),
   "/commit": commitDocument(),
@@ -48,6 +58,7 @@ const documents: Record<string, string> = {
 const names: Record<string, string[]> = {
   "/tree": files.map((entry) => entry.name),
   "/refs": branches.map((ref) => ref.name),
+  "/refs-quiet": quiet.map((ref) => ref.name),
   "/index": populated.map((repo) => repo.name),
   "/log": commits(16).map((commit) => commit.sha.slice(0, shortShaChars)),
   "/commit": detail().files.map((file) => file.path),
@@ -59,6 +70,7 @@ type Cell = {
   text: string;
   width: number;
   height: number;
+  laidOut: boolean;
   clipped: boolean;
   ellipsed: boolean;
 };
@@ -75,6 +87,7 @@ type Reading = {
   rows: number;
   columns: number[];
   cells: Cell[];
+  childless: string[];
   names: string[];
 };
 
@@ -84,6 +97,15 @@ function readTable(): Reading {
   const root = document.documentElement;
   const body = document.querySelector(".tbl tbody") as HTMLElement | null;
   const paragraph = document.querySelector("p") as HTMLElement | null;
+  // a cell with no child was skipped here once, which is exactly how a
+  // childless cell shipped: it holds no min-height, so it shortens its row
+  const childless = [...document.querySelectorAll(".tbl tbody tr")].flatMap(
+    (row, index) =>
+      [...row.querySelectorAll("th, td")]
+        .filter((cell) => cell.childElementCount === 0)
+        .map((cell) => `${index}|${cell.className}`),
+  );
+
   const cells = [...document.querySelectorAll(".tbl tbody tr")].flatMap(
     (row, index) =>
       [...row.querySelectorAll("th, td")].flatMap((cell) => {
@@ -101,6 +123,7 @@ function readTable(): Reading {
             text: (child.textContent ?? "").trim(),
             width: box.width,
             height: box.height,
+            laidOut: cell.getClientRects().length > 0,
             clipped: child.scrollHeight > child.clientHeight + 1,
             // scrollWidth rounds up, so a whole pixel of slack is the floor
             // below which nothing is actually cut
@@ -131,6 +154,7 @@ function readTable(): Reading {
       Math.round(cell.getBoundingClientRect().width),
     ),
     cells,
+    childless,
     names: cells
       .filter((cell) => cell.column === "nm")
       .map((cell) => cell.text),
@@ -270,11 +294,48 @@ test("the spacing overrides drop no row and clip no cell", () => {
   }
 });
 
-// on the tree and the index the third cell holds a <time>, not a link, and
-// the row's own overlay is the target there; the box is measured either way
+// every cell a row lays out carries a child, so every cell holds the 24px
+// floor. a cell that emitted nothing would collapse and shorten its row,
+// and the reader above would not have counted it at all
+test("no cell in any served table is childless", () => {
+  for (const path of Object.keys(documents)) {
+    for (const [label, read] of [
+      ["plain", plain[path] as Reading],
+      ["spaced", spaced[path] as Reading],
+    ] as const) {
+      assert.deepStrictEqual(
+        read.childless,
+        [],
+        `${path} ${label} lays out a cell with no child, so its row is short`,
+      );
+    }
+  }
+});
+
+// 320px is below the breakpoint, so the two views whose middle column is
+// description text do not render it and owe no target. the three whose
+// middle column is a link render it at every width and owe one. that is
+// asserted rather than skipped: a cell dropping out of layout for any
+// other reason would read as this one does
+const dropsSubject = new Set(["/tree", "/index"]);
+
 test("every cell's own box holds 24x24 under the spacing overrides", () => {
   for (const path of Object.keys(documents)) {
-    for (const cell of (spaced[path] as Reading).cells) {
+    const cells = (spaced[path] as Reading).cells;
+
+    assert.deepStrictEqual(
+      [
+        ...new Set(
+          cells.filter((one) => !one.laidOut).map((one) => one.column),
+        ),
+      ],
+      dropsSubject.has(path) ? ["msg"] : [],
+      `${path} leaves a column out of layout at ${reflowWidth}px that its view still renders`,
+    );
+
+    for (const cell of cells) {
+      if (!cell.laidOut) continue;
+
       assert.ok(
         cell.width >= minTarget && cell.height >= minTarget,
         `${path} ${cell.key} lays out ${cell.width}x${cell.height}`,
@@ -283,10 +344,11 @@ test("every cell's own box holds 24x24 under the spacing overrides", () => {
   }
 });
 
-// the name column ellipses by design at this width — six of the tree's
-// ten names already do with no overrides applied — so what the criterion
-// asks is whether the full text survives somewhere, not whether it fits
-test("a name the spacing overrides ellipse is still whole in the DOM", (t) => {
+// LAYOUT 02 splits the rule the tension came from: the name is the link
+// text and the row's accessible name, so it wraps and keeps every
+// character. the subject and the description are metadata reachable whole
+// elsewhere, so they ellipse under the overrides exactly as they do without
+test("the spacing overrides cost the name column not one character", (t) => {
   for (const path of Object.keys(documents)) {
     const wanted = names[path] as string[];
     const read = (spaced[path] as Reading).names;
@@ -306,15 +368,23 @@ test("a name the spacing overrides ellipse is still whole in the DOM", (t) => {
       );
     }
 
-    const already = (plain[path] as Reading).cells.filter(
-      (cell) => cell.ellipsed,
-    ).length;
-    const newly = (spaced[path] as Reading).cells.filter(
-      (cell) => cell.ellipsed,
+    // wrapped, not clipped: the box grew to hold the text rather than
+    // cutting it, which is what the criterion asks for
+    for (const cell of (spaced[path] as Reading).cells) {
+      if (cell.column !== "nm") continue;
+
+      assert.ok(
+        !cell.ellipsed && !cell.clipped,
+        `${path} ${cell.key} clips the name "${cell.text}" at ${reflowWidth}px under the overrides`,
+      );
+    }
+
+    const meta = (spaced[path] as Reading).cells.filter(
+      (cell) => cell.column !== "nm" && cell.ellipsed,
     ).length;
 
     t.diagnostic(
-      `${path}: ${wanted.length} names whole, ${already} cell(s) ellipse with no overrides and ${newly} under them`,
+      `${path}: ${wanted.length} names whole and unclipped, ${meta} metadata cell(s) ellipse`,
     );
   }
 });

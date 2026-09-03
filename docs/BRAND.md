@@ -418,8 +418,21 @@ body {
   padding-left: var(--s2);
 }
 
-.tbl tbody tr:hover,
-.tbl tbody tr:focus-within {
+/* every cell of these two holds a link, so the row is genuinely the target */
+.log tbody tr:hover,
+.log tbody tr:focus-within,
+.refs tbody tr:hover,
+.refs tbody tr:focus-within {
+  background: var(--sunk);
+}
+
+/* the name is the only link, so the wash stops where the click does */
+.tree tbody .nm:hover,
+.tree tbody .nm:focus-within,
+.repos tbody .nm:hover,
+.repos tbody .nm:focus-within,
+.files tbody .nm:hover,
+.files tbody .nm:focus-within {
   background: var(--sunk);
 }
 
@@ -440,31 +453,14 @@ body {
   text-decoration: underline;
 }
 
+/* the name is the link text and the row's accessible name, so it wraps
+   rather than truncating — see LAYOUT 02 */
 .tbl .nm > * {
   color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .tbl .nm a:focus-visible {
   outline-offset: -2px;
-}
-
-/* one link in the row, so the row is its target rather than one cell */
-.tree tbody tr,
-.repos tbody tr,
-.files tbody tr {
-  position: relative;
-}
-
-/* absolute against the row, so the name's own overflow cannot clip it */
-.tree tbody .nm a::after,
-.repos tbody .nm a::after,
-.files tbody .nm a::after {
-  content: "";
-  position: absolute;
-  inset: 0;
 }
 
 .tbl .is-dir .nm > * {
@@ -481,8 +477,16 @@ body {
   white-space: nowrap;
 }
 
-.tbl .nm {
-  width: 40%;
+/* the metadata reads as one right-hand segment, against the name */
+.tbl thead .msg,
+.tbl .msg > * {
+  text-align: right;
+}
+
+/* metadata goes below the breakpoint; a subject that is a link stays */
+.repos .msg,
+.tree .msg {
+  display: none;
 }
 
 .tbl .age {
@@ -493,6 +497,17 @@ body {
   padding-right: 0;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 640px) {
+  .repos .msg,
+  .tree .msg {
+    display: table-cell;
+  }
+
+  .tbl .nm {
+    width: 65%;
+  }
 }
 
 /* meta blocks (labeled fields on show views) */
@@ -807,13 +822,25 @@ _Anything that looks like a table is one. Directories in accent with a trailing 
 
 **The trailing slash is real text in the DOM**, never `content: "/"`. Generated content cannot be selected, is not found by Ctrl-F, and vanishes with CSS off — which is every property the slash exists to have.
 
-**The hit area covers the row, and the row's links decide how.** `.tbl tbody th > *, .tbl tbody td > *` takes `display: block` and the row's padding, so a cell's own link fills its own cell. Where a row holds three links — the commit log and the branch and tag lists, all three pointing at the same commit — that is the whole answer: three separately focusable targets, the row covered end to end, and no overlay could exist without swallowing two of them. It is also why the subject and the age can be links at all, which a whole-row anchor would forbid. Where a row holds one link — the file tree, the repo index, and the commit page's file list, whose remaining columns are plain text — the same rule leaves part of a row that washes whole leading nowhere: 42% of a 1124px row covered on the tree and the index, 90% on the file list, whose count column is a fixed 116px rather than a share. That is the false affordance `docs/LAYOUT.md` 02 rules out, so the name's link takes an `::after` at `inset: 0` against a `position: relative` `<tr>`. The pseudo-element is absolutely positioned against the row, and neither the cell nor the link is positioned, so the name's own `overflow: hidden` cannot clip it. Two costs, both taken deliberately: the text beside the name stops being selectable on those three views, and `position: relative` on a `<tr>` was patchy enough in WebKit to be worth avoiding once — measured in WebKit 26.5 and Chromium it now hit-tests identically at 320, 375, and 1440. Row-level hover and focus live on `.tbl tbody tr:hover, .tbl tbody tr:focus-within`. The focus ring is drawn with `outline-offset: -2px` so it lands inside the cell rather than bleeding into the next column.
+**The wash covers what is clickable, and never more.** `.tbl tbody th > *, .tbl tbody td > *` takes `display: block` and the row's padding, so a cell's own link fills its own cell. Where a row holds three links — the commit log and the branch and tag lists, all three pointing at the same commit — the row is covered end to end, so the row is the target and `.log tbody tr:hover, .refs tbody tr:hover` wash the whole `<tr>`. It is also why the subject and the age can be links at all, which a whole-row anchor would forbid. Where a row holds one link — the file tree, the repo index, and the commit page's file list, whose remaining columns are plain text — the target is the name cell, and `.tree tbody .nm:hover`, `.repos tbody .nm:hover`, `.files tbody .nm:hover` wash exactly that cell. A row-wide wash there would promise a target the other columns have never held, which is the false affordance `docs/LAYOUT.md` 02 rules out.
 
-**No `display` value is ever authored on a table element.** Not on `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, or `<td>`. A grid or flex override buys nothing table layout does not already give, and it is what cost WebKit the native semantics until Safari 17. The block-level boxes above sit on the anchors and spans inside the cells, which are not table elements. One computed value is out of the sheet's hands: `<caption class="vh">` is taken out of flow, and a UA blockifies an absolutely positioned box whatever `display` it was given. Chromium reports `role=caption` through it and no declaration put it there, so the ban and the check that holds it are both about what the sheet declares. That check reads the served markup before the sheet, because CSS text cannot say which tag a class sits on, and a class or an id is the shape a real override arrives in — `.row { display: grid }` was one until 1e deleted it.
+**The way not to fix it is a stretched overlay, and this is the record of why.** 1e reached for one first: an `::after` at `inset: 0` on the name's link, absolutely positioned against a `position: relative` `<tr>`, so a single link covered the row. It does not work in Safari. A `<tr>` is not a containing block for an absolutely positioned descendant there, so the pseudo-element sizes against the initial containing block — the row stays washed wherever the pointer is, and the hit area is the viewport. This is WebKit 240961, resolved fixed on 11 April 2026; `css-position-3` never said a table row establishes one, so Safari was conforming and every older Safari and iOS build is stuck with the old behavior regardless. Playwright's bundled WebKit carries the fix and is therefore not evidence about any Safari a reader has: it reported the pattern working. **No containing-block-forcing trick replaces it either** — `clip-path: inset(0)` works but costs intermittent border loss in Safari, and this design is hairline rules between rows. Moving the wash onto the cell is the fix, not a different overlay. The focus ring is drawn with `outline-offset: -2px` so it lands inside the cell rather than bleeding into the next column.
 
-**`table-layout: fixed`, and the columns are widths, not tracks.** The name holds 40%, age holds 46px, the subject takes what is left and truncates. `auto` cannot do this: it never sizes a column below its min-content width, so a name that does not wrap makes the table wider than the viewport instead of ellipsing — measured at 320px, the repo index came out 1233px wide. Fixed columns also mean text getting wider cannot move a boundary, which is what holds SC 1.4.12 at 320px without a second layout. One rule serves the tree, the commit log, the repo index, and the branch and tag lists; none carries its own override, so a seven-character sha and a twelve-character filename share it without a special case. A gitlink row carries a `.t-micro` marker, `Pinned`, the same way the branch list marks `Default` — the only other signal on the row is the pinned sha, spanning the two columns it has no data for, and a pin alone reads as a rendering defect rather than a state.
+**No `display` value that restyles a table element is ever authored.** Not `grid`, not `flex`, not `block`, not `table` — not on `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, or `<td>`. Such an override buys nothing table layout does not already give, and it is what cost WebKit the native semantics until Safari 17. The block-level boxes above sit on the anchors and spans inside the cells, which are not table elements.
 
-The commit page's file list is the one Table shape that legitimately diverges: two columns, not three — a name and a fixed-width `+N −N` count, with no subject or age to hold a third. Converging it onto the three-column rule would mean inventing a column it has no data for, which is a second table wearing the first one's clothes. Its count is plain text, so it holds one link like the tree and the index do, and it takes the same overlay: the row is the target, and the count cell washes over a width that takes a click.
+**Two values are exempt, and the reason is the whole point of the rule.** What costs the semantics is restyling a cell that is *still there*. `display: none` does not restyle a cell; it takes the cell out of the table, and a table with fewer cells is still a table — that is how the description column is dropped below 640px. `display: table-cell` is the value the cell already had, so restoring it above the breakpoint declares nothing new. Every other value is caught. One computed value is out of the sheet's hands: `<caption class="vh">` is taken out of flow, and a UA blockifies an absolutely positioned box whatever `display` it was given. Chromium reports `role=caption` through it and no declaration put it there, so the ban and the check that holds it are both about what the sheet declares. That check reads the served markup before the sheet, because CSS text cannot say which tag a class sits on, and a class or an id is the shape a real override arrives in — `.row { display: grid }` was one until 1e deleted it.
+
+**`table-layout: fixed`, and the columns are widths, not tracks.** Age holds 46px; the name holds 65% of the table, which leaves the name and the subject splitting the rest about 70/30 with the name ahead. The name dominates and the subject is right-aligned against the age, so a row reads as two segments rather than three columns. The share is a flat percentage rather than `calc((100% - 46px) * 0.7)` because a `calc()` mixing `%` and `px` is silently dropped for a column width under `table-layout: fixed` and the table falls back to splitting itself evenly — measured, not assumed. A flat 65% gives 70/30 at 1440px and 75/25 at the 640px breakpoint, across the whole range the query covers. Below it the width is not declared at all, so fixed layout splits the remainder evenly between the two columns still standing.
+
+`auto` cannot do any of this: it never sizes a column below its min-content width, so a name that does not wrap makes the table wider than the viewport instead of ellipsing — measured at 320px, the repo index came out 1233px wide. Fixed columns also mean text getting wider cannot move a boundary, which is what holds SC 1.4.12 at 320px without a second layout. One rule serves the tree, the commit log, the repo index, and the branch and tag lists; none carries its own override, so a seven-character sha and a twelve-character filename share it without a special case. A gitlink row carries a `.t-micro` marker, `Pinned`, the same way the branch list marks `Default` — the only other signal on the row is the pinned sha, spanning the two columns it has no data for, and a pin alone reads as a rendering defect rather than a state.
+
+**Below 640px the middle column is dropped on the two views where it is metadata, and only there.** At 320px the table is 284px, age takes 46, and 30% of what remains is a 71px cell holding 55px of 10px mono: nine characters. Nine characters of a description is not a short version of it, it is a stub, and a column that renders one is worse than a column that is not there. So the file tree and the repo index drop it — the description is plain text, and the file or repo it describes is one tap away either way. The name column takes the freed space, which is also what stops a name wrapping to three lines at the width where wrapping matters most. Above the breakpoint the column comes back at full width.
+
+**The commit log and the branch and tag lists keep it at every width.** Their middle column is not metadata beside a link, it is one of the row's three links, and the subject is the one a reader is actually aiming at. Dropping it below 640px would leave a row whose only remaining way to reach that commit is a seven-character sha, which is a functional regression rather than a truncation tradeoff. The column is tight at 320px — the name and the subject split the table's remainder evenly there, since the 65% name width lives inside the query — and tight is the right cost to pay. **The rule this splits on is whether the column is reachable elsewhere**, not whether it is narrow.
+
+**Every cell emits a child, even when it has nothing to say.** The 24px target floor sits on `.tbl tbody th > *, .tbl tbody td > *` — the child, not the cell — so a cell that emits no element holds no floor, contributes no height, and shortens its row against every sibling. `tree-list.ts` (a path the bounded log walk never reached) and `ref-list.ts` (a commit made with `--allow-empty-message`) are the two places a cell can legitimately be empty, and both emit a bare `<span>`.
+
+The commit page's file list is the one Table shape that legitimately diverges: two columns, not three — a name and a fixed-width `+N −N` count, with no subject or age to hold a third. Converging it onto the three-column rule would mean inventing a column it has no data for, which is a second table wearing the first one's clothes. Its count is plain text, so it holds one link like the tree and the index do, and it washes the same way: the name cell is the target, and the count cell is not.
 
 ### Meta block
 

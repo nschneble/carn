@@ -565,22 +565,30 @@ const contrastNodes: Record<string, number> = {
   "tree-sub": 25,
 };
 
-// two ways a state measures one node fewer below the breakpoint. the
+// two ways a state measures fewer nodes below the breakpoint. the
 // breadcrumb folds its middle segments out of the layout and the a11y
-// tree, which only the trails deep enough to have a middle reach; and a
-// name column narrow enough ellipses a filename's .sc extension span
-// away entirely, which is the truncation the Table component specifies
+// tree, which only the trails deep enough to have a middle reach; and the
+// tree and the repo index drop their description column, so each loses one
+// header plus one cell per row that had text to lose. the tree is the
+// arithmetic worth checking: 48 to 38 over ten rows, one of which the
+// bounded walk never attributed. the commit log and the ref lists are
+// absent by design — their subject is the row's link and is rendered at
+// every width, so they measure folded exactly what they measure wide
 const foldedContrastNodes: Record<string, number> = {
   blob: 72,
   "blob-cut": 21,
   "commit-file": 41,
-  show: 92,
-  "show-all": 167,
-  "show-bare": 66,
-  "show-header": 92,
-  tree: 47,
-  "tree-all": 140,
-  "tree-cut": 65,
+  gallery: 58,
+  hover: 16,
+  populated: 16,
+  show: 77,
+  "show-all": 134,
+  "show-bare": 51,
+  "show-header": 77,
+  tree: 38,
+  "tree-all": 107,
+  "tree-cut": 50,
+  "tree-sub": 21,
 };
 
 for (const width of auditWidths) {
@@ -611,10 +619,10 @@ for (const width of auditWidths) {
   }
 }
 
-// three targets in one row is the densest hit area in the product, and a
-// clean violations list would read the same whether target-size settled
-// every one of them or skipped the lot as inline. the three stack below
-// the breakpoint, where the row is a column of three separate targets
+// the densest hit area in the product, and a clean violations list would
+// read the same whether target-size settled every link or skipped the lot
+// as inline. the log's subject is the row's link to that commit, so it is
+// rendered at every width and all three targets must settle at every width
 test("every link in a commit row reaches a target-size verdict", async (t) => {
   for (const width of auditWidths) {
     for (const path of renderPaths) {
@@ -624,6 +632,7 @@ test("every link in a commit row reaches a target-size verdict", async (t) => {
         "/commits",
         width,
       );
+      const columns = 3;
       const where = `${path.name} at ${width}px`;
       const settled = (["violations", "passes"] as const).flatMap(
         (bucket) =>
@@ -644,17 +653,17 @@ test("every link in a commit row reaches a target-size verdict", async (t) => {
       );
       assert.strictEqual(
         rows.length,
-        logRowCap * 3,
-        `${where}: target-size settled ${rows.length} of the ${logRowCap * 3} links sixteen commit rows carry`,
+        logRowCap * columns,
+        `${where}: target-size settled ${rows.length} of the ${logRowCap * columns} links sixteen commit rows carry there`,
       );
       t.diagnostic(`${where}: ${rows.length} row targets settled`);
     }
   }
 });
 
-// the three columns hold at every width now, so the band holds at every
-// width too — there is no breakpoint at which a row link stops being a
-// target of its own, which is what the grid's stacked column used to be
+// the three columns hold at every width, so the band holds at every width
+// too — there is no breakpoint at which a row link stops being a target of
+// its own, which is what the grid's stacked column used to be
 test("a commit row link clears 24px at both widths", async (t) => {
   const page = await (await browser()).newPage();
 
@@ -668,12 +677,18 @@ test("a commit row link clears 24px at both widths", async (t) => {
         .locator(".log tbody .row")
         .first()
         .evaluate((row) =>
-          [...row.querySelectorAll("a")].map(
-            (link) => link.getBoundingClientRect().height,
-          ),
+          [...row.querySelectorAll("a")]
+            .filter((link) => link.getClientRects().length > 0)
+            .map((link) => link.getBoundingClientRect().height),
         );
 
-      assert.strictEqual(heights.length, 3, `${width}px: the row lost a link`);
+      const columns = 3;
+
+      assert.strictEqual(
+        heights.length,
+        columns,
+        `${width}px: the row lays out ${heights.length} links, not the ${columns} its columns carry there`,
+      );
       for (const height of heights) {
         assert.ok(
           height >= 24,
@@ -982,26 +997,44 @@ test("a long path reflows at 320px rather than scrolling the page", async (t) =>
   }
 });
 
-// the ellipsis on a tree row is white-space: nowrap, which no wrapping
-// property can reach; the rule above must not have moved it. the header
-// cell carries its own nowrap, so this reads a tbody cell's own child
-test("the tree row still ellipsises rather than wrapping", async () => {
+// LAYOUT 02's rule is split by column: a name is the link text and cannot
+// lose characters, a subject is metadata whole elsewhere and can. the
+// header cell carries its own nowrap, so this reads a tbody cell's child
+test("the name wraps and the subject ellipsises", async () => {
   const page = await (await browser()).newPage();
 
   try {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto(`${site.origin}/show-all`);
 
-    const row = await page
+    const name = await page
       .locator(".tree tbody .row:not(.is-sub) .nm > *")
+      .first()
+      .evaluate((node) => ({
+        wrap: getComputedStyle(node).whiteSpace,
+        clipped: getComputedStyle(node).textOverflow,
+        anywhere: getComputedStyle(node).overflowWrap,
+      }));
+
+    assert.strictEqual(name.wrap, "normal", "the name still refuses to wrap");
+    assert.strictEqual(name.clipped, "clip", "the name still ellipsises");
+    assert.strictEqual(
+      name.anywhere,
+      "anywhere",
+      "nothing breaks a name with no space in it, so a long one overflows",
+    );
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const subject = await page
+      .locator(".tree tbody .row:not(.is-sub) .msg > *")
       .first()
       .evaluate((node) => ({
         wrap: getComputedStyle(node).whiteSpace,
         clipped: getComputedStyle(node).textOverflow,
       }));
 
-    assert.strictEqual(row.wrap, "nowrap");
-    assert.strictEqual(row.clipped, "ellipsis");
+    assert.strictEqual(subject.wrap, "nowrap");
+    assert.strictEqual(subject.clipped, "ellipsis");
   } finally {
     await page.close();
   }
@@ -1018,25 +1051,23 @@ function rgb(token: string): string {
   return `rgb(${channels.join(", ")})`;
 }
 
-// the wash was switched off while a file row had nowhere to go, and a
-// sheet edit putting it back to none would leave the markup linked and
-// the affordance missing with every other gate green
-test("the tree row's link fills its cell and the wash is live", async (t) => {
+// the name is the tree row's only link, so the wash is on the name cell:
+// hovering the cell washes it and hovering the row's plain text does not.
+// a sheet edit moving the wash back onto the <tr> promises a target the
+// other two columns have never held
+test("the tree row's link fills its cell and the wash stops there", async (t) => {
   const page = await (await browser()).newPage();
 
   try {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`${site.origin}/show`);
 
-    const cell = await page
-      .locator(".tree tbody .row:not(.is-sub) .nm")
-      .first();
+    const cell = page.locator(".tree tbody .row:not(.is-sub) .nm").first();
     const filled = await cell.evaluate((node) => {
       const link = node.firstElementChild as HTMLElement;
       return {
         tag: link.tagName,
         display: getComputedStyle(link).display,
-        // the overlay is gone, so the link's own box is the hit area
         covers:
           link.getBoundingClientRect().width /
           node.getBoundingClientRect().width,
@@ -1060,34 +1091,39 @@ test("the tree row's link fills its cell and the wash is live", async (t) => {
       `the tree row lays out ${filled.cells} cells, so a column collapsed`,
     );
 
-    const row = page.locator(".tree tbody .row").first();
     const sunk = rgb(
-      await row.evaluate((node) =>
+      await cell.evaluate((node) =>
         getComputedStyle(node).getPropertyValue("--sunk"),
       ),
     );
+    const subject = page.locator(".tree tbody .row:not(.is-sub) .msg").first();
+    const read = () =>
+      cell.evaluate((node) => getComputedStyle(node).backgroundColor);
 
-    const rest = await row.evaluate(
-      (node) => getComputedStyle(node).backgroundColor,
-    );
-    await row.hover();
-    const washed = await row.evaluate(
-      (node) => getComputedStyle(node).backgroundColor,
-    );
+    const rest = await read();
+    await cell.hover();
+    const washed = await read();
 
     assert.notStrictEqual(
       washed,
       rest,
-      "hovering a tree row changed nothing, so the wash is still switched off",
+      "hovering the name cell changed nothing, so the wash is switched off",
     );
     assert.strictEqual(washed, sunk, "the hover wash is not --sunk");
-    t.diagnostic(`tree row cells: ${filled.cells}, wash ${washed}`);
+
+    await subject.hover();
+    assert.strictEqual(
+      await read(),
+      rest,
+      "hovering the subject washes the name, so the wash outruns the link",
+    );
+    t.diagnostic(`tree row cells: ${filled.cells}, name-cell wash ${washed}`);
   } finally {
     await page.close();
   }
 });
 
-// a submodule offers nothing, so the row takes no wash and no link
+// a submodule offers nothing, so its name takes no wash and no link
 test("a gitlink row is inert", async () => {
   const page = await (await browser()).newPage();
 
@@ -1096,24 +1132,27 @@ test("a gitlink row is inert", async () => {
     await page.goto(`${site.origin}/tree-sub`);
 
     const row = page.locator(".tree tbody .is-sub").first();
+    const cell = row.locator(".nm");
     const inert = await row.evaluate((node) => ({
       tag: (node.querySelector(".nm")?.firstElementChild ?? node).tagName,
       links: node.querySelectorAll("a").length,
-      rest: getComputedStyle(node).backgroundColor,
     }));
 
     assert.strictEqual(inert.tag, "SPAN", "a gitlink row grew a link");
     assert.strictEqual(inert.links, 0, "a gitlink row links somewhere");
 
-    await row.hover();
-    const washed = await row.evaluate(
+    const rest = await cell.evaluate(
+      (node) => getComputedStyle(node).backgroundColor,
+    );
+    await cell.hover();
+    const washed = await cell.evaluate(
       (node) => getComputedStyle(node).backgroundColor,
     );
 
     assert.strictEqual(
       washed,
-      inert.rest,
-      "a gitlink row washes on hover, so it offers a target it does not have",
+      rest,
+      "a gitlink name washes on hover, so it offers a target it does not have",
     );
   } finally {
     await page.close();
@@ -1126,7 +1165,10 @@ const tableWidths = [320, narrowWidth, wideWidth];
 
 const tablePaths = ["/populated", "/tree", "/commits", "/branches", "/commit"];
 
-const tableColumns = 14;
+// four three-column tables and the commit page's two. below the breakpoint
+// the tree and the index drop their description, so the count is the
+// oracle for the column having gone rather than merely gone to zero width
+const tableColumns: Record<number, number> = { 320: 12, 375: 12, 1440: 14 };
 
 test("every column header is legible at every width", async (t) => {
   const page = await (await browser()).newPage();
@@ -1144,11 +1186,13 @@ test("every column header is legible at every width", async (t) => {
           .locator(".tbl thead")
           .first()
           .evaluate((head) =>
-            [...head.querySelectorAll("th")].map((cell) => ({
-              label: (cell.textContent ?? "").trim(),
-              scroll: cell.scrollWidth,
-              client: cell.clientWidth,
-            })),
+            [...head.querySelectorAll("th")]
+              .filter((cell) => cell.getClientRects().length > 0)
+              .map((cell) => ({
+                label: (cell.textContent ?? "").trim(),
+                scroll: cell.scrollWidth,
+                client: cell.clientWidth,
+              })),
           );
 
         for (const column of columns) {
@@ -1165,10 +1209,12 @@ test("every column header is legible at every width", async (t) => {
         counted += columns.length;
       }
 
+      const wanted = tableColumns[width] as number;
+
       assert.strictEqual(
         counted,
-        tableColumns,
-        `${width}px read ${counted} column headers, not the ${tableColumns} the five tables carry`,
+        wanted,
+        `${width}px lays out ${counted} column headers, not the ${wanted} the five tables carry there`,
       );
       t.diagnostic(`${width}px: ${counted} column headers whole`);
     }
@@ -1179,13 +1225,23 @@ test("every column header is legible at every width", async (t) => {
 
 const rowSamples = 40;
 
-// an overlay is a pseudo-element with no box to measure, so what a click
-// lands on is the only oracle there is: sample across the row and ask
+// what a click lands on is the only oracle there is, so sample across the
+// row and ask. two things the sampling alone cannot tell apart, and both
+// are shapes an overlay produced: a link hit from outside this row, and a
+// point inside a link's own box that something else swallowed. so each hit
+// is checked for containment and the count is compared against the boxes
 async function rowTargets(
   page: Page,
   path: string,
   width: number,
-): Promise<{ width: number; covered: number; targets: number }> {
+): Promise<{
+  width: number;
+  covered: number;
+  foreign: number;
+  inside: number;
+  touching: number;
+  targets: number;
+}> {
   await page.setViewportSize({ width, height: 900 });
   await page.goto(`${site.origin}${path}`);
   await page.evaluate(() => document.fonts.ready);
@@ -1196,27 +1252,53 @@ async function rowTargets(
     .evaluate((row, samples) => {
       const box = row.getBoundingClientRect();
       const middle = box.top + box.height / 2;
+      const boxes = [...row.querySelectorAll("a")].map((link) =>
+        link.getBoundingClientRect(),
+      );
+
+      // a sample landing within a pixel of a link's edge can round either
+      // way, so the boxes are counted twice — once inset, once outset —
+      // and the hits are bracketed rather than pinned to a single number
+      const within = (across: number, slack: number): boolean =>
+        boxes.some(
+          (one) => across >= one.left - slack && across < one.right + slack,
+        );
+
       const hit: Element[] = [];
+      let foreign = 0;
+      let inside = 0;
+      let touching = 0;
 
       for (let step = 0; step < samples; step += 1) {
         const across = box.left + (box.width * (step + 0.5)) / samples;
+        if (within(across, -1)) inside += 1;
+        if (within(across, 1)) touching += 1;
+
         const link = row.ownerDocument
           .elementFromPoint(across, middle)
           ?.closest("a");
-        if (link) hit.push(link);
+        if (!link) continue;
+
+        hit.push(link);
+        if (!row.contains(link)) foreign += 1;
       }
 
       return {
         width: Math.round(box.width),
         covered: hit.length,
+        foreign,
+        inside,
+        touching,
         targets: new Set(hit).size,
       };
     }, rowSamples);
 }
 
-// the two shapes the Table component has: three links cannot share one
-// overlay, and one link left alone covers half a row it washes whole
-test("a row leads somewhere end to end, by overlay or by cell", async (t) => {
+// the two shapes the Table component has. three links fill the row between
+// them, so that row is the target and washes whole. one link fills its own
+// cell and stops, so the cell is the target and the wash stops with it —
+// which is the whole reason the overlay that used to stretch it is gone
+test("a row's targets reach exactly as far as its own links do", async (t) => {
   const page = await (await browser()).newPage();
 
   try {
@@ -1231,17 +1313,27 @@ test("a row leads somewhere end to end, by overlay or by cell", async (t) => {
         const read = await rowTargets(page, path, width);
 
         assert.strictEqual(
-          read.covered,
-          rowSamples,
-          `${path} at ${width}px leads nowhere at ${rowSamples - read.covered} of ${rowSamples} points across a ${read.width}px row`,
+          read.foreign,
+          0,
+          `${path} at ${width}px lands on a link outside its own row at ${read.foreign} of ${rowSamples} points`,
+        );
+        assert.ok(
+          read.covered >= read.inside,
+          `${path} at ${width}px lays out ${read.inside} of ${rowSamples} points inside a link box but only ${read.covered} land on one, so something covers its own link`,
+        );
+        assert.ok(
+          read.covered <= read.touching,
+          `${path} at ${width}px leads somewhere at ${read.covered} of ${rowSamples} points, past the ${read.touching} its links occupy — a target is stretched beyond its own box`,
         );
         assert.strictEqual(
           read.targets,
           wanted,
           `${path} at ${width}px covers its row with ${read.targets} target(s), wanted ${wanted}`,
         );
+
+        const share = ((read.covered / rowSamples) * 100).toFixed(0);
         t.diagnostic(
-          `${path} at ${width}px: ${read.width}px row, ${read.targets} target(s)`,
+          `${path} at ${width}px: ${read.width}px row, ${read.targets} target(s) over ${share}%`,
         );
       }
     }
