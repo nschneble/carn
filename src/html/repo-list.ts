@@ -10,7 +10,7 @@ import { page } from "./page.js";
 function row(repo: RepoSummary, now: Date): Raw {
   return html`<tr class="row">
             <th class="nm" scope="row"><a class="t-item" lang="en" href="/r/${repo.name}">${plainName(repo.name)}</a></th>
-            <td class="msg"><span>${repo.description}</span></td>
+            <td class="msg"><span>${repo.description || "-"}</span></td>
             ${ageCell(repo.createdAt, now)}
           </tr>`;
 }
