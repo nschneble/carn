@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # Phase 1e exit checks, from docs/phases/1e-views.md, 1e-revision.md, and
-# 1e-revision-2.md. Prints PASS or FAIL for each of the 51 checks and exits
+# 1e-revision-2.md. Prints PASS or FAIL for each of the 56 checks and exits
 # non-zero if any fail. Reads
 # DATABASE_URL from the environment, falling back to ./.env. Check 24 runs
 # 1a, 1b, 1c and 1d, and each of those runs the ones before it, so a full
