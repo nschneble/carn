@@ -24,7 +24,7 @@ import {
   noSuchRepo,
   noTreeRoot,
 } from "../../src/html/error-page.js";
-import { smallCaps } from "../../src/html/filename.js";
+import { pathName } from "../../src/html/filename.js";
 import { html } from "../../src/html/index.js";
 import { repoShowPage } from "../../src/html/repo-show.js";
 import { stylesheet } from "../../src/html/styles.js";
@@ -511,14 +511,14 @@ test("small caps split at the extension and never insert whitespace", () => {
   ];
 
   for (const [name, expected] of cases) {
-    assert.strictEqual(smallCaps(name).value, expected, name);
+    assert.strictEqual(pathName(name).value, expected, name);
   }
 
   // a filename is not a repo name, so it's not held to namePattern
   const awkward = ["café.md", "日本語.txt", "🎁.png", "Straße.md", "a b.txt"];
 
   for (const name of [...wide.map((entry) => entry.name), ...awkward]) {
-    const markup = smallCaps(name).value;
+    const markup = pathName(name).value;
 
     // a filename's own space is content; the round trip below covers it
     if (!/\s/.test(name)) {
@@ -543,14 +543,14 @@ test("an .sc span appears exactly when a final segment carries an extension", ()
 
   for (const name of extended) {
     assert.match(
-      smallCaps(name).value,
+      pathName(name).value,
       /<span class="sc">[^<]/,
       `${name} lost its extension span`,
     );
   }
 
   for (const name of [...extended, ...bare]) {
-    const markup = smallCaps(name).value;
+    const markup = pathName(name).value;
 
     assert.doesNotMatch(
       markup,

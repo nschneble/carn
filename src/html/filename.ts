@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// the last dot of the final segment splits a name: the stem takes .caps
-// at full size, the extension .sc. the DOM keeps the true characters and
-// nothing goes between the runs, since a newline there becomes a space in
-// the accessible name, the clipboard, and find-in-page. BRAND.md 03
+// two name kinds, two functions. both keep the true characters in the DOM
+// and put nothing between the runs, since a newline there becomes a space
+// in the accessible name, the clipboard, and find-in-page. BRAND.md 03
 
 import { html, type Raw } from "./index.js";
 
-export function smallCaps(name: string): Raw {
+// a path or filename: the last dot of the final segment splits it, the
+// stem taking .caps at full size and the extension .sc
+export function pathName(name: string): Raw {
   const segment = name.lastIndexOf("/") + 1;
   const dot = name.lastIndexOf(".");
 
@@ -17,4 +18,10 @@ export function smallCaps(name: string): Raw {
 
   // a leading dot is the extension here, unlike blob-page's extensionOf
   return html`<span class="caps">${name.slice(0, dot)}<span class="sc">${name.slice(dot)}</span></span>`;
+}
+
+// a ref or repo name: no extension exists to find, so nothing is looked
+// for. a tag is v1.1.0 whole and a branch's slash is a literal character
+export function plainName(name: string): Raw {
+  return html`<span class="caps">${name}</span>`;
 }

@@ -187,7 +187,7 @@ _The show shape, applied to a file_
 
 A blob page is the show view with a file as its subject, so the ordinary rule applies and the filename takes the display face — visibly, in small caps, as the `<h1>`. Section 02's exemption is conditional: the repo name hides because the header image or generated mark already carries identity on screen. A blob page has no mark, so nothing else carries it and the heading has to. **Blob is one of several pages under that rule, not a lone exception** — tree, the commit log, and branches and tags carry no mark either, and §02 gives all four the same visible `.t-item` treatment.
 
-The path renders through `smallCaps()`, the same function the file rows use, with `lang="en"` for the same reason. A breadcrumb ends in the filename too; path and title are different registers, not a repetition.
+The path renders through `pathName()`, the same function the file rows use, with `lang="en"` for the same reason. A breadcrumb ends in the filename too; path and title are different registers, not a repetition.
 
 - **Metadata** — Size, Lines, Language, in the meta block. A file that isn't shown carries Size and Type instead.
 - **The source block** — `<pre class="src" tabindex="0" role="region" aria-labelledby>`. Never a `<div tabindex="0">` around the `<pre>`, which fails `focus-order-semantics`. The `tabindex` is unconditional: the server cannot know whether the longest line will overflow at the reader's viewport and font metrics, and a scrollable region that cannot be focused fails 2.1.1.

@@ -15,7 +15,7 @@ import { join, resolve } from "node:path";
 import { after, test } from "node:test";
 
 import { commitsHref } from "../../src/html/commit-log.js";
-import { smallCaps } from "../../src/html/filename.js";
+import { plainName } from "../../src/html/filename.js";
 import { refsHref } from "../../src/html/ref-list.js";
 import { budgetBytes, pageWireBytes } from "../../src/html/wire-weight.js";
 import { maxSubjectChars } from "../../src/repos/log.js";
@@ -282,7 +282,7 @@ test("three links per row, and no row overlay swallows the other two", () => {
 
   assert.ok(
     markup.includes(
-      `<a class="nm t-item" lang="en" href="${href}">${smallCaps(first.name).value}`,
+      `<a class="nm t-item" lang="en" href="${href}">${plainName(first.name).value}`,
     ),
     "the name is not a link to the ref's own log",
   );
@@ -313,7 +313,7 @@ test("the branch table names the default branch, and the tag table does not", ()
 
   assert.ok(
     marked.includes(
-      `${smallCaps("main").value}<span class="t-micro"> Default</span></a>`,
+      `${plainName("main").value}<span class="t-micro"> Default</span></a>`,
     ),
     "the default branch is not named in the branch list",
   );
@@ -335,7 +335,7 @@ test("an annotated tag carries the marker, a lightweight one does not", () => {
   for (const ref of annotated) {
     assert.ok(
       markup.includes(
-        `${smallCaps(ref.name).value}<span class="t-micro"> Annotated</span>`,
+        `${plainName(ref.name).value}<span class="t-micro"> Annotated</span>`,
       ),
       `${ref.name} is annotated but carries no marker`,
     );
@@ -343,7 +343,7 @@ test("an annotated tag carries the marker, a lightweight one does not", () => {
   for (const ref of lightweight) {
     assert.ok(
       !markup.includes(
-        `${smallCaps(ref.name).value}<span class="t-micro"> Annotated</span>`,
+        `${plainName(ref.name).value}<span class="t-micro"> Annotated</span>`,
       ),
       `${ref.name} is lightweight but carries the annotated marker`,
     );
@@ -354,6 +354,41 @@ test("an annotated tag carries the marker, a lightweight one does not", () => {
     /Annotated/,
     "a branch list carries a tag-only marker",
   );
+});
+
+test("a ref name has no extension, so it never splits", () => {
+  const cases: [string, string][] = [
+    ["v1.1.0", '<span class="caps">v1.1.0</span>'],
+    ["main", '<span class="caps">main</span>'],
+    ["release/2.0", '<span class="caps">release/2.0</span>'],
+    ["example.com", '<span class="caps">example.com</span>'],
+    [".hidden", '<span class="caps">.hidden</span>'],
+    ["v2.", '<span class="caps">v2.</span>'],
+  ];
+
+  for (const [name, expected] of cases) {
+    assert.strictEqual(plainName(name).value, expected, name);
+  }
+
+  for (const ref of [...branches, ...tags]) {
+    const markup = plainName(ref.name).value;
+
+    assert.doesNotMatch(markup, /class="sc"/, `${ref.name} split`);
+    assert.strictEqual(
+      markup.replace(/<[^>]*>/g, ""),
+      ref.name,
+      `${ref.name} is not what the DOM holds`,
+    );
+  }
+
+  // release/1.2 and v1.1.0 are in the fixtures, so the page proves it too
+  for (const kind of ["branch", "tag"] as RefList["kind"][]) {
+    assert.doesNotMatch(
+      refsDocument({ kind }),
+      /class="sc"/,
+      `the ${kind} list rendered an extension span`,
+    );
+  }
 });
 
 test("an empty list says what would be here and how to make one", () => {

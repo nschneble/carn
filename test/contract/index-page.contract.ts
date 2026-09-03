@@ -4,7 +4,7 @@ import assert from "node:assert";
 import { test } from "node:test";
 
 import { age } from "../../src/html/age.js";
-import { smallCaps } from "../../src/html/filename.js";
+import { plainName } from "../../src/html/filename.js";
 import { repoListPage } from "../../src/html/repo-list.js";
 import { styleHref, stylesheet } from "../../src/html/styles.js";
 import type { RepoSummary } from "../../src/repos/list.js";
@@ -115,7 +115,7 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
   assert.ok(markup.includes('<ul class="repos" role="list">'));
   assert.ok(
     markup.includes(
-      `<a class="nm t-item" lang="en" href="/r/linklater">${smallCaps("linklater").value}</a>`,
+      `<a class="nm t-item" lang="en" href="/r/linklater">${plainName("linklater").value}</a>`,
     ),
   );
 
@@ -124,7 +124,7 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
   assert.match(
     markup,
     new RegExp(
-      `<a class="nm t-item" lang="en" href="/r/${noDescription.name}">${smallCaps(noDescription.name).value}</a>\\s*<span class="msg"></span>`,
+      `<a class="nm t-item" lang="en" href="/r/${noDescription.name}">${plainName(noDescription.name).value}</a>\\s*<span class="msg"></span>`,
     ),
     "a repo with no description dropped its .msg span, so the grid columns no longer line up",
   );
@@ -146,6 +146,26 @@ test("a repo name wears the caps wrapper like every other Row, and no tooltip", 
   assert.match(markup, /class="caps"/);
   assert.doesNotMatch(markup, /class="nm t-item"[^>]*title=/);
   assert.doesNotMatch(markup, /class="[^"]*is-dir/);
+});
+
+test("a dot in a repo name is part of the name, not an extension", () => {
+  const dotted = ["example.com", "carn.dev", "v1.1.0"].map((name) => ({
+    name,
+    description: null,
+    createdAt: frozen,
+  }));
+  const markup = repoListPage({ repos: dotted, now: frozen });
+
+  for (const repo of dotted) {
+    assert.ok(
+      markup.includes(
+        `<a class="nm t-item" lang="en" href="/r/${repo.name}"><span class="caps">${repo.name}</span></a>`,
+      ),
+      `${repo.name} did not render whole`,
+    );
+  }
+  assert.doesNotMatch(markup, /class="sc"/);
+  assert.doesNotMatch(indexDocument(), /class="sc"/);
 });
 
 test("a description is escaped, never interpolated raw", () => {

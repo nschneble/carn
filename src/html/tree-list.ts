@@ -8,7 +8,7 @@
 import type { TreeEntry } from "../repos/tree.js";
 import { ageMarkup } from "./age.js";
 import { shortShaChars } from "./commit-log.js";
-import { smallCaps } from "./filename.js";
+import { pathName } from "./filename.js";
 import { html, type Raw } from "./index.js";
 
 export type TreeListView = {
@@ -51,7 +51,7 @@ function row(view: TreeListView, entry: TreeEntry): Raw {
 
   if (entry.kind === "gitlink") {
     return html`<li class="row is-sub">
-        <span class="nm t-item" lang="en">${smallCaps(entry.name)}<span class="t-micro"> Pinned</span></span>
+        <span class="nm t-item" lang="en">${pathName(entry.name)}<span class="t-micro"> Pinned</span></span>
         <span class="pin t-mono"><span class="vh">Submodule pinned at </span>${entry.oid.slice(0, shortShaChars)}</span>
       </li>`;
   }
@@ -63,8 +63,8 @@ function row(view: TreeListView, entry: TreeEntry): Raw {
 
   const name =
     entry.kind === "directory"
-      ? html`${smallCaps(entry.name)}/`
-      : smallCaps(entry.name);
+      ? html`${pathName(entry.name)}/`
+      : pathName(entry.name);
 
   return html`<li class="row${entry.kind === "directory" ? " is-dir" : ""}">
         <a class="nm t-item" lang="en" href="${href}">${name}</a>

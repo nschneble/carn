@@ -1675,9 +1675,9 @@ fi
 readonly TITLE_39="an annotated tag row carries the marker, a lightweight one does not"
 if require_daemon 39 "$TITLE_39" && require_seed 39 "$TITLE_39"; then
   wrong=""
-  grep -qF '<span class="caps">v1.1<span class="sc">.0</span></span><span class="t-micro"> Annotated</span>' "$work/tags.body" \
+  grep -qF '<span class="caps">v1.1.0</span><span class="t-micro"> Annotated</span>' "$work/tags.body" \
     || wrong="$wrong the annotated tag v1.1.0 carries no marker;"
-  grep -qF '<span class="caps">v1.0<span class="sc">.0</span></span><span class="t-micro"> Annotated</span>' "$work/tags.body" \
+  grep -qF '<span class="caps">v1.0.0</span><span class="t-micro"> Annotated</span>' "$work/tags.body" \
     && wrong="$wrong the lightweight tag v1.0.0 carries the annotated marker;"
   if [ -n "$wrong" ]; then
     record FAIL 39 "$TITLE_39" "$wrong"
@@ -1723,24 +1723,30 @@ fi
 
 # 42
 # part A2: the name column of a Row takes small caps, branches, tags and the
-# repo index included, so ref-list.ts and repo-list.ts call the same
-# function tree-list.ts does
-readonly TITLE_42="ref-list.ts and repo-list.ts call smallCaps(), and a branch and a repo name render in it"
+# repo index included. a ref and a repo name have no extension to find, so
+# those two call plainName() and the tree calls pathName()
+readonly TITLE_42="ref-list.ts and repo-list.ts call plainName(), and neither list splits a name"
 wrong=""
-grep -qF "smallCaps(" src/html/ref-list.ts \
-  || wrong="$wrong ref-list.ts never calls smallCaps();"
-grep -qF "smallCaps(" src/html/repo-list.ts \
-  || wrong="$wrong repo-list.ts never calls smallCaps();"
+grep -qF "plainName(" src/html/ref-list.ts \
+  || wrong="$wrong ref-list.ts never calls plainName();"
+grep -qF "plainName(" src/html/repo-list.ts \
+  || wrong="$wrong repo-list.ts never calls plainName();"
+grep -qF "pathName(" src/html/tree-list.ts \
+  || wrong="$wrong tree-list.ts never calls pathName();"
 if require_daemon 42 "$TITLE_42" && require_seed 42 "$TITLE_42"; then
-  grep -qF '<span class="caps">' "$work/branches.body" \
-    || wrong="$wrong the rendered branch list carries no small-caps wrapper;"
-  grep -qF '<span class="caps">' "$work/index.body" \
-    || wrong="$wrong the rendered repo index carries no small-caps wrapper;"
+  for page in branches tags index; do
+    grep -qF '<span class="caps">' "$work/$page.body" \
+      || wrong="$wrong the rendered $page carries no small-caps wrapper;"
+    grep -qF 'class="sc"' "$work/$page.body" \
+      && wrong="$wrong $page split a name that has no extension;"
+  done
+  grep -qF 'class="sc"' "$work/tree.body" \
+    || wrong="$wrong the tree listing stopped splitting filenames at their extension;"
 fi
 if [ -n "$wrong" ]; then
   record FAIL 42 "$TITLE_42" "$wrong"
 else
-  record PASS 42 "$TITLE_42" "ref-list.ts and repo-list.ts call smallCaps(), and both lists render it"
+  record PASS 42 "$TITLE_42" "refs and the index render whole names, the tree still splits its filenames"
 fi
 
 # 43

@@ -10,7 +10,7 @@ import { sshRemote } from "../repos/remote.js";
 import { age } from "./age.js";
 import { repoTrail } from "./breadcrumb.js";
 import { commitsHref } from "./commit-log.js";
-import { smallCaps } from "./filename.js";
+import { plainName } from "./filename.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
 import { budgetBytes, pageWireBytes } from "./wire-weight.js";
@@ -52,7 +52,7 @@ function row(view: RefListPage, ref: Ref): Raw {
   const href = commitsHref(view.repo, ref.name);
 
   return html`<li class="row">
-        <a class="nm t-item" lang="en" href="${href}">${smallCaps(ref.name)}${marker(view, ref)}</a>
+        <a class="nm t-item" lang="en" href="${href}">${plainName(ref.name)}${marker(view, ref)}</a>
         ${subject(ref, href)}
         <a class="age" href="${href}"><span class="vh">Updated </span><time datetime="${ref.at.toISOString()}">${age(ref.at, view.now)}</time></a>
       </li>`;

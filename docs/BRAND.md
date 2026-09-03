@@ -630,7 +630,13 @@ Not every `.t-item` heading takes the modifier. A show page's title — a blob's
 
 ### Small caps
 
-Carn Sans has no `smcp`, so a Row's name column uses compensated synthetic small caps, and the split is positional rather than case-based. The whole name goes in a `.caps` span, uppercased by CSS at full size; the extension — everything from the last dot of the name's final segment — goes in an `.sc` span nested inside it, at 79% size with weight and width raised so the stems match. Browser synthesis scales the stems too, which leaves the faked caps visibly lighter than the ones beside them. Case is never read, so `README.md` and `package.json` divide the same way. A name with no dot is all stem and carries no `.sc` span at all, and so is one whose only dot is last (`foo.`) or sits in an earlier path segment (`.github/workflows`). A leading dot is the extension's own separator, not a stem: `.env` is an empty stem and one `.sc` run carrying `.env` whole.
+Carn Sans has no `smcp`, so a Row's name column uses compensated synthetic small caps. Browser synthesis scales the stems too, which leaves the faked caps visibly lighter than the ones beside them. The whole name always goes in a `.caps` span, uppercased by CSS at full size. Whether anything nests inside that span depends on what the column is holding, and there are two answers, one function each.
+
+**A path or a filename splits, and the split is positional rather than case-based** — a tree row's entry, a tree or blob heading. This is `pathName()`. The extension, everything from the last dot of the name's final segment, goes in an `.sc` span nested inside the `.caps` span, at 79% size with weight and width raised so the stems match. Case is never read, so `README.md` and `package.json` divide the same way. A name with no dot is all stem and carries no `.sc` span at all, and so is one whose only dot is last (`foo.`) or sits in an earlier path segment (`.github/workflows`). A leading dot is the extension's own separator, not a stem: `.env` is an empty stem and one `.sc` run carrying `.env` whole.
+
+**A ref name or a repo name never splits** — a branch, a tag, the repo index. This is `plainName()`, and it is a separate function rather than a flag because there is nothing to look for: a ref has no extension, so a dot in one is an ordinary character and a slash is not a path separator. The tag `v1.1.0` is one `.caps` run whole, not `v1.1` with a small-caps `.0`; so are the branch `release/2.0` and the repo `example.com`. `plainName()` emits no `.sc` span under any input.
+
+Both functions answer to the two markup rules below.
 
 **The rule is the name column, not the filename.** A tree row's filename, a branch or tag's name, a repo's name in the index — anything sitting in a Row's own `.nm` slot takes `.t-item` and small caps together. Two columns carry a name without carrying small caps, and both are documented exceptions, not drift:
 

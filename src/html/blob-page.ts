@@ -8,7 +8,7 @@
 import { blobAssetPath } from "../repos/blob-asset.js";
 import { type BlobView, countLines } from "../repos/blob-view.js";
 import { pathTrail, repoTrail } from "./breadcrumb.js";
-import { smallCaps } from "./filename.js";
+import { pathName } from "./filename.js";
 import { html, type Raw, raw } from "./index.js";
 import { page } from "./page.js";
 import { highlight, type Language, languageFor } from "./syntax.js";
@@ -122,7 +122,7 @@ function objectMeta(blob: BlobView): Raw {
 }
 
 function heading(blob: BlobView): Raw {
-  return html`<h1 class="t-item" lang="en" id="blob-h">${smallCaps(blob.path)}</h1>`;
+  return html`<h1 class="t-item" lang="en" id="blob-h">${pathName(blob.path)}</h1>`;
 }
 
 function codeClass(language: Language | null): string {
