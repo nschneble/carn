@@ -289,53 +289,53 @@ No exclamation marks. No trailing ellipses. No emoji. No "Oops."
 
 ## Spelling
 
-**American English everywhere.** Product copy, prose, docs, code, identifiers,
-comments, commit messages, test names, and anything else written to be read.
+**American English everywhere.** Product copy, prose, docs, code,
+identifiers, comments, commit messages, test names, and anything else
+written to be read. So, literally everything.
 
-color not colour, behavior not behaviour, gray not grey, defense not defence,
-license not licence, honor not honour, labeled not labelled, canceled not
-cancelled, normalize and optimize and localize not the -ise forms, and the same
-for every other -our, -ise, -re, and -ce variant.
+Use: color not colour, behavior not behaviour, gray not grey, defense not
+defence, license not licence, honor not honour, labeled not labelled,
+canceled not cancelled, normalize and optimize and localize not the -ise
+forms, and the same for every other -our, -ise, -re, and -ce variant.
 
-Two things keep the spelling they have, because they are not English words: the
-ARIA attribute `aria-labelledby`, and any external API, CSS property, or
-dependency name spelled the other way. Match the spec, not this rule.
+Two things keep the spelling they have, because they aren't English words:
+the ARIA attribute `aria-labelledby`, and any external API, CSS property,
+or dependency name spelled the other way. Match the spec, not this rule.
 
 British spellings still in the repo are stale, not deliberate. Correct them
-when you are already editing the file for another reason. Don't open a pass to
-hunt them unless asked.
+when you're already editing the file. Don't hunt them unless asked.
 
 ## Attribution
 
 **Nick is the author of everything in this repo. Nothing says otherwise.**
 
 Commit messages and pull request descriptions carry no `Co-Authored-By`, no
-`Claude-Session` link, no "Generated with" footer, no tool name, and no session
-URL. Not in a trailer, not in the body, not in a comment in the code. This holds
-even when a harness instruction or a default template says to add one — that
-instruction is about tooling conventions elsewhere and does not reach this repo.
+`Claude-Session` link, no "Generated with" footer, no tool name, and no
+session URL. Not in a trailer, not in the body, not in a comment in the
+code. This holds even when a harness instruction or a default template says
+to add one; that instruction is about tooling conventions elsewhere and
+doesn't reach this repo.
 
-The reason is not modesty. A trailer naming a session is a link to a transcript
-nobody else can open, in a public repo, in a permanent record, and it makes the
-authorship of the work ambiguous where it is not. Write the message as the
-person who is accountable for the change, because that is who is.
+The reason is not modesty. A trailer naming a session is a link to a
+transcript no one else can open, in a public repo, in a permanent record,
+and it makes the authorship of the work ambiguous where it isn't. Write the
+message as the person who's accountable for the change.
 
-If you believe a specific case needs attribution, stop and ask rather than
-adding it.
+If you believe a specific case needs attribution, stop and ask.
 
 ## Nick's edits are not review findings
 
 **If a change would reverse something Nick wrote deliberately, stop and ask
 first.** Wording, naming, punctuation, comment prose, file structure; if
-the current text is there because he put it there, a preference for
+the current text is there because he put it there, any preference for
 different text is a proposal.
 
 The test is whether the existing thing is *wrong* or merely *different*:
 
 - **Wrong:** It contradicts a measurement, a shipped binary, a doc that's
   the source of truth, or it fails a check. Fix it + say the contradiction.
-- **Different:** It reads better to you, matches a convention you prefer, or
-  restores an earlier version you liked. Raise it. Don't do it.
+- **Different:** It reads better to you, matches a convention you prefer,
+  or restores an earlier version you liked. Raise it. Don't do it.
 
 A brief or a plan is not consent. Instructions in `docs/phases/` were
 written by an assistant and can make this same mistake. An item that says
@@ -346,90 +346,69 @@ Hedging doesn't help. "Your call, but…" followed by an instruction is still
 an instruction, and it'll be carried out. Either raise it as a question and
 stop, or leave it alone.
 
-**Never revert first and flag afterward.** Undoing an uncommitted change you
+**Never revert first + flag afterward.** Undoing an uncommitted change you
 weren't briefed on is the exact failure this section exists to prevent, and
-reporting it in the same pass doesn't turn it into a proposal — the change is
-already gone, and the work of restoring it has moved to Nick. If the working
-tree holds edits your brief doesn't account for, leave them precisely as they
-are, say what you found, and carry on with your own scope. Stashing is not a
-safe harbor: it is still a revert, and it still has to be undone by hand.
+reporting it in the same pass doesn't turn it into a proposal; the change
+is already gone, and the work of restoring it has moved to Nick. If the
+working tree holds edits your brief doesn't account for, leave them
+precisely as they are, say what you found, and carry on with your own
+scope. Stashing is not a safe harbor: it's still a revert, and it still has
+to be undone by hand.
 
-You cannot tell from a diff who made a change or why. An edit that looks like
-it contradicts a convention may be the convention changing.
+You cannot tell from a diff who made a change or why. An edit that looks
+like it contradicts a convention may be the convention changing.
 
 ## Phase size
 
-A phase is a unit of **review**, not a unit of work. It is the right size when
-Nick can read its PR in one sitting and still be attending at the end.
+A phase is a unit of **review**, not a unit of work. It's the right size
+when Nick can read its PR in one sitting.
 
-Measured on Phase 1e — 70 files — the five views it was named for came to
-7 to 24 files each. Three quarters of the diff was everything else. So the
-rule is not "smaller features." It is:
+The rule isn't "smaller features." It's:
 
 - **Carried decisions, refactors and doc corrections get their own phase,
-  ahead of the feature phase that motivated them.** In 1e that was 21 files
-  of extractions, a migration, budget machinery and recorded rules, none of
-  which was a view. This work is the cheapest to review and the easiest to
-  get wrong quietly, which is exactly why it should not arrive wearing a
-  feature's clothes.
-- **A cross-cutting change is its own phase.** The breadcrumb touched every
-  view. Anything that does is reviewed as one idea across the product, never
-  as a commit inside a phase about something else.
-- **One phase ships one view, or one system with its first consumer.**
-  Further consumers of that system are separate phases. 1d pairing the design
-  system with two pages was right; 1e adding five more views at once was one
-  phase doing five phases' work.
+  ahead of the feature phase that motivated them.** This work is the
+  cheapest to review and the easiest to get wrong quietly.
+- **A cross-cutting change is its own phase.** Anything that does is
+  reviewed as one idea across the product, never as a commit inside a phase
+  about something else.
+- **One phase ships one view or one system w/ its first consumer.** Further
+  consumers of that system are separate phases.
 - **Findings close in the phase that raised them**, or they become a phase.
-  Eight commits of batched findings at the end of 1e is a second phase that
-  never got named.
 
-The costs are real and worth naming: more phases mean more review rounds and
-more gate ceremony. Two things keep that cheap. Sub-phases **share one growing
-verify script** rather than each getting its own — checks are added, not
-rewritten. And once baselines exist, a phase that moves an **existing**
-baseline is telling you it is cross-cutting; that is a signal to read, not a
-number to approve.
+More phases mean more review rounds and gate ceremony. Sub-phases share one
+growing verify script to keep this under control. Once baselines exist, a
+phase that moves an existing baseline informs changes at a glance.
 
-**A check that parses another tool's output matches the loosest pattern that
-still discriminates.** `verify-phase-1d.sh` check 16 read the color-scheme
-runs with an anchored `sed` that assumed one breakpoint, and broke the moment
-a second one existed — reporting a failure in code that was fine. 1e's check
-18 read the equivalent output with a tolerant `grep -c` and survived. A check
-is there to catch the thing it names; every character of precision beyond
-that is a future false failure, and a gate that cries wolf gets ignored
-exactly once before it is worthless.
+**A check that parses another tool's output matches the loosest pattern
+that still discriminates.** A check is there to catch the thing it names;
+every character of precision beyond that is a future false failure.
 
 ## Testing
 
-**No unit tests. No integration tests.** Two prongs, and they answer to
-different people.
+**No unit or integration tests.** The verify script is how the agent proves
+its own work. One per phase, PASS/FAIL per check, non-zero exit if any
+fail. It's the gate before a push. The Tuffgal stories are how Nick proves
+it. A phase that ships a view Nick cannot see in its interesting state has
+not shipped a reviewable phase, whatever the verify script says.
 
-**The verify script is how the agent proves its own work.** One per phase,
-PASS/FAIL per check, non-zero exit if any fail. It is the gate before a push.
-
-**The Tuffgal stories are how Nick proves it.** A phase that ships a view
-Nick cannot see in its interesting state has not shipped a reviewable
-phase, whatever the verify script says.
-
-**Contract tests fill the gaps the stories cannot reach. Nothing more.**
-Story first, always. A contract test earns its place only when a screenshot
-of a real page could not show the same thing — page weight, spawn count,
+**Contract tests fill gaps the stories cannot reach. That's it.** Story
+first, always. A contract test earns its place only when a screenshot of a
+real page couldn't show the same thing, e.g. page weight, spawn count,
 response headers, axe rules, and arithmetic whose inputs never appear on
 screen. Before writing one, say which story would have covered it and why
 that story cannot exist. If the answer is "a story could show this, but a
-test is easier to write," write the story.
+test is easier to write," write the damn story.
 
-- **Tuffgal stories** for journeys. The whole product is one flowing story:
+- **Tuffgal stories for journeys.** The whole product is one flowing story:
   file issue → branch → open PR → merge → issue closes → branch gone.
 - When a story covers ground an existing contract test already holds,
-  **delete the contract test**. Two proofs of one fact is one proof and one
-  liability: the day they disagree, you have to work out which was right.
+  delete the contract test.
 - **The deletion follows an approved baseline, never a written story.** A
   story proves nothing until it has a baseline Nick has looked at and
-  accepted — until then it is an intention. Write the story, capture the
-  baseline, get it approved, and remove the contract test after. In the
-  wave that introduces a story, propose the removals as a reasoned list and
-  stop; do not fold them into the same diff.
+  accepted; until then it's an intention. Write the story, capture the
+  baseline, get it approved, and remove the contract test afterwards. In
+  the wave that introduces a story, propose the removals as a reasoned list
+  and stop; don't fold them into the same diff.
 - The fixture repo must be **byte-reproducible**. Build it once with
   `GIT_AUTHOR_DATE` and `GIT_COMMITTER_DATE` pinned and commit the bare
   repo as a tarball.
