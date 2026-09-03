@@ -367,58 +367,96 @@ body {
   color: var(--on-accent);
 }
 
-/* rows (list items) */
+/* row tables (list views) */
 
-.row {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0 var(--s4);
-  padding: 6px var(--s2) 6px 0;
+/* no display value on any table element, and fixed rather than auto: auto
+   never sizes a column under its min-content, and a name that does not
+   wrap has the whole string as its minimum, so the table outgrows the
+   viewport instead of the name ellipsing */
+.tbl {
+  width: calc(100% + var(--s2));
   margin-left: calc(var(--s2) * -1);
-  padding-left: var(--s2);
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.tbl th,
+.tbl td {
+  padding: 0;
+  font-weight: inherit;
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.tbl thead th {
+  border-bottom: 1px solid var(--ink);
+  padding: 0 var(--s4) var(--s2) 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tbl thead .age,
+.tbl thead .cnt {
+  padding-right: 0;
+  text-align: right;
+}
+
+.tbl tbody th,
+.tbl tbody td {
   border-bottom: 1px solid var(--rule-soft);
-  align-items: baseline;
 }
 
-@media (min-width: 640px) {
-  .row {
-    grid-template-columns: minmax(0, auto) minmax(0, 1fr) 46px;
-  }
+.tbl thead th:first-child {
+  padding-left: var(--s2);
 }
 
-.row:hover,
-.row:focus-within {
+/* the gutter bleed sits inside the link, not on the cell, so the whole
+   width the wash covers is the width that takes a click */
+.tbl tbody th:first-child > *,
+.tbl tbody td:first-child > * {
+  padding-left: var(--s2);
+}
+
+.tbl tbody tr:hover,
+.tbl tbody tr:focus-within {
   background: var(--sunk);
 }
 
-.row .nm {
-  color: var(--ink);
+/* the cell is the target, so the box sits on the child that fills it */
+.tbl tbody th > *,
+.tbl tbody td > * {
+  display: block;
+  min-height: 24px;
+  padding: 6px var(--s4) 6px 0;
+}
+
+.tbl a {
   text-decoration: none;
+}
+
+.tbl a:hover,
+.tbl a:focus-visible {
+  text-decoration: underline;
+}
+
+.tbl .nm > * {
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.row .nm::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-}
-
-.row .nm:focus-visible {
+.tbl .nm a:focus-visible {
   outline-offset: -2px;
 }
 
-.row.is-dir .nm {
+.tbl .is-dir .nm > * {
   color: var(--accent-text);
 }
 
-/* lifts them above the row-wide overlay so both stay selectable */
-
-.row .msg,
-.row .age {
-  position: relative;
+.tbl .msg > *,
+.tbl .age > * {
   font-family: var(--f-mono);
   font-size: 10px;
   color: var(--ink-faint);
@@ -427,7 +465,16 @@ body {
   white-space: nowrap;
 }
 
-.row .age {
+.tbl .nm {
+  width: 40%;
+}
+
+.tbl .age {
+  width: 46px;
+}
+
+.tbl .age > * {
+  padding-right: 0;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -736,19 +783,21 @@ The box is a real `<input>` or `<textarea>` with a `<label for>`, and its placeh
 
 The chip carrying the current value takes `.chip--current`, a modifier class rather than an ARIA state. It differs from a plain chip by **weight and border width as well as fill**, because a difference in color alone fails the grayscale rule and is erased outright by forced-colors mode, which discards the accent and keeps the 2px border.
 
-### Row
+### Table
 
-_Full-row hit area. Directories in accent with a trailing slash, so the distinction survives grayscale. Sixteen rows before "Show all"._
+_Anything that looks like a table is one. Directories in accent with a trailing slash, so the distinction survives grayscale. Sixteen rows before "Show all"._
+
+**Every index view is a `<table class="tbl">`** — the file tree, the repo index, the commit log, the branch and tag lists, and the commit page's file list. Each carries a `<caption class="vh">`, a `<thead>` of `<th scope="col">`, and a `<th scope="row">` holding the name. The caption and the header row are not decoration: with CSS off they are what labels the table and names its columns, which is the terminal-browser and email-client case `docs/PLAN.md` 00 is written for. The name cell is a `<th scope="row">` rather than a `<td>` because it is the row's header, announced alongside every other cell in that row.
 
 **The trailing slash is real text in the DOM**, never `content: "/"`. Generated content cannot be selected, is not found by Ctrl-F, and vanishes with CSS off — which is every property the slash exists to have.
 
-**`.nm` is the anchor itself**, not a wrapper around one, and the full-row hit area is its `::after` overlay stretched across the positioned `.row`. Wrapping it would put an `overflow: hidden` ancestor between the link and its focus ring; an element's own `overflow` never clips its own outline, an ancestor's does. The ring is drawn with `outline-offset: -2px` so it lands inside the row instead of bleeding into the next grid column.
+**Each cell's own link fills its own cell.** `.tbl tbody th > *, .tbl tbody td > *` takes `display: block` and the row's padding, so three cells give three separately focusable targets and the row is visually covered end to end. There is no `::after` overlay: `position: relative` on a `<tr>` is patchy in WebKit, and an overlay would swallow the other two links besides. It is also why the subject and the age can be links to the commit at all, which a whole-row anchor would forbid. Row-level hover and focus live on `.tbl tbody tr:hover, .tbl tbody tr:focus-within`. The focus ring is drawn with `outline-offset: -2px` so it lands inside the cell rather than bleeding into the next column.
 
-`.msg` and `.age` sit above the overlay and stay directly selectable. Clicking the commit subject therefore falls through rather than following the row link — kept deliberately, because in 1e the subject and the age become links to the commit, which a whole-row anchor would make impossible.
+**No `display` value is ever set on a table element.** Not on `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, or `<td>`. A grid or flex override buys nothing table layout does not already give, and it is what cost WebKit the native semantics until Safari 17. The block-level boxes above sit on the anchors and spans inside the cells, which are not table elements.
 
-**One grid serves every three-column list.** `minmax(0, auto) minmax(0, 1fr) 46px` — the name sizes to its content and still shrinks under pressure, the description column takes what's left, age holds 46px. The tree, the commit log, and the branch and tag lists all draw from this one rule; none carries its own override. A gitlink row carries a `.t-micro` marker, `Pinned`, the same way the branch list marks `Default` — the only other signal on the row is the pinned sha sitting where a subject would go, and a pin alone reads as a rendering defect rather than a state.
+**`table-layout: fixed`, and the columns are widths, not tracks.** The name holds 40%, age holds 46px, the subject takes what is left and truncates. `auto` cannot do this: it never sizes a column below its min-content width, so a name that does not wrap makes the table wider than the viewport instead of ellipsing — measured at 320px, the repo index came out 1233px wide. Fixed columns also mean text getting wider cannot move a boundary, which is what holds SC 1.4.12 at 320px without a second layout. One rule serves the tree, the commit log, the repo index, and the branch and tag lists; none carries its own override, so a seven-character sha and a twelve-character filename share it without a special case. A gitlink row carries a `.t-micro` marker, `Pinned`, the same way the branch list marks `Default` — the only other signal on the row is the pinned sha, spanning the two columns it has no data for, and a pin alone reads as a rendering defect rather than a state.
 
-The commit page's file list is the one Row shape that legitimately diverges: two columns, not three — a name and a fixed-width `+N −N` count, with no subject or age to hold a third. Converging it onto the three-column rule would mean inventing a column it has no data for, which is a second grid wearing the first one's clothes.
+The commit page's file list is the one Table shape that legitimately diverges: two columns, not three — a name and a fixed-width `+N −N` count, with no subject or age to hold a third. Converging it onto the three-column rule would mean inventing a column it has no data for, which is a second table wearing the first one's clothes.
 
 ### Meta block
 

@@ -370,58 +370,96 @@ export const components = css`body {
   color: var(--on-accent);
 }
 
-/* rows (list items) */
+/* row tables (list views) */
 
-.row {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0 var(--s4);
-  padding: 6px var(--s2) 6px 0;
+/* no display value on any table element, and fixed rather than auto: auto
+   never sizes a column under its min-content, and a name that does not
+   wrap has the whole string as its minimum, so the table outgrows the
+   viewport instead of the name ellipsing */
+.tbl {
+  width: calc(100% + var(--s2));
   margin-left: calc(var(--s2) * -1);
-  padding-left: var(--s2);
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.tbl th,
+.tbl td {
+  padding: 0;
+  font-weight: inherit;
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.tbl thead th {
+  border-bottom: 1px solid var(--ink);
+  padding: 0 var(--s4) var(--s2) 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tbl thead .age,
+.tbl thead .cnt {
+  padding-right: 0;
+  text-align: right;
+}
+
+.tbl tbody th,
+.tbl tbody td {
   border-bottom: 1px solid var(--rule-soft);
-  align-items: baseline;
 }
 
-@media (min-width: 640px) {
-  .row {
-    grid-template-columns: minmax(0, auto) minmax(0, 1fr) 46px;
-  }
+.tbl thead th:first-child {
+  padding-left: var(--s2);
 }
 
-.row:hover,
-.row:focus-within {
+/* the gutter bleed sits inside the link, not on the cell, so the whole
+   width the wash covers is the width that takes a click */
+.tbl tbody th:first-child > *,
+.tbl tbody td:first-child > * {
+  padding-left: var(--s2);
+}
+
+.tbl tbody tr:hover,
+.tbl tbody tr:focus-within {
   background: var(--sunk);
 }
 
-.row .nm {
-  color: var(--ink);
+/* the cell is the target, so the box sits on the child that fills it */
+.tbl tbody th > *,
+.tbl tbody td > * {
+  display: block;
+  min-height: 24px;
+  padding: 6px var(--s4) 6px 0;
+}
+
+.tbl a {
   text-decoration: none;
+}
+
+.tbl a:hover,
+.tbl a:focus-visible {
+  text-decoration: underline;
+}
+
+.tbl .nm > * {
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.row .nm::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-}
-
-.row .nm:focus-visible {
+.tbl .nm a:focus-visible {
   outline-offset: -2px;
 }
 
-.row.is-dir .nm {
+.tbl .is-dir .nm > * {
   color: var(--accent-text);
 }
 
-/* lifts them above the row-wide overlay so both stay selectable */
-
-.row .msg,
-.row .age {
-  position: relative;
+.tbl .msg > *,
+.tbl .age > * {
   font-family: var(--f-mono);
   font-size: 10px;
   color: var(--ink-faint);
@@ -430,7 +468,16 @@ export const components = css`body {
   white-space: nowrap;
 }
 
-.row .age {
+.tbl .nm {
+  width: 40%;
+}
+
+.tbl .age {
+  width: 46px;
+}
+
+.tbl .age > * {
+  padding-right: 0;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -683,13 +730,6 @@ main > h1 {
 
 /* repo index */
 
-.repos {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border-top: 1px solid var(--ink);
-}
-
 .empty p {
   max-width: var(--measure);
   margin: 0 0 var(--s4);
@@ -777,70 +817,19 @@ main > h1 {
   padding: 10px 14px;
 }
 
-.tree {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border-top: 1px solid var(--ink);
-}
-
-/* a submodule is pinned here, not browsable. the row offers nothing, so it
-   takes neither the wash nor the overlay, which on a span would only
-   swallow the selection */
-.tree .is-sub .nm::after {
-  content: none;
-}
-
+/* a submodule is pinned here, not browsable, so the row takes no wash: a
+   wash with no click target under it is a false affordance */
 .tree .is-sub:hover,
 .tree .is-sub:focus-within {
   background: none;
 }
 
-.tree .pin {
-  position: relative;
+.tree .pin > * {
   color: var(--ink-mid);
 }
 
 .showall {
   margin: var(--s3) 0 0;
-}
-
-/* commit log */
-
-.log {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border-top: 1px solid var(--ink);
-}
-
-/* three links in the row, and the overlay would swallow two of them */
-.log .nm::after {
-  content: none;
-}
-
-/* stacked, each link is its own target and needs its own 24px band */
-.log .row a {
-  min-height: 24px;
-}
-
-@media (min-width: 640px) {
-  /* one line, three columns, and the offset alone carries the row */
-  .log .row a {
-    min-height: auto;
-  }
-}
-
-.log .msg,
-.log .age {
-  text-decoration: none;
-}
-
-.log .msg:hover,
-.log .msg:focus-visible,
-.log .age:hover,
-.log .age:focus-visible {
-  text-decoration: underline;
 }
 
 /* one commit */
@@ -859,32 +848,27 @@ main > h1 {
 }
 
 .files {
-  list-style: none;
-  margin: var(--s6) 0 0;
-  padding: 0;
-  border-top: 1px solid var(--ink);
+  margin-top: var(--s6);
 }
 
-@media (min-width: 640px) {
-  .files .row {
-    grid-template-columns: minmax(0, 1fr) 116px;
-  }
+/* a name and a fixed count, with no subject or age to hold a third
+   column, so the name takes the remainder rather than the shared 40% */
+.files .nm {
+  width: auto;
 }
 
-/* above the row-wide overlay, so the counts stay selectable */
 .files .cnt {
-  position: relative;
+  width: 116px;
+}
+
+.files .cnt > * {
+  padding-right: 0;
   font-family: var(--f-mono);
   font-size: 10px;
   color: var(--ink-faint);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-
-@media (min-width: 640px) {
-  .files .cnt {
-    text-align: right;
-  }
+  text-align: right;
 }
 
 .dpath {
@@ -914,44 +898,6 @@ main > h1 {
 .diff .h {
   color: var(--ink-soft);
   font-weight: 500;
-}
-
-/* branch and tag lists */
-
-.refs {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border-top: 1px solid var(--ink);
-}
-
-/* three links in the row, all to the same commit log, and the overlay
-   would swallow the other two */
-.refs .nm::after {
-  content: none;
-}
-
-.refs .msg,
-.refs .age {
-  text-decoration: none;
-}
-
-.refs .msg:hover,
-.refs .msg:focus-visible,
-.refs .age:hover,
-.refs .age:focus-visible {
-  text-decoration: underline;
-}
-
-/* stacked, each link is its own target and needs its own 24px band */
-.refs .row a {
-  min-height: 24px;
-}
-
-@media (min-width: 640px) {
-  .refs .row a {
-    min-height: auto;
-  }
 }
 
 /* rendered READMEs */
