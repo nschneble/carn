@@ -101,7 +101,8 @@ async function resolveTarget(
   return lookup.repo;
 }
 
-async function serve(
+// exported for the contract test; server.ts only ever calls handleExec
+export async function serve(
   request: ExecRequest,
   parsed: ParsedCommand,
   repo: ResolvedRepo,
