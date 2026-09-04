@@ -263,7 +263,7 @@ Full system in `docs/BRAND.md`. The rules a coding session needs:
 - Content is separated by rules, not contained in boxes.
 - Unavailable actions lose the chevron and go dashed. It's a form change,
   not an opacity change. Use `aria-disabled`, not `disabled`.
-- **Prefer explaining over disabling.** A greyed-out Merge is unhelpful.
+- **Prefer explaining over disabling.** A grayed-out Merge is unhelpful.
   "This branch has conflicts in 2 files" plus the fix commands is better.
 - **Repo headers are SVG only, 16 KB max.** JPEGs and PNGs are refused and
   fall through to the generated mark. `.carn/header-{light,dark}.svg`, 4:1,
@@ -357,6 +357,40 @@ to be undone by hand.
 
 You cannot tell from a diff who made a change or why. An edit that looks
 like it contradicts a convention may be the convention changing.
+
+## Writing docs and briefs
+
+`docs/BRAND.md`, `LAYOUT.md`, `PLAN.md` and `STACK.md` are rendered to HTML
+artifacts and read by people. `docs/phases/*.md` are read by agents that
+act on them. Both follow these rules.
+
+**One rule has one owner.** Don't state identical facts across multiple
+documents. The topical document states the rule; the others cite it by
+section, e.g. "BRAND §03." A phase brief is the exception; it restates what
+the agent needs, and says which document wins where they disagree.
+
+**Don't pre-announce sections.** Intro text for an upcoming section is
+redundant and clunky. Give the framing, then stop.
+
+**Cut clauses without consequences.** If it can be said in one sentence,
+don't say it (or restate it) in two.
+
+**A directive names its scope.** Be specific. Which element, which view,
+which breakpoint. A rule that doesn't name what it governs is a recipe for
+confusion, and it caused most of phase 1's revision rounds.
+
+**A directive says what'd close it.** If a brief can't name the check,
+story, or measurement that proves an item done, it isn't ready to dispatch.
+
+**Line width.** The docs are never reflowed; they're edited a paragraph at
+a time. Phase briefs wrap at 75 characters. Never wrap a table row, a
+heading, or a fenced block, and never break where the next line would start
+with `-`, `*`, `+`, `>`, `#`, `|`, or `N.` since Markdown reads those as
+new blocks, and a wrap inside `` `. - /` `` silently invents a list.
+
+**BRAND.md holds regions that aren't prose.** Both ```` ```css ```` fences
+are byte-identical to `src/html/styles.ts` and asserted so. Edit the prose
+around them; changing one is a code change with a test to update.
 
 ## Phase size
 
