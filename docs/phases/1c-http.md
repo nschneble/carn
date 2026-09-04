@@ -19,8 +19,8 @@ should say so rather than choosing quietly.
 
 ## Version reconnaissance
 
-Verified 2026-08-26. If `npm install` resolves outside these majors,
-**stop and report it** rather than adapting the code.
+Verified 2026-08-26. If `npm install` resolves outside these majors, **stop
+and report it** rather than adapting the code.
 
 | Package | Verified | Major | Note |
 |---|---|---|---|
@@ -40,8 +40,8 @@ GET  /r/:repo/info/refs?service=git-upload-pack
 POST /r/:repo/git-upload-pack
 ```
 
-That is the entire surface. Both shell out to `git upload-pack` through
-the wrapper 1b already built.
+That is the entire surface. Both shell out to `git upload-pack` through the
+wrapper 1b already built.
 
 ## What 1c is not
 
@@ -75,21 +75,21 @@ the wrapper 1b already built.
 1b built the pieces. 1c wires them to HTTP.
 
 - **`spawnGit(options)` from `src/git/spawn.ts`** is the only way to run
-  git. It returns `{ stdin, stdout, stderr, done }` and enforces the
-  global semaphore. **That semaphore must stay global** — one limit
-  across SSH and HTTP, not one each. Two clones over HTTP and two over
-  SSH is four `pack-objects` on a shared-CPU box.
+  git. It returns `{ stdin, stdout, stderr, done }` and enforces the global
+  semaphore. **That semaphore must stay global** — one limit across SSH and
+  HTTP, not one each. Two clones over HTTP and two over SSH is four
+  `pack-objects` on a shared-CPU box.
 - **`resolveRepo(target)` from `src/repos/resolve.ts`** does name
-  validation and the `lower(name)` lookup. Do not write a second
-  validator; do not join a name into a path.
+  validation and the `lower(name)` lookup. Do not write a second validator;
+  do not join a name into a path.
 - Mirror `exec.ts`'s child lifecycle: an `AbortController` aborted on
   client disconnect, passed as `signal`. On HTTP that is
-  `reply.raw.on("close", ...)` **guarded by `!reply.raw.writableFinished`**.
-  Not `request.raw`: its `close` fires as soon as the request body is
-  consumed — measured at 16ms against 315ms for the response — and
-  `req.destroyed` is true whether the client left or not, so it cannot
-  tell the two apart. It matters more here than over SSH; a browser or
-  crawler abandoning a clone is routine.
+  `reply.raw.on("close", ...)` **guarded by
+  `!reply.raw.writableFinished`**. Not `request.raw`: its `close` fires as
+  soon as the request body is consumed — measured at 16ms against 315ms for
+  the response — and `req.destroyed` is true whether the client left or
+  not, so it cannot tell the two apart. It matters more here than over SSH;
+  a browser or crawler abandoning a clone is routine.
 
 ## The three corrections
 
@@ -106,25 +106,24 @@ emit it. Under protocol v0 you prepend it yourself:
 
 `001e` is the pkt-line length, 30 bytes: 4 for the length prefix plus 26
 for the line. Under `Git-Protocol: version=2` there is **no** service
-header — the body begins `000eversion 2\n` and prepending anything
-corrupts the stream. Branch on the request header, not on a guess.
+header — the body begins `000eversion 2\n` and prepending anything corrupts
+the stream. Branch on the request header, not on a guess.
 
-**2 · Gzipped request bodies.** Not an edge case. The client compresses
-the POST body once a repo has accumulated refs, so this works on a fresh
-repo and breaks later, in production, on the repo you care about. If
+**2 · Gzipped request bodies.** Not an edge case. The client compresses the
+POST body once a repo has accumulated refs, so this works on a fresh repo
+and breaks later, in production, on the repo you care about. If
 `Content-Encoding: gzip`, pipe through `zlib.createGunzip()` before git
 sees it.
 
 **3 · Fastify eats the stream.** Register a raw content-type parser for
 `application/x-git-upload-pack-request` that passes the payload through
-untouched. Without it Fastify tries to parse a binary body and clones
-fail confusingly — the request never reaches your handler in a usable
-form.
+untouched. Without it Fastify tries to parse a binary body and clones fail
+confusingly — the request never reaches your handler in a usable form.
 
 ## Responses
 
-Both endpoints are uncacheable. Git's own server sends all three of
-these, and intermediaries misbehave without them:
+Both endpoints are uncacheable. Git's own server sends all three of these,
+and intermediaries misbehave without them:
 
 ```
 Cache-Control: no-cache, max-age=0, must-revalidate
@@ -139,9 +138,9 @@ advertisement, `application/x-git-upload-pack-result` for the POST.
 response. Leave it alone — CSP is inert on a binary body, `nosniff` is
 correct, and carving out an exception adds a branch for no gain.
 
-`GIT_PROTOCOL` is forwarded through `spawnGit`'s `gitProtocol` option,
-from the `Git-Protocol` request header. Pass the header value through;
-do not synthesise it.
+`GIT_PROTOCOL` is forwarded through `spawnGit`'s `gitProtocol` option, from
+the `Git-Protocol` request header. Pass the header value through; do not
+synthesise it.
 
 ## Refusing push
 
@@ -151,8 +150,8 @@ Two places, both explicit:
 - `POST /r/:repo/git-receive-pack` → refuse, if the route exists at all
 
 The message names SSH and gives the working remote URL shape. Per
-CLAUDE.md's voice: what happened, then what to do. A bare 403 sends
-someone to check their credentials for a thing that has none.
+CLAUDE.md's voice: what happened, then what to do. A bare 403 sends someone
+to check their credentials for a thing that has none.
 
 ---
 
@@ -163,8 +162,8 @@ non-zero if any fail.
 
 **It must be idempotent**, on the pattern 1a and 1b settled: a scratch
 database created and dropped by the script, a `mktemp -d` repo root, an
-ephemeral port, all cleaned up through one trap. Read
-`verify-phase-1b.sh` before writing this one.
+ephemeral port, all cleaned up through one trap. Read `verify-phase-1b.sh`
+before writing this one.
 
 1. `npm ci && npm run build` — zero errors under `strict`
 2. `git clone` over HTTP of a seeded repo succeeds and the content matches
@@ -190,9 +189,9 @@ ephemeral port, all cleaned up through one trap. Read
     exported definition, neither transport builds a second `Semaphore`, and
     both reach the one limit through `spawnGit`
 15. `git grep` finds no shell-enabled spawn — **use 1a's scoped form**,
-    path-limited to `src test scripts prisma`, with a positive control.
-    The literal string appears in CLAUDE.md and in these briefs, so an
-    unscoped grep can never pass
+    path-limited to `src test scripts prisma`, with a positive control. The
+    literal string appears in CLAUDE.md and in these briefs, so an unscoped
+    grep can never pass
 16. Every `.ts` under `src`, `test`, and `scripts` opens with the SPDX line
 17. `package.json` dependencies are unchanged from 1b
 18. `npx squawk prisma/migrations/**/*.sql` exits 0
@@ -203,10 +202,10 @@ ephemeral port, all cleaned up through one trap. Read
     beyond the admin seed, and no directory under the temporary repo root
 
 Checks 4, 5, and 6 are the ones worth building carefully. Each covers a
-correction that fails *later* rather than immediately — v0 clients are
-rare until one appears, and gzip only starts once a repo grows. A version
-of this phase that passes checks 2 and 7 alone would look finished and
-be broken in production.
+correction that fails *later* rather than immediately — v0 clients are rare
+until one appears, and gzip only starts once a repo grows. A version of
+this phase that passes checks 2 and 7 alone would look finished and be
+broken in production.
 
 ## Handoff notes
 

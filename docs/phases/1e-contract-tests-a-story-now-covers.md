@@ -1,24 +1,25 @@
 # Contract tests a 1e story now covers
 
-**Nothing here is deleted. This is a proposal awaiting an approved baseline.**
+**Nothing here is deleted. This is a proposal awaiting an approved
+baseline.**
 
 `.claude/CLAUDE.md`'s Testing section says the deletion follows an approved
-baseline, never a written story: a story proves nothing until Nick has looked
-at its baseline and accepted it. The baselines this list depends on were
-re-shot in the same commits that touched the views below. Until they are
-reviewed, every test below keeps running exactly as it does today.
+baseline, never a written story: a story proves nothing until Nick has
+looked at its baseline and accepted it. The baselines this list depends on
+were re-shot in the same commits that touched the views below. Until they
+are reviewed, every test below keeps running exactly as it does today.
 
 ## What counts as covered, and what does not
 
 A Tuffgal baseline freezes two artefacts per action and breakpoint: the
 rendered PNG and the Playwright a11y snapshot. The snapshot is the stronger
-of the two here — it carries roles, accessible names, and `/url:` targets, so
-a link's destination is genuinely captured, not merely implied by pixels.
-That snapshot also carries the plain text of every paragraph, term,
+of the two here — it carries roles, accessible names, and `/url:` targets,
+so a link's destination is genuinely captured, not merely implied by
+pixels. That snapshot also carries the plain text of every paragraph, term,
 definition, and code region on the page — a `<p>`'s wording, a `<dl>`'s
 key/value pairs, a diff's `+`/`−` lines, are all read back as literal text,
-not just roles. A rendered sentence is covered the moment a story's baseline
-shows it, word for word.
+not just roles. A rendered sentence is covered the moment a story's
+baseline shows it, word for word.
 
 Five things a baseline still cannot do, and every assertion resting on one
 of them stays where it is:
@@ -26,18 +27,20 @@ of them stays where it is:
 - **Read a status code or spot a redirect.** `error-no-directory` shows the
   404 page; it cannot show that the response was 404 rather than a 200 or a
   302. Every `assert.strictEqual(response.statusCode, 404)` stays.
-- **Weigh a page, or count a spawn.** Gzip-5 wire bytes and `git` invocations
-  are invisible on screen. Every budget and spawn-count assertion stays.
-- **Verify a computed invariant an eye does not check.** A baseline proves the
-  page still looks like the approved image. It does not prove "no sha repeats
-  across the two log pages" — a reviewer approving the first capture would not
-  have checked. Those stay too.
+- **Weigh a page, or count a spawn.** Gzip-5 wire bytes and `git`
+  invocations are invisible on screen. Every budget and spawn-count
+  assertion stays.
+- **Verify a computed invariant an eye does not check.** A baseline proves
+  the page still looks like the approved image. It does not prove "no sha
+  repeats across the two log pages" — a reviewer approving the first
+  capture would not have checked. Those stay too.
 - **Carry a DOM attribute the accessibility tree drops.** The snapshot is
   roles, accessible names, `/url:` and plain text, and that is all.
   `tabindex`, `lang`, `id`, `datetime`, `aria-describedby`, class names and
   the document `<title>` never appear in it, in any capture. This is the
-  single mechanism behind most of the partials below, so a row asserting one
-  of these is partial no matter how completely the visible half is covered.
+  single mechanism behind most of the partials below, so a row asserting
+  one of these is partial no matter how completely the visible half is
+  covered.
 - **Assert an axe rule.** `axe.contract.ts` runs `wcag2a` through
   `best-practice` across both render paths. A Playwright snapshot is not an
   audit and does not run a rule, so anything whose point is a named axe
@@ -45,10 +48,10 @@ of them stays where it is:
   stays.
 
 Assertions covered only in the fixture's one configuration are also left
-off. `refs.contract.ts:350`'s empty-list state and `blob-page.contract.ts:231`'s
-raw-origin-configured branch have no story reaching them, so they are not
-listed even as maybes: the visual harness never seeds an empty ref list and
-never sets `CARN_RAW_ORIGIN`.
+off. `refs.contract.ts:350`'s empty-list state and
+`blob-page.contract.ts:231`'s raw-origin-configured branch have no story
+reaching them, so they are not listed even as maybes: the visual harness
+never seeds an empty ref list and never sets `CARN_RAW_ORIGIN`.
 
 ## The list
 
@@ -157,9 +160,9 @@ The rest of `test/contract/` — `access`, `assets`, `escaping`,
 `header-route`, `headers`, `index-failure`, `markdown`, `render-paths`,
 `ssh-auth`/`ssh-exec`/`ssh-transport`, `syntax-palette`,
 `token-resolution`, `unquoted-attribute`, and `wordmark` — was scanned test
-by test. None renders a full page a story navigates to; they assert on
-git subprocess calls, SSH handshakes, source-level regexes, and internal
-data structures. `repo-page.contract.ts` covers `/r/:repo`, the page
+by test. None renders a full page a story navigates to; they assert on git
+subprocess calls, SSH handshakes, source-level regexes, and internal data
+structures. `repo-page.contract.ts` covers `/r/:repo`, the page
 `repo-index` and `repo-show` do visit, but it predates 1e and is out of
 this document's scope, which is what a 1e story covers — not what an
 earlier phase's story already does.
@@ -181,21 +184,22 @@ carry nothing that needs escaping.
 `commit.contract.ts:300` (`a one-file commit renders whole, and still shows
 the file list`) turns on the commit having exactly one file: it asserts one
 diff block and `rowHrefs(markup) === ["#f-0"]`. Both captured commit pages
-are wider than that — `gantry-commit-inlined` is a two-file commit with rows
-`#f-0` and `#f-1`, and `gantry-commit-shed` has six. The fixture has no
-one-file commit reachable from a story, so none of this test's own
+are wider than that — `gantry-commit-inlined` is a two-file commit with
+rows `#f-0` and `#f-1`, and `gantry-commit-shed` has six. The fixture has
+no one-file commit reachable from a story, so none of this test's own
 assertions are exercised.
 
 `commit-log.contract.ts:461` (`the older link is a real url with an escaped
-separator`) turns on a ref needing percent-encoding. `gantry`'s default branch
-is `main`, so the snapshot shows the `&`-separated form and never the
-`release%2F1.2` case the test exists for.
+separator`) turns on a ref needing percent-encoding. `gantry`'s default
+branch is `main`, so the snapshot shows the `&`-separated form and never
+the `release%2F1.2` case the test exists for.
 
-`breadcrumb.contract.ts:323` (`the collapse drops the middle from the layout
-and the a11y tree`) turns on a trail eight segments deep, at exactly the two
-breakpoints Tuffgal captures. No real story nests past six (`gantry-blob-deep`
-tops out at `Càrn` › `gantry` › `apps` › `web` › `src` › `deep.ts`), so the
-fold this test exists to prove never fires on a real page.
+`breadcrumb.contract.ts:323` (`the collapse drops the middle from the
+layout and the a11y tree`) turns on a trail eight segments deep, at exactly
+the two breakpoints Tuffgal captures. No real story nests past six
+(`gantry-blob-deep` tops out at `Càrn` › `gantry` › `apps` › `web` › `src`
+› `deep.ts`), so the fold this test exists to prove never fires on a real
+page.
 
 ## One row the old document cited that no longer exists
 

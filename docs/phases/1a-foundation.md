@@ -100,10 +100,10 @@ check and a human review before the next one starts.
 > migrations are atomic is a deploy-safety property that Phase 2 inherits,
 > so it gets decided here rather than discovered there.
 
-**Read `.claude/CLAUDE.md` first, in full.** It holds the constraints,
-the stack, the naming registers, and the verified gotchas. This brief does
-not repeat them. Where the two disagree, CLAUDE.md wins and you should say
-so rather than picking one.
+**Read `.claude/CLAUDE.md` first, in full.** It holds the constraints, the
+stack, the naming registers, and the verified gotchas. This brief does not
+repeat them. Where the two disagree, CLAUDE.md wins and you should say so
+rather than picking one.
 
 ---
 
@@ -143,17 +143,17 @@ building them early makes the review harder, not easier:
 
 Decisions, not options. Do not substitute.
 
-- **Node 24** pinned in Compose and in `engines`. Set
-  `"engines": { "node": ">=24" }` — the dev laptop runs 26 and both must
-  work.
+- **Node 24** pinned in Compose and in `engines`. Set `"engines": { "node":
+  ">=24" }` — the dev laptop runs 26 and both must work.
 - **TypeScript compiled with `tsc`**, `strict: true`, no bundler. Vite is
   explicitly out; so is any loader-based TS execution. Build to `dist/`
   with `rootDir: "."` so `dist/src/` and `dist/test/` both exist.
-- **ESM.** `"type": "module"`, `module: "nodenext"`,
-  `moduleResolution: "nodenext"`. Use explicit `.js` extensions in relative
-  imports, as nodenext requires.
+- **ESM.** `"type": "module"`, `module: "nodenext"`, `moduleResolution:
+  "nodenext"`. Use explicit `.js` extensions in relative imports, as
+  nodenext requires.
 - **`node --test`** as the test runner. Jest and Vitest are explicitly out
-  in CLAUDE.md. Tests run against compiled output: `node --test dist/test/`.
+  in CLAUDE.md. Tests run against compiled output: `node --test
+  dist/test/`.
 - Install **latest stable** of each dependency rather than pinning to a
   version named here, and report the resolved versions in your handoff
   notes.
@@ -190,8 +190,8 @@ not to work, say so rather than reaching for the package.
 
 ## File manifest
 
-Create exactly these. Every `.ts` file starts with
-`// SPDX-License-Identifier: AGPL-3.0-or-later` as its first line.
+Create exactly these. Every `.ts` file starts with `//
+SPDX-License-Identifier: AGPL-3.0-or-later` as its first line.
 
 ```
 src/
@@ -317,8 +317,8 @@ Notes that are decisions, not observations:
 
 ### Two things Prisma cannot express
 
-Both go into the generated migration SQL by hand, after
-`prisma migrate dev --create-only` and before applying:
+Both go into the generated migration SQL by hand, after `prisma migrate dev
+--create-only` and before applying:
 
 **1 · The unique index is on `lower(name)`, not `name`.** PLAN.md §06
 changed the constraint when the owner segment left the URL. Prisma has no
@@ -413,9 +413,10 @@ per-repo counter of issues plus PRs, against an `int4` ceiling of
 
 **3 · Correctness.** The rule is catching something that is wrong at row
 one, not at row N — a scale that never arrives does not rescue it.
-`prefer-timestamp-tz`, `ban-drop-column`, and `disallowed-unique-constraint`
-are here, and so is anything else of that shape. **Never excludable.** A
-finding means the schema is wrong; fix the schema.
+`prefer-timestamp-tz`, `ban-drop-column`, and
+`disallowed-unique-constraint` are here, and so is anything else of that
+shape. **Never excludable.** A finding means the schema is wrong; fix the
+schema.
 
 The line between 2 and 3 is the one that matters: _is this wrong now, or
 only wrong past a threshold?_ A naive timestamp is wrong on the first row.
@@ -504,7 +505,8 @@ for attribute values; do not "optimize" either away.
 
 Required assertions:
 
-- `html\`<p>${'<script>alert(1)</script>'}</p>\``contains no literal`<script`
+- `html\`<p>${'<script>alert(1)</script>'}</p>\``contains no
+  literal`<script`
 - `&` in input becomes `&amp;` exactly once, not `&amp;amp;`
 - `raw('<b>x</b>')` passes through unescaped
 - a nested `html` result is not double-escaped
@@ -541,11 +543,10 @@ export const db = new PrismaClient({ adapter });
 One `PrismaClient` for the process, created once at module load. The
 adapter owns connection pooling, so do not construct a `Pool` yourself.
 
-`GET /health` returns `200` and `{"status":"ok"}` as
-`application/json`. It does **not** check the database: Phase 2 flips this
-endpoint to 503 during SIGTERM drain, so it reports whether this process
-should receive traffic, not whether Postgres is up. Keep it dependency-free
-and synchronous.
+`GET /health` returns `200` and `{"status":"ok"}` as `application/json`. It
+does **not** check the database: Phase 2 flips this endpoint to 503 during
+SIGTERM drain, so it reports whether this process should receive traffic,
+not whether Postgres is up. Keep it dependency-free and synchronous.
 
 ### Security headers
 
@@ -570,28 +571,28 @@ so `headers.contract.ts` can assert on it exactly.
 
 Implement these as `scripts/verify-phase-1a.sh`, printing `PASS`/`FAIL` per
 check and exiting non-zero if any fail. Each must be mechanically decidable
-— no judgement calls.
+— no judgment calls.
 
 1. `npm ci` completes clean
 2. `npm run build` exits 0 with zero TypeScript errors under `strict: true`
 3. `docker compose up -d` brings Postgres up healthy
 4. `npx prisma migrate deploy` applies cleanly to an **empty** database
 5. `npx prisma migrate diff --from-config-datasource --to-schema
-prisma/schema.prisma --exit-code` reports no drift. **Must run after
-   check 4** — it diffs the migrated database against the schema file.
-   See "Expected drift" below before implementing this one.
+   prisma/schema.prisma --exit-code` reports no drift. **Must run after
+   check 4** — it diffs the migrated database against the schema file. See
+   "Expected drift" below before implementing this one.
 6. Exactly one user row exists, `handle = 'nschneble'`, `is_admin = true`
-7. Inserting repo `Foo` then repo `foo` fails on
-   `repos_name_lower_key` — proves the functional index is real
+7. Inserting repo `Foo` then repo `foo` fails on `repos_name_lower_key` —
+   proves the functional index is real
 8. Inserting a repo named `-bad` fails on `repos_name_format`
 9. `curl -i localhost:3000/health` → `200`, `application/json`, and all
    three security headers present with the exact values above
 10. `node --test dist/test/` passes with zero failures
 11. Every `.ts` file under `src/` and `test/` has the SPDX line first
-12. `package.json` dependencies are a subset of the budget above — and
-    `pg` is **not** among the direct dependencies
-13. `prisma/schema.prisma` contains no `url =` line, and
-    `npx prisma validate` exits 0
+12. `package.json` dependencies are a subset of the budget above — and `pg`
+    is **not** among the direct dependencies
+13. `prisma/schema.prisma` contains no `url =` line, and `npx prisma
+    validate` exits 0
 14. `git grep -n "shell: true"` returns nothing
 15. `npx squawk prisma/migrations/**/*.sql` exits 0
 16. Every timestamp column is `timestamp with time zone`. Query
