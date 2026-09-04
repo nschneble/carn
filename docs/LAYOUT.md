@@ -51,7 +51,7 @@ small caps
 
 _Carn Sans · compensated · self-hosted_
 
-Carn Sans carries the display face throughout. A Row's name column — filenames, but also a branch or tag name, a repo name in the index — splits positionally: the stem renders at full size, the extension (everything from the last dot of the name's final segment) renders in small caps. Case is never read, so `README.md` and `package.json` divide the same way. This collapses the ragged ascender and descender profile of the extension into a uniform band — calmer to scan, and it marks where a name ends without touching the stem's weight.
+Carn Sans carries the display face throughout. A Row's name column — filenames, but also a branch or tag name, a repo name in the index — splits positionally: the stem renders at full size, the extension renders in small caps. BRAND §03 has the split rule and its edge cases. This collapses the ragged ascender and descender profile of the extension into a uniform band — calmer to scan, and it marks where a name ends without touching the stem's weight.
 
 Carn Sans has no `smcp` table, and browser synthesis is not usable: scaling a capital to 79% scales its stems to 79% too, so the faked small caps read visibly lighter than the full caps beside them in the same word. The stems have to be compensated, which needs the variable axes and server-rendered markup — both of which we have.
 
@@ -72,15 +72,7 @@ Carn Sans has no `smcp` table, and browser synthesis is not usable: scaling a ca
 }
 ```
 
-Measured against genuinely drawn small caps: stem 1.004, letterform width 0.870, advance 0.900, height 0.790.
-
-Three details are load-bearing. **`letter-spacing` stays** — real small caps keep their full-size sidebearings rather than scaling them, which is why they look tracked out. **`"case" 1`** raises `. - /` to cap alignment, which a path like `src/components/Button.tsx` needs. And **the DOM keeps the true lowercase**: `text-transform` is display-only by spec, so selection, copy-paste, and Ctrl-F all get the real filename. A screen reader hears the rendered form instead — AccName computes the accessible name from rendered text, so `text-transform` reaches it too — which is fine, since the case change is presentational and not a WCAG violation on its own. Pin `lang="en"` on filenames — under Turkish, `i` uppercases to `İ`.
-
-> **REPLACE THIS WITH A REAL FONT WHEN THE PIPELINE EXISTS**
->
-> Build the caps **into Carn Sans**, as `smcp` and `c2sc` — instantiate the variable font at the base and at the compensated weight, scale the heavier caps to 79%, re-space them to keep full-size sidebearings, and merge the lookups into the existing GSUB so `kern`, `case`, and `ccmp` survive. The CSS then collapses to `font-variant-caps: small-caps` with no spans, no `text-transform`, and no Turkish or ß hazard.
->
-> A second family is the alternative and it loses on all three counts: another `@font-face`, another request on the page that already loads Carn Sans, and a `font-family` override on every small-caps run. The one thing that would reopen it is a measurement — if the added glyphs cost more on every page than a standalone file costs on the routes that set small caps. Small caps are used at one style today, so the drawn glyphs can be static and need no `gvar` deltas. See `fonts/README.md` for why the license permits the splice and what conditions come with it.
+Three details carry the effect, and **BRAND §03 owns them** along with the measured ratios: `letter-spacing` stays, because real small caps keep full-size sidebearings; `"case" 1` raises `. - /` to cap alignment; and the DOM keeps the true lowercase, so selection, copy-paste, and Ctrl-F get the real filename. §03 also carries the `lang="en"` rule and the plan to replace this whole mechanism with real small caps merged into Carn Sans.
 
 #### Reference
 
@@ -127,9 +119,8 @@ When no image is committed, the repo name is hashed to a seed and the seed drive
 
 _Deterministic — the same name always yields the same mark._
 
-- **Palette** — Two colors and the ground. A third hue makes it a logo generator.
-- **Forbidden** — Gradients, drop shadows, bubble outlines, texture, skew.
-- **Long names** — The `viewBox` is fitted to the rendered text, so a mark scales rather than overflows. Above 18 characters, break at a hyphen, underscore, or dot onto a second line — `wordmark.ts` treats all three as separators.
+The mark's own rules — palette, forbidden effects, and how a long name breaks — are BRAND §06. What this section owns is where the cap is enforced.
+
 - **Name cap** — **40 characters, in 1e.** A typographic bound: it is what the generated mark can still draw legibly, not what the identifier grammar allows. Five sites move together — `namePattern` in `src/repos/resolve.ts`, the `CHECK` in the init migration, **two** pieces of refusal copy (`badRepoName.next` in `src/html/error-page.ts` and `refusals.badName` in `src/ssh/exec.ts`, both of which say "64 characters" today), and `BAD_NAME` in `verify-phase-1b.sh:22` (check 13 greps that exact string). `verify-phase-1c.sh` is not one of them: its `BAD_NAME` mirrors `refusals.badName` in `src/routes/git-http.ts`, which names no number at all. The pattern is an anchor character plus a repeat, so 40 is `{0,39}` — `{0,63}` is a 64-character cap. The length checks need no change: 1b, 1c, and 1d each assert a **65**-character name is refused, which stays true at any lower cap. 1e adds the boundary pair — 40 accepted, 41 refused — and pins the column's collation in the same migration.
 
 ## 04 — SHOW VIEW · One title,

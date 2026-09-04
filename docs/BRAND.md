@@ -7,9 +7,9 @@
 
 # Every decision, in one file
 
-Written in its own system. The stylesheet at the top of this file is the deliverable — copy the token block into Càrn's stylesheet and the components below come with it.
+Written in its own system. The stylesheet at the top of this file is the deliverable.
 
-Dark is the default and the theme designed first. Light is a complete alternate, not an afterthought — every token has a value in both, and no color is defined only inside a media query.
+Dark is the default and the theme designed first. Light is a complete alternate, not an afterthought.
 
 ## Tokens
 
@@ -730,11 +730,11 @@ Both functions answer to the two markup rules below.
           letter-spacing:.056em; margin-right:-.056em; }
 ```
 
-Measured against drawn small caps: stem 1.004, width 0.870, advance 0.900, height 0.790. Three details are load-bearing — `letter-spacing` stays, because real small caps keep _full-size_ sidebearings; `"case" 1` lifts `. - /` to cap alignment; and the DOM keeps the real lowercase, since `text-transform` is display-only by spec.
+Measured against drawn small caps: stem 1.004, width 0.870, advance 0.900, height 0.790. Three details carry the effect — `letter-spacing` stays, because real small caps keep _full-size_ sidebearings; `"case" 1` lifts `. - /` to cap alignment; and the DOM keeps the real lowercase, since `text-transform` is display-only by spec.
 
 Two rules about the markup. **`lang="en"` goes on the filename element**, once — the `<a class="nm">` or whatever carries `.t-item` — and the `.sc` spans inherit it. Under Turkish, `i` uppercases to `İ`. And **no whitespace between the stem and the `.sc` span**: `README<span class="sc">.md</span>` is one word, and a newline or indent inside it becomes a space in the accessible name, in the clipboard, and in find-in-page. Never give an `.sc` span an `aria-label` — nothing about it needs correcting. The accessible name comes from the rendered text per AccName, so it reads `README.MD`, not the lowercase source; that's presentational case, the same as any other uppercase heading, not a defect to patch over.
 
-When the font pipeline exists, replace all of it with **real small caps merged into Carn Sans** — `smcp` and `c2sc` in the face we already ship, not a second family. Inside the face the CSS collapses to `font-variant-caps: small-caps`; a separate family would still need a `font-family` override on every run, plus its own `@font-face` and its own request on the critical path.
+When the font pipeline exists, replace all of it with **real small caps merged into Carn Sans** — `smcp` and `c2sc` in the face we already ship, not a second family. Instantiate the variable font at the base weight and at the compensated one, scale the heavier caps to 79%, re-space them to keep full-size sidebearings, and merge the lookups into the existing GSUB so `kern`, `case`, and `ccmp` survive. Inside the face the CSS collapses to `font-variant-caps: small-caps`, with no spans, no `text-transform`, and no Turkish or ß hazard; a separate family would still need a `font-family` override on every run, plus its own `@font-face` and its own request on the critical path. Small caps are used at one style today, so the drawn glyphs can be static and need no `gvar` deltas. The one thing that would reopen the second-family question is a measurement — if the added glyphs cost more on every page than a standalone file costs on the routes that set small caps.
 
 The license permits the splice; `fonts/README.md` carries the reasoning and the conditions that come with it.
 
@@ -986,7 +986,7 @@ Every repo has an identity from the moment it exists. The repo name is hashed to
 
 - **Palette** — **Two colors and the ground.** The moment a third hue appears it reads as a logo generator.
 - **Forbidden** — Gradients, drop shadows, bubble outlines, texture, skew.
-- **Long names** — The SVG `viewBox` is fitted to the rendered text, so a mark never overflows — it scales. Above 18 characters, break at a hyphen or word boundary onto a second line rather than letting it become a ribbon.
+- **Long names** — The SVG `viewBox` is fitted to the rendered text, so a mark never overflows — it scales. Above 18 characters, break onto a second line rather than letting it become a ribbon. `wordmark.ts` treats `-`, `_`, and `.` as separators and breaks at whichever one sits nearest the middle of the name.
 - **Name cap** — **40 characters, in 1e.** It is a typographic bound, not an identifier one: it is what the generated mark can still draw legibly. `namePattern` permits 64 today. `docs/LAYOUT.md` §03 owns the enforcement sites.
 
 The mark is theme-aware by construction — it draws from `--accent` and `--ink`, so it inverts with everything else and never looks wrong in the theme it wasn't designed for.

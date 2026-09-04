@@ -12,13 +12,13 @@
 
 _What each one commits to_
 
-Each has a concrete, checkable consequence, and two of them fall out of decisions already made rather than costing anything extra.
+Each has a concrete, checkable consequence.
 
 ### 1 · Just be git, with a few conveniences
 
 The commitment: **nothing in a Càrn repository requires Càrn.** No custom refs a stock client has to know about, no metadata objects, no `refs/carn/*` namespace. A repo cloned from Càrn is byte-identical to one cloned from anywhere else. Exit cost is `tar czf repos.tgz /var/lib/carn/repos`.
 
-The tension: **issues and PRs are the conveniences, and they live in Postgres, not in git.** That means "if Càrn vanished" gives you every commit and no issue text. Two mitigations worth taking: the nightly `pg_dump` is as load-bearing as the repo tarball, and an export command (`carn export <repo>` → a directory of markdown files) is a one-evening insurance policy.
+The tension: **issues and PRs are the conveniences, and they live in Postgres, not in git.** That means "if Càrn vanished" gives you every commit and no issue text. Two mitigations worth taking: the nightly `pg_dump` matters as much as the repo tarball, and an export command (`carn export <repo>` → a directory of markdown files) is a one-evening insurance policy.
 
 ### 2 · Fast and responsive is sexy
 
@@ -303,7 +303,7 @@ The markdown layer and the response header deliberately disagree about remote im
 
 ### Raw blobs
 
-Serve from a **separate hostname** — this is the load-bearing control, not the headers. GitHub serves everything from `raw.githubusercontent.com` as `text/plain` (verified: even `.html` and `.js` files), with a small image allowlist getting real MIME types:
+Serve from a **separate hostname** — this is the control that does the work, not the headers. GitHub serves everything from `raw.githubusercontent.com` as `text/plain` (verified: even `.html` and `.js` files), with a small image allowlist getting real MIME types:
 
 ```
 Content-Type: text/plain; charset=utf-8   # except png/jpeg/gif/webp/svg
@@ -584,7 +584,7 @@ The complete surface outside the nine:
 
 A performance decision, not an SEO one, and it has one rule: **list repo, issue, and PR pages only. Never commits, never blobs, never archives.** A sitemap enumerating every commit page would be an _invitation_ into the most expensive endpoints — a crawler walking every tag × every archive format is the traffic pattern that pins a fair-share CPU.
 
-`robots.txt` is the other half and it's load-bearing: disallow `/r/*/archive/`, `/r/*/commits/`, `/r/*/blob/`, and the blob host entirely. Together with the §04 rate-limit tiers that's three independent layers on the same risk, which is about right given it's the one that can take the box down.
+`robots.txt` is the other half and it does real work: disallow `/r/*/archive/`, `/r/*/commits/`, `/r/*/blob/`, and the blob host entirely. Together with the §04 rate-limit tiers that's three independent layers on the same risk, which is about right given it's the one that can take the box down.
 
 #### Feeds
 
@@ -981,7 +981,7 @@ _Ranked by what actually costs you something_
 | Medium   | You build 70% and stall — the classic fate of a side project with no external forcing function.                                    | The phase gates exist for this. Phase 0 is one evening to "I pushed to my own server," Phase 2 puts it on the internet, and if Phase 4 stalls you still have a repo browser with issues that you'd keep using. |
 | Medium   | `ssh2` is bus-factor 1 at roughly one release a year.                                                                              | Fine for personal use. The escape hatch is OpenSSH with `AuthorizedKeysCommand` — a contained change, since authorization already lives in your app.                                                           |
 | Low      | Path traversal via repo or ref names.                                                                                              | Designed out by UUID-derived paths. Still reject refs beginning with `-` and always pass `--`.                                                                                                                 |
-| Low      | Scope creep back toward re-implementing GitHub.                                                                                    | §13 makes each addition a decision rather than a drift. The "never" column is load-bearing.                                                                                                                    |
+| Low      | Scope creep back toward re-implementing GitHub.                                                                                    | §13 makes each addition a decision rather than a drift. The "never" column does real work.                                                                                                                    |
 
 ### Losing the key — the answer is more of the same mechanism
 
@@ -1001,7 +1001,7 @@ No new mechanism is needed. Three layers, in order of how often you'd reach for 
 
 _Three registers, one rule_
 
-**Càrn** on every visual surface. **Carn** in ASCII prose, where it's still a proper noun but the accent can't render. **`carn`** for every identifier a machine parses — hostname, npm package, binary, database, containers. The Montréal rule: the accent lives wherever it can and drops wherever a machine has to type it.
+**Càrn** on every visual surface. **Carn** in ASCII prose, where it's still a proper noun but the accent can't render. **`carn`** for every identifier a machine parses — hostname, npm package, binary, database, containers. BRAND §01 states the rule and why an accented hostname is settled rather than stylistic.
 
 > **WHY THE HOSTNAME CAN'T CARRY THE ACCENT**
 >
