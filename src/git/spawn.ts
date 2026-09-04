@@ -44,9 +44,9 @@ function childEnv(gitProtocol: string | undefined): NodeJS.ProcessEnv {
 // pipe stdout onward with { end: false } or the ssh exit status is lost
 export async function spawnGit(options: GitOptions): Promise<GitChild> {
   options.signal?.throwIfAborted();
-  await semaphore.acquire();
+  await semaphore.acquire(options.signal);
 
-  // a waiter aborted in the queue is still handed a slot, so give it back
+  // a grant and an abort can land in the same tick; catch it before spawning
   if (options.signal?.aborted === true) {
     semaphore.release();
     throw options.signal.reason;
