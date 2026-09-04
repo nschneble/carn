@@ -94,7 +94,7 @@ export function repoShowPage(view: {
     crumbs: [site, { label: repo.name, href: null }],
     main: html`${identity}
       <h1 class="vh">${repo.name}</h1>
-      <p class="t-body">${repo.description || "-"}</p>
+      <p class="t-body about">${repo.description || "-"}</p>
       ${repoNav(repo.name, repo.branch)}
       ${tree(repo, view.showAll, view.now)}
       ${readme(repo)}`,

@@ -585,7 +585,7 @@ test("the repo page carries the repo's own description, dashed when it has none"
 
   assert.ok(
     markup.includes(
-      `<h1 class="vh">linklater</h1>\n      <p class="t-body">${said}</p>\n      <nav class="repo-nav"`,
+      `<h1 class="vh">linklater</h1>\n      <p class="t-body about">${said}</p>\n      <nav class="repo-nav"`,
     ),
     "the description is not the one thing between the identity heading and the repo nav",
   );
@@ -597,7 +597,7 @@ test("the repo page carries the repo's own description, dashed when it has none"
   ] as const) {
     assert.ok(
       showDocument({ repo: view({ description: value }) }).includes(
-        '<p class="t-body">-</p>',
+        '<p class="t-body about">-</p>',
       ),
       `a ${label} description did not fall to the dash the repo index uses`,
     );
@@ -606,7 +606,9 @@ test("the repo page carries the repo's own description, dashed when it has none"
   assert.ok(
     showDocument({
       repo: view({ description: "<script>alert(1)</script>" }),
-    }).includes('<p class="t-body">&lt;script&gt;alert(1)&lt;/script&gt;</p>'),
+    }).includes(
+      '<p class="t-body about">&lt;script&gt;alert(1)&lt;/script&gt;</p>',
+    ),
     "the description reaches the page without the escaping tag",
   );
 });

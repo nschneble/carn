@@ -829,6 +829,11 @@ main > h1 {
 
 /* repo show */
 
+.about {
+  max-width: var(--measure);
+  overflow-wrap: anywhere;
+}
+
 .repo-nav ul {
   display: flex;
   flex-wrap: wrap;
