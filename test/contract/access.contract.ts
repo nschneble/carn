@@ -13,6 +13,7 @@ const repoId = "3a7d51c8-0000-4000-8000-0000000000a1";
 const repo: ResolvedRepo = {
   id: repoId,
   name: "carn",
+  description: "A self-hosted git forge.",
   ownerId,
   defaultBranch: "main",
   path: `/var/lib/carn/repos/3a/${repoId}.git`,

@@ -196,7 +196,14 @@ const styles: Record<string, string> = {
   "/planted-failures.css": plantedContrastCss,
 };
 
-const emptyRepo = view({ tip: null, entries: [], readme: null });
+// nothing has been said about a repo pushed into existence, so this is
+// also the state the description's dash is audited in
+const emptyRepo = view({
+  description: null,
+  tip: null,
+  entries: [],
+  readme: null,
+});
 
 // the show page's only external subresource; without it the audited
 // header is a broken image and the committed path goes unmeasured
@@ -536,11 +543,15 @@ const contrastNodes: Record<string, number> = {
   populated: 21,
   hover: 21,
   empty: 6,
-  show: 93,
-  "show-all": 168,
-  "show-bare": 67,
+  show: 94,
+  "show-all": 169,
+  "show-bare": 68,
+  // the description line is the one node every other show state gained.
+  // this repo has none, and axe settles no verdict on a lone dash: a node
+  // whose visible text holds no word character is skipped outright, not
+  // deferred, so it never reaches the incomplete list decided() reads
   "show-new": 10,
-  "show-header": 93,
+  "show-header": 94,
   "not-found": 7,
   blob: 73,
   "blob-cut": 22,
@@ -581,10 +592,10 @@ const foldedContrastNodes: Record<string, number> = {
   gallery: 58,
   hover: 16,
   populated: 16,
-  show: 77,
-  "show-all": 134,
-  "show-bare": 51,
-  "show-header": 77,
+  show: 78,
+  "show-all": 135,
+  "show-bare": 52,
+  "show-header": 78,
   tree: 38,
   "tree-all": 107,
   "tree-cut": 50,

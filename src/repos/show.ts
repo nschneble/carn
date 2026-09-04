@@ -7,6 +7,7 @@ import { listTree, resolveTip, type TreeEntry } from "./tree.js";
 
 export type RepoView = {
   name: string;
+  description: string | null;
   branch: string;
   tip: string | null;
   header: Header;
@@ -26,7 +27,12 @@ export async function loadRepoView(options: {
     signal,
   });
 
-  const shell = { name: repo.name, branch: repo.defaultBranch, tip };
+  const shell = {
+    name: repo.name,
+    description: repo.description,
+    branch: repo.defaultBranch,
+    tip,
+  };
 
   if (tip === null) {
     return {

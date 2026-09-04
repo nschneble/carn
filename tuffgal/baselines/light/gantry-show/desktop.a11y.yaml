@@ -9,6 +9,7 @@
       - listitem: gantry
 - main:
   - heading "gantry" [level=1]
+  - paragraph: A rig that holds the other rigs.
   - navigation "Repo views":
     - list:
       - listitem:

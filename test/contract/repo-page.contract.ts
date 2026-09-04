@@ -90,7 +90,10 @@ function tagsIn(markup: string): string[] {
   return markup.match(/<[a-z][^>]*>/gi) ?? [];
 }
 
-function build(tracked: Record<string, string | Buffer>): ResolvedRepo {
+function build(
+  tracked: Record<string, string | Buffer>,
+  description?: string,
+): ResolvedRepo {
   const path = mkdtempSync(join(dir, "repo-"));
   execFileSync("git", ["init", "-q", "-b", "main", "--", path]);
 
@@ -119,6 +122,7 @@ function build(tracked: Record<string, string | Buffer>): ResolvedRepo {
   return {
     id: "00000000-0000-4000-8000-000000000000",
     name: "linklater",
+    description: description ?? null,
     ownerId: "owner",
     defaultBranch: "main",
     path,
@@ -565,6 +569,46 @@ test("an .sc span appears exactly when a final segment carries an extension", ()
       );
     }
   }
+});
+
+// the repo index ellipses its description column on the grounds that the
+// whole text is on this page, so LAYOUT 02 is only true while this holds
+test("the repo page carries the repo's own description, dashed when it has none", async () => {
+  const said = "Save a URL, read it later.";
+  const loaded = await loadRepoView({
+    repo: build({ "a.ts": "export {};\n" }, said),
+  });
+
+  assert.strictEqual(loaded.description, said, "the field never left the row");
+
+  const markup = repoShowPage({ repo: loaded, showAll: false, now: treeNow });
+
+  assert.ok(
+    markup.includes(
+      `<h1 class="vh">linklater</h1>\n      <p class="t-body">${said}</p>\n      <nav class="repo-nav"`,
+    ),
+    "the description is not the one thing between the identity heading and the repo nav",
+  );
+
+  // the index renders the same two states, so the page has to agree
+  for (const [label, value] of [
+    ["null", null],
+    ["blank", ""],
+  ] as const) {
+    assert.ok(
+      showDocument({ repo: view({ description: value }) }).includes(
+        '<p class="t-body">-</p>',
+      ),
+      `a ${label} description did not fall to the dash the repo index uses`,
+    );
+  }
+
+  assert.ok(
+    showDocument({
+      repo: view({ description: "<script>alert(1)</script>" }),
+    }).includes('<p class="t-body">&lt;script&gt;alert(1)&lt;/script&gt;</p>'),
+    "the description reaches the page without the escaping tag",
+  );
 });
 
 // the mark is alt=""/aria-hidden, so the name reaches the a11y tree only

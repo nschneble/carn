@@ -35,11 +35,11 @@
         - cell "Phases, tides, and a lunar calendar."
         - cell "2d":
           - time: 2d
-      - row "sparrow 15m":
+      - row "sparrow - 15m":
         - rowheader "sparrow":
           - link "sparrow":
             - /url: /r/sparrow
-        - cell
+        - cell "-"
         - cell "15m":
           - time: 15m
       - row "thicket A shell script and nothing else. 6h":

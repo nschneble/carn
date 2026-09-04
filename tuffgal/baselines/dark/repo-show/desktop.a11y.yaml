@@ -9,6 +9,7 @@
       - listitem: linklater
 - main:
   - heading "linklater" [level=1]
+  - paragraph: Save a URL, read it later.
   - navigation "Repo views":
     - list:
       - listitem:

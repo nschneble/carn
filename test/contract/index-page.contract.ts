@@ -126,9 +126,9 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
   assert.match(
     markup,
     new RegExp(
-      `<a class="t-item" lang="en" href="/r/${noDescription.name}">${plainName(noDescription.name).value}</a></th>\\s*<td class="msg"><span></span></td>`,
+      `<a class="t-item" lang="en" href="/r/${noDescription.name}">${plainName(noDescription.name).value}</a></th>\\s*<td class="msg"><span>-</span></td>`,
     ),
-    "a repo with no description dropped its .msg cell, so the columns no longer line up",
+    "a repo with no description dropped its .msg cell or its dash, so the columns no longer line up",
   );
 
   assert.strictEqual(

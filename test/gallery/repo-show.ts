@@ -152,6 +152,7 @@ export const hostileReadme = `# Payloads
 export function view(options: Partial<RepoView> = {}): RepoView {
   return {
     name: "linklater",
+    description: "Save a URL, read it later.",
     branch: "main",
     tip,
     header: { light: "wordmark", dark: "wordmark" },
