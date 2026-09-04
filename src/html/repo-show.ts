@@ -66,11 +66,17 @@ ${renderMarkdown(view.readme, { repo: view.name, rev: view.branch })}
       </div>`;
 }
 
-function description(view: RepoView): string {
+function metaDescription(view: RepoView): string {
   if (view.tip === null) return "";
   if (view.readme === null) return "No README yet.";
 
   return renderPlainText(view.readme, 150);
+}
+
+function about(repo: RepoView): Raw {
+  if (!repo.description) return html``;
+
+  return html`<p class="t-body about">${repo.description}</p>`;
 }
 
 // the mark is decorative, so .vh carries the name as a real heading
@@ -89,12 +95,12 @@ export function repoShowPage(view: {
 
   return page({
     title: `${repo.name} · Càrn`,
-    description: `${description(repo)}`,
+    description: `${metaDescription(repo)}`,
     path: `/r/${repo.name}`,
     crumbs: [site, { label: repo.name, href: null }],
     main: html`${identity}
       <h1 class="vh">${repo.name}</h1>
-      <p class="t-body about">${repo.description || "-"}</p>
+      ${about(repo)}
       ${repoNav(repo.name, repo.branch)}
       ${tree(repo, view.showAll, view.now)}
       ${readme(repo)}`,

@@ -571,9 +571,7 @@ test("an .sc span appears exactly when a final segment carries an extension", ()
   }
 });
 
-// the repo index ellipses its description column on the grounds that the
-// whole text is on this page, so LAYOUT 02 is only true while this holds
-test("the repo page carries the repo's own description, dashed when it has none", async () => {
+test("the repo page carries the repo's own description, and nothing when it has none", async () => {
   const said = "Save a URL, read it later.";
   const loaded = await loadRepoView({
     repo: build({ "a.ts": "export {};\n" }, said),
@@ -590,16 +588,17 @@ test("the repo page carries the repo's own description, dashed when it has none"
     "the description is not the one thing between the identity heading and the repo nav",
   );
 
-  // the index renders the same two states, so the page has to agree
+  // unlike the index, a null description has no row to hold a dash open,
+  // so the page renders no paragraph at all rather than a bare hyphen
   for (const [label, value] of [
     ["null", null],
     ["blank", ""],
   ] as const) {
     assert.ok(
-      showDocument({ repo: view({ description: value }) }).includes(
-        '<p class="t-body about">-</p>',
+      !showDocument({ repo: view({ description: value }) }).includes(
+        'class="t-body about"',
       ),
-      `a ${label} description did not fall to the dash the repo index uses`,
+      `a ${label} description rendered a paragraph the page shouldn't have`,
     );
   }
 
