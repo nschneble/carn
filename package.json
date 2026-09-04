@@ -46,5 +46,10 @@
     "squawk-cli": "^2.62.0",
     "tuffgal": "0.2.1-alpha.1",
     "typescript": "^7.0.2"
+  },
+  "overrides": {
+    "prisma": {
+      "mysql2": "^3.23.1"
+    }
   }
 }

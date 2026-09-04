@@ -138,6 +138,14 @@ own `prisma.config.ts`. `@prisma/config` pins `deepmerge-ts` at exactly
 **Never run `npm audit fix --force`** — it downgrades to `prisma@6.12.0`,
 undoing the Prisma 7 migration entirely. Tracked in `local/TODOs.md`.
 
+`mysql2 <3.22.0` (GHSA-3f6p-5ww8-9rcr, plaintext-credential downgrade) and
+`mysql2 <=3.23.0` (GHSA-rgwj-5xj2-c3m3, decompression-bomb DoS), both
+reached only through the Prisma CLI's bundled MySQL adapter — carn is
+Postgres-only and never loads it. `prisma@7.9.1` and `7.10.0` both pin
+`mysql2` at exactly `3.15.3`, so, as with `deepmerge-ts` above, there is no
+fix within the declared Prisma range. Resolved with an `overrides` entry
+pinning `prisma`'s `mysql2` to `^3.23.1`, which clears both advisories.
+
 ## Not surveyed
 
 Node, Postgres, Caddy, and Docker Compose are pinned by `compose.yaml` and
