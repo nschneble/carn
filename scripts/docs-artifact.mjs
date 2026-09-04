@@ -3,7 +3,7 @@
 // Renders docs/*.md as the published artifact pages. The palette is lifted
 // out of docs/BRAND.md at build time, so a page cannot drift from the brand
 // book: edit the Markdown, run `node scripts/docs-artifact.mjs`, republish
-// the four files it writes to build/docs/.
+// the four files it writes to local/artifacts/.
 //
 // The Markdown is the source of truth. The artifacts are a rendering of it.
 
@@ -11,7 +11,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import MarkdownIt from "markdown-it";
 
 const SRC = "docs";
-const OUT = "build/docs";
+const OUT = "local/artifacts";
 mkdirSync(OUT, { recursive: true });
 
 const brand = readFileSync(`${SRC}/BRAND.md`, "utf8");
