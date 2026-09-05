@@ -49,7 +49,7 @@ Security is covered throughout — UUID paths, `html: false`, blob origin isolat
 
   **`table-layout` is `fixed`, not `auto`.** `auto` never sizes a column below its min-content width, and a name that does not wrap has the whole string as its minimum — so the table outgrows the viewport instead of the name ellipsing. Measured at 320px, `auto` laid the repo index out 1233px wide and put every list view into horizontal scroll. `fixed` sizes the columns off the viewport instead: the name takes 40%, age holds 46px, the subject takes what is left and truncates. It also means wider text cannot move a column boundary, which is what keeps SC 1.4.12 cheap to hold.
 - **Keyboard first.** A skip link, visible focus on everything (already in the CSS here), and no hover-only affordances — a file row's actions must be reachable by tab.
-- **Don't encode meaning in color alone.** Directory-vs-file is pink-vs-ink in the mockups; add a trailing `/` so it survives grayscale and color blindness. Diff add/remove needs `+`/`−` glyphs, not just green and red.
+- **Don't encode meaning in color alone.** Directory-vs-file is pink-vs-ink in the mockups; add a trailing `/` so it survives grayscale and color vision deficiency. Diff add/remove needs `+`/`−` glyphs, not just green and red.
 - **No motion at all.** A page that arrives in 80 ms with no JS to parse already _feels_ smooth. Animation is what slow sites use to disguise being slow. The only transitions worth having are hover and focus states, and those should be instant.
 
 ### Turning the tenets into tests — Tuffgal, and what it doesn't cover

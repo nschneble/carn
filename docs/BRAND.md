@@ -687,7 +687,7 @@ Two font families across nine roles. Carn Sans carries identity. Carn Mono carri
 
 > **ONE SENTENCE RESOLVES EVERY PAGE**
 >
-> **The display face is worn by whatever the page is about.** On a list, it's the items (filenames, repo names, issue titles, etc). On a show page, it's the name of the thing. On a create page, it's the question being asked. Everything else is mono, small, and quiet.
+> **The display face is used for the page intent.** On a list, it's the items (filenames, repo names, issue titles, etc). On a show page, it's the name of the thing. On a create page, it's the question being asked. Everything else is mono, small, and quiet.
 
 ### List titles
 
