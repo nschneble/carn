@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Phase 1d exit checks, from docs/phases/1d-design.md. Prints PASS or FAIL
+# Phase 1d exit checks, from docs/phases/1d-1-design.md. Prints PASS or FAIL
 # for each of the 23 checks and exits non-zero if any fail. Reads
 # DATABASE_URL from the environment, falling back to ./.env. Check 21 runs
 # 1a, 1b and 1c, and 1c runs 1a and 1b again, so a full run takes minutes.

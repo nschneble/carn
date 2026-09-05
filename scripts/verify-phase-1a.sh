@@ -322,7 +322,7 @@ fi
 # 12
 # the budget catches unauthorized creep, so a later phase's authorized
 # additions belong in it: 1d's four and 1e's highlight.js are named in
-# docs/phases/1d-design.md and docs/phases/1e-views.md
+# docs/phases/1d-1-design.md and docs/phases/1e-1-views.md
 if node -e '
   const pkg = JSON.parse(require("fs").readFileSync("package.json", "utf8"))
   const budget = {

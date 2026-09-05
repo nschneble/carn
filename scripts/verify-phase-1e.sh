@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Phase 1e exit checks, from docs/phases/1e-views.md, 1e-revision.md, and
-# 1e-revision-2.md. Prints PASS or FAIL for each of the 56 checks and exits
-# non-zero if any fail. Reads
-# DATABASE_URL from the environment, falling back to ./.env. Check 24 runs
-# 1a, 1b, 1c and 1d, and each of those runs the ones before it, so a full
-# run takes tens of minutes.
+# Phase 1e exit checks, from the four 1e briefs in docs/phases/. Prints
+# PASS or FAIL for each of the 56 checks and exits non-zero if any fail.
+# Reads DATABASE_URL from the environment, falling back to ./.env. Check
+# 24 runs 1a, 1b, 1c and 1d, and each of those runs the ones before it, so
+# a full run takes tens of minutes.
 
 # not set -e: this runs commands expected to fail and reads their status
 set -uo pipefail
