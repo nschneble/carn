@@ -443,7 +443,7 @@ if require_db 2 "$TITLE_2" && require_build 2 "$TITLE_2" && require_scratch 2 "$
         seed_ok=1
         status=$(fetch_page "/" "$work/2")
         rows=$(psql_scratch -c "select count(*) from repos")
-        listed=$(occurrences "$work/2.body" '<li class="row">')
+        listed=$(occurrences "$work/2.body" '<tr class="row">')
         missing=""
         for name in "$REPO_NAME" "$BARE_NAME"; do
           grep -qF "href=\"/r/$name\"" "$work/2.body" || missing="$missing $name"
@@ -466,11 +466,11 @@ fi
 readonly TITLE_3="a repo page answers 200 with its tree and its rendered readme"
 if require_daemon 3 "$TITLE_3" && require_seed 3 "$TITLE_3"; then
   status=$(fetch_page "/r/$REPO_NAME" "$work/3")
-  tree_rows=$(occurrences "$work/3.body" '<li class="row')
+  tree_rows=$(occurrences "$work/3.body" '<tr class="row')
   wrong=""
-  for entry in 'README.<span class="sc">md</span>' \
-    '<span class="sc">package</span>.<span class="sc">json</span>' \
-    '<span class="sc">docs</span>/' '<span class="sc">src</span>/'; do
+  for entry in '<span class="caps">README<span class="sc">.md</span></span>' \
+    '<span class="caps">package<span class="sc">.json</span></span>' \
+    '<span class="caps">docs</span>/' '<span class="caps">src</span>/'; do
     grep -qF "$entry" "$work/3.body" || wrong="$wrong missing tree entry '$entry';"
   done
   for rendered in '<div class="readme">' '<h1>Verify 1d</h1>' '<h2>Notes</h2>' '<table>'; do
@@ -491,7 +491,7 @@ fi
 readonly TITLE_4="a repo with no readme draws the tree and says how to make one"
 if require_daemon 4 "$TITLE_4" && require_seed 4 "$TITLE_4"; then
   status=$(fetch_page "/r/$BARE_NAME" "$work/4")
-  tree_rows=$(occurrences "$work/4.body" '<li class="row')
+  tree_rows=$(occurrences "$work/4.body" '<tr class="row')
   if [ "$status" != "200" ]; then
     record FAIL 4 "$TITLE_4" "the page answered ${status:-nothing}: $(tail -3 "$work/4.err")"
   elif [ "$tree_rows" != "1" ]; then
@@ -622,8 +622,9 @@ contract 10 "every BRAND.md token resolves non-empty on :root in both paths" 5 "
 
 # 11
 # served over real http, not set into about:blank, so the audit measures
-# Carn Sans and Carn Mono rather than whatever the host falls back to
-contract 11 "zero axe violations across both render paths, gallery included" 31 "" \
+# Carn Sans and Carn Mono rather than whatever the host falls back to.
+# 1e's five new views brought the file from 31 audits to 83
+contract 11 "zero axe violations across both render paths, gallery included" 147 "" \
   axe
 
 # 12
@@ -640,7 +641,7 @@ if require_daemon 12 "$TITLE_12" && require_seed 12 "$TITLE_12"; then
     contract 12 "$TITLE_12" 2 "index $index_bytes B, repo page $show_bytes B" \
       assets repo-page -- \
       "the whole page fits the budget with both families, images, and the sheet" \
-      "the repo page fits the weight budget, fonts and stylesheet in"
+      "the repo page fits the weight budget as wire bytes, fonts in"
   fi
 fi
 
@@ -686,10 +687,12 @@ fi
 # 15
 readonly TITLE_15="small caps keep the true lowercase and filenames carry lang"
 if require_daemon 15 "$TITLE_15" && require_seed 15 "$TITLE_15"; then
+  # 1e gave the rows somewhere to go, so the name is an anchor now, and
+  # the row's own header cell is what holds it
   wrong=""
-  grep -qF '<span class="nm t-item" lang="en">README.<span class="sc">md</span></span>' "$work/3.body" \
+  grep -qF '<a class="t-item" lang="en" href="/r/verify1d/blob/main/README.md"><span class="caps">README<span class="sc">.md</span></span></a>' "$work/3.body" \
     || wrong="$wrong the README row is not the lang-stamped small-caps shape;"
-  grep -qF '<span class="nm t-item" lang="en"><span class="sc">docs</span>/</span>' "$work/3.body" \
+  grep -qF '<a class="t-item" lang="en" href="/r/verify1d/tree/main/docs"><span class="caps">docs</span>/</a>' "$work/3.body" \
     || wrong="$wrong the docs row is not the lang-stamped small-caps shape;"
   if [ -n "$wrong" ]; then
     record FAIL 15 "$TITLE_15" "$wrong"
@@ -698,7 +701,7 @@ if require_daemon 15 "$TITLE_15" && require_seed 15 "$TITLE_15"; then
       repo-page gallery -- \
       "the rendered dom holds the true filename under small caps" \
       "a directory row carries the accent class and a trailing slash" \
-      "small caps split lowercase runs and never insert whitespace" \
+      "small caps split at the extension and never insert whitespace" \
       "a directory's trailing slash is real text, and small caps are unspaced"
   fi
 fi
@@ -711,7 +714,9 @@ rel_detail=""
 if [ "$seed_ok" = 1 ]; then
   rels=$(occurrences "$work/3.body" "$REL")
   bare=""
-  for local_link in '<a href="docs/BRAND.md">relative</a>' \
+  # 1e rewrites a relative destination onto the blob route; the other
+  # three name no path, so they are still left exactly as they were
+  for local_link in '<a href="/r/verify1d/blob/main/docs/BRAND.md">relative</a>' \
     '<a href="/r/verify1d">root-relative</a>' \
     '<a href="#notes">anchor</a>' \
     '<a href="mailto:hi@example.com">mail</a>'; do
@@ -741,14 +746,14 @@ if require_db 16 "$TITLE_16"; then
   npm run visual > "$work/16" 2>&1
   visual_status=$?
   passes=$(grep -c '^== \(dark\|light\) ==$' "$work/16")
-  # one summary line per run, whatever verdict each reached
-  summaries=$(sed -n 's/^[^0-9]*\([0-9][0-9]* [a-z]* on "desktop" breakpoint\)$/\1/p' "$work/16")
+  desktops=$(grep -c 'on "desktop" breakpoint' "$work/16")
+  mobiles=$(grep -c 'on "mobile" breakpoint' "$work/16")
   if [ "$visual_status" -ne 0 ]; then
     record FAIL 16 "$TITLE_16" "npm run visual exited $visual_status: $(grep -m1 'tuffgal error' "$work/16" || tail -3 "$work/16")"
-  elif [ "$passes" != "2" ] || [ "$(printf '%s\n' "$summaries" | grep -c .)" != "2" ]; then
-    record FAIL 16 "$TITLE_16" "$passes of 2 color-scheme runs started and $(printf '%s\n' "$summaries" | grep -c .) of 2 reported, so a palette went unphotographed"
+  elif [ "$passes" != "2" ] || [ "$desktops" != "2" ] || [ "$mobiles" != "2" ]; then
+    record FAIL 16 "$TITLE_16" "$passes of 2 palettes started, $desktops of 2 desktop and $mobiles of 2 mobile reported"
   else
-    record PASS 16 "$TITLE_16" "$(printf '%s' "$summaries" | tr '\n' ';' | sed 's/;/; /g')"
+    record PASS 16 "$TITLE_16" "2 palettes x 2 breakpoints"
   fi
 fi
 
@@ -799,11 +804,11 @@ else
 fi
 
 # 19
-readonly TITLE_19="dependencies are 1c's plus 1d's four, and no more"
+readonly TITLE_19="dependencies are 1c's plus 1d's four and 1e's one, and no more"
 if node -e '
   const pkg = JSON.parse(require("fs").readFileSync("package.json", "utf8"))
   const budget = {
-    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2", "markdown-it"],
+    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2", "markdown-it", "highlight.js"],
     devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli", "@biomejs/biome", "@types/ssh2", "axe-core", "playwright", "tuffgal"],
   }
   const over = []
@@ -812,7 +817,7 @@ if node -e '
       if (!allowed.includes(name)) over.push(`${name} (${field})`)
     }
   }
-  if (over.length) { console.error("1d adds four, but found: " + over.join(", ")); process.exit(1) }
+  if (over.length) { console.error("1d adds four and 1e one, but found: " + over.join(", ")); process.exit(1) }
   const placed = { "markdown-it": "dependencies", tuffgal: "devDependencies", "axe-core": "devDependencies", playwright: "devDependencies" }
   for (const [name, field] of Object.entries(placed)) {
     if (!pkg[field]?.[name]) { console.error(`${name} is not in ${field}`); process.exit(1) }

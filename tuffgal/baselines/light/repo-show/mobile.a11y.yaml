@@ -1,0 +1,108 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - navigation "Breadcrumb":
+    - list:
+      - listitem:
+        - link "Càrn":
+          - /url: /
+      - listitem: linklater
+- main:
+  - heading "linklater" [level=1]
+  - paragraph: Save a URL, read it later.
+  - navigation "Repo views":
+    - list:
+      - listitem:
+        - link "Commits":
+          - /url: /r/linklater/commits?ref=main
+      - listitem:
+        - link "Branches":
+          - /url: /r/linklater/branches
+      - listitem:
+        - link "Tags":
+          - /url: /r/linklater/tags
+  - heading "Files" [level=2]
+  - table "Files":
+    - caption: Files
+    - rowgroup:
+      - row "Name Age":
+        - columnheader "Name"
+        - columnheader "Age"
+    - rowgroup:
+      - row ".carn/ 2w":
+        - rowheader ".carn/":
+          - link ".carn/":
+            - /url: /r/linklater/tree/main/.carn
+        - cell "2w":
+          - time: 2w
+      - row "docs/ 2w":
+        - rowheader "docs/":
+          - link "docs/":
+            - /url: /r/linklater/tree/main/docs
+        - cell "2w":
+          - time: 2w
+      - row "src/ 2w":
+        - rowheader "src/":
+          - link "src/":
+            - /url: /r/linklater/tree/main/src
+        - cell "2w":
+          - time: 2w
+      - row "README.md 2w":
+        - rowheader "README.md":
+          - link "README.md":
+            - /url: /r/linklater/blob/main/README.md
+        - cell "2w":
+          - time: 2w
+      - row "package.json 2w":
+        - rowheader "package.json":
+          - link "package.json":
+            - /url: /r/linklater/blob/main/package.json
+        - cell "2w":
+          - time: 2w
+  - heading "Linklater" [level=1]
+  - paragraph: Save a URL, read it later. Linklater keeps a reading list you can push to from anywhere, with no account and no client-side JavaScript.
+  - heading "Install" [level=2]
+  - code: git clone git@carn.example:linklater.git cd linklater npm install
+  - heading "Refs" [level=2]
+  - table:
+    - rowgroup:
+      - row "Ref Kind Note":
+        - columnheader "Ref"
+        - columnheader "Kind"
+        - columnheader "Note"
+    - rowgroup:
+      - row "main branch the default":
+        - cell "main":
+          - code: main
+        - cell "branch"
+        - cell "the default"
+      - row "v1.2.0 tag the last release":
+        - cell "v1.2.0":
+          - code: v1.2.0
+        - cell "tag"
+        - cell "the last release"
+  - heading "Notes" [level=2]
+  - list:
+    - listitem: The reading list is one table, and one index on it
+    - listitem: Fetches run on a timer, never on a page load
+    - listitem:
+      - text: Read the
+      - link "brand notes":
+        - /url: /r/linklater/blob/main/docs/BRAND.md
+      - text: ", the"
+      - link "spec":
+        - /url: /docs/spec
+      - text: ", the"
+      - link "type scale":
+        - /url: "#type"
+      - text: ", or send"
+      - link "mail":
+        - /url: mailto:hi@example.com
+  - blockquote:
+    - paragraph: Quiet software is the goal.
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

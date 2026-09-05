@@ -1,0 +1,37 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - navigation "Breadcrumb":
+    - list:
+      - listitem:
+        - link "Càrn":
+          - /url: /
+      - listitem:
+        - link "gantry":
+          - /url: /r/gantry
+      - listitem:
+        - link "apps":
+          - /url: /r/gantry/tree/main/apps
+      - listitem:
+        - link "web":
+          - /url: /r/gantry/tree/main/apps/web
+      - listitem:
+        - link "src":
+          - /url: /r/gantry/tree/main/apps/web/src
+      - listitem: deep.ts
+- main:
+  - heading "apps/web/src/deep.ts" [level=1]
+  - term: Size
+  - definition: 24 B
+  - term: Lines
+  - definition: "1"
+  - term: Language
+  - definition: TypeScript
+  - region "apps/web/src/deep.ts":
+    - code: export const depth = 3;
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

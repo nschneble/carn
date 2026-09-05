@@ -1,0 +1,9 @@
+{
+  "action": "gantry-blob-unwrappable",
+  "steps": [
+    { "kind": "navigate", "path": "/r/gantry" },
+    { "kind": "click", "hint": { "role": "link", "text": "src/" } },
+    { "kind": "click", "hint": { "role": "link", "text": "wide.ts" } }
+  ],
+  "expect": { "anyOf": [{ "text": "lines of 75" }] }
+}

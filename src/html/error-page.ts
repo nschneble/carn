@@ -24,6 +24,62 @@ export const noSuchRepo = (name: string): Failure => ({
   path: "/404",
 });
 
+export const noSuchFile = (path: string): Failure => ({
+  title: `No file at ${path} · Càrn`,
+  heading: "No file here",
+  said: `There's no file at ${path} on that ref.`,
+  next: "Check the path and the ref, or browse the repo.",
+  path: "/404",
+});
+
+export const noBlobPath: Failure = {
+  title: "No path here · Càrn",
+  heading: "No path here",
+  said: "That URL names a ref but no file inside it.",
+  next: "A file URL ends with the path to a file. The repo page lists what's there.",
+  path: "/404",
+};
+
+export const noSuchTree = (path: string): Failure => ({
+  title: `No directory at ${path} · Càrn`,
+  heading: "No directory here",
+  said: `There's no directory at ${path} on that ref.`,
+  next: "Check the path and the ref, or browse the repo.",
+  path: "/404",
+});
+
+export const noTreeRoot: Failure = {
+  title: "No path here · Càrn",
+  heading: "No path here",
+  said: "That URL names a ref but no path inside it.",
+  next: "The repo page is the root tree. A tree URL names something below it.",
+  path: "/404",
+};
+
+export const noSuchRef = (ref: string): Failure => ({
+  title: `No ref named ${ref} · Càrn`,
+  heading: "No ref here",
+  said: `There's no branch, tag, or commit named ${ref} in this repo.`,
+  next: "Check the ref, or browse the repo.",
+  path: "/404",
+});
+
+export const noSuchCommit = (sha: string): Failure => ({
+  title: `No commit ${sha} · Càrn`,
+  heading: "No commit here",
+  said: `There's no commit ${sha} in this repo.`,
+  next: "Check the id, or find it in the log.",
+  path: "/404",
+});
+
+export const noSuchChange = (path: string): Failure => ({
+  title: `No change to ${path} · Càrn`,
+  heading: "No change here",
+  said: `That commit doesn't change ${path}.`,
+  next: "Check the path, or read the whole commit.",
+  path: "/404",
+});
+
 export const unavailable: Failure = {
   title: "Unavailable · Càrn",
   heading: "Unavailable",
@@ -36,7 +92,16 @@ export const badRepoName: Failure = {
   title: "Not a repo name · Càrn",
   heading: "Not a repo name",
   said: "That URL doesn't carry a repo name this server can look up.",
-  next: "A name is letters, digits, dots, dashes, and underscores, up to 64 characters. Check the URL, or find the repo in all repos.",
+  next: "A name is letters, digits, dots, dashes, and underscores, up to 40 characters. Check the URL, or find the repo in all repos.",
+  path: "/404",
+};
+
+// no route matched, so there is no repo, ref, or path here to name
+export const noSuchRoute: Failure = {
+  title: "Nothing here · Càrn",
+  heading: "Nothing here",
+  said: "That URL doesn't match a route this server has.",
+  next: "Check the URL, or find it in all repos.",
   path: "/404",
 };
 

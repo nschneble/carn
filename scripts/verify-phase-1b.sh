@@ -19,7 +19,7 @@ readonly SSH_FLAGS="-o IdentitiesOnly=yes -o IdentityAgent=none -o StrictHostKey
 readonly NO_WRITE="You don't have write access to $REPO_NAME. Ask the owner for a grant."
 readonly NO_REPO="There's no repo named absent1b. Push to it to create it."
 readonly BAD_COMMAND="This server runs git-upload-pack and git-receive-pack only. Use git clone or git push."
-readonly BAD_NAME="That's not a valid repo name. Names are up to 64 characters, starting with a letter or number, and containing only letters, numbers, dots, dashes, and underscores."
+readonly BAD_NAME="That's not a valid repo name. Names are up to 40 characters, starting with a letter or number, and containing only letters, numbers, dots, dashes, and underscores."
 
 work=$(mktemp -d) || work=""
 if [ -z "$work" ]; then
@@ -609,12 +609,13 @@ else
 fi
 
 # 19
-# the budget catches unauthorised creep, so a later phase's authorised
-# additions belong in it: 1d's four are named in docs/phases/1d-design.md
+# the budget catches unauthorized creep, so a later phase's authorized
+# additions belong in it: 1d's four and 1e's highlight.js are named in
+# docs/phases/1d-design.md and docs/phases/1e-views.md
 if node -e '
   const pkg = JSON.parse(require("fs").readFileSync("package.json", "utf8"))
   const budget = {
-    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2", "markdown-it"],
+    dependencies: ["fastify", "@prisma/client", "@prisma/adapter-pg", "ssh2", "markdown-it", "highlight.js"],
     devDependencies: ["prisma", "typescript", "@types/node", "squawk-cli", "@biomejs/biome", "@types/ssh2", "axe-core", "playwright", "tuffgal"],
   }
   const over = []

@@ -13,6 +13,12 @@ function read(name: string, fallback?: string): string {
   return value;
 }
 
+// unset means the escape hatches aren't rendered, which is a complete view
+function readOptional(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  return value === undefined || value === "" ? undefined : value;
+}
+
 function readPort(name: string, fallback: string): number {
   const raw = read(name, fallback);
   const value = Number(raw);
@@ -48,6 +54,7 @@ export const config = Object.freeze({
   nodeEnv: read("NODE_ENV", "development"),
   origin: read("CARN_ORIGIN", "https://carn.fancyenchiladas.net"),
   port: readPort("PORT", "3000"),
+  rawOrigin: readOptional("CARN_RAW_ORIGIN"),
   repoRoot: read("CARN_REPO_ROOT", "./local/repos"),
   sourceUrl: read("CARN_SOURCE_URL", "https://github.com/nschneble/carn"),
   sshHost: read("CARN_SSH_HOST", "127.0.0.1"),

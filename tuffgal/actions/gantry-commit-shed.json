@@ -1,0 +1,13 @@
+{
+  "action": "gantry-commit-shed",
+  "steps": [
+    { "kind": "navigate", "path": "/r/gantry/commits" },
+    {
+      "kind": "click",
+      "hint": { "role": "link", "text": "Generate the tables" }
+    }
+  ],
+  "expect": {
+    "anyOf": [{ "selector": ".files a[href^=\"/r/gantry/commits/\"]" }]
+  }
+}

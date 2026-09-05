@@ -1,0 +1,19 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - paragraph:
+    - link "Càrn":
+      - /url: /
+- main:
+  - heading "No ref here" [level=1]
+  - paragraph: There's no branch, tag, or commit named nope in this repo.
+  - paragraph: Check the ref, or browse the repo.
+  - paragraph:
+    - link "All repos":
+      - /url: /
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

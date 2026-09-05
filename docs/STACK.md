@@ -45,6 +45,20 @@ because the client's tag has *not* moved, `npm i prisma@latest
 never with a bare `npm update`. If `npm ci` ever resolves a Prisma package
 outside major 7, stop and report it rather than adapting the code.
 
+## Raw SQL is permitted only where the DSL is wrong or has no form
+
+> Raw SQL is permitted where the DSL is **wrong**, or where it has **no form**
+> for the statement at all. Nowhere else, and never for brevity. Every raw
+> query carries a comment naming the DSL construct it rejects and what that
+> construct would have done.
+
+Three call sites outside `src/generated` qualify. `resolveRepo` rejects
+`mode: "insensitive"`, which emits `ILIKE`: `_` is a wildcard there, and
+`ILIKE` cannot use `repos_name_lower_key`. `listRepos` rejects `orderBy`,
+which takes columns rather than expressions and would sort the `COLLATE "C"`
+column. The visual fixture's `TRUNCATE ... CASCADE` has no DSL form at all,
+and `deleteMany({})` is a different statement rather than a translation.
+
 ## Biome replaced Prettier and ESLint
 
 One binary for both jobs. The deciding factor was TypeScript 7:
@@ -145,6 +159,74 @@ Postgres-only and never loads it. `prisma@7.9.1` and `7.10.0` both pin
 `mysql2` at exactly `3.15.3`, so, as with `deepmerge-ts` above, there is no
 fix within the declared Prisma range. Resolved with an `overrides` entry
 pinning `prisma`'s `mysql2` to `^3.23.1`, which clears both advisories.
+
+## The visual capture image is pinned to the installed Playwright
+
+`compose.yaml`'s `visual` service runs
+**`mcr.microsoft.com/playwright:v1.62.1-noble`**, digest
+`sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e`
+for `linux/arm64`. It ships Node v24.18.1, satisfying `engines.node >=24`,
+and Chromium 151.0.7922.34.
+
+The tag carries the version because the committed baselines are only
+reproducible against one browser build. `package.json` declares the range
+`^1.62.1`; what makes it exact is `package-lock.json` pinning 1.62.1 and
+`scripts/visual-docker.sh` installing with `npm ci`, which honors the
+lockfile. If the lockfile moves, the image tag moves with it in the same
+commit and every baseline is re-shot.
+
+**The platform pin is `linux/arm64`, and it is not the usual choice.**
+GitHub's hosted x86_64 runners would argue for `linux/amd64`, but Chromium
+cannot run amd64-emulated under Colima on Apple silicon — the headless
+shell aborts inside QEMU (`Assertion failed: p_rcu_reader->depth != 0`,
+`/qemu/include/qemu/rcu.h`, SIGABRT), so amd64 is unavailable rather than
+slow. A workflow that later consumes these baselines must select an arm64
+runner or re-shoot them once.
+
+**Nothing will flag the mismatch for you.** Tuffgal decides a baseline set
+needs re-approval by diffing `PIXEL_AFFECTING_KEYS` against the committed
+`manifest.json`. The only key in that list describing the machine is
+`platform`, taken from `process.platform`, which is `"linux"` on arm64 and
+amd64 alike; there is no architecture key, and none is written into the
+manifest. So an amd64 runner reports a Skia rasterisation delta as an
+ordinary pending baseline change (exit 2), indistinguishable from a real
+UI regression, rather than as an environment mismatch (exit 3).
+
+**`--force-color-profile=srgb` was never missing.** Playwright's own
+Chromium launch already carries it: `playwright-core@1.62.1` bundles it
+in the default `chromiumSwitches`, so a bare `chromium.launch({
+headless: true })` — the exact 0.2.1-alpha.1 shape — sets it on every
+run. An earlier pass of this document recorded the flag as unreachable
+without checking Playwright's own defaults first, which was wrong.
+`tuffgal.config.ts` carries no `browserArgs` entry for it; adding one
+would only duplicate a switch Chromium already takes.
+
+`tuffgal@0.2.2-alpha.1` (`nschneble/tuffgal#49`) does add a real
+`browserArgs` config seam — `runner/run.js` launches with
+`resolveLaunchOptions`, which returns `{ headless, args:
+config.browserArgs }` — for the day a project genuinely needs a launch
+flag Playwright doesn't already set. This project doesn't need it for
+srgb. `browserArgs` is not in `PIXEL_AFFECTING_KEYS` and is not written
+into `manifest.json`, so if a future project use of it ever needs
+guarding against silent drift, that gap is still open then.
+
+**Inside the compose network Postgres is `postgres:5432`.** The host's
+`127.0.0.1:5433` is a published port and it is wrong in the container,
+which is why `compose.yaml` gives the `visual` service its own
+`DATABASE_URL` rather than letting the host's url through. `visual.sh`
+prefers an inherited `DATABASE_URL` over the one it reads from `.env` for
+the same reason: that file is on the container's bind mount, and its url
+is the host's.
+
+Two things diverge between a laptop and this image, and both change bytes:
+
+- **Text rasterisation.** CoreText and FreeType/Skia hint and antialias
+  differently, and the UI is a subset face at six weights.
+- **The gzip the budget is measured in.** Node 26 on the laptop links
+  zlib 1.2.12; the image's Node 24 links 1.3.1. The same blob page fits
+  **99** source lines on the laptop and **104** in the image, because the
+  cap is computed from real gzip-5 wire bytes. The container is the
+  authority: it is what CI runs.
 
 ## Not surveyed
 

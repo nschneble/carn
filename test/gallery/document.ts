@@ -9,7 +9,7 @@ function css(strings: TemplateStringsArray, ...values: unknown[]): string {
   return String.raw({ raw: strings }, ...values);
 }
 
-const hoverSimulation = css`.row.is-hover {
+const hoverSimulation = css`.tbl tbody tr.is-hover {
   background: var(--sunk);
 }`;
 
@@ -68,27 +68,39 @@ const chips = html`<section>
 </section>`;
 
 const rows = html`<section>
-  <h2 class="t-l">Row</h2>
-  <div class="row is-dir">
-    <a class="nm t-item" lang="en" href="#row-dir"><span class="sc">docs</span>/</a>
-    <span class="msg">Move the brand book out of the artifact</span>
-    <span class="age">3d</span>
-  </div>
-  <div class="row is-dir is-hover">
-    <a class="nm t-item" lang="en" href="#row-hover"><span class="sc">src</span>/<span class="sc">components</span>/</a>
-    <span class="msg">Split the button out of the header</span>
-    <span class="age">6h</span>
-  </div>
-  <div class="row">
-    <a class="nm t-item" lang="en" href="#row-file">README.<span class="sc">md</span></a>
-    <span class="msg">Say what it does before saying how to run it</span>
-    <span class="age">2w</span>
-  </div>
-  <div class="row">
-    <a class="nm t-item" lang="en" href="#row-long">B<span class="sc">utton</span>.<span class="sc">tsx</span></a>
-    <span class="msg">Reject refs beginning with a dash</span>
-    <span class="age">14w</span>
-  </div>
+  <h2 class="t-l">Table</h2>
+  <table class="tbl tree">
+    <caption class="vh">Files</caption>
+    <thead>
+      <tr>
+        <th class="nm t-label" scope="col">Name</th>
+        <th class="msg t-label" scope="col">Commit</th>
+        <th class="age t-label" scope="col">Age</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="row is-dir">
+        <th class="nm" scope="row"><a class="t-item" lang="en" href="#row-dir"><span class="caps">docs</span>/</a></th>
+        <td class="msg"><span>Move the brand book out of the artifact</span></td>
+        <td class="age"><time datetime="2026-01-07">3d</time></td>
+      </tr>
+      <tr class="row is-dir is-hover">
+        <th class="nm" scope="row"><a class="t-item" lang="en" href="#row-hover"><span class="caps">src/components</span>/</a></th>
+        <td class="msg"><span>Split the button out of the header</span></td>
+        <td class="age"><time datetime="2026-01-10">6h</time></td>
+      </tr>
+      <tr class="row">
+        <th class="nm" scope="row"><a class="t-item" lang="en" href="#row-file"><span class="caps">README<span class="sc">.md</span></span></a></th>
+        <td class="msg"><span>Say what it does before saying how to run it</span></td>
+        <td class="age"><time datetime="2025-12-27">2w</time></td>
+      </tr>
+      <tr class="row">
+        <th class="nm" scope="row"><a class="t-item" lang="en" href="#row-long"><span class="caps">Button<span class="sc">.tsx</span></span></a></th>
+        <td class="msg"><span>Reject refs beginning with a dash</span></td>
+        <td class="age"><time datetime="2025-10-04">14w</time></td>
+      </tr>
+    </tbody>
+  </table>
 </section>`;
 
 const fields = html`<section>

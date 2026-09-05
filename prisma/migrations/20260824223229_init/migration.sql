@@ -39,7 +39,7 @@ CREATE TABLE "ssh_keys" (
 CREATE TABLE "repos" (
   "id" UUID NOT NULL,
   "owner_id" UUID NOT NULL,
-  "name" TEXT NOT NULL,
+  "name" TEXT COLLATE "C" NOT NULL,
   "description" TEXT,
   "default_branch" TEXT NOT NULL DEFAULT 'main',
   -- int4 ceiling is 2,147,483,647 and issues/PRs are per repo; unreachable
@@ -89,6 +89,6 @@ ALTER TABLE "repo_grants" ADD CONSTRAINT "repo_grants_user_id_fkey"
 CREATE UNIQUE INDEX repos_name_lower_key ON repos (lower(name));
 
 ALTER TABLE repos ADD CONSTRAINT repos_name_format
-  CHECK (name ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$');
+  CHECK (name ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$');
 
 COMMIT;

@@ -4,6 +4,12 @@ import assert from "node:assert";
 import { test } from "node:test";
 
 import { components, stylesheet, tokens } from "../../src/html/styles.js";
+import { commitDocument } from "../gallery/commit.js";
+import { logDocument } from "../gallery/commit-log.js";
+import { refsDocument } from "../gallery/refs.js";
+import { indexDocument } from "../gallery/repo-index.js";
+import { treeDocument } from "../gallery/tree.js";
+import { displayOverrides, tableTargets } from "../support/table-display.js";
 import {
   brand,
   dark,
@@ -15,6 +21,15 @@ import {
 } from "../support/tokens.js";
 
 const grounds = ["--ground", "--surface", "--sunk"] as const;
+
+// every table the product serves, so no class reaching one goes unread
+const servedTables = [
+  treeDocument(),
+  refsDocument(),
+  indexDocument(),
+  logDocument(),
+  commitDocument(),
+];
 
 function channel(value: number): number {
   const scaled = value / 255;
@@ -113,6 +128,24 @@ test("every ink token clears AA on ground, surface, and sunk", () => {
   }
 });
 
+// diff text only ever renders on .src's --sunk background, so that is the
+// binding ground — not ground or surface, which the diff never sits on
+test("the diff tokens clear AA against --sunk, the ground they render on", () => {
+  for (const [name, palette] of palettes) {
+    for (const token of ["--diff-add", "--diff-del"]) {
+      const measured = contrast(
+        color(palette, token),
+        color(palette, "--sunk"),
+      );
+
+      assert.ok(
+        measured >= 4.5,
+        `${name} ${token} on --sunk is ${measured.toFixed(2)}:1, under 4.5`,
+      );
+    }
+  }
+});
+
 test("the accent pair clears its own threshold on all three grounds", () => {
   for (const [name, palette] of palettes) {
     for (const ground of grounds) {
@@ -184,6 +217,37 @@ test("a component's only boundary clears 3:1 and --rule does not", () => {
   }
 });
 
+// contrast() also measures luminance separation between two foreground
+// tokens, not just a token against a ground — grayscale collapses hue, so
+// this is what keeps added and removed apart once color is gone
+test("the diff tokens are separable in grayscale, not just by hue", () => {
+  for (const [name, palette] of palettes) {
+    const separation = contrast(
+      color(palette, "--diff-add"),
+      color(palette, "--diff-del"),
+    );
+    assert.ok(
+      separation >= 1.8,
+      `${name} --diff-add and --diff-del are ${separation.toFixed(2)}:1 apart in grayscale, under 1.8`,
+    );
+  }
+});
+
+test("the retired diff-del values would still fail the separation check", () => {
+  const retired = [
+    ["dark --diff-del", "#ffa070", color(dark, "--diff-add")],
+    ["light --diff-del", "#7a2900", color(light, "--diff-add")],
+  ] as const;
+
+  for (const [name, hex, add] of retired) {
+    const measured = contrast(hex, add);
+    assert.ok(
+      measured < 1.8,
+      `${name} ${hex} separates from --diff-add by ${measured.toFixed(2)}:1 — it is no longer a failure`,
+    );
+  }
+});
+
 test("the retired ink values would still fail, so the check discriminates", () => {
   const retired = [
     ["dark --ink-faint", "#6a7070", color(dark, "--sunk")],
@@ -222,11 +286,11 @@ test("each primitive draws from the token the contrast check measured", () => {
     rule(".chip--current"),
     /border: 2px solid var\(--accent-fill\);/,
   );
-  assert.match(rule(".row.is-dir .nm"), /color: var\(--accent-text\);/);
+  assert.match(rule(".tbl .is-dir .nm > *"), /color: var\(--accent-text\);/);
 
   assert.match(rule(":focus-visible"), /outline: 2px solid var\(--accent\);/);
   assert.match(rule(":focus-visible"), /outline-offset: 2px;/);
-  assert.match(rule(".row .nm:focus-visible"), /outline-offset: -2px;/);
+  assert.match(rule(".tbl .nm a:focus-visible"), /outline-offset: -2px;/);
   assert.doesNotMatch(stylesheet, /outline:\s*none/);
 });
 
@@ -283,12 +347,105 @@ test("a state signal survives the accent being discarded", () => {
   assert.doesNotMatch(stylesheet, /content:\s*"\//);
 });
 
-test("the row's overlay leaves its two columns selectable", () => {
-  assert.match(rule(".row"), /position: relative;/);
-  assert.match(rule(".row .nm::after"), /content: "";/);
-  assert.match(rule(".row .nm::after"), /position: absolute;/);
-  assert.match(rule(".row .nm::after"), /inset: 0;/);
-  assert.match(rule(".row .msg,\n.row .age"), /position: relative;/);
+// authored, not computed: the ban is what keeps the native semantics, but
+// <caption class="vh"> is out of flow and a ua blockifies an absolutely
+// positioned box whatever the sheet asked for. chromium keeps role=caption
+// through it, so what this reads is the ban a stylesheet can break
+test("no table element carries an authored display override", () => {
+  const targets = tableTargets(...servedTables);
+
+  assert.ok(
+    targets.classes.has("tbl") && targets.classes.has("row"),
+    "the markup sample carries no table, so the sheet is judged against nothing",
+  );
+
+  assert.deepStrictEqual(
+    displayOverrides(stylesheet, targets),
+    [],
+    "the stylesheet sets a display value on a table element",
+  );
+
+  // the class form is the one a type-only reader missed, and the shape .row
+  // was until 1e deleted it. TD and DISPLAY are the case forms the reader
+  // was blind to; table is the value the exemption must not have let in
+  for (const planted of [
+    ".tbl tbody td { display: grid; }",
+    ".tbl { display: block; }",
+    ".row { display: grid; }",
+    ".tbl .msg { display: flex; }",
+    ".tbl tbody TD { DISPLAY: grid; }",
+    ".tbl .msg { display: table; }",
+    ".tbl .msg { display: none; display: grid; }",
+  ]) {
+    assert.deepStrictEqual(
+      displayOverrides(planted, targets).length,
+      1,
+      `the reader missed ${planted}, so a clean sheet proves nothing`,
+    );
+  }
+
+  assert.deepStrictEqual(
+    displayOverrides(".btn { display: flex; }", targets),
+    [],
+    "the reader flags a class that sits on no table element",
+  );
+
+  // the exemption is not a dead branch: the sheet really does hide the
+  // description column below the breakpoint and hand it back above one
+  assert.match(
+    stylesheet,
+    /\.repos \.msg,\n\.tree \.msg \{\n {2}display: none;\n\}/,
+    "nothing in the sheet takes the exemption, so it excuses only a future mistake",
+  );
+  assert.match(
+    stylesheet,
+    /\.repos \.msg,\n {2}\.tree \.msg \{\n {4}display: table-cell;\n {2}\}/,
+  );
+
+  // the two views whose middle column is a link are hidden at no width: a
+  // dropped subject there is the row's only way to reach that commit
+  assert.doesNotMatch(stylesheet, /\.(log|refs) \.msg[^{]*\{[^}]*display:/);
+});
+
+// the wash covers what is clickable and never more, so which shape a view
+// takes is decided by its links: three links wash the row, one link washes
+// its own cell. an overlay would be a third shape, and Safari has never
+// made a <tr> a containing block for one — WebKit 240961, fixed 2026 and
+// absent from every shipping build older than that
+test("the wash covers what takes a click, by row or by cell", () => {
+  assert.match(rule(".tbl"), /table-layout: fixed;/);
+  assert.match(
+    rule(".tbl tbody th > *,\n.tbl tbody td > *"),
+    /display: block;/,
+  );
+  assert.match(
+    rule(".tbl tbody th > *,\n.tbl tbody td > *"),
+    /min-height: 24px;/,
+  );
+
+  assert.match(
+    rule(
+      ".log tbody tr:hover,\n.log tbody tr:focus-within,\n.refs tbody tr:hover,\n.refs tbody tr:focus-within",
+    ),
+    /background: var\(--sunk\);/,
+  );
+  assert.match(
+    rule(
+      ".tree tbody .nm:hover,\n.tree tbody .nm:focus-within,\n.repos tbody .nm:hover,\n.repos tbody .nm:focus-within,\n.files tbody .nm:hover,\n.files tbody .nm:focus-within",
+    ),
+    /background: var\(--sunk\);/,
+  );
+
+  assert.doesNotMatch(
+    stylesheet,
+    /tbody tr[^{]*\{[^}]*position: relative/,
+    "a row is positioned again, which is what an overlay needs and Safari does not honor",
+  );
+  assert.deepStrictEqual(
+    [...stylesheet.matchAll(/^.*::after/gm)].map(([one]) => one.trim()),
+    [],
+    "a row overlay is back; it sizes against the viewport in shipping Safari",
+  );
 });
 
 test("BRAND.md's stated ratios are the measured ones", () => {

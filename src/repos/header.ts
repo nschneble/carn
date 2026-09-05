@@ -4,8 +4,9 @@
 // still looks deliberate in light mode. one ls-tree per page, cached on
 // the tip's oid. BRAND.md 06
 
+import { captureGit } from "../git/capture.js";
+import { parseLsTree } from "../git/ls-tree.js";
 import { oidPattern } from "../git/oid.js";
-import { spawnGit } from "../git/spawn.js";
 import { html, type Raw } from "../html/index.js";
 import { wordmark } from "./wordmark.js";
 
@@ -16,7 +17,8 @@ export type Header = { light: HeaderSource; dark: HeaderSource };
 
 export type HeaderSrc = (image: HeaderImage) => string;
 
-// what the 100 KB budget leaves after fonts and the page. BRAND.md 06
+// 16 KB, chosen with headroom under the budget BRAND.md 06 reconciles by
+// hand; not itself derived here, and not the same page's assetRoomBytes
 export const maxHeaderBytes = 16 * 1024;
 
 const listTimeoutMs = 5_000;
@@ -32,19 +34,11 @@ function chain(slot: Slot): string[] {
 function parse(listing: string): Map<string, HeaderImage> {
   const found = new Map<string, HeaderImage>();
 
-  for (const record of listing.split("\0")) {
-    const tab = record.indexOf("\t");
-    if (tab === -1) continue;
+  for (const { mode, type, oid, size, path } of parseLsTree(listing)) {
+    if (type !== "blob" || !fileModes.has(mode)) continue;
+    if (size === null || size > maxHeaderBytes) continue;
 
-    const [mode, type, oid, size] = record.slice(0, tab).split(/\s+/);
-    const path = record.slice(tab + 1);
-    const bytes = Number(size);
-
-    if (type !== "blob" || mode === undefined || !fileModes.has(mode)) continue;
-    if (oid === undefined || !Number.isInteger(bytes) || bytes > maxHeaderBytes)
-      continue;
-
-    found.set(path, { path, oid, bytes });
+    found.set(path, { path, oid, bytes: size });
   }
 
   return found;
@@ -55,27 +49,18 @@ async function list(
   commit: string,
   signal: AbortSignal | undefined,
 ): Promise<string> {
-  const child = await spawnGit({
+  const { code, stdout } = await captureGit({
     args: ["ls-tree", "-z", "--long", commit, "--", ".carn/"],
     cwd: repoPath,
     signal,
     timeoutMs: listTimeoutMs,
   });
 
-  const chunks: Buffer[] = [];
-  child.stdout.on("data", (chunk: Buffer) => {
-    chunks.push(chunk);
-  });
-  child.stderr.resume();
-
-  const result = await child.done;
-  if (result.outcome !== "exited" || result.code !== 0) {
-    throw new Error(
-      `git ls-tree of .carn/ at ${commit} ${result.outcome} (${result.code})`,
-    );
+  if (code !== 0) {
+    throw new Error(`git ls-tree of .carn/ at ${commit} exited ${code}`);
   }
 
-  return Buffer.concat(chunks).toString("utf8");
+  return stdout.toString("utf8");
 }
 
 async function walk(

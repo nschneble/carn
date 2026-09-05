@@ -1,0 +1,9 @@
+{
+  "story": "A visitor opens a binary the page declines, one it draws, and one too large to draw",
+  "actions": [
+    { "action": "gantry-blob-binary" },
+    { "action": "gantry-blob-image" },
+    { "action": "gantry-blob-oversize" },
+    { "action": "gantry-tree-gitlink" }
+  ]
+}

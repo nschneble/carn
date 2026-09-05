@@ -3,10 +3,31 @@
 import { repoShowPage } from "../../src/html/repo-show.js";
 import type { HeaderImage } from "../../src/repos/header.js";
 import type { RepoView } from "../../src/repos/show.js";
-import type { TreeEntry } from "../../src/repos/tree.js";
-import { fixtureHeaders } from "../support/fixture-repos.js";
+import type { Touch, TreeEntry } from "../../src/repos/tree.js";
+import { fixtureHeaders, frozenNow } from "../support/fixture-repos.js";
 
 const tip = "c".repeat(40);
+
+export const treeNow = new Date(frozenNow);
+
+const subjects = [
+  "Read the list back",
+  "Fetch on a timer rather than on a page load",
+  "Pin the reading list to one table",
+  "Escape the title before it reaches the page",
+  "Keep the tarball byte-reproducible",
+];
+
+// every eighth entry goes un-attributed, which is what the bounded walk
+// leaves behind on a path it never reached
+function touch(index: number): Touch | null {
+  if (index % 8 === 7) return null;
+
+  return {
+    subject: subjects[index % subjects.length] as string,
+    at: new Date(treeNow.getTime() - (index + 1) * 3_600_000),
+  };
+}
 
 const lightHeader: HeaderImage = {
   path: ".carn/header-light.svg",
@@ -24,13 +45,33 @@ const darkHeader: HeaderImage = {
 // them to, so the audit and the capture render the same header
 export const committedHeader = { light: lightHeader, dark: darkHeader };
 
-function file(name: string, bytes = 512): TreeEntry {
-  return { name, oid: "0".repeat(40), directory: false, bytes };
+function file(name: string, index: number, bytes = 512): TreeEntry {
+  return {
+    name,
+    oid: "0".repeat(40),
+    kind: "file",
+    bytes,
+    touched: touch(index),
+  };
 }
 
-function directory(name: string): TreeEntry {
-  return { name, oid: "1".repeat(40), directory: true, bytes: null };
+function directory(name: string, index: number): TreeEntry {
+  return {
+    name,
+    oid: "1".repeat(40),
+    kind: "directory",
+    bytes: null,
+    touched: touch(index),
+  };
 }
+
+export const submodule: TreeEntry = {
+  name: "vendor",
+  oid: "9".repeat(40),
+  kind: "gitlink",
+  bytes: null,
+  touched: null,
+};
 
 export const directories = [
   ".github",
@@ -53,14 +94,14 @@ export const files = [
   "package.json",
   "prisma.config.ts",
   "tsconfig.json",
-].map((name) => file(name));
+].map((name, index) => file(name, index));
 
 // nineteen more so the sixteen-row cap has something to hide
 export const wide = [
   ...directories,
   ...files,
   ...Array.from({ length: 19 }, (_, index) =>
-    file(`Fixture${index}.tsx`, 1024 + index),
+    file(`Fixture${index}.tsx`, index, 1024 + index),
   ),
 ];
 
@@ -111,6 +152,7 @@ export const hostileReadme = `# Payloads
 export function view(options: Partial<RepoView> = {}): RepoView {
   return {
     name: "linklater",
+    description: "Save a URL, read it later.",
     branch: "main",
     tip,
     header: { light: "wordmark", dark: "wordmark" },
@@ -132,5 +174,6 @@ export function showDocument(
   return repoShowPage({
     repo: options.repo ?? view(),
     showAll: options.showAll ?? false,
+    now: treeNow,
   });
 }

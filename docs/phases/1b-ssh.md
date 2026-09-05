@@ -1,6 +1,7 @@
 # Phase 1b · The SSH listener
 
-_Authenticated push and clone against real repos on disk. No HTTP, no pages._
+_Authenticated push and clone against real repos on disk. No HTTP, no
+pages._
 
 Second of four briefs making up Phase 1 of `docs/PLAN.md` §08.
 
@@ -66,8 +67,8 @@ These are project conventions now, not 1a trivia:
 
 - **Every migration file starts with `BEGIN;` and ends with `COMMIT;`.**
   Prisma opens no transaction of its own. This is mechanical and checked.
-- `.squawk.toml` holds environmental facts only. Silencing is inline
-  `-- squawk-ignore` at the statement, with the reason.
+- `.squawk.toml` holds environmental facts only. Silencing is inline `--
+  squawk-ignore` at the statement, with the reason.
 - **The init migration's `require-lock-timeout` /
   `require-statement-timeout` ignore does not carry forward.** Its
   justification was that the migration created every table it touched. Any
@@ -82,16 +83,17 @@ These are project conventions now, not 1a trivia:
 
 Adds `ssh2` (runtime) and `@types/ssh2` (dev) to what 1a shipped —
 `fastify`, `@prisma/client`, `@prisma/adapter-pg` at runtime; `prisma`,
-`typescript`, `@types/node`, `squawk-cli`, `@biomejs/biome` in dev.
-Nothing else. Update the budget in `verify-phase-1a.sh` if you add to it,
-so the two scripts cannot disagree.
+`typescript`, `@types/node`, `squawk-cli`, `@biomejs/biome` in dev. Nothing
+else. Update the budget in `verify-phase-1a.sh` if you add to it, so the
+two scripts cannot disagree.
 
 Fingerprints, host keys, and constant-time comparison all come from
 `node:crypto`. No `sshpk`, no `node-forge`.
 
 ## File manifest
 
-Every `.ts` file starts with `// SPDX-License-Identifier: AGPL-3.0-or-later`.
+Every `.ts` file starts with `// SPDX-License-Identifier:
+AGPL-3.0-or-later`.
 
 ```
 src/
@@ -187,7 +189,7 @@ Session requests other than `exec` are refused: `shell`, `pty`, and
 The one rule that matters, from CLAUDE.md: **no user-controlled string ever
 reaches a filesystem path.**
 
-Parse the exec command with the Phase 0 regex, then normalise what the
+Parse the exec command with the Phase 0 regex, then normalize what the
 client asked for: strip a leading `/`, strip a trailing `.git`. What
 remains is a candidate name.
 
@@ -241,8 +243,8 @@ receive.autogc=false
 core.logAllRefUpdates=true
 ```
 
-Set `HEAD` to the row's `default_branch`, so the first push of `main`
-lands on a repo whose HEAD already points there.
+Set `HEAD` to the row's `default_branch`, so the first push of `main` lands
+on a repo whose HEAD already points there.
 
 ## Spawning git
 
@@ -259,10 +261,10 @@ with teeth here:
   property is `info.val`
 
 And Phase 0's third gotcha, which is not in CLAUDE.md and cost the most
-time to find: **`child.stdout.pipe(stream, { end: false })`**. Without
-`{ end: false }` the channel closes before the exit status is sent, ssh
-gives up with 255, and git reports `failed to push some refs` on a push
-that fully succeeded. If you see that symptom, it is this and nothing else.
+time to find: **`child.stdout.pipe(stream, { end: false })`**. Without `{
+end: false }` the channel closes before the exit status is sent, ssh gives
+up with 255, and git reports `failed to push some refs` on a push that
+fully succeeded. If you see that symptom, it is this and nothing else.
 
 ## The key-add script
 
@@ -284,10 +286,10 @@ non-zero if any fail.
 **It must be idempotent.** Run it twice back to back, from a dirty
 development database, and both runs give identical results. 1a's script
 failed this — check 4 demanded an empty database, check 7 left a repo row
-behind, and the remedy it suggested re-applied the migrations it was
-trying to escape. It was fixed by giving those checks a scratch database
-created and dropped by the script; **follow that same pattern here**, and
-read `verify-phase-1a.sh` before writing this one.
+behind, and the remedy it suggested re-applied the migrations it was trying
+to escape. It was fixed by giving those checks a scratch database created
+and dropped by the script; **follow that same pattern here**, and read
+`verify-phase-1a.sh` before writing this one.
 
 1b makes it harder, because state now lands in two places. A scratch
 database covers the rows; the repos on disk need a temporary
@@ -296,8 +298,8 @@ The SSH daemon is a third: bind it to an ephemeral port, and kill it in
 cleanup rather than leaving a listener behind on a failed run.
 
 1. `npm ci && npm run build` — zero errors under `strict`
-2. `npm run key:add` inserts a row; its `fingerprint` matches
-   `ssh-keygen -lf` byte for byte
+2. `npm run key:add` inserts a row; its `fingerprint` matches `ssh-keygen
+   -lf` byte for byte
 3. `git push` to a name with no row succeeds, exits 0
 4. That push created exactly one `repos` row, and a bare repo at
    `<root>/<uuid[0:2]>/<uuid>.git` — assert the path is derived from the
@@ -333,9 +335,9 @@ cleanup rather than leaving a listener behind on a failed run.
 22. `./scripts/verify-phase-1a.sh` still passes in full — 1b must not
     regress 1a
 23. Running `./scripts/verify-phase-1b.sh` twice in succession gives the
-    same result both times, and afterwards leaves behind no
-    `carn_verify_%` database, no rows in `repos` or `ssh_keys` beyond the
-    admin seed, and no directory under the temporary repo root
+    same result both times, and afterwards leaves behind no `carn_verify_%`
+    database, no rows in `repos` or `ssh_keys` beyond the admin seed, and
+    no directory under the temporary repo root
 
 Check 11 is the one worth building carefully. It is the only check that
 proves authorization exists rather than assuming it, and it is easy to

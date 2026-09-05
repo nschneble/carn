@@ -1,0 +1,7 @@
+{
+  "action": "gantry-change",
+  "steps": [
+    { "kind": "click", "hint": { "role": "link", "text": "src/big.ts" } }
+  ],
+  "expect": { "anyOf": [{ "selector": "p.sha a" }] }
+}

@@ -2,10 +2,10 @@
 
 _The first pages anyone sees. The only phase where your eye is the gate._
 
-Fourth of five briefs making up Phase 1 of `docs/PLAN.md` §08. That
-section names one phase for all seven views; it is split here because
-1d settles every visual decision against two pages you can judge, and
-1e applies a settled system to five more.
+Fourth of five briefs making up Phase 1 of `docs/PLAN.md` §08. That section
+names one phase for all seven views; it is split here because 1d settles
+every visual decision against two pages you can judge, and 1e applies a
+settled system to five more.
 
 | Sub-phase | Scope | State |
 |---|---|---|
@@ -24,8 +24,8 @@ small-caps recipe.
 
 ## Version reconnaissance
 
-Verified 2026-08-27. If `npm install` resolves outside these majors,
-**stop and report it**.
+Verified 2026-08-27. If `npm install` resolves outside these majors, **stop
+and report it**.
 
 | Package | Verified | Major | Note |
 |---|---|---|---|
@@ -34,11 +34,10 @@ Verified 2026-08-27. If `npm install` resolves outside these majors,
 | `tuffgal` | 0.2.0-alpha.8 | **0** | Pre-1.0, unstable API by its own README. Pin the exact version. |
 
 New dependencies this phase: `markdown-it`, `tuffgal`, `axe-core`, and
-`playwright`. Nothing else.
-Archivo was already in `fonts/`; the mono face was not, and this phase
-builds it — see `fonts/README.md`. `@types/markdown-it` was installed and
-then dropped, because 15 is self-typed. `docs/STACK.md` records why; don't
-add it back.
+`playwright`. Nothing else. Archivo was already in `fonts/`; the mono face
+was not, and this phase builds it — see `fonts/README.md`.
+`@types/markdown-it` was installed and then dropped, because 15 is
+self-typed. `docs/STACK.md` records why; don't add it back.
 
 ## Before anything else: the markdown-it spike
 
@@ -47,12 +46,12 @@ gotchas were written against 14.x. **The first task of this phase is a
 throwaway spike against the installed 15.0.0**, answering four questions,
 before a line of the pipeline is written:
 
-1. Does `new MarkdownIt('commonmark')` still set `html: true`? Pass
-   `{ html: false }` explicitly regardless, but establish the fact.
+1. Does `new MarkdownIt('commonmark')` still set `html: true`? Pass `{
+   html: false }` explicitly regardless, but establish the fact.
 2. `validateLink` moved from an instance property to a prototype method in
    15. Does assigning `md.validateLink = fn` still shadow it? **Prove the
-   allowlist actually rejects `javascript:`** — do not infer it from the
-   assignment appearing to work.
+       allowlist actually rejects `javascript:`** — do not infer it from
+       the assignment appearing to work.
 3. Is `text_join` still the last core rule, and does
    `md.core.ruler.before('text_join', ...)` still position a rule
    correctly? Cross-reference autolinking is 1e's problem, but the answer
@@ -85,19 +84,19 @@ caps, the generated wordmark, and header-image resolution.
 - Atom feeds, `robots.txt`, `sitemap.xml` — later
 - Cross-reference autolinking (`#12`) — 1e, though the spike answers its
   question now
-- Any change to the SSH or HTTP git paths. If either needs a fix to make
-  1d work, say so rather than editing it in passing.
+- Any change to the SSH or HTTP git paths. If either needs a fix to make 1d
+  work, say so rather than editing it in passing.
 
 ## Standing rules
 
 - Every migration file starts with `BEGIN;` and ends with `COMMIT;`
 - `.squawk.toml` holds environmental facts only; silencing is inline
-- The init migration's `require-lock-timeout` /
-  `require-statement-timeout` ignore does not carry forward
+- The init migration's `require-lock-timeout` / `require-statement-timeout`
+  ignore does not carry forward
 - Findings sort into lifecycle artefact / capacity ceiling / correctness;
   correctness findings are never silenced
-- The verify script must be idempotent — scratch database, `mktemp -d`
-  repo root, ephemeral ports, one trap
+- The verify script must be idempotent — scratch database, `mktemp -d` repo
+  root, ephemeral ports, one trap
 - `git grep` for `shell: true` uses 1a's **scoped** form, path-limited to
   `src test scripts prisma`, with a positive control. The literal string
   appears in the docs, so an unscoped grep can never pass.
@@ -108,9 +107,9 @@ caps, the generated wordmark, and header-image resolution.
 
 1a's brief carries a correction: the five-character escape set is correct
 **only if every attribute value in every template is quoted**. An unquoted
-value is also terminated by a space, a tab, `=`, or a backtick, so
-`foo onmouseover=alert(1)` interpolated into `<a href=${x}>` renders as a
-live event handler.
+value is also terminated by a space, a tab, `=`, or a backtick, so `foo
+onmouseover=alert(1)` interpolated into `<a href=${x}>` renders as a live
+event handler.
 
 1d is the first phase with templates, so 1d owns the enforcement:
 
@@ -122,8 +121,8 @@ must catch — so a scanner matching nothing cannot pass.
 This is not optional and it is not deferrable. 1c shipped an injection
 defect that built clean, passed 61 tests, and passed its verify script
 twice, because no gate looked for that class. 1d renders user-controlled
-data — repo names, descriptions, commit subjects, README bodies — into
-HTML on every page.
+data — repo names, descriptions, commit subjects, README bodies — into HTML
+on every page.
 
 ## Markdown
 
@@ -131,8 +130,8 @@ Strict CommonMark, one deviation: `table` enabled, nothing else.
 
 - `new MarkdownIt('commonmark', { html: false })` — always explicit
 - Replace `validateLink` with an **allowlist** (`https`, `http`, `mailto`,
-  plus data-image forms). The default is a blocklist of four schemes,
-  which fails open.
+  plus data-image forms). The default is a blocklist of four schemes, which
+  fails open.
 - README rendering is `raw()`'s only caller in this phase. Everything else
   goes through `html` and is escaped.
 - No sanitizer. CLAUDE.md §04 explains why: with `html: false` there is no
@@ -146,8 +145,8 @@ gets lost:
 - **`letter-spacing` stays.** Real small caps keep full-size sidebearings
   rather than scaling them.
 - **`"case" 1`** lifts `. - /` to cap alignment, which paths need.
-- **The DOM keeps the true lowercase.** `text-transform` is display-only
-  by spec, so selection, copy-paste, Ctrl-F, and screen readers all get the
+- **The DOM keeps the true lowercase.** `text-transform` is display-only by
+  spec, so selection, copy-paste, Ctrl-F, and screen readers all get the
   real filename.
 - **Pin `lang="en"` on filenames.** Under Turkish, `i` uppercases to `İ`.
 
@@ -160,15 +159,15 @@ small, and quiet.
 The token block in `BRAND.md` is copied **verbatim**. It is built so that
 no color is defined only inside a media query, which is what makes both
 render paths resolve. Dark is the bare `:root`; light is redefined inside
-`prefers-color-scheme: light`. A token left only inside that query is
-empty under dark, which is the default, so changing the structure breaks a
-case that is invisible in testing.
+`prefers-color-scheme: light`. A token left only inside that query is empty
+under dark, which is the default, so changing the structure breaks a case
+that is invisible in testing.
 
 **`prefers-color-scheme` and nothing else.** No theme cookie, no
-`data-theme`, no client-side switching, no flash, no JavaScript. Every
-page is one set of bytes for every visitor, which is what makes it
-genuinely cacheable and why no response carries `Vary`. A `<noscript>` is
-not needed because nothing needs script.
+`data-theme`, no client-side switching, no flash, no JavaScript. Every page
+is one set of bytes for every visitor, which is what makes it genuinely
+cacheable and why no response carries `Vary`. A `<noscript>` is not needed
+because nothing needs script.
 
 ## Budgets
 
@@ -179,16 +178,16 @@ where they start binding:
   server-rendered SVG.
 - **Under 100 KB per page**, fonts included. Two families, subset.
 - **Under 100 ms TTFB** on a warm repo page.
-- **Fewer than 12 `spawn` calls per render.** The file tree is one
-  `ls-tree -z --long`, not one `cat-file` per row. This is the budget most
-  likely to be broken by code that looks correct.
+- **Fewer than 12 `spawn` calls per render.** The file tree is one `ls-tree
+  -z --long`, not one `cat-file` per row. This is the budget most likely to
+  be broken by code that looks correct.
 - **Zero axe violations across both render paths.** `prefers-color-scheme`
   is the only thing that picks a palette, so the paths are `colorScheme:
   'light'` and `colorScheme: 'dark'`. Dark is the one in which a token
   defined solely inside the light media query resolves to nothing, and it
   is the state the token block's structure exists to protect, so neither
-  path is optional. The audit runs against real HTTP, not `setContent`:
-  the sheet's `@font-face` src is root-relative and cannot resolve at
+  path is optional. The audit runs against real HTTP, not `setContent`: the
+  sheet's `@font-face` src is root-relative and cannot resolve at
   `about:blank`, and an audit on fallback fonts measures the wrong glyphs
   for every font-sensitive rule, `target-size` first among them.
 
@@ -209,9 +208,8 @@ rather than leaving it silent.
 
 ## Tuffgal
 
-First phase with anything to screenshot, so Tuffgal enters here rather
-than at Phase 4 — nine screens arriving at once is where a wrong baseline
-hides.
+First phase with anything to screenshot, so Tuffgal enters here rather than
+at Phase 4 — nine screens arriving at once is where a wrong baseline hides.
 
 - One story covering both pages, run once per color scheme. Tuffgal pins
   `colorScheme` per run and records it as a pixel-affecting manifest key,
@@ -221,8 +219,8 @@ hides.
   repo as a tarball
 - **Freeze the clock.** Every page carries relative timestamps, and an
   unfrozen clock makes every baseline fail tomorrow
-- **CI is the sole writer of baselines.** A locally-written baseline is
-  how a regression becomes the new normal. Establish this now, with two
+- **CI is the sole writer of baselines.** A locally-written baseline is how
+  a regression becomes the new normal. Establish this now, with two
   screens, rather than later with nine.
 
 Tuffgal is pre-1.0 with an explicitly unstable API. If its README and its
@@ -241,8 +239,8 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
 2. `GET /` returns 200 and lists every repo in the database
 3. `GET /r/:repo` returns 200 with the file tree at the default branch and
    the rendered README
-4. A repo with no README renders the tree and an empty state that says
-   what would be here and how to make one
+4. A repo with no README renders the tree and an empty state that says what
+   would be here and how to make one
 5. A nonexistent repo returns 404; an invalid name is refused before any
    database query
 6. **No interpolation lands in an unquoted attribute position** — source
@@ -268,9 +266,9 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
     the gallery as well as both pages, over real HTTP so the fonts and the
     stylesheet load, and assert both families reached `loaded` before any
     audit runs. Prove the harness bites three ways: a fixture with a known
-    contrast failure must be reported; a token darkened onto its own
-    ground must be reported in its own palette and only there; and a
-    document whose stylesheet 404s must fail the font check.
+    contrast failure must be reported; a token darkened onto its own ground
+    must be reported in its own palette and only there; and a document
+    whose stylesheet 404s must fail the font check.
 12. **Under 100 KB per page**, fonts and all
 13. **Fewer than 12 `spawn` calls** rendering a repo page — instrument the
     wrapper and count
@@ -299,10 +297,10 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
 Check 23 joins 6 through 9 as part of the phase's real gate, despite its
 number. It was appended rather than inserted, so nothing renumbers.
 
-Checks 6 through 9 are the phase's real gate. Each covers a failure that
-is invisible when it happens: a page renders, looks right, and is wrong.
-Check 13 is second — a file list calling `cat-file` per row is
-pixel-identical and four times slower.
+Checks 6 through 9 are the phase's real gate. Each covers a failure that is
+invisible when it happens: a page renders, looks right, and is wrong. Check
+13 is second — a file list calling `cat-file` per row is pixel-identical
+and four times slower.
 
 ## What only Nick can judge
 
@@ -325,5 +323,5 @@ Not screenshots — the running thing.
 - Anything you wanted to add and did not, with the reason
 
 If something here is wrong about the world, **stop and say so.** Several
-amendments in every phase so far have been defects in the brief rather
-than the code — including one that would have killed git on every clone.
+amendments in every phase so far have been defects in the brief rather than
+the code — including one that would have killed git on every clone.

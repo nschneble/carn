@@ -6,6 +6,7 @@ import {
   chmodSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -16,23 +17,35 @@ import { after, before, test } from "node:test";
 import { type Browser, chromium } from "playwright";
 
 import { contentSecurityPolicy } from "../../src/app.js";
+import { readBlob } from "../../src/git/blob.js";
 import {
   badRepoName,
   errorPage,
   noSuchRepo,
+  noTreeRoot,
 } from "../../src/html/error-page.js";
-import { smallCaps } from "../../src/html/filename.js";
+import { pathName } from "../../src/html/filename.js";
 import { html } from "../../src/html/index.js";
-import { repoShowPage, treeRowCap } from "../../src/html/repo-show.js";
+import { repoShowPage } from "../../src/html/repo-show.js";
 import { stylesheet } from "../../src/html/styles.js";
+import { treeRowCap } from "../../src/html/tree-list.js";
+import {
+  assetRoomBytes,
+  budgetBytes,
+  pageWireBytes,
+} from "../../src/html/wire-weight.js";
+import { sniffRaster } from "../../src/repos/blob-asset.js";
+import { findBlobEntry } from "../../src/repos/blob-view.js";
 import { headerAssetPath } from "../../src/repos/header-asset.js";
 import type { ResolvedRepo } from "../../src/repos/resolve.js";
 import { loadRepoView } from "../../src/repos/show.js";
+import { pngBody, svgBody } from "../gallery/blob.js";
 import {
   files,
   hostileReadme,
   readmeSource,
   showDocument,
+  treeNow,
   view,
   wide,
 } from "../gallery/repo-show.js";
@@ -48,7 +61,7 @@ const realGit = execFileSync("sh", ["-c", "command -v git"], {
   encoding: "utf8",
 }).trim();
 
-const rowPattern = /<li class="row(?: is-dir)?">/g;
+const rowPattern = /<tr class="row(?: is-dir| is-sub)?">/g;
 
 after(() => {
   rmSync(dir, { recursive: true, force: true });
@@ -77,7 +90,10 @@ function tagsIn(markup: string): string[] {
   return markup.match(/<[a-z][^>]*>/gi) ?? [];
 }
 
-function build(tracked: Record<string, string>): ResolvedRepo {
+function build(
+  tracked: Record<string, string | Buffer>,
+  description?: string,
+): ResolvedRepo {
   const path = mkdtempSync(join(dir, "repo-"));
   execFileSync("git", ["init", "-q", "-b", "main", "--", path]);
 
@@ -106,6 +122,7 @@ function build(tracked: Record<string, string>): ResolvedRepo {
   return {
     id: "00000000-0000-4000-8000-000000000000",
     name: "linklater",
+    description: description ?? null,
     ownerId: "owner",
     defaultBranch: "main",
     path,
@@ -128,13 +145,15 @@ test("a real repo renders its tree and its readme", async () => {
     "the default branch resolved to nothing",
   );
   assert.deepStrictEqual(
-    loaded.entries.map((entry) => `${entry.name}${entry.directory ? "/" : ""}`),
+    loaded.entries.map(
+      (entry) => `${entry.name}${entry.kind === "directory" ? "/" : ""}`,
+    ),
     ["docs/", "src/", "README.md", "package.json"],
     "directories sort first, then files, each by name",
   );
   assert.ok(loaded.readme?.startsWith("# Linklater"));
 
-  const markup = repoShowPage({ repo: loaded, showAll: false });
+  const markup = repoShowPage({ repo: loaded, showAll: false, now: treeNow });
 
   assert.ok(markup.includes('<h1 class="vh">linklater</h1>'));
   assert.ok(markup.includes("<h1>Linklater</h1>"), "the readme did not render");
@@ -162,7 +181,7 @@ test("a repo with no readme renders the tree and says how to make one", async ()
 
   assert.strictEqual(loaded.readme, null);
 
-  const markup = repoShowPage({ repo: loaded, showAll: false });
+  const markup = repoShowPage({ repo: loaded, showAll: false, now: treeNow });
 
   assert.strictEqual(rows(markup), 1, "the tree vanished with the readme");
   assert.ok(markup.includes('<div class="empty">'));
@@ -192,47 +211,154 @@ test("a repo with no commits says what would be here and how to push it", () => 
   assert.doesNotMatch(empties(markup), /[!…]|Oops/);
 });
 
-test("a repo page render stays inside the spawn budget", async () => {
-  const repo = build({ "README.md": "# hi\n", "src/a.ts": "export {};\n" });
+// the raster the route serves, and the svg, the missing file, and the
+// traversal it 404s — where an <img> degrades to its alt text on its own
+test("the asset route resolves a path to the raster its bytes say it is", async () => {
+  const repo = build({
+    "docs/arch.png": pngBody,
+    "docs/arch.svg": svgBody,
+    "docs/notes.md": "# notes\n",
+  });
+
+  const png = await findBlobEntry({
+    repoPath: repo.path,
+    rev: "main",
+    path: "docs/arch.png",
+  });
+
+  assert.ok(png, "the png did not resolve");
+  const body = await readBlob({
+    repoPath: repo.path,
+    oid: png.oid,
+    limit: assetRoomBytes + 1,
+  });
+
+  assert.strictEqual(sniffRaster(body)?.type, "image/png");
+  assert.strictEqual(png.bytes, pngBody.length);
+
+  const svg = await findBlobEntry({
+    repoPath: repo.path,
+    rev: "main",
+    path: "docs/arch.svg",
+  });
+
+  assert.ok(svg, "the svg did not resolve");
+  assert.strictEqual(
+    sniffRaster(
+      await readBlob({
+        repoPath: repo.path,
+        oid: svg.oid,
+        limit: assetRoomBytes + 1,
+      }),
+    ),
+    null,
+    "an svg sniffed as a raster, so the route would serve repo-controlled active content",
+  );
+
+  for (const path of ["docs/gone.png", "../etc/passwd", "./docs/arch.png"]) {
+    assert.strictEqual(
+      await findBlobEntry({ repoPath: repo.path, rev: "main", path }),
+      null,
+      path,
+    );
+  }
+});
+
+// counts what the callback spawns, with a logging shim ahead of git
+async function counting(
+  run: (calls: () => string[]) => Promise<void>,
+): Promise<void> {
   const shim = mkdtempSync(join(dir, "shim-"));
   const log = join(shim, "calls");
   const originalPath = process.env.PATH;
 
   writeFileSync(
     join(shim, "git"),
-    `#!/bin/sh\necho call >> ${log}\nexec ${realGit} "$@"\n`,
+    `#!/bin/sh\nprintf '%s\\n' "$*" >> ${log}\nexec ${realGit} "$@"\n`,
   );
   chmodSync(join(shim, "git"), 0o755);
   writeFileSync(log, "");
 
   process.env.PATH = `${shim}:${originalPath ?? ""}`;
 
-  const calls = () =>
-    execFileSync("wc", ["-l", log], { encoding: "utf8" })
-      .trim()
-      .split(/\s+/)[0];
-
   try {
-    await loadRepoView({ repo });
-    const cold = Number(calls());
-
-    await loadRepoView({ repo });
-    const warm = Number(calls()) - cold;
-
-    assert.strictEqual(
-      cold,
-      4,
-      "rev-parse, ls-tree .carn, ls-tree root, cat-file",
-    );
-    assert.strictEqual(
-      warm,
-      3,
-      "the header ls-tree is no longer cached on the tip",
-    );
-    assert.ok(cold < 12, "the page render broke CLAUDE.md's spawn budget");
+    await run(() => readFileSync(log, "utf8").split("\n").filter(Boolean));
   } finally {
     process.env.PATH = originalPath;
   }
+}
+
+test("a repo page render stays inside the spawn budget", async () => {
+  const repo = build({ "README.md": "# hi\n", "src/a.ts": "export {};\n" });
+
+  await counting(async (calls) => {
+    await loadRepoView({ repo });
+    const cold = calls();
+
+    await loadRepoView({ repo });
+    const warm = calls().slice(cold.length);
+
+    assert.strictEqual(
+      cold.length,
+      5,
+      `rev-parse, ls-tree .carn, ls-tree root, log, cat-file:\n${cold.join("\n")}`,
+    );
+    assert.strictEqual(
+      warm.length,
+      4,
+      "the header ls-tree is no longer cached on the tip",
+    );
+
+    // the columns are the failure this counts: one log for the whole
+    // listing, never one per row, and one ls-tree for the entries
+    assert.strictEqual(
+      cold.filter((argv) => argv.startsWith("log ")).length,
+      1,
+      `the subject and age columns cost more than one walk:\n${cold.join("\n")}`,
+    );
+    assert.strictEqual(
+      cold.filter((argv) => argv.endsWith("-- .")).length,
+      1,
+      `the root listing cost more than one ls-tree:\n${cold.join("\n")}`,
+    );
+    assert.ok(
+      cold.length < 12,
+      "the page render broke CLAUDE.md's spawn budget",
+    );
+  });
+});
+
+// the rewrite is a string transform, so nothing is spawned until a browser
+// asks for the image, and then it is one ls-tree and one cat-file
+test("serving one readme image costs one ls-tree and one cat-file", async () => {
+  const repo = build({ "docs/arch.png": pngBody });
+
+  await counting(async (calls) => {
+    const entry = await findBlobEntry({
+      repoPath: repo.path,
+      rev: "main",
+      path: "docs/arch.png",
+    });
+
+    assert.ok(entry);
+    assert.strictEqual(
+      calls().length,
+      1,
+      `resolving the path cost more than one ls-tree:\n${calls().join("\n")}`,
+    );
+
+    await readBlob({
+      repoPath: repo.path,
+      oid: entry.oid,
+      limit: assetRoomBytes + 1,
+    });
+
+    const spawned = calls();
+
+    assert.strictEqual(spawned.length, 2, spawned.join("\n"));
+    assert.ok(spawned[0]?.startsWith("ls-tree "), spawned.join("\n"));
+    assert.ok(spawned[1]?.startsWith("cat-file "), spawned.join("\n"));
+  });
 });
 
 const sentinel = "carn-probe:";
@@ -244,11 +370,17 @@ const app = buildApp();
 
 const invalid = await app.inject({ method: "GET", url: "/r/-nope" });
 const valid = await app.inject({ method: "GET", url: "/r/linklater" });
+const rootTree = await app.inject({ method: "GET", url: "/r/linklater/tree/main/" });
+const nestedTree = await app.inject({ method: "GET", url: "/r/linklater/tree/main/src" });
+const asset = await app.inject({ method: "GET", url: "/r/linklater/asset/main/docs/arch.png" });
 await app.close();
 
 console.log("${sentinel}" + JSON.stringify({
   invalid: { status: invalid.statusCode, body: invalid.body, headers: invalid.headers },
   valid: { status: valid.statusCode, body: valid.body },
+  rootTree: { status: rootTree.statusCode, body: rootTree.body },
+  nestedTree: { status: nestedTree.statusCode },
+  asset: { status: asset.statusCode },
 }));
 process.exit(0);
 `;
@@ -266,7 +398,25 @@ test("an invalid repo name is refused before any database query", () => {
 
   const line = output.split("\n").find((row) => row.startsWith(sentinel));
   assert.ok(line, `the probe printed no result:\n${output}`);
-  const { invalid, valid } = JSON.parse(line.slice(sentinel.length));
+  const { invalid, valid, rootTree, nestedTree, asset } = JSON.parse(
+    line.slice(sentinel.length),
+  );
+
+  // 503 is the asset route reaching the dead database; 404 here would mean
+  // it never routed at all and the image tests above prove nothing served
+  assert.strictEqual(
+    asset.status,
+    503,
+    "the readme image route is not registered",
+  );
+
+  // the tree route has no root form, and the url settles that without a
+  // lookup: the nested path reaching the dead database is what proves the
+  // empty one was refused rather than merely unrouted
+  assert.strictEqual(nestedTree.status, 503);
+  assert.strictEqual(rootTree.status, 404);
+  assert.ok(rootTree.body.includes(noTreeRoot.heading));
+  assert.doesNotMatch(rootTree.body, /127\.0\.0\.1|prisma|queryRaw/i);
 
   assert.strictEqual(
     valid.status,
@@ -327,43 +477,52 @@ test("a directory row carries the accent class and a trailing slash", () => {
 
   assert.ok(
     markup.includes(
-      '<li class="row is-dir"><span class="nm t-item" lang="en"><span class="sc">docs</span>/</span></li>',
+      '<a class="t-item" lang="en" href="/r/linklater/tree/main/docs"><span class="caps">docs</span>/</a>',
     ),
-    "a directory row lost its class, its lang, or its slash",
+    "a directory row lost its class, its lang, its slash, or its tree link",
   );
   assert.ok(
     markup.includes(
-      '<li class="row"><span class="nm t-item" lang="en">README.<span class="sc">md</span></span></li>',
+      '<a class="t-item" lang="en" href="/r/linklater/blob/main/README.md"><span class="caps">README<span class="sc">.md</span></span></a>',
     ),
-    "a file row lost its small-caps split",
+    "a file row lost its small-caps split or its blob link",
   );
 });
 
-test("small caps split lowercase runs and never insert whitespace", () => {
+test("small caps split at the extension and never insert whitespace", () => {
   const cases: [string, string][] = [
-    ["README.md", 'README.<span class="sc">md</span>'],
+    [
+      "README.md",
+      '<span class="caps">README<span class="sc">.md</span></span>',
+    ],
     [
       "Button.tsx",
-      'B<span class="sc">utton</span>.<span class="sc">tsx</span>',
+      '<span class="caps">Button<span class="sc">.tsx</span></span>',
     ],
-    [".github", '.<span class="sc">github</span>'],
-    ["docs", '<span class="sc">docs</span>'],
-    ["LICENSE", "LICENSE"],
+    [".github", '<span class="caps"><span class="sc">.github</span></span>'],
+    ["docs", '<span class="caps">docs</span>'],
+    ["LICENSE", '<span class="caps">LICENSE</span>'],
     [
       "package-lock.json",
-      '<span class="sc">package</span>-<span class="sc">lock</span>.<span class="sc">json</span>',
+      '<span class="caps">package-lock<span class="sc">.json</span></span>',
     ],
+    ["foo.", '<span class="caps">foo.</span>'],
+    [
+      "apps/v1.2/deep.ts",
+      '<span class="caps">apps/v1.2/deep<span class="sc">.ts</span></span>',
+    ],
+    [".github/workflows", '<span class="caps">.github/workflows</span>'],
   ];
 
   for (const [name, expected] of cases) {
-    assert.strictEqual(smallCaps(name).value, expected, name);
+    assert.strictEqual(pathName(name).value, expected, name);
   }
 
   // a filename is not a repo name, so it's not held to namePattern
   const awkward = ["café.md", "日本語.txt", "🎁.png", "Straße.md", "a b.txt"];
 
   for (const name of [...wide.map((entry) => entry.name), ...awkward]) {
-    const markup = smallCaps(name).value;
+    const markup = pathName(name).value;
 
     // a filename's own space is content; the round trip below covers it
     if (!/\s/.test(name)) {
@@ -380,6 +539,77 @@ test("small caps split lowercase runs and never insert whitespace", () => {
       `${name} is not what the DOM holds`,
     );
   }
+});
+
+test("an .sc span appears exactly when a final segment carries an extension", () => {
+  const extended = ["README.md", ".github", "a.b", "src/.hidden", "x/y.z"];
+  const bare = ["LICENSE", "docs", "foo.", ".", "..", "src/", "v1.2/README"];
+
+  for (const name of extended) {
+    assert.match(
+      pathName(name).value,
+      /<span class="sc">[^<]/,
+      `${name} lost its extension span`,
+    );
+  }
+
+  for (const name of [...extended, ...bare]) {
+    const markup = pathName(name).value;
+
+    assert.doesNotMatch(
+      markup,
+      /<span class="sc"><\/span>/,
+      `${name} rendered an empty .sc span`,
+    );
+    if (bare.includes(name)) {
+      assert.doesNotMatch(
+        markup,
+        /class="sc"/,
+        `${name} has no extension but gained an .sc span`,
+      );
+    }
+  }
+});
+
+test("the repo page carries the repo's own description, and nothing when it has none", async () => {
+  const said = "Save a URL, read it later.";
+  const loaded = await loadRepoView({
+    repo: build({ "a.ts": "export {};\n" }, said),
+  });
+
+  assert.strictEqual(loaded.description, said, "the field never left the row");
+
+  const markup = repoShowPage({ repo: loaded, showAll: false, now: treeNow });
+
+  assert.ok(
+    markup.includes(
+      `<h1 class="vh">linklater</h1>\n      <p class="t-body about">${said}</p>\n      <nav class="repo-nav"`,
+    ),
+    "the description is not the one thing between the identity heading and the repo nav",
+  );
+
+  // unlike the index, a null description has no row to hold a dash open,
+  // so the page renders no paragraph at all rather than a bare hyphen
+  for (const [label, value] of [
+    ["null", null],
+    ["blank", ""],
+  ] as const) {
+    assert.ok(
+      !showDocument({ repo: view({ description: value }) }).includes(
+        'class="t-body about"',
+      ),
+      `a ${label} description rendered a paragraph the page shouldn't have`,
+    );
+  }
+
+  assert.ok(
+    showDocument({
+      repo: view({ description: "<script>alert(1)</script>" }),
+    }).includes(
+      '<p class="t-body about">&lt;script&gt;alert(1)&lt;/script&gt;</p>',
+    ),
+    "the description reaches the page without the escaping tag",
+  );
 });
 
 // the mark is alt=""/aria-hidden, so the name reaches the a11y tree only
@@ -493,7 +723,12 @@ test("external readme links carry the rel and local ones do not", () => {
     );
   }
 
-  assert.ok(anchors.some((anchor) => anchor.includes('href="docs/BRAND.md"')));
+  assert.ok(
+    anchors.some((anchor) =>
+      anchor.includes('href="/r/linklater/blob/main/docs/BRAND.md"'),
+    ),
+    "the page did not hand the markdown layer its own repo and rev",
+  );
   assert.ok(anchors.some((anchor) => anchor.includes('href="/docs/spec"')));
   assert.ok(anchors.some((anchor) => anchor.includes('href="#type"')));
   assert.ok(anchors.some((anchor) => anchor.includes("mailto:")));
@@ -510,18 +745,10 @@ test("no repo page carries script, an inline style, or a style attribute", () =>
   }
 });
 
-test("the repo page fits the weight budget, fonts and stylesheet in", () => {
-  const faces = [
-    "carn-sans.woff2",
-    "carn-mono-400.woff2",
-    "carn-mono-500.woff2",
-  ];
-  const fixed =
-    faces.reduce(
-      (total, face) => total + statSync(join(root, "fonts", face)).size,
-      0,
-    ) + Buffer.byteLength(stylesheet, "utf8");
-
+// wire bytes at gzip level 5, which is what Caddy's `encode gzip` defaults
+// to, against the minified sheet the route actually serves. fonts count
+// whole because woff2 is brotli inside and does not shrink again
+test("the repo page fits the weight budget as wire bytes, fonts in", () => {
   for (const [state, markup] of [
     ["capped", showDocument()],
     ["show-all", showDocument({ showAll: true })],
@@ -532,13 +759,36 @@ test("the repo page fits the weight budget, fonts and stylesheet in", () => {
       }),
     ],
   ] as const) {
-    const weight = fixed + Buffer.byteLength(markup, "utf8");
+    const weight = pageWireBytes(markup);
 
     assert.ok(
-      weight < 100 * 1024,
-      `the ${state} repo page weighs ${weight} B against a 102400 B budget`,
+      weight <= budgetBytes,
+      `the ${state} repo page weighs ${weight} wire bytes against a ${budgetBytes} B budget`,
     );
   }
+});
+
+// the old methodology measured uncompressed markup against a budget that
+// describes a download; keep a check that the two are not the same number
+test("the wire measurement is a compression, not a rename", () => {
+  const markup = showDocument({ showAll: true });
+  const faces = [
+    "carn-sans.woff2",
+    "carn-mono-400.woff2",
+    "carn-mono-500.woff2",
+  ];
+  const uncompressed =
+    faces.reduce(
+      (total, face) => total + statSync(join(root, "fonts", face)).size,
+      0,
+    ) +
+    Buffer.byteLength(stylesheet, "utf8") +
+    Buffer.byteLength(markup, "utf8");
+
+  assert.ok(
+    pageWireBytes(markup) < uncompressed,
+    "the wire figure is not below the raw one, so nothing is being compressed",
+  );
 });
 
 test("the readme fixture is the one the assertions above assume", () => {
@@ -572,20 +822,24 @@ test("the rendered dom holds the true filename under small caps", async () => {
     await page.goto(`${site.origin}/show-all`);
 
     const read = await page.evaluate(() =>
-      Array.from(document.querySelectorAll(".tree .nm")).map((node) => ({
-        text: node.textContent ?? "",
-        lang: node.getAttribute("lang"),
-        caps: Array.from(node.querySelectorAll(".sc")).map(
-          (span) => getComputedStyle(span).textTransform,
-        ),
-      })),
+      // tbody only: the header row's own .nm cell names the column
+      Array.from(document.querySelectorAll(".tree tbody .nm")).map((cell) => {
+        const node = cell.firstElementChild as HTMLElement;
+        return {
+          text: node.textContent ?? "",
+          lang: node.getAttribute("lang"),
+          caps: Array.from(node.querySelectorAll(".sc")).map(
+            (span) => getComputedStyle(span).textTransform,
+          ),
+        };
+      }),
     );
 
     assert.strictEqual(read.length, wide.length);
 
     for (const [index, entry] of wide.entries()) {
       const found = read[index];
-      const expected = `${entry.name}${entry.directory ? "/" : ""}`;
+      const expected = `${entry.name}${entry.kind === "directory" ? "/" : ""}`;
 
       assert.ok(found, entry.name);
       assert.strictEqual(

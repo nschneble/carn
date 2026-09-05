@@ -1,0 +1,80 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - navigation "Breadcrumb":
+    - list:
+      - listitem:
+        - link "Càrn":
+          - /url: /
+      - listitem:
+        - link "gantry":
+          - /url: /r/gantry
+      - listitem:
+        - link "Commits":
+          - /url: /r/gantry/commits
+      - listitem: c23c6f8
+- main:
+  - heading "Generate the tables" [level=1]
+  - paragraph: c23c6f8
+  - term: Author
+  - definition:
+    - text: Nick Schneble authored
+    - time: 25m
+  - term: Parents
+  - definition:
+    - link "a045ed2":
+      - /url: /r/gantry/commits/a045ed2cf872604056a0abc63a215313d2cc55a9
+  - term: Changed
+  - definition: 6 files, +321 added −1 removed
+  - term: Signed
+  - definition: No signature
+  - paragraph: Diffs for the first 2 files are below. The rest have a page each.
+  - table "Changed files":
+    - caption: Changed files
+    - rowgroup:
+      - row "File Changed":
+        - columnheader "File"
+        - columnheader "Changed"
+    - rowgroup:
+      - row "src/api.ts Below on this page +1 added −0 removed":
+        - rowheader "src/api.ts Below on this page":
+          - link "src/api.ts Below on this page":
+            - /url: "#f-0"
+        - cell "+1 added −0 removed"
+      - row "src/app.ts Below on this page +1 added −0 removed":
+        - rowheader "src/app.ts Below on this page":
+          - link "src/app.ts Below on this page":
+            - /url: "#f-1"
+        - cell "+1 added −0 removed"
+      - row "src/big.ts Own page +240 added −0 removed":
+        - rowheader "src/big.ts Own page":
+          - link "src/big.ts Own page":
+            - /url: /r/gantry/commits/c23c6f80cc4a7f55b02736f375c14ac9005fa377/src/big.ts
+        - cell "+240 added −0 removed"
+      - row "src/index.ts Own page +1 added −1 removed":
+        - rowheader "src/index.ts Own page":
+          - link "src/index.ts Own page":
+            - /url: /r/gantry/commits/c23c6f80cc4a7f55b02736f375c14ac9005fa377/src/index.ts
+        - cell "+1 added −1 removed"
+      - row "src/notes.md Own page +3 added −0 removed":
+        - rowheader "src/notes.md Own page":
+          - link "src/notes.md Own page":
+            - /url: /r/gantry/commits/c23c6f80cc4a7f55b02736f375c14ac9005fa377/src/notes.md
+        - cell "+3 added −0 removed"
+      - row "src/wide.ts Own page +75 added −0 removed":
+        - rowheader "src/wide.ts Own page":
+          - link "src/wide.ts Own page":
+            - /url: /r/gantry/commits/c23c6f80cc4a7f55b02736f375c14ac9005fa377/src/wide.ts
+        - cell "+75 added −0 removed"
+  - heading "src/api.ts" [level=2]
+  - region "src/api.ts":
+    - code: "@@ -0,0 +1 @@ +export const routes = ['/health'];"
+  - heading "src/app.ts" [level=2]
+  - region "src/app.ts":
+    - code: "@@ -0,0 +1 @@ +export const name = 'gantry';"
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

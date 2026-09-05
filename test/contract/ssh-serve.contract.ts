@@ -44,6 +44,7 @@ const repo: ResolvedRepo = {
   ownerId: owner,
   defaultBranch: "main",
   path: repoPath,
+  description: null,
 };
 
 const parsed: ParsedCommand = { service: "upload-pack", target: "pinned" };

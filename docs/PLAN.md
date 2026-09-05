@@ -12,13 +12,13 @@
 
 _What each one commits to_
 
-Each has a concrete, checkable consequence, and two of them fall out of decisions already made rather than costing anything extra.
+Each has a concrete, checkable consequence.
 
 ### 1 · Just be git, with a few conveniences
 
 The commitment: **nothing in a Càrn repository requires Càrn.** No custom refs a stock client has to know about, no metadata objects, no `refs/carn/*` namespace. A repo cloned from Càrn is byte-identical to one cloned from anywhere else. Exit cost is `tar czf repos.tgz /var/lib/carn/repos`.
 
-The tension: **issues and PRs are the conveniences, and they live in Postgres, not in git.** That means "if Càrn vanished" gives you every commit and no issue text. Two mitigations worth taking: the nightly `pg_dump` is as load-bearing as the repo tarball, and an export command (`carn export <repo>` → a directory of markdown files) is a one-evening insurance policy.
+The tension: **issues and PRs are the conveniences, and they live in Postgres, not in git.** That means "if Càrn vanished" gives you every commit and no issue text. Two mitigations worth taking: the nightly `pg_dump` matters as much as the repo tarball, and an export command (`carn export <repo>` → a directory of markdown files) is a one-evening insurance policy.
 
 ### 2 · Fast and responsive is sexy
 
@@ -28,6 +28,7 @@ A budget worth writing down, so it's a test rather than an aspiration:
 
 - **Zero client JavaScript on the critical path.** Progressive enhancement only — a diff that needs JS to render is a bug.
 - **Under 100 KB per page** including the highlighted blob, measured as **wire bytes** — gzip level 5, matching Caddy's default, with fonts counted whole because woff2 is already compressed. This is the real argument for highlight.js over Shiki (§04).
+- Measured in process at gzip level 5 until Caddy exists; Phase 2's `encode` must compress at least as well or the budget silently loosens.
 - **TTFB under 100 ms** on a warm repo page. Achievable given the measured numbers — the whole budget is 5–10 git subprocesses at ~2 ms each, so the pooled `cat-file --batch` matters more than anything else you'll do.
 - **Cache highlighted blobs by content hash**, and set `Cache-Control: public` on anything keyed by an immutable SHA — a commit page for `a1b2c3d` can be cached forever.
 
@@ -40,7 +41,13 @@ Security is covered throughout — UUID paths, `html: false`, blob origin isolat
 > **#E7156C on the #F4F6F6 ground is 4.10:1.** That passes AA for large text (3:1) and for non-text UI, but _misses_ the 4.5:1 threshold for body-size text. `--accent` carries only what owes 3:1 — big type, rules, the focus ring — and a darkened **#C9105C (5.22:1)** carries everything that owes 4.5:1: inline links, small type, directory names in a file list, and the fill behind a button, tag, or current chip. `docs/BRAND.md` §02 owns the token split and every measured ratio; this paragraph points at it rather than restating it. In dark mode, **#FF6EA8 on #0E0F0F is 7.36:1** and needs no adjustment.
 
 - **The display face never sets body text.** All-caps removes the ascender and descender profile that word-shape recognition depends on. Uppercase Carn Sans for titles and labels; Carn Sans at `"wght" 400`, or Carn Mono, for anything read as a sentence. There is no third family and no separate body face — see `docs/BRAND.md` §03.
-- **Real semantics.** Diffs are tables with row scope. The timeline is an `<ol>`. This is what makes the page work in a terminal browser, which suits the project. The file and repo lists shipped in 1d as `<ul role="list">` over a CSS grid (`src/html/repo-show.ts`, `src/html/repo-list.ts`) because they carried one column of real data. **1e moves both to `<table>`** — decided, not open. Once the commit-subject and age columns are filled the data is genuinely tabular, and a table is what renders everywhere: an old phone, a terminal browser, an email client, anything that never got the CSS.
+- **Real semantics.** Diffs are tables with row scope. The timeline is an `<ol>`. This is what makes the page work in a terminal browser, which suits the project. The file and repo lists shipped in 1d as `<ul role="list">` over a CSS grid (`src/html/repo-show.ts`, `src/html/repo-list.ts`) because they carried one column of real data. **1e moves every index view to `<table>`** — decided, not open. Anything that looks like a table is a table: the file tree, the repo index, the commit log, the branch and tag lists, and the commit page's file list. Once the commit-subject and age columns are filled the data is genuinely tabular, and a table is what renders everywhere: an old phone, a terminal browser, an email client, anything that never got the CSS. Each one carries a `<caption>`, a `<thead>` of `<th scope="col">`, and a `<th scope="row">` for the name — the caption and the header row are what a reader gets when the CSS never arrives, which is the whole point.
+
+  Two constraints make the rule implementable rather than decorative:
+
+  **Columns come from table layout, never from a `display` override.** Applying a non-default `display` to `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, or `<td>` cost the native semantics outright in WebKit for five and three quarter years; Safari 17 fixed it in October 2023, and `display: contents` is the one value still worth avoiding across engines. So the ban is no longer a Safari bug workaround — it is that a grid or flex override buys nothing table layout does not already give, while putting the semantics at the mercy of the next regression. (Adrian Roselli, _Tables, CSS Display Properties, and ARIA_.)
+
+  **`table-layout` is `fixed`, not `auto`.** `auto` never sizes a column below its min-content width, and a name that does not wrap has the whole string as its minimum — so the table outgrows the viewport instead of the name ellipsing. Measured at 320px, `auto` laid the repo index out 1233px wide and put every list view into horizontal scroll. `fixed` sizes the columns off the viewport instead: the name takes 40%, age holds 46px, the subject takes what is left and truncates. It also means wider text cannot move a column boundary, which is what keeps SC 1.4.12 cheap to hold.
 - **Keyboard first.** A skip link, visible focus on everything (already in the CSS here), and no hover-only affordances — a file row's actions must be reachable by tab.
 - **Don't encode meaning in color alone.** Directory-vs-file is pink-vs-ink in the mockups; add a trailing `/` so it survives grayscale and color blindness. Diff add/remove needs `+`/`−` glyphs, not just green and red.
 - **No motion at all.** A page that arrives in 80 ms with no JS to parse already _feels_ smooth. Animation is what slow sites use to disguise being slow. The only transitions worth having are hover and focus states, and those should be instant.
@@ -296,7 +303,7 @@ The markdown layer and the response header deliberately disagree about remote im
 
 ### Raw blobs
 
-Serve from a **separate hostname** — this is the load-bearing control, not the headers. GitHub serves everything from `raw.githubusercontent.com` as `text/plain` (verified: even `.html` and `.js` files), with a small image allowlist getting real MIME types:
+Serve from a **separate hostname** — this is the control that does the work, not the headers. GitHub serves everything from `raw.githubusercontent.com` as `text/plain` (verified: even `.html` and `.js` files), with a small image allowlist getting real MIME types:
 
 ```
 Content-Type: text/plain; charset=utf-8   # except png/jpeg/gif/webp/svg
@@ -541,6 +548,7 @@ File rows carry three constants: **directories in `--accent-text` with a trailin
 | `/`                     | Repo list  | The whole site index. Name, description, created.        |
 | `/r/:repo`              | Repo       | File tree + rendered README. The page that sells it.     |
 | `/r/:repo/blob/:rev/*`  | Blob       | Highlighted source. Raw link points at the blob origin.  |
+| `/r/:repo/tree/:rev/*`  | Tree       | The tree below the root. `/r/:repo` is the root itself.   |
 | `/r/:repo/commits`      | Log        | `?ref=` to scope. Paginated by SHA cursor, not `--skip`. |
 | `/r/:repo/commits/:sha` | Commit     | Diff + cross-refs resolved. Immutable — cache forever.   |
 | `/r/:repo/branches`     | Branches   | Each row links to the log scoped to that ref.            |
@@ -576,7 +584,7 @@ The complete surface outside the nine:
 
 A performance decision, not an SEO one, and it has one rule: **list repo, issue, and PR pages only. Never commits, never blobs, never archives.** A sitemap enumerating every commit page would be an _invitation_ into the most expensive endpoints — a crawler walking every tag × every archive format is the traffic pattern that pins a fair-share CPU.
 
-`robots.txt` is the other half and it's load-bearing: disallow `/r/*/archive/`, `/r/*/commits/`, `/r/*/blob/`, and the blob host entirely. Together with the §04 rate-limit tiers that's three independent layers on the same risk, which is about right given it's the one that can take the box down.
+`robots.txt` is the other half and it does real work: disallow `/r/*/archive/`, `/r/*/commits/`, `/r/*/blob/`, and the blob host entirely. Together with the §04 rate-limit tiers that's three independent layers on the same risk, which is about right given it's the one that can take the box down.
 
 #### Feeds
 
@@ -676,7 +684,7 @@ Everything here blocks something later and is more annoying to do mid-build.
 - **Generate a second personal SSH key and put it somewhere you won't lose** — a hardware token, a printout in a drawer, another machine. Not on the laptop. §11 has the full recovery story.
 - **Claim the npm name** `@nschneble/carn` — unscoped `carn` is refused by npm's similarity guard for being too close to `yarn`, `cron`, and `acorn`, which is why the package is scoped and the binary is not. See §07.
 - **Create the Càrn repo itself** — on GitHub for now; it migrates to Càrn the day Phase 1 ships, a useful first migration to rehearse.
-- **Build the Carn Sans subset** with the compensated small-caps recipe. Half an hour, and it unblocks the stylesheet. A second small-caps family is not an alternative — `docs/BRAND.md` §03 forecloses it in favour of merging `smcp`/`c2sc` into Carn Sans itself.
+- **Build the Carn Sans subset** with the compensated small-caps recipe. Half an hour, and it unblocks the stylesheet. A second small-caps family is not an alternative — `docs/BRAND.md` §03 forecloses it in favor of merging `smcp`/`c2sc` into Carn Sans itself.
 
 > **GATE** — `ssh deploy@carn.fancyenchiladas.net` works and both hostnames resolve
 
@@ -854,6 +862,26 @@ Since the repos already mirror, the mirror _is_ the CI host.
 | Then  | Report status back to your forge                                               | 1 evening  | **The architectural step.** A final `if: always()` step curls your commit-status endpoint (§07).                                                                          |
 | Later | `forgejo-runner exec` on your own box                                          | 2 evenings | Runs GitHub-Actions-compatible YAML with _no forge at all_ — you invoke it, read the exit code. Same YAML, so both paths coexist.                                         |
 
+> **THE RUNNER MUST BE arm64, OR STAGE 2 RE-SHOOTS EVERY BASELINE**
+>
+> Càrn's Tuffgal baselines are captured in a container pinned to `linux/arm64`,
+> and that was availability rather than taste: amd64 Chromium does not merely
+> run slowly under emulation on Apple silicon, it aborts (`qemu/rcu.h`,
+> SIGABRT). `docs/STACK.md` records the pin and the crash.
+>
+> GitHub's `ubuntu-latest` is x86_64. A workflow that runs `tuffgal-action` on
+> the default runner rasterises through a different FreeType and Skia path than
+> the baselines were shot on, and on a product whose identity is a custom
+> subset webfont at six weights, essentially every glyph edge differs. The
+> first CI run would fail wholesale and the only fix would be re-shooting every
+> baseline — throwing away the one signal a baseline carries.
+>
+> **Select an arm64 runner for the Tuffgal job.** Confirm availability and
+> pricing on the plan of the day; hosted arm64 runners are recent enough that
+> the answer moves. If arm64 is genuinely unavailable, the decision is to
+> re-shoot the baselines on x86_64 **once, deliberately, in their own commit**
+> — not to discover the mismatch as a red build.
+
 Two things worth knowing before you build on this. **Mirror pushes do trigger GitHub Actions** — the famous "pushes with a token don't trigger workflows" restriction is scoped to pushes made _from inside an Actions run_ using the automatic `GITHUB_TOKEN`, to prevent recursion. A push from your VPS with a deploy key is an ordinary external push. Confirm it empirically in five minutes before you rely on it.
 
 > **NOT COUPLED TO GITHUB**
@@ -953,7 +981,7 @@ _Ranked by what actually costs you something_
 | Medium   | You build 70% and stall — the classic fate of a side project with no external forcing function.                                    | The phase gates exist for this. Phase 0 is one evening to "I pushed to my own server," Phase 2 puts it on the internet, and if Phase 4 stalls you still have a repo browser with issues that you'd keep using. |
 | Medium   | `ssh2` is bus-factor 1 at roughly one release a year.                                                                              | Fine for personal use. The escape hatch is OpenSSH with `AuthorizedKeysCommand` — a contained change, since authorization already lives in your app.                                                           |
 | Low      | Path traversal via repo or ref names.                                                                                              | Designed out by UUID-derived paths. Still reject refs beginning with `-` and always pass `--`.                                                                                                                 |
-| Low      | Scope creep back toward re-implementing GitHub.                                                                                    | §13 makes each addition a decision rather than a drift. The "never" column is load-bearing.                                                                                                                    |
+| Low      | Scope creep back toward re-implementing GitHub.                                                                                    | §13 makes each addition a decision rather than a drift. The "never" column does real work.                                                                                                                    |
 
 ### Losing the key — the answer is more of the same mechanism
 
@@ -973,7 +1001,7 @@ No new mechanism is needed. Three layers, in order of how often you'd reach for 
 
 _Three registers, one rule_
 
-**Càrn** on every visual surface. **Carn** in ASCII prose, where it's still a proper noun but the accent can't render. **`carn`** for every identifier a machine parses — hostname, npm package, binary, database, containers. The Montréal rule: the accent lives wherever it can and drops wherever a machine has to type it.
+**Càrn** on every visual surface. **Carn** in ASCII prose, where it's still a proper noun but the accent can't render. **`carn`** for every identifier a machine parses — hostname, npm package, binary, database, containers. BRAND §01 states the rule and why an accented hostname is settled rather than stylistic.
 
 > **WHY THE HOSTNAME CAN'T CARRY THE ACCENT**
 >
@@ -1039,6 +1067,9 @@ _After the MLP — each an explicit decision, not a drift_
 - Inline diff comments
 - Web writes via `carn web-login`
 - Real small caps merged into Carn Sans (`smcp`/`c2sc`)
+- Line wrapping in the blob view — a URL, not a control; there is no client JavaScript to toggle with
+- A rendered view of a blob that has one — markdown as prose, SVG as a picture
+- Owner and collaborator filters on the repo index — waiting on an index long enough to need them
 
 #### Never
 
@@ -1062,6 +1093,16 @@ _After the MLP — each an explicit decision, not a drift_
 They earn their place at work, where you're reviewing someone else's unfamiliar code and need to point at line 47. On a personal forge you're reviewing your own change from an hour ago, and a thread is enough.
 
 The cost is also higher than it looks. Anchoring a comment to a line means storing the blob SHA plus the line number and then deciding what happens when the branch is force-pushed and that line no longer exists — GitHub's "outdated" state exists because there's no good answer. The columns sit in `comments` if that changes; leave them empty.
+
+### The blob view shows one form of a file
+
+Two of the entries above are the same gap seen twice: a blob has more than one honest representation and the page offers no way to ask for the other one.
+
+**Wrapping.** `.src` is `overflow-x: auto`, so a line that cannot break scrolls sideways. That is right for code, where a wrapped line lies about its indentation, and wrong for prose committed as markdown or for a file with one 1,180-character line. With no client JavaScript the toggle is a URL — `?wrap=1`, re-rendered with `white-space: pre-wrap` — which makes it a second cache key on every blob and a second baseline on every story that covers one. Cheap to build, and it doubles a surface that is currently exactly one page per path.
+
+**Rendering.** A markdown file renders on the repo page and shows as source in the blob view, and nothing links the two. An SVG is further away than it looks: `src/repos/blob-asset.ts` serves rasters only, because an SVG blob is repo-controlled active content whose `<title>` and `<text>` would enter the host page's accessibility tree. It is excluded on purpose, not missing.
+
+**Both wait on the raw origin.** `gelatinous-cube` is where repo-controlled bytes are already going to be served sandboxed, and it is the same decision twice: once the origin exists, "show me the bytes" and "show me the rendering" become a pair, and building either half before then means building it again afterward.
 
 ### Cross-repo PRs
 

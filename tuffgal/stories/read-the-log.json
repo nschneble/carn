@@ -1,0 +1,4 @@
+{
+  "story": "A visitor reads the log, then pages back through it",
+  "actions": [{ "action": "gantry-log" }, { "action": "gantry-log-older" }]
+}

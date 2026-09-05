@@ -1,0 +1,167 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - navigation "Breadcrumb":
+    - list:
+      - listitem:
+        - link "Càrn":
+          - /url: /
+      - listitem:
+        - link "gantry":
+          - /url: /r/gantry
+      - listitem:
+        - link "apps":
+          - /url: /r/gantry/tree/main/apps
+      - listitem:
+        - link "web":
+          - /url: /r/gantry/tree/main/apps/web
+      - listitem: src
+- main:
+  - heading "apps/web/src" [level=1]
+  - table "Files":
+    - caption: Files
+    - rowgroup:
+      - row "Name Commit Age":
+        - columnheader "Name"
+        - columnheader "Commit"
+        - columnheader "Age"
+    - rowgroup:
+      - row "deep.ts Reach the deep path 3d":
+        - rowheader "deep.ts":
+          - link "deep.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/deep.ts
+        - cell "Reach the deep path"
+        - cell "3d":
+          - time: 3d
+      - row "mod-00.ts Add mod-00.ts 3w":
+        - rowheader "mod-00.ts":
+          - link "mod-00.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-00.ts
+        - cell "Add mod-00.ts"
+        - cell "3w":
+          - time: 3w
+      - row "mod-01.ts Add mod-01.ts 2w":
+        - rowheader "mod-01.ts":
+          - link "mod-01.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-01.ts
+        - cell "Add mod-01.ts"
+        - cell "2w":
+          - time: 2w
+      - row "mod-02.ts Add mod-02.ts 2w":
+        - rowheader "mod-02.ts":
+          - link "mod-02.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-02.ts
+        - cell "Add mod-02.ts"
+        - cell "2w":
+          - time: 2w
+      - row "mod-03.ts Add mod-03.ts 2w":
+        - rowheader "mod-03.ts":
+          - link "mod-03.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-03.ts
+        - cell "Add mod-03.ts"
+        - cell "2w":
+          - time: 2w
+      - row "mod-04.ts Add mod-04.ts 2w":
+        - rowheader "mod-04.ts":
+          - link "mod-04.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-04.ts
+        - cell "Add mod-04.ts"
+        - cell "2w":
+          - time: 2w
+      - row "mod-05.ts Add mod-05.ts 2w":
+        - rowheader "mod-05.ts":
+          - link "mod-05.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-05.ts
+        - cell "Add mod-05.ts"
+        - cell "2w":
+          - time: 2w
+      - row "mod-06.ts Add mod-06.ts 2w":
+        - rowheader "mod-06.ts":
+          - link "mod-06.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-06.ts
+        - cell "Add mod-06.ts"
+        - cell "2w":
+          - time: 2w
+      - row "mod-07.ts Add mod-07.ts 2w":
+        - rowheader "mod-07.ts":
+          - link "mod-07.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-07.ts
+        - cell "Add mod-07.ts"
+        - cell "2w":
+          - time: 2w
+      - row "mod-08.ts Add mod-08.ts 1w":
+        - rowheader "mod-08.ts":
+          - link "mod-08.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-08.ts
+        - cell "Add mod-08.ts"
+        - cell "1w":
+          - time: 1w
+      - row "mod-09.ts Add mod-09.ts 1w":
+        - rowheader "mod-09.ts":
+          - link "mod-09.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-09.ts
+        - cell "Add mod-09.ts"
+        - cell "1w":
+          - time: 1w
+      - row "mod-10.ts Add mod-10.ts 1w":
+        - rowheader "mod-10.ts":
+          - link "mod-10.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-10.ts
+        - cell "Add mod-10.ts"
+        - cell "1w":
+          - time: 1w
+      - row "mod-11.ts Add mod-11.ts 1w":
+        - rowheader "mod-11.ts":
+          - link "mod-11.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-11.ts
+        - cell "Add mod-11.ts"
+        - cell "1w":
+          - time: 1w
+      - row "mod-12.ts Add mod-12.ts 1w":
+        - rowheader "mod-12.ts":
+          - link "mod-12.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-12.ts
+        - cell "Add mod-12.ts"
+        - cell "1w":
+          - time: 1w
+      - row "mod-13.ts Add mod-13.ts 1w":
+        - rowheader "mod-13.ts":
+          - link "mod-13.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-13.ts
+        - cell "Add mod-13.ts"
+        - cell "1w":
+          - time: 1w
+      - row "mod-14.ts Add mod-14.ts 1w":
+        - rowheader "mod-14.ts":
+          - link "mod-14.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-14.ts
+        - cell "Add mod-14.ts"
+        - cell "1w":
+          - time: 1w
+      - row "mod-15.ts Add mod-15.ts 6d":
+        - rowheader "mod-15.ts":
+          - link "mod-15.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-15.ts
+        - cell "Add mod-15.ts"
+        - cell "6d":
+          - time: 6d
+      - row "mod-16.ts Add mod-16.ts 5d":
+        - rowheader "mod-16.ts":
+          - link "mod-16.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-16.ts
+        - cell "Add mod-16.ts"
+        - cell "5d":
+          - time: 5d
+      - row "mod-17.ts Add mod-17.ts 4d":
+        - rowheader "mod-17.ts":
+          - link "mod-17.ts":
+            - /url: /r/gantry/blob/main/apps/web/src/mod-17.ts
+        - cell "Add mod-17.ts"
+        - cell "4d":
+          - time: 4d
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

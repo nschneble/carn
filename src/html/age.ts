@@ -32,3 +32,8 @@ export function age(at: Date, now: Date): string {
 export function ageMarkup(label: string, at: Date, now: Date): Raw {
   return html`<span class="age"><span class="vh">${label} </span><time datetime="${at.toISOString()}">${age(at, now)}</time></span>`;
 }
+
+// the column header names this cell, so it carries no label of its own
+export function ageCell(at: Date, now: Date): Raw {
+  return html`<td class="age"><time datetime="${at.toISOString()}">${age(at, now)}</time></td>`;
+}
