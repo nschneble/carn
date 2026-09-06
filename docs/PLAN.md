@@ -1,114 +1,114 @@
 <!-- This file is the source of truth. The artifact at
      https://claude.ai/code/artifact/bd38dee8-6822-4b2c-a602-bde753e498a3
-     is generated FROM it by scripts/docs-artifact.mjs — edit here, re-run that. -->
+     is generated from this Markdown by `scripts/docs-artifact.mjs`. Edit
+     here and run the script to update the build artifacts. -->
 
 **IMPLEMENTATION PLAN**
 
 # Build your own forge
 
-**Càrn** — a self-hosted git forge for one person. Repos, issues, and real pull requests with a merge button. Server-rendered, public by default, and with no passwords, sessions, or tokens anywhere in it. Roughly a dozen evenings from nothing to the place your code lives.
+**Càrn is a self-hosted git forge.** Repos, issues, and pull requests. Server-rendered HTML, public by default, no passwords.
 
-## 00 · Three tenets
+## 00 · The three tenets
 
-_What each one commits to_
-
-Each has a concrete, checkable consequence.
+The foundational aspects that differentiate Càrn from GitHub and Bitbucket.
 
 ### 1 · Just be git, with a few conveniences
 
-The commitment: **nothing in a Càrn repository requires Càrn.** No custom refs a stock client has to know about, no metadata objects, no `refs/carn/*` namespace. A repo cloned from Càrn is byte-identical to one cloned from anywhere else. Exit cost is `tar czf repos.tgz /var/lib/carn/repos`.
+**Nothing in a Càrn repository requires Càrn.** There's no custom refs a stock client has to know about, no metadata objects, and no `refs/carn/*` namespace. A repo cloned from Càrn is byte-identical to one cloned from anywhere else.
 
-The tension: **issues and PRs are the conveniences, and they live in Postgres, not in git.** That means "if Càrn vanished" gives you every commit and no issue text. Two mitigations worth taking: the nightly `pg_dump` matters as much as the repo tarball, and an export command (`carn export <repo>` → a directory of markdown files) is a one-evening insurance policy.
+**Issues and PRs are Postgres-built conveniences.** If Càrn vanished overnight, you'd have all your commits but none of your issue or PR descriptions. A nightly `pg_dump` (hehe) and an export command (`carn export <repo>` → directory of .md files) help to mitigate the risks.
 
 ### 2 · Fast and responsive is sexy
 
-This one is nearly free, because of a consequence of the decisions above: **with no sessions and no private repos, every read page is identical for every visitor.** No `Vary: Cookie`, no per-user rendering, no authorization check to invalidate. Which means you can put real cache headers on repo pages and let Caddy serve most requests without touching Node at all. Most forges can't do this; it falls out of having no accounts.
+This one is nearly free. **There's no sessions. No private repos. Every read page is identical for every visitor.** No `Vary: Cookie`, no per-user rendering, no authorization checks to invalidate. You can put real cache headers on repo pages and let Caddy serve most requests without touching Node. Most forges can't do this.
 
-A budget worth writing down, so it's a test rather than an aspiration:
+The page budget is a promise that governs how everything is architected:
 
-- **Zero client JavaScript on the critical path.** Progressive enhancement only — a diff that needs JS to render is a bug.
-- **Under 100 KB per page** including the highlighted blob, measured as **wire bytes** — gzip level 5, matching Caddy's default, with fonts counted whole because woff2 is already compressed. This is the real argument for highlight.js over Shiki (§04).
-- Measured in process at gzip level 5 until Caddy exists; Phase 2's `encode` must compress at least as well or the budget silently loosens.
-- **TTFB under 100 ms** on a warm repo page. Achievable given the measured numbers — the whole budget is 5–10 git subprocesses at ~2 ms each, so the pooled `cat-file --batch` matters more than anything else you'll do.
-- **Cache highlighted blobs by content hash**, and set `Cache-Control: public` on anything keyed by an immutable SHA — a commit page for `a1b2c3d` can be cached forever.
+- **Zero client JavaScript.** Progressive enhancement only. A page that needs JavaScript to render something has failed.
+- **100 KB pages.** Everything, including fonts, assets, page chrome, and stylesheets. Measured as wire bytes at gzip level 5, matching Caddy's default setting.
+- Measured in process at gzip level 5 until Caddy exists. Phase 2's `encode` must compress at least as well.
+- **TTFB under 100 ms** on a warm repo page. Achievable given the measured numbers. The whole budget is 5–10 git subprocesses at ~2 ms each, so the pooled `cat-file --batch` matters most for hitting this metric.
+- **Cache highlighted blobs by content hash**, and set `Cache-Control: public` on anything keyed by an immutable SHA; a commit page can be cached literally forever.
 
-### 3 · Secure and accessible
+### 3 · Secure and accessible makes pages impressible
 
-Security is covered throughout — UUID paths, `html: false`, blob origin isolation, the semaphore, rate limiting (§04). The accessibility list, one item of which constrains the palette:
+Security is covered throughout: UUID paths, no HTML in Markdown rendering, blob origin isolation, the semaphore, and rate limiting (§04), to name just a few. Everything is WCAG 2.2 AA compliant across the board.
 
-> **CONTRAST — MEASURED**
+Accessibility conformance requires a thoroughly brutal color palette:
+
+> **MEASURED CONTRAST**
 >
-> **#E7156C on the #F4F6F6 ground is 4.10:1.** That passes AA for large text (3:1) and for non-text UI, but _misses_ the 4.5:1 threshold for body-size text. `--accent` carries only what owes 3:1 — big type, rules, the focus ring — and a darkened **#C9105C (5.22:1)** carries everything that owes 4.5:1: inline links, small type, directory names in a file list, and the fill behind a button, tag, or current chip. `docs/BRAND.md` §02 owns the token split and every measured ratio; this paragraph points at it rather than restating it. In dark mode, **#FF6EA8 on #0E0F0F is 7.36:1** and needs no adjustment.
+> In light mode, `--accent` (#E7156C) has a contrast ratio of 4.10:1 against `--ground` (#F4F6F6). That passes AA for large text (3:1) and for non-text UI, but misses the 4.5:1 threshold for body-size text. The `--accent` token is therefore only used for big type, rules, and focus rings. A darker `--accent-text` (*#C9105C) with a 5.22:1 contrast ratio is used for everything else: inline links, small type, directory names in a file list, and the fills behind buttons, tags, and chips. BRAND §02 details the token split and every measured ratio.
 
-- **The display face never sets body text.** All-caps removes the ascender and descender profile that word-shape recognition depends on. Uppercase Carn Sans for titles and labels; Carn Sans at `"wght" 400`, or Carn Mono, for anything read as a sentence. There is no third family and no separate body face — see `docs/BRAND.md` §03.
-- **Real semantics.** Diffs are tables with row scope. The timeline is an `<ol>`. This is what makes the page work in a terminal browser, which suits the project. The file and repo lists shipped in 1d as `<ul role="list">` over a CSS grid (`src/html/repo-show.ts`, `src/html/repo-list.ts`) because they carried one column of real data. **1e moves every index view to `<table>`** — decided, not open. Anything that looks like a table is a table: the file tree, the repo index, the commit log, the branch and tag lists, and the commit page's file list. Once the commit-subject and age columns are filled the data is genuinely tabular, and a table is what renders everywhere: an old phone, a terminal browser, an email client, anything that never got the CSS. Each one carries a `<caption>`, a `<thead>` of `<th scope="col">`, and a `<th scope="row">` for the name — the caption and the header row are what a reader gets when the CSS never arrives, which is the whole point.
+- **The display face never sets body text.** All-caps removes the ascender/descender profile upon which word-shape recognition depends. Uppercase Carn Sans is used for titles and labels; Carn Sans at `"wght" 400`, or Carn Mono, for sentences. There's no third family or separate body face. See BRAND §03 for more details.
+- **Real semantics.** Nearly everything is a `<table>`. It works just as well in a terminal browser, in an email, maybe even on an old Nokia phone. You know how people like to [try and run Doom](https://www.reddit.com/r/itrunsdoom/) on anything that reads binary code? It's kinda like that. The table views – file tree, repo index, commit log, branch/tag lists, and commit page file list – all carry a `<caption>`, a `<thead>` of `<th scope="col">`, and a `<th scope="row">` for the table name.
+  - **Columns come from the table layout.** Never from `display` overrides. A grid or flex override doesn't give you anything new, but it does beef your table semantics. See _Tables, CSS Display Properties, and ARIA_ by Adrian Roselli.
+  - **Table layouts are fixed.** Never auto. `auto` can't size a column below its min-content width, and a name that doesn't wrap has the whole string as its minimum, causing a table to outgrow the viewport instead of truncating the name.
+- **Keyboard first.** A skip link, visible focus on everything, and no hover-only behaviors. A file row's actions are always reachable by the tab key.
+- **Meaning and intent don't rely on color alone.** Directories have trailing slashes in lists to differentiate from files. Diffs have `+` and `-` glyphs to indicate adds and removals.
+- **No motion.** A fast-loading page already _feels_ smooth. Animations are what slow sites use to disguise being slow. The only transitions worth having are hover and focus states, and those should be instantaneous.
 
-  Two constraints make the rule implementable rather than decorative:
+### Turning tenets into tests
 
-  **Columns come from table layout, never from a `display` override.** Applying a non-default `display` to `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, or `<td>` cost the native semantics outright in WebKit for five and three quarter years; Safari 17 fixed it in October 2023, and `display: contents` is the one value still worth avoiding across engines. So the ban is no longer a Safari bug workaround — it is that a grid or flex override buys nothing table layout does not already give, while putting the semantics at the mercy of the next regression. (Adrian Roselli, _Tables, CSS Display Properties, and ARIA_.)
-
-  **`table-layout` is `fixed`, not `auto`.** `auto` never sizes a column below its min-content width, and a name that does not wrap has the whole string as its minimum — so the table outgrows the viewport instead of the name ellipsing. Measured at 320px, `auto` laid the repo index out 1233px wide and put every list view into horizontal scroll. `fixed` sizes the columns off the viewport instead: the name takes 40%, age holds 46px, the subject takes what is left and truncates. It also means wider text cannot move a column boundary, which is what keeps SC 1.4.12 cheap to hold.
-- **Keyboard first.** A skip link, visible focus on everything (already in the CSS here), and no hover-only affordances — a file row's actions must be reachable by tab.
-- **Don't encode meaning in color alone.** Directory-vs-file is pink-vs-ink in the mockups; add a trailing `/` so it survives grayscale and color vision deficiency. Diff add/remove needs `+`/`−` glyphs, not just green and red.
-- **No motion at all.** A page that arrives in 80 ms with no JS to parse already _feels_ smooth. Animation is what slow sites use to disguise being slow. The only transitions worth having are hover and focus states, and those should be instant.
-
-### Turning the tenets into tests — Tuffgal, and what it doesn't cover
-
-Unit and integration tests earn little here. [Tuffgal](https://github.com/nschneble/tuffgal) is the instrument. A forge is mostly glue over `git`; the interesting failures aren't "does this function return 4," they're "did the clone work" and "did the page silently change." So: **stories for the journeys, and contract tests for the parts a screenshot can't see.**
+Unit and integration tests are for little tiny babies. We are not little tiny babies. [Tuffgal](https://github.com/nschneble/tuffgal) is the instrument of choice. A forge is mostly glue over `git`. The interesting failures aren't "Does this function return 42?" They're "Did that clone operation work?" and "Did this page get all weird?" **Tuffgal stories are for the user journey, and contract tests are for the unseen world.**
 
 > **WHY THIS SUITS CÀRN UNUSUALLY WELL**
 >
-> Visual regression is normally flaky, and the flakiness has one root cause: nondeterminism in the page. Hydration reordering the DOM, async data arriving late, client state persisting between runs, animation caught mid-frame. **Càrn has none of those by construction** — server-rendered HTML, no client JS on the critical path, no sessions, no motion. The page is a pure function of the request. That makes screenshot diffing genuinely reliable here in a way it isn't for most apps, which means you can trust a red diff instead of re-running it.
+> Visual regression is normally flaky due to page nondeterminism. DOM hydration reordering, late async data arrival, client state persistence, mid-frame animations; it's a mess. **Càrn has none of this.** Server-rendered HTML, no client JavaScript, no sessions, no motion. The page is a pure function of the request. That makes screenshot diffing a genuinely reliable mechanism here.
 >
-> Two Tuffgal features earn their keep immediately. **Clock freezing** (`page.clock.install`) is not optional for a forge — every page is full of "6h ago", "3d", "2w", and without a frozen clock every baseline diffs every day. And **a11y-tree snapshots** directly serve tenet 3: they catch the regression where a heading quietly becomes a div, or a table loses its header row, which is exactly the failure mode of a design that leans on semantic HTML.
+> Tuffgal's **clock freezing** keeps relative dates from constantly generating new baselines. The **a11y-tree snapshots** directly serve the a11y tenet by catching structural regressions.
 
-#### The stories worth writing first
+#### The first user journey on the road to baseline perfection
 
-Four, in the order they'd catch the most. Shape below is illustrative — the real schema is in your authoring guide:
+Four stories cover the basic shape of Càrn's ecosystem. Here's an illustrative example:
 
 ```
 // the whole product in one story
+
 navigate  /r/fixture
-click     "New issue"          → shot
-input     title, body          → shot
-click     "Create"             → shot   // issue page, ladder at OPEN
-click     "Create branch"      → shot   // ladder at BRANCH
-// (push commits via a fixture hook)
-click     "Open PR"            → shot   // ladder at PR, diff rendered
-click     "Merge · squash"     → shot   // ladder at MERGED, issue auto-closed
-navigate  /r/fixture           → shot   // branch gone from the list
+click     "New issue"      → shot
+input     title, body      → shot
+click     "Create"         → shot  // issue page, ladder at OPEN
+click     "Create branch"  → shot  // ladder at BRANCH
+~         ~                ~       // push commits via fixture hook
+click     "Open PR"        → shot  // ladder at PR, diff rendered
+click     "Squash merge"   → shot  // ladder at MERGED, issue auto-closed
+navigate  /r/fixture       → shot  // branch gone from list
 ```
 
-Then: **repo browse** (tree → blob with highlighting → commit log → single commit), **the README render** (a fixture README exercising every CommonMark construct plus a table, which doubles as a markdown-pipeline regression test), and **the empty states** — a repo with no commits, an issue list with nothing in it, a PR with a conflict. Empty states are where server-rendered apps break and where nobody looks.
+The other three stories:
 
-Run all of them across your four breakpoints. The layout leans on `clamp()` for the display type and on the compensated small-caps rule for filenames; both are exactly the kind of thing that looks right at desktop and wrong at 375 px.
+- **Repo browse:** Tree → blob with highlighting → commit log → single commit
+- **README render:** A README fixture exercising every CommonMark construct plus a table, which doubles as a Markdown-pipeline regression test
+- **Empty states:** A repo with no commits, an issue list with nothing in it, a PR with a conflict
 
-> **THE FIXTURE REPO HAS TO BE BYTE-REPRODUCIBLE, OR EVERY BASELINE CHURNS**
+Run all of these across all breakpoints. The layout leans on `clamp()` for the display type and on the compensated small-caps rule for filenames; both often look great on your laptop and wonky on your phone.
+
+> **THE FIXTURE REPO HAS TO BE BYTE-REPRODUCIBLE**
 >
-> This is the one setup task that will bite if it's left implicit. **A commit SHA is derived from its content _and_ its author and committer timestamps.** Build the fixture repo in a script and the SHAs change on every run — so every page showing `a1b2c3d` diffs, forever.
+> This is the one setup task that's gotta do what it says on the tin. **A commit SHA is derived from its content _and_ its author and committer timestamps.** Build the fixture repo in a script and the SHAs change on every run. Bad bad bad.
 >
-> Build it once with `GIT_AUTHOR_DATE` and `GIT_COMMITTER_DATE` pinned to fixed values, then **commit the resulting bare repo as a tarball** and have the per-breakpoint fixture hook restore it. Same for the seed rows in Postgres — fixed IDs, fixed timestamps. Deterministic fixture in, deterministic screenshot out.
+> Instead, build it once with `GIT_AUTHOR_DATE` and `GIT_COMMITTER_DATE` pinned to fixed values, then **commit the resulting bare repo as a tarball** and have the per-breakpoint fixture hook restore it. The same goes for the seed rows in Postgres: fixed IDs and timestamps.
 
-#### What Tuffgal can't see — four contract tests
+#### Contract tests, a.k.a. what Tuffgal can't see
 
-These aren't a second test suite so much as four assertions that a screenshot is structurally unable to make:
+These aren't really a secondary test suite so much as non-visual assertions outside a screenshot's purview:
 
-| Contract         | Assertion                                                                                                   | How                                                                                                                                                                                                |
-| ---------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Weight**       | Page < 100 KB · zero client JS on the critical path                                                         | `size-limit` against the rendered HTML plus assets. A page can double in weight and look identical.                                                                                                |
-| **Subprocesses** | < 12 `spawn` calls per render                                                                               | A counter in the git layer, asserted per route. **The most valuable test in the plan** — see below.                                                                                                |
-| **Headers**      | Blob origin always returns `sandbox` CSP · never `Set-Cookie` · `javascript:` in markdown renders no anchor | Plain request assertions. Four of them, covering the three vulnerability classes in §11.                                                                                                           |
-| **a11y rules**   | Zero axe violations across both render paths · every token reads back non-empty in both                        | `axe-core` — complementary to the a11y tree, not redundant. The tree snapshot catches _structural_ drift; axe catches _rule_ violations like contrast and ARIA misuse, which a tree can't express. Neither sees a vanished token, so that is asserted separately. |
+| Contract         | Assertion                                                    | How                                                                                                            |
+| ---------------- | ------------------------------------------------------------ | ----------------------------------------------------------------- -------------------------------------------- |
+| **A11y rules**   | Zero axe violations                                          | `axe-core`. Tree snapshot catches structural drift. Axe catches rule violations like contrast and ARIA misuse. |
+| **Headers**      | Blob origin always returns `sandbox` CSP, never `Set-Cookie` | Plain request assertions, covering the three vulnerability classes in §11.                                     |
+| **Subprocesses** | < 12 `spawn` calls per render                                | A counter in the git layer, asserted per route. **The most valuable test in the plan.** See below.             |
+| **Weight**       | Page < 100 KB, zero client JavaScript                        | `size-limit` against the rendered HTML plus assets.                                                            |
 
-The subprocess counter deserves the emphasis: it's the only test that catches the specific way this codebase will get slow. A well-meaning refactor that renders a file list by calling `cat-file` once per row passes every other check — the screenshots are pixel-identical, the HTML is byte-identical — and quietly turns a 40 ms page into a 400 ms one. Nothing else in the suite would notice.
+The subprocess counter is the only test that'll catch a specific way this codebase could fail its performance tenet. A well-meaning refactor that renders a file list by calling `cat-file` once per row would pass every other check. The screenshots would be pixel-identical; the HTML byte-identical. Yet it'd quietly bloat a 40 ms page load to 400 ms. Nothing else in the suite would notice.
 
-> **THIS MAKES THE MIRROR CI WORTH HAVING**
+> **WHY TO BOTHER WITH A MIRROR CI**
 >
-> Tuffgal's design — **CI is the sole writer of baselines** — pairs exactly with the GitHub Actions plan in §10, and it upgrades that plan's value considerably. Lint and typecheck on the mirror are nice; _visual review as a PR gate_ is a reason to have CI at all. The `tuffgal-action` runs on the mirror, publishes candidates as artifacts, and you approve with `tuffgal approve --from` and commit.
+> Tuffgal's design, where **CI is the sole writer of baselines**, pairs nicely with the GitHub Actions plan in §10. Lint and typecheck on the mirror are nice-to-haves. A _visual review as a PR gate_ is the show. The `tuffgal-action` runs on the mirror, publishes candidates as artifacts, and you approve with `tuffgal approve --from` and commit.
 >
-> Two things follow. The status endpoint (§07) becomes the natural place for Tuffgal's exit code — **2 (pending baselines) is a distinct state from 1 (failure)**, so don't collapse them into pass/fail; "review needed" is a real state. And Tuffgal is pre-1.0 with an explicitly unstable API, so pin the version.
-
-And your point about terminal browsers generalises further than it looks: semantic tables and lists with no JS means the pages also survive being **piped into an email body, quoted in a chat unfurl, or read by a feed reader**. That's not a side effect of the accessibility work, it _is_ the accessibility work.
+> The status endpoint (§07) becomes the natural place for Tuffgal's exit code, where **2 (pending baselines) is a distinct state from 1 (failure)**, so we can support "review needed" as a real state in between pass/fail.
 
 ## 01 · The shape of it
 
