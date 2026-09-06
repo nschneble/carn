@@ -112,299 +112,295 @@ The subprocess counter is the only test that'll catch a specific way this codeba
 
 ## 01 · The shape of it
 
-_What you're building, and why it's tractable_
+_What you're building and why it's tractable_
 
 A single Node process serving three things: a server-rendered web UI, anonymous git-over-HTTPS for reading, and an SSH listener for writing. Postgres holds metadata. Git objects stay on disk and are read by shelling out to plumbing. That's the whole system.
 
-Two things make this a ten-evening project rather than a six-month one.
+Two things enable us to compress this into a sprint-sized timeline:
 
-**First: `git merge-tree --write-tree`** (git 2.38+) performs a real three-way merge — rename detection, directory/file conflicts, recursive ancestor consolidation — in a bare repo with no worktree and no index, and prints the merged tree OID. Combined with `commit-tree` and `update-ref`, your entire server-side merge engine is about fifty lines. Every hobby forge that dies, dies managing temp worktrees on disk. You get to skip that.
+1. **`git merge-tree --write-tree`** (git 2.38+) performs a real three-way merge; rename detection, directory/file conflicts, and recursive ancestor consolidation in a bare repo with no worktree and no index, and prints the merged tree OID. Combined with `commit-tree` and `update-ref`, the entire server-side merge engine is about fifty lines.
+2. **"Everything public, no private repos"** is like a scope shrink ray. Reads over HTTPS don't need authentication. Writes are by SSH keys. There's no password column, no session store, no login form, no password-reset email, and no read-authorization check on any route. A potential API or CLI can authenticate over SSH with the same key, so no tokens, either.
 
-**Second: "everything public, no private repos, ever" deletes more work than any other decision in this document.** Read over HTTPS needs no authentication at all. Write is SSH public-key only. There is no password column, no session store, no login form, no password-reset email, no read-authorization check on any route. When you later want an API and a CLI, they authenticate over SSH with the same key — so you never introduce tokens either. Most forges are 40% authorization code. Yours is 0%.
-
-> **THE RISK**
+> **THE BIGGEST RISK**
 >
-> Not technical. It's that this becomes the only home of your code before it has earned that trust — a bad force-push, a disk failure, a bug in your own merge path. The mitigation is in [§10](#mirror) and it is not optional: mirror-push every repo outward from day one.
+> It isn't purely technical. It's that this becomes the only home of a codebase before it's earned that trust. A bad force-push, a disk failure, or a bug in the merge path and that trust is gone. The mitigation is in [§10](#mirror): mirror-push every repo outward from day one.
 
-## 02 · Decisions
+## 02 · Decisions, decisions
 
-_Settled — everything downstream assumes these_
+_Settled and assumed by everything downstream_
 
-- **Approach:** From scratch — No adopted forge, no comparison. This is the project.
-- **Stack:** Node / TypeScript — Reuses the Linklater Compose file, Caddy config, and deploy pipeline.
-- **Rendering:** Server-rendered — The app is documents. An SPA buys nothing and costs a second state model.
-- **Merge:** Server-side button — Merge commit, squash, or fast-forward. Rebase-merge never.
-- **MLP:** Repos · Issues · PRs — Browse, clone, push, file, propose, merge. Releases follow.
-- **Visibility:** Public, always — Private repos are off the roadmap entirely, not deferred.
-- **Accounts:** Admin-created — No signup route exists. Forever.
-- **Credentials:** SSH keys only — No passwords, no sessions, no tokens — including for the API.
-- **SSH transport:** Embedded (ssh2) — One container, no sshd wiring. Migration path noted in §03.
-- **Comments:** Thread-only — Inline diff comments are roadmap, not MLP.
-- **Numbering:** One sequence — Issues and PRs share a per-repo counter. Reasoning below.
-- **Assignment:** None — No owners, no assignees. They're just issues and PRs.
-- **Labels:** Never — Moved out of "maybe." Epics do the job; labels are noise.
-- **Name:** Càrn / carn — Càrn on every visual surface, `carn` everywhere technical. Montréal / montreal-repo.
-- **URLs:** /r/ prefix — `/r/:repo`. Kills the namespace collision structurally — no reserved list.
-- **Highlighting:** highlight.js — Settled. Alternatives dropped from the doc.
-- **Themes:** Both, dark-first — Dark is the default and the one that's designed first.
-- **Method:** YAGNI — Nothing gets built before it's wanted. Web comments included.
-- **License:** AGPL-3.0-or-later — Server and CLI both. Closes the network loophole plain GPL leaves open.
-- **Testing:** Tuffgal stories — Visual regression as the primary suite, plus four contract tests. No unit tests.
-- **Write path:** CLI only — The web UI is read-only at MLP; the admin forms in §06 come after it. Comments come over SSH.
-- **Rate limiting:** At the edge — Caddy, three tiers, tightest on clone and archive.
-- **Layout:** One display rule — List items in the display face; titles on show views. Mockups in §06.
+- **Accounts:** Admin-created. No signup routes.
+- **Approach:** Built from scratch. No adopted forge, no comparison app. This is the project.
+- **Assignment:** None. No owners, no assignees. They're just issues and PRs.
+- **Comments:** Thread-only. Inline diff comments are on the roadmap, but not in the MLP.
+- **Credentials:** SSH keys only. No passwords, no sessions, no API tokens.
+- **Highlighting:** highlight.js does all we need.
+- **Labels:** Never. Epics do the job.
+- **Layout:** One display rule: List items in the display face; titles on show views. Mockups in §06.
+- **License:** AGPL-3.0-or-later, both server and CLI. Closes a network loophole left open by plain GPL.
+- **Merge:** Server-side button. Merge commit, squash, or fast-forward. Never rebase-merge.
+- **Method:** YAGNI. Nothing gets built before it's wanted.
+- **MLP:** Repos, issues, PRs. Browse, clone, push, file, propose, and merge. Releases to follow.
+- **Name:** Càrn / carn: Càrn on every visual surface, `carn` everywhere technical. Montréal / montreal-repo.
+- **Numbering:** One sequence. Issues and PRs share a per-repo counter; reasoning below.
+- **Rate limiting:** At the edge: Caddy, three tiers, tightest on clone and archive.
+- **Rendering:** Server-rendered. The app is just documents. No SPA here.
+- **SSH transport:** Embedded (ssh2): One container, no sshd wiring. Migration path noted in §03.
+- **Stack:** Node / TypeScript. Reuses the Linklater Compose file, Caddy config, and deploy pipeline.
+- **Testing:** Tuffgal stories. Visual regression as the primary suite, plus contract tests. No unit or integration tests.
+- **Themes:** Light and dark modes. Dark by default cuz it's the punkiest.
+- **URLs:** /r/ prefix: `/r/:repo`. Structurally kills any namespace collisions. No reserved list.
+- **Visibility:** Public, always.
+- **Write path:** CLI only. The web UI is read-only at MLP. The admin forms in §06 come after it. Comments over SSH.
 
-### Why issues and PRs share one number sequence
+### Issues and PRs share a per-repo counter
 
-**Issues and PRs draw from one shared per-repo counter.** The reason is cross-references.
+Why? Cross-references.
 
-You want `#12` in a commit message or PR body to become a link. With separate sequences, `#12` is ambiguous and you'd need a disambiguating sigil — GitLab uses `#12` for issues and `!12` for merge requests, which nobody remembers. A shared counter makes `#12` resolve to exactly one thing, forever. GitHub does this for the same reason. It also makes the issue→branch→PR flow read naturally: issue #12 produces branch `12-slug` which produces PR #13, and every reference is unambiguous.
+You want `#12` in a commit message or PR body to become a link. With separate sequences, `#12` is ambiguous and you'd need a disambiguating sigil, e.g. how GitLab uses `#12` for issues and `!12` for merge requests. A shared counter makes `#12` resolve to exactly one thing. GitHub does this for the same reason. It also makes the issue→branch→PR flow read naturally: issue #12 produces produces PR #13, and every reference is unambiguous.
 
-Implement it as a `next_number` column on `repos`, incremented in the same transaction that inserts the row. Not `MAX(number)+1`, which races. Retrofitting this after you have data is miserable; it costs nothing now.
+Implement as a `next_number` column on `repos`, incremented in the same transaction that inserts the row. Not `MAX(number)+1`, which races and is the absolute worst.
 
 ### No assignees
 
-That removes a column and a filter UI. But **keep `author_id`**. It's one nullable foreign key, `pr_events` needs an actor anyway for the timeline, and it's the difference between "I can add a collaborator in an afternoon" and "I need a migration first." Just don't render it anywhere while it's only you.
+No need for a column or filter UI. **But we'll keep `author_id`**. It's one nullable foreign key, and `pr_events` needs an actor for the timeline anyway.
 
-## 03 · What's actually hard
+## 03 · What's actually difficult
 
 _Verified against git 2.43 in real bare repos_
 
-Four places where a naive implementation produces a bug that costs an evening. Each was tested rather than assumed.
+There's four areas where a naive implementation could produces show-stopping bugs.
 
 ### 1 · The merge engine
 
-The recipe is from the `git-merge-tree` man page, and it works:
+This recipe is from the `git-merge-tree` man page,:
 
-```
-# resolve to OIDs FIRST — see trap (a)
+```bash
+# resolve to OIDs FIRST; see trap a.
 old=$(git rev-parse refs/heads/main)
 src=$(git rev-parse refs/heads/feature)
 
 tree=$(git merge-tree --write-tree -z $old $src)
 commit=$(git commit-tree $tree -F msg.txt -p $old -p $src)
-git update-ref refs/heads/main $commit $old   # compare-and-swap
+
+# compare-and-swap
+git update-ref refs/heads/main $commit $old
 ```
 
-**(a) Exit code 1 does not mean "conflict."** The man page says it does. It doesn't — an unknown ref also exits 1, with empty stdout. Discriminate on _stdout_: a conflict prints a hex OID on line one, an error prints nothing. Resolving refs with `rev-parse` first makes the case unreachable.
+Traps:
 
-**(b) It writes objects.** Every "can this merge?" preview leaves orphan blobs and trees. On git ≥ 2.50 use `--quiet` for the mergeability check — it exits early and writes almost nothing. Either way you need a scheduled `git gc`, which you want regardless because `receive.autogc` defaults to _on_ and will otherwise stall an unlucky push for minutes on a shared-CPU box.
+a. **Exit code 1 doesn't always mean "conflict."** The man page says it does. It doesn't: an unknown ref also exits 1, with empty stdout. Discriminate on _stdout_: a conflict prints a hex OID on line one, whilst an error prints nothing. Resolving refs with `rev-parse` first makes the case unreachable.
+b. **It writes objects.** Every "can this merge?" preview leaves orphan blobs and trees. On git ≥ 2.50 use `--quiet` for the mergeability check; it exits early and writes almost nothing. Either way, you need a scheduled `git gc`, which you'll want regardless because `receive.autogc` defaults to _on_ and will otherwise stall an unlucky push for minutes on a shared-CPU box.
+c. **Always pass `-z`.** Without it, filenames are shell-quoted per `core.quotePath` and the conflict section is explicitly documented as non-machine-readable. With it, you get NULL-delimited records where the stable field is the conflict _type_ (`CONFLICT (contents)`); always parse that, never the human readable message.
 
-**(c) Always pass `-z`.** Without it, filenames are shell-quoted per `core.quotePath` and the conflict section is explicitly documented as non-machine-readable. With it you get NUL-delimited records where the stable field is the conflict _type_ (`CONFLICT (contents)`) — parse that, never the human message.
-
-**Squash** is the same call with a single `-p`. Set `GIT_AUTHOR_*` and `GIT_COMMITTER_*` explicitly — a daemon has no gitconfig and `commit-tree` will refuse with "Author identity unknown." Use `-F` for the message, never `-m` with interpolated user text. **Fast-forward** skips the tree entirely: `git merge-base --is-ancestor`, then `update-ref`.
+**Squash** is the same call with a single `-p`. Set `GIT_AUTHOR_*` and `GIT_COMMITTER_*` explicitly. A daemon has no gitconfig and `commit-tree` will refuse with "Author identity unknown." Use `-F` for the message, never `-m` with interpolated user text. **Fast-forward** skips the tree entirely: `git merge-base --is-ancestor`, then `update-ref`.
 
 > **THE CONCURRENCY RULE**
 >
-> The merged tree is only valid against the target head you merged _from_. So: read `old` → merge → commit → `update-ref <ref> <new> <old>`. On exit 128 (CAS mismatch), **re-read and re-merge**. Never retry with the stale tree, and never fall back to the two-argument `update-ref` — that's a silent force-push that discards whatever landed concurrently.
+> The merged tree is only valid against the target head you merged _from_. So: read `old` → merge → commit → `update-ref <ref> <new> <old>`. On exit 128 (CAS mismatch), **re-read and re-merge**. Never retry with the stale tree, and never fall back to the two-argument `update-ref`; that's a silent force-push that discards whatever landed concurrently.
 
-### 2 · Git over SSH — the one real decision, and two silent failures
+### 2 · Git over SSH
 
-**The hardcoded key is Phase 0 only.** In Phase 1 keys come from the `ssh_keys` table, and `ssh2` handles any number of users perfectly well — Gitea and GitLab implement the same authenticate-against-a-database pattern, just via OpenSSH's `AuthorizedKeysCommand` instead of an embedded server. Additional users are not degraded by the embedded server.
+**Using a hardcoded key is only for Phase 0.** In Phase 1, keys come from the `ssh_keys` table, and `ssh2` handles any number of users perfectly well; Gitea and GitLab implement the same authenticate-against-a-database pattern, just via OpenSSH's `AuthorizedKeysCommand` instead of an embedded server. Additional users are not degraded by the embedded server.
 
-The two real differences: the port (`:2222` unless you do the swap in [§09](#hosting)), and that you own an SSH server's auth code in-process rather than delegating to OpenSSH. `ssh2` is at 1.17.0, roughly one release a year, single maintainer — bus-factor 1, and acceptable here. The escape hatch is contained: your authorization logic lives in the app either way, so switching to OpenSSH later swaps the front door, not the house.
+The two real differences: the port (`:2222` unless you do the swap in [§09](#hosting)), and that you own an SSH server's auth code in-process rather than delegating to OpenSSH. `ssh2` is at v1.17.0, with roughly one release a year and a single maintainer; bus factor 1, yes, but it's acceptable here. The escape hatch is contained: authorization logic lives in the app either way, so switching to OpenSSH later is always an option.
 
-Two gotchas that produce silent failures rather than errors:
+Two things to watch out for:
 
-- **Public-key auth is two-phase.** The first callback arrives with `ctx.signature === undefined` — that's the client probing whether the key is acceptable. You must `ctx.accept()` the probe; only the second call carries a signature to verify. Get it wrong and auth either always fails, or accepts unsigned probes.
-- **The `env` request object is `{key, val}`**, not `{key, value}`, despite the README. Reading `.value` yields undefined, `GIT_PROTOCOL` never reaches the child, and every clone quietly downgrades to protocol v0 with no error anywhere.
+- **Public-key auth is two-phase.** The first callback arrives with `ctx.signature === undefined`. That's the client probing whether the key is acceptable. You must `ctx.accept()` the probe; only the second call carries a signature to verify.
+- **The `env` request object is `{key, val}`**, not `{key, value}`, despite the README. Reading `.value` yields undefined, `GIT_PROTOCOL` never reaches the child, and every clone quietly downgrades to protocol v0 with no visible errors.
 
-Also: reject `shell`, `pty`, and `subsystem` requests outright. Call `stream.exit(code)` _then_ `stream.end()` or the client hangs. Pipe child stderr to `stream.stderr` — that's how `remote:` messages surface. Persist the host key across restarts.
+Also worth mentioning: reject `shell`, `pty`, and `subsystem` requests outright. Call `stream.exit(code)` _then_ `stream.end()` or the client hangs. Pipe child stderr to `stream.stderr`; that's how `remote:` messages surface. Persist the host key across restarts.
 
-### 3 · Smart HTTP for anonymous clone
+### 3 · Smart HTTP for anonymous clones
 
-Spawning `git upload-pack --stateless-rpc` is right. Three corrections to the obvious version:
+Spawning `git upload-pack --stateless-rpc` is right, with three caveats:
 
-- **`--advertise-refs` does not emit the service header.** `git http-backend` prepends `001e# service=git-upload-pack\n` + `0000`; the raw command doesn't. Omit it and v0 clients die with `fatal: invalid server response`.
+- **`--advertise-refs` doesn't emit the service header.** `git http-backend` prepends `001e# service=git-upload-pack\n` + `0000`; the raw command doesn't. Omit it and v0 clients die with `fatal: invalid server response`.
 - **That header is protocol-v0 only.** Under `Git-Protocol: version=2` the body starts at `000eversion 2\n` with no service line. Branch on the request header, and forward it into `GIT_PROTOCOL` for both the GET and the POST.
-- **Gzipped request bodies are not an edge case.** The client compresses the POST body once a repo accumulates refs. Skip the gunzip and it works perfectly on toy repos, then breaks later for no visible reason.
+- **Gzipped request bodies aren't an edge case.** The client compresses the POST body once a repo accumulates refs. Skip the gunzip and it works perfectly on toy repos, then breaks later for no visible reason.
 
-### 4 · Reading repos — process spawn cost is the whole story
+### 4 · Reading repos
 
-Shell out to _plumbing_, not porcelain: `git diff-tree -r -M`, never `git diff` — porcelain honors `diff.external`, textconv, and color config from whatever gitconfig the daemon happens to see. `ls-tree -z --long` for trees, `for-each-ref` for branch lists (one process instead of N), `rev-list --count` for pagination.
+**It's all about process spawn cost.** Shell out to _plumbing_, not porcelain: `git diff-tree -r -M`, never `git diff`. Porcelain honors `diff.external`, textconv, and color config from whatever gitconfig the daemon happens to see. `ls-tree -z --long` for trees, `for-each-ref` for branch lists (one process instead of N), and `rev-list --count` for pagination.
 
-Measured: 200 separate `git cat-file` processes took **370 ms**; the same 200 lookups through one long-lived `git cat-file --batch` took **7 ms**. On small repos essentially all the cost is process startup — `rev-parse` costs the same as `log -n 20`. A page doing 5–10 spawns is fine; anything rendering N blobs needs a pooled `--batch` process per repo, recycled after each push.
+**Example measurement:** 200 separate `git cat-file` processes took **370 ms**. The same 200 lookups through one long-lived `git cat-file --batch` took **7 ms**. On small repos, essentially all the cost is process startup. `rev-parse` costs the same as `log -n 20`. A page doing 5–10 spawns is fine; anything rendering N blobs needs a pooled `--batch` process per repo, recycled after each push.
 
 > **NON-NEGOTIABLE SUBPROCESS HYGIENE**
 >
-> Always `spawn` with an args array, **never `shell: true`**. Put `--` before every path. Reject refs starting with `-`. Set a hard timeout and kill the child on `req.on('close')`, or abandoned clones pile up `pack-objects` processes until the box OOMs. Cap global concurrency with a semaphore — that, not any git config knob, is your real protection on a shared-CPU VPS.
+> Always `spawn` with an args array, **never `shell: true`**. Put `--` before every path. Reject refs starting with `-`. Set a hard timeout and kill the child on `req.on('close')`, or abandoned clones pile up `pack-objects` processes until the box OOMs. Cap global concurrency with a semaphore.
 
 ## 04 · Architecture
 
 _One box, one database, four listeners_
 
 ```
-              :443                         :22 (or :2222)
-                │                                │
-           ┌────▼────┐                           │
-           │  Caddy  │  TLS, static assets       │
-           └────┬────┘                           │
-     ┌──────────┼──────────┬──────────┐          │
-  /r/:repo   /info/refs   /*.json   raw.*      ssh2
-  (web UI)   (smart HTTP)  (read API) (blobs)  (exec → git-*-pack
-     │          │          │          │         + CLI commands)
-     └──────────┴─────┬────┴──────────┴──────────┘
-                      │
-             ┌────────▼────────┐
-             │  Node / TS app  │
-             │  ┌───────────┐  │  spawn(), cat-file pool,
-             │  │ git layer │  │  concurrency semaphore
-             │  └───────────┘  │
-             └───┬─────────┬───┘
-                 │         │
-         ┌───────▼──┐  ┌───▼──────────────┐
-         │ Postgres │  │ /var/lib/carn/   │
-         │ metadata │  │ repos/<uuid>.git │
-         └──────────┘  └──────────────────┘
+               :443                              :22 (or :2222)
+                 │                                     │
+            ┌────▼────┐                                │
+            │  Caddy  │  TLS, static assets            │
+            └────┬────┘                                │
+     ┌───────────┼────────────┬──────────┐             │
+  /r/:repo   /info/refs    /*.json     raw.*          ssh2
+  (web UI)  (smart HTTP)  (read API)  (blobs)  (exec → git-*-pack
+     │           │            │          │      + CLI commands)
+     └───────────┴─────┬──────┴──────────┴─────────────┘
+                       │
+              ┌────────▼────────┐
+              │  Node / TS app  │
+              │  ┌───────────┐  │  spawn(), cat-file pool,
+              │  │ git layer │  │  concurrency semaphore
+              │  └───────────┘  │
+              └───┬─────────┬───┘
+                  │         │
+          ┌───────▼──┐  ┌───▼──────────────┐
+          │ Postgres │  │ /var/lib/carn/   │
+          │ metadata │  │ repos/<uuid>.git │
+          └──────────┘  └──────────────────┘
 ```
 
-### Repo storage — path traversal, designed out
+### Repo storage
 
 Store repos at `/var/lib/carn/repos/<uuid[0:2]>/<uuid>.git`, where the UUID is the primary key. URLs and SSH commands carry the bare repo `name`, which is a _database lookup_ returning a UUID. No user-controlled string ever reaches a filesystem path.
 
-Path traversal is empirically the number-one bug class in real forges — several CVEs across 2025–26, including a CVSS 9.5 arbitrary-write-to-RCE. Note that `filepath.Join`-style joining _resolves_ `..`, it doesn't contain you. Deriving the path from a UUID means the check never has to be right, because the dangerous input never gets there. It also makes rename a single `UPDATE`, which is the fix for push-to-create typos.
+Path traversal is empirically the number-one bug class across forge implementations: several CVEs across 2025–26, including a CVSS 9.5 arbitrary-write-to-RCE. Note that `filepath.Join`-style joining _resolves_ `..`, it doesn't contain you. Deriving the path from a UUID means the check never has to be right, because the dangerous input never gets there. It also makes rename a single `UPDATE`, which is the fix for push-to-create typos.
 
-### Markdown — strict CommonMark, one deviation
+### Markdown
 
-You said stay close to pure markdown and skip GitHub's special-casing. That's achievable precisely:
+Strict CommonMark with one deviation. We're staying close to pure Markdown and skipping GitHub's special-casing:
 
+```ts
+const md = new MarkdownIt('commonmark', { html: false }).enable('table');
 ```
-const md = new MarkdownIt('commonmark', { html: false }).enable('table')
-```
 
-**markdown-it 15.0.0** is the pick — it's semantically 100% conformant to CommonMark 0.31.2 (the only three spec-suite failures are `<blockquote></blockquote>` whitespace), it's ~4× faster than the remark/unified pipeline, and as of v15 it ships first-party TypeScript types, so `@types/markdown-it` is obsolete.
+**markdown-it 15.0.0** is the pick. It's semantically 100% conformant to CommonMark 0.31.2; the only three spec-suite failures are `<blockquote></blockquote>` whitespace, it's ~4× faster than the remark/unified pipeline, and as of v15 it ships first-party TypeScript types, making `@types/markdown-it` obsolete.
 
-> **THE TRAP IN THAT ONE LINE**
+> **NEVER HTML**
 >
-> `new MarkdownIt('commonmark')` sets **`html: true`**. The `'commonmark'` preset is a _spec-conformance_ preset, not a safety preset — CommonMark mandates raw-HTML passthrough, so `md.render('<script>alert(1)</script>')` returns it verbatim. The plain `new MarkdownIt()` default is the safe one. You must pass `{ html: false }` explicitly.
+> `new MarkdownIt('commonmark')` sets **`html: true`** by default. The `'commonmark'` preset is a _spec-conformance_ preset, not a safety preset. CommonMark mandates raw-HTML passthrough, so `md.render('<script>alert(1);</script>')` returns it verbatim. A plain `new MarkdownIt()` instantiation is safe, but with the `'commonmark'` preset we must pass `{ html: false }` explicitly.
 
-**Tables are the only GFM extension worth enabling**, because there's no CommonMark way to express tabular data and a table degrades to visible garbage. Everything else degrades gracefully: `~~x~~` reads fine literally, `- [ ] todo` renders as `[ ] todo`, and bare autolinks are the extension most likely to _create_ surprises. One thing you were half-right about: **fenced code info strings (````ts`) are core CommonMark**, not GFM — you get `class="language-ts"` with zero configuration.
+**Tables are the only [GitHub Flavored Markdown](https://github.github.com/gfm) (GFM) extension worth enabling**, because there's no CommonMark way to express tabular data, so a table degrades to visible garbage. Everything else degrades gracefully: `~~x~~` reads fine literally, `- [ ] todo` renders as `[ ] todo`.
 
-The GFM spec is frozen at 0.29-gfm dated April 2019, anchored to CommonMark 0.29 while CommonMark is at 0.31.2, and GitHub has since shipped footnotes, alerts, and math outside it. There is no current standard to implement.
+The GFM spec is frozen at 0.29-gfm dated April 2019, anchored to CommonMark 0.29 while CommonMark is at 0.31.2, and GitHub has since shipped
+footnotes, alerts, and math outside it. There's no current standard to implement.
 
-### Sanitization — you don't need a sanitizer
+### Sanitization
 
-With `html: false`, markdown-it's output vocabulary is fixed and small — that _is_ your allowlist, enforced by construction rather than by a filter. Its `validateLink` blocks `javascript:`, `vbscript:`, `file:`, and `data:` (re-permitting `data:image/{gif,png,jpeg,webp}` but deliberately _not_ `svg+xml`), and it runs at every destination — inline links, images, reference definitions, both autolink paths. Entities are decoded before validation, so `java&#115;cript:` is caught. Roughly 55 bypass attempts all failed.
+_Spoiler: We don't need a sanitizer._
 
-What remains isn't XSS, and an HTML sanitizer wouldn't fix it either — it needs a URL policy:
+With `html: false`, markdown-it's output vocabulary is fixed and small. That's the allowlist, enforced by construction. Its `validateLink` blocks `javascript:`, `vbscript:`, `file:`, and `data:`; re-permitting `data:image/{gif,jpeg,png,webp}` but deliberately _not_ `svg+xml`. It runs at every destination: inline links, images, reference definitions, and both autolink paths. Entities are decoded before validation, so strings like `java&#115;cript:` are always caught. **Fun fact:** roughly 55 bypass attempts all failed.
 
-- **Third-party image loading.** `![x](http://evil.com/t.png)` renders, and every visitor to that README pings `evil.com`. On a public forge this is the thing most likely to actually be abused. Fix with a CSP `img-src` and/or an image proxy. — _CSP half shipped in 1a: `img-src 'self' data:` in `src/app.ts`, pinned as an exact string by `verify-phase-1a.sh`. A README's remote image is blocked and degrades to its alt text; that is the intended behavior, not a rendering bug. The proxy half is deferred past MLP — it is what eventually renders remote images without leaking every visitor's IP to the image host._
-- **Unbounded scheme allowlist.** `validateLink` is a blocklist of four, so `blob:`, `about:`, and custom app schemes all pass. Replace it with an allowlist of `https|http|mailto` plus the data-image forms, and reject protocol-relative `//`. — _Shipped in 1d: `allowLink` in `src/markdown/render.ts`._
-- **No `rel`.** Add `rel="nofollow ugc"` to external links via a renderer rule override. — _Shipped in 1d: a `link_open` override in `src/markdown/render.ts`. Applies to absolute `http(s)` links only; relative links, anchors, and `mailto:` are untouched, and there is no same-host carve-out._
-- **Relative links resolve against the wrong page.** A README's `[docs](docs/BRAND.md)` renders as a link to `/r/:repo/docs/BRAND.md`, which is not a route. `allowLink` passes schemeless destinations through unmodified on purpose — that is ordinary README content, not a hole — but nothing rewrites them to `/r/:repo/blob/:rev/docs/BRAND.md`, which is where they belong. The same applies to **relative images**: `![diagram](docs/arch.png)` is schemeless, so it resolves wrong and renders broken, and rewriting it to the first-party content-addressed asset route makes committed images in READMEs work under `img-src 'self'` with no CSP change. — _1e, which is where `/r/:repo/blob/:rev/*` lands. It needs `renderMarkdown` to take a `{ repo, rev }` context — it is a pure function today with one call site at `src/html/repo-show.ts` — and it needs `test/contract/markdown.contract.ts`, which currently pins the unrewritten behavior as intentional, updated deliberately in the same commit. **Rewrite unconditionally**, without checking the tree: an existence check costs a nested-path lookup per link straight into the 12-spawn budget, makes the same README render differently on different refs, and buys nothing — a 404 on a link to a file that is not there is the correct answer, and better than silently leaving a link pointing somewhere else wrong._
+What we do need is a URL policy to deal with cross-site scripting (XSS):
 
-- **The social card is one static image for the whole site.** `og:image` and `twitter:image` point at `/images/preview.jpg` on every page, so a repo shares the index's card. The repo-shaped answer is the repo's own identity — its committed header at `/r/:repo/header/:asset`, or its generated wordmark rasterized — which needs a PNG or JPEG because no major crawler renders SVG for a card, and therefore needs a rasterizer the project does not have and a cache keyed on the tip OID. — _Post-MLP. Not 1e: it adds a dependency and a cache to a phase whose whole subject is staying inside a byte budget. The static card is correct until then, not a placeholder._
+- **Third-party image loading.** `![x](http://evil.com/t.png)` renders, and every visitor to that README pings `evil.com`. On a public forge, this could be ripe for abuse. Fixable with a CSP `img-src` and/or an image proxy. _The CSP half shipped in Phase 1a; a README's remote image is blocked and degrades to its alt text. The proxy half is deferred for after MLP._
+- **Unbounded scheme allowlist.** `validateLink` provides a limited blocklist, so `blob:`, `about:`, and custom app schemes all pass. Replace it with an allowlist of `https|http|mailto` plus the data-image forms, and reject protocol-relative `//`. _Shipped in Phase 1d: `allowLink` in `src/markdown/render.ts`._
+- **No `rel`.** Add `rel="nofollow ugc"` to external links via a renderer rule override. _Shipped in Phase 1d: a `link_open` override in `src/markdown/render.ts`. Applies to absolute `http(s)` links only; relative links, anchors, and `mailto:` are untouched, and there's no same-host carve-out._
+- **Relative links resolve incorrectly.** A README's `[license](LICENSE.md)` renders as a link to `/r/:repo/LICENSE.md`, which isn't a valid route. `allowLink` passes schemeless destinations through unmodified on purpose, but then nothing rewrites them to the correct route signature at `/r/:repo/blob/:rev/:file`. The same applies to relative images: `![diagram](docs/arch.png)` is schemeless, so it resolves incorrectly and fails to render. Rewriting relative images to the first-party content-addressed asset route allows committed images in READMEs to work under `img-src 'self'` with no CSP changes. _Shipped in Phase 1e: `renderMarkdown` takes a `{ repo, rev }` base, and the `link_open` and `image` renderer rules rewrite every schemeless destination; links go to `/r/:repo/blob/:rev/*`, images to the content-addressed `/r/:repo/blob-asset/:oid.ext`._ **Rewriting is unconditional: nothing checks if the files are actually there.** A check would cost a path lookup per link against the 12-spawn budget, and would make the same README render differently on `main` than on an old tag.
+- **The social card is one static image for the whole site.** `og:image` and `twitter:image` point at `/images/preview.jpg` on every page, so a repo shares the index's card. The repo's own identity, i.e. its committed header at `/r/:repo/header/:asset` or its generated wordmark, will be subbed in post-MLP. The wordmark will need JPEG or PNG rasterization since crawlers can't render SVGs for social cards.
 
-The markdown layer and the response header deliberately disagree about remote images: `allowLink` permits an `https:` image URL that CSP then refuses to load. The parsing layer parses and the header enforces, so the enforcing layer being the stricter one is correct. Do not "fix" the mismatch by widening `img-src` — that undoes the control this section specifies, and fails `verify-phase-1a.sh`.
+The markdown layer and response header deliberately disagree about remote images: `allowLink` permits an `https:` image URL that CSP then refuses to load. The parsing layer parses (obviously) and the header enforces, so the enforcing layer being stricter is correct.
 
-> **IF YOU EVER DO REACH FOR A SANITIZER**
+> **WHAT IF WE JUST GOTTA SANITIZE AT SOME POINT?**
 >
-> Use `rehype-sanitize` or `sanitize-html` — both scored zero real leaks in testing. **Do not use DOMPurify with linkedom.** It is widely recommended online as the fast jsdom alternative, and it _silently does nothing_: feature detection fails, `isSupported` is falsy, and `sanitize()` returns its input unchanged with no error. All twelve XSS payloads passed straight through. If you use DOMPurify server-side at all, assert `DOMPurify.isSupported === true` at startup — and budget jsdom's 122 MB RSS and 600 ms init.
+> Use `rehype-sanitize` or `sanitize-html`. Both scored zero real leaks in testing. **Don't use DOMPurify with linkedom.** It's widely recommended online as a fast jsdom alternative, and it _silently does nothing_. Feature detection fails, `isSupported` is falsy, and `sanitize()` returns its input unchanged without any errors. If you do use DOMPurify server-side, assert `DOMPurify.isSupported === true` at startup and and budget for jsdom's 122 MB RSS and 600 ms init.
 
 ### Raw blobs
 
-Serve from a **separate hostname** — this is the control that does the work, not the headers. GitHub serves everything from `raw.githubusercontent.com` as `text/plain` (verified: even `.html` and `.js` files), with a small image allowlist getting real MIME types:
+**Serve blobs from a separate hostname.** This is the control that does all the work for us. GitHub serves everything from
+`raw.githubusercontent.com` as `text/plain` (even `.html` and `.js` files), with a small image allowlist (gif/jpeg/png/svg/webp) getting real MIME types:
 
 ```
-Content-Type: text/plain; charset=utf-8   # except png/jpeg/gif/webp/svg
-X-Content-Type-Options: nosniff
 Content-Security-Policy: default-src 'none'; sandbox
-X-Frame-Options: DENY
+Content-Type: text/plain; charset=utf-8
 Cross-Origin-Resource-Policy: same-site
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
 ```
 
-SVG is the special case — it's active content that can carry `<script>`. Either serve it as `text/plain` like everything else (safest, but your own README `<img>` tags won't render it) or give it `image/svg+xml` from the separate origin behind that CSP, which is what GitHub does. If you can't get a second hostname, `Content-Disposition: attachment` on everything is the fallback.
+SVG is the special case. It's active content that can carry a `<script>` tag. Either serve it as `text/plain` like everything else, or give it `image/svg+xml` from the separate origin behind the CSP. Plain text is safer, but READMEs with SVG image tags won't render.
 
-**The origin does not exist until Phase 2.** The DNS records are a Phase 2
-pre-flight and nothing serves on `gelatinous-cube` yet, so `Show entire file`
-and `Open raw` are gated on `CARN_RAW_ORIGIN` in `config.ts`. Unset at MLP, the
-blob view simply omits the link; Phase 2 turns both on by setting one variable.
-No dead code in between.
+**The origin won't exist until Phase 2.** The DNS records are a Phase 2 pre-flight and nothing serves on `gelatinous-cube` yet, so links like `Show entire file` and `Open raw` are gated on `CARN_RAW_ORIGIN` in `config.ts`.
 
-**Inline images do not come from that origin.** CSP is `img-src 'self' data:`,
-so a second hostname is blocked — and widening `img-src` to admit it would undo
-the isolation the origin exists to provide. A small image blob renders
-first-party through the content-addressed, immutable route that
-`/r/:repo/header/:asset` already established, with the same `committed()` guard
-that stops it reading an arbitrary OID. The second origin is for downloading
-untrusted content, not for embedding it.
+**Inline images don't come from that origin.** The CSP is `img-src 'self' data:`, so a second hostname is blocked, and widening `img-src` to admit it would undo the isolation the origin exists to provide. A small image blob renders first-party through the content-addressed, immutable route established at `/r/:repo/header/:asset`, with the same `committed()` guard that stops it reading an arbitrary OID. The second origin is only for downloading untrusted content, not for embedding it.
 
 ### Syntax highlighting
 
-**highlight.js 11.12.0** — settled. Register only the languages you actually serve (`highlight.js/lib/core` plus explicit `registerLanguage`): 15 ms init, 56 MB resident, ~49k lines/sec, and **class-based output at 111 bytes per line** — measured across 46 files sampled evenly through Linklater's 832-file TypeScript corpus, which gzips to **10.2 B/line, 9.2% of raw**. The class-based part is what makes it right for the tenets — your theme lives in one cached stylesheet rather than being inlined into every blob, which for a 2,000-line file is the difference between ~400 KB of HTML and ~1.1 MB. It also means the two themes share one payload.
+**Càrn relies on highlight.js 11.12.0.** We register only the languages actually being served (`highlight.js/lib/core` plus explicit `registerLanguage`): 15 ms init, 56 MB resident, ~49k lines/sec, and **class-based output at 111 bytes per line**. This was measured across 46 files sampled evenly through Linklater's 832-file TypeScript corpus, which gzipped to **10.2 B/line, 9.2% of raw**.
 
-Wire it through markdown-it’s `highlight` option, whose return value is inserted verbatim — so return escaped HTML. And **cache highlighted blobs by content hash**: highlighting is pure, so a hash→HTML cache removes the cost entirely on repeat views and keeps you inside the TTFB budget.
+It's wired through markdown-it’s `highlight` option, whose return values are inserted verbatim, so we always have to return escaped HTML. **Cache highlighted blobs by content hash.** Highlighting is pure, so a hash→HTML cache removes the cost entirely on repeat views and keeps inside the TTFB budget.
 
 ### Cross-reference autolinking
 
-You want `#12` in a commit message or body to link, plus commit SHAs. **Do it as a markdown-it core rule, never a post-render regex over the HTML.** The regex approach produced three bugs on one small test input: it linkified inside `<code>` spans, inside fenced blocks, and — the killer — it produced **nested `<a>` tags**, which is invalid HTML that browsers _repair_ by restructuring your DOM.
+You want `#12` in a commit message or body to link, plus commit SHAs. **Do it as a markdown-it core rule.** Never do a post-render regex over the HTML. The regex approach produced three bugs on a small test input: it linkified inside `<code>` spans and fenced blocks, and it produced **nested `<a>` tags**, which is invalid HTML that browsers _repair_ by restructuring the DOM.
 
-Working at the token level gives you the exclusions for free: `fence` and `code_block` are block tokens with no children, `code_inline` is its own type you simply skip, and tracking `link_open`/`link_close` depth prevents nesting. You also get to transform the display text — a 40-char SHA rendered as 7 chars — which a string regex can't do cleanly.
+Working at the token level gives you the exclusions for free: `fence` and `code_block` are block tokens with no children, `code_inline` is its own type you simply skip, and tracking `link_open`/`link_close` depth prevents nesting. You also get to transform the display text – a 40-char SHA rendered as 7 chars – which a string regex can't do cleanly.
 
-> **REGISTER IT BEFORE `TEXT_JOIN`, NOT AT THE END**
+> **REGISTER IT BEFORE `TEXT_JOIN`**
 >
-> markdown-it's core chain ends `… → replacements → smartquotes → text_join`. If you `core.ruler.push()` you run _after_ `text_join`, which merges adjacent text tokens — at which point `\#12` (deliberately escaped) has been flattened into plain text reading `#12`, and you will linkify it anyway. Use `md.core.ruler.before('text_join', 'xref', …)` and the escape survives as a distinct `text_special` token you can skip.
+> markdown-it's core chain ends `… → replacements → smartquotes → text_join`. If you `core.ruler.push()` you run _after_ `text_join`, which merges adjacent text tokens, at which point `\#12` (deliberately escaped) has been flattened into plain text reading `#12`, and you'll linkify it anyway. Use `md.core.ruler.before('text_join', 'xref', …)` and the escape survives as a distinct `text_special` token you can skip.
 
-Two smaller ones: require the `@` in a handle mention to be preceded by whitespace or start-of-token, or `user@example.com` becomes a link to `@example`. And pass a resolver through markdown-it's `env` object so `#999999` for a nonexistent issue doesn't become a dead link — that's exactly what `env` is for, and it's typed as of v15.
+Additionally, you should pass a resolver through markdown-it's `env` object, so `#999999` for a nonexistent issue doesn't become a dead link.
 
 ### Rate limiting
 
 The shape differs from Linklater's because the expensive requests aren't the frequent ones. Two mechanisms, both needed:
 
-- **The semaphore (§03) bounds concurrency** — it stops ten simultaneous clones from OOMing the box.
-- **Rate limiting bounds volume** — it stops a crawler making ten thousand cheap requests, or one making a hundred expensive ones in sequence.
+- **The semaphore (§03) bounds concurrency:** it stops ten simultaneous clones from OOMing the box.
+- **Rate limiting bounds volume:** it stops a crawler from making 10,000 cheap requests, or one making a hundred expensive ones in sequence.
 
-Do the coarse limiting **at the edge, in Caddy**, so an abusive request never reaches Node and never forks a git process. That needs `mholt/caddy-ratelimit` via `xcaddy` — it's not in standard builds and the README says plainly "this is not an official repository of the Caddy Web Server organization," but it's written by Caddy's author, it's stable, and it gives you a true sliding window (a ring buffer), which neither Node library does. Three tiers:
+Do the coarse limiting **at the edge, in Caddy**, so an abusive request never reaches Node and never forks a git process. That needs `mholt/caddy-ratelimit` via `xcaddy`. It's not in standard builds, and the README says "This isn't an official repo of the Caddy Web Server organization," but it's written by Caddy's author, it's stable, and it gives you a true sliding window (a ring buffer).
 
-| Zone               | Budget    | Why                                                                                                                                                                     |
-| ------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pages, assets      | ~300/min  | Cheap and cacheable. Generous.                                                                                                                                          |
-| `git-upload-pack`  | 10–20/min | Each forks a process and can pack the whole history. Partial-clone flags make individual cost wildly variable, so limit _count_, don't try to price them.               |
-| Archive generation | 5/min     | Tightest. Fully CPU-bound, trivially amplified, and the classic crawler trap — a bot walking every tag × every format will pin the box. GitLab uses exactly 5/min here. |
+Three tiers:
 
-> **TWO DETAILS**
+| Zone               | Budget    | Why                                                                                                                                                       |
+| ------------------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Archive generation | 5/min     | Tightest. Fully CPU-bound, trivially amplified, and the classic crawler trap: a bot walking every tag × every format will pin the box. GitLab uses 5/min. |
+| `git-upload-pack`  | 10–20/min | Each forks a process and can pack the whole history. Partial-clone flags make individual cost wildly variable, so limit count.                            |
+| Pages, assets      | ~300/min  | Cheap and cacheable. Generous.                                                                                                                            |
+
+> **IMPORTANT DETAILS**
 >
-> **Key on `{client_ip}`, not `{http.request.remote.host}`** — even though the plugin's own README example uses the latter. On your VPS with Caddy at the edge they're identical, but the moment anything sits in front, `remote.host` silently becomes the proxy's address and your rate limit collapses into one global bucket. Set `trusted_proxies` and use `{client_ip}` so it's correct in both topologies. The Node-side equivalent of this mistake is `app.set('trust proxy', true)`, which lets any client forge `X-Forwarded-For` — use a numeric hop count instead.
+> **Key on `{client_ip}`, not `{http.request.remote.host}`** even though the plugin's own README example uses the latter. They're identical on your VPS with Caddy at the edge, but the moment anything sits in front, `remote.host` silently becomes the proxy's address and your rate limit collapses into a global bucket. Set `trusted_proxies` and use `{client_ip}` so it's correct in both topologies. The Node-side equivalent of this mistake is `app.set('trust proxy', true)`, which lets any client forge `X-Forwarded-For`; use a numeric hop count instead.
 >
-> **Set `ipv6_prefix 56`, not 64.** A /64 is one LAN, but residential subscribers are typically _delegated_ a /56 or /48 — so a per-/64 limit still leaves an attacker 256+ buckets to rotate through. /56 stops the realistic attack; loosen to /64 only if you get collateral-damage complaints.
+> **Set `ipv6_prefix 56`, not 64.** A /64 is one LAN, but residential subscribers are typically _delegated_ a /56 or /48, so a per-/64 limit still leaves an attacker 256+ buckets to rotate through. /56 stops the realistic attack; loosen to /64 only if you get collateral-damage complaints.
 
-Keep a coarse in-app limit as defense in depth on the write paths — `rate-limiter-flexible` (v11, actively maintained, memory backend with no Redis needed) with per-key `blockDuration` so repeat abusers escalate. Note it's a "flexible fixed window," not a true sliding one; that's another argument for doing the real work at the edge. And add failed-auth banning on the SSH listener: N failures from an IP in a window, then a temporary block.
+Keep a coarse in-app limit as defense in depth on the write paths. Use `rate-limiter-flexible` (v11, actively maintained, memory backend w/out Redis) with a per-key `blockDuration` so repeat abusers escalate. Note that it's a "flexible fixed window" and not a true sliding one. Add failed-auth banning on the SSH listener: N failures from an IP in a window, then a temporary block.
 
 ### Git config for the box
 
 The defaults are actively wrong for a small shared-CPU VPS: `pack.windowMemory` is unlimited _per thread_, and `pack.threads` auto-detects CPUs, so peak RAM is two unbounded numbers multiplied together.
 
 ```
-[pack]
-    threads = 1              # RAM multiplies by thread count
-    windowMemory = 64m       # default: UNLIMITED, per thread
-    deltaCacheSize = 32m     # default: 256 MiB
 [core]
-    bigFileThreshold = 16m   # skip delta search, stream large blobs
-    logAllRefUpdates = true  # OFF by default in bare repos — your only undo
+  bigFileThreshold = 16m   # skip delta search, stream large blobs
+  logAllRefUpdates = true  # OFF by default in bare repos; your only undo
+[pack]
+  deltaCacheSize = 32m     # default: 256 MiB
+  threads = 1              # RAM multiplies by thread count
+  windowMemory = 64m       # default: UNLIMITED per thread
 [receive]
-    maxInputSize = 100m      # default: no limit at all
-    fsckObjects = true       # safe on push: quarantine env
-    autogc = false           # default ON; stalls pushes. Cron it instead.
+  autogc = false           # default ON; stalls pushes (cron it instead)
+  fsckObjects = true       # safe on push: quarantine env
+  maxInputSize = 100m      # default: no limit
 [uploadpack]
-    allowFilter = true       # lets clients ask for LESS work
+  allowFilter = true       # lets clients ask for LESS work
 ```
 
-### Repo size limits — yes, and this is where not having LFS shows up
+### Repo size limits
 
-Without LFS there's nothing structural stopping a repo growing without bound, and on an 80 GB disk shared with Postgres that matters — not because you'd abuse it, but because _one_ accidental `git add` of a `node_modules` or a video file is permanent. Git never forgets; the only cure is a history rewrite.
+Without LFS, there's nothing structural stopping a repo from growing out of control. On an 80 GB disk shared with Postgres, _one_ accidental `git add` of a `node_modules` or a video file is permanent. Git never forgets; the only fix is a history rewrite.
 
-Three limits, at three different layers, and only the first two need building:
+Three limits, at three different layers:
 
-- **Per-push:** `receive.maxInputSize = 100m`, already in the config above. Bounds a single push, and it's the one that catches the accident at the moment it happens, before the objects are in the store.
-- **Per-repo:** a soft warning and a hard block, checked in `post-receive` against `git count-objects -vH`. Something like warn at 500 MB, refuse further pushes at 1 GB. Surface it as `carn repo size` and on the repo settings page so it's never a surprise.
-- **Per-file:** `core.bigFileThreshold = 16m` is already set and does half the job — files above it skip delta compression entirely, which removes most of the _CPU_ pain. It does nothing for clone size. If you want a real per-file cap, a `pre-receive` hook walking the pushed objects is the place, but I'd skip it initially: `maxInputSize` catches the same accidents with a tenth of the code.
+- **Per-file:** `core.bigFileThreshold = 16m` is already set and does half the job; files above it skip delta compression entirely, which removes most of the CPU pain, but does nothing for clone size.
+- **Per-push:** `receive.maxInputSize = 100m`, defined in the config above. Bounds a single push.
+- **Per-repo:** A soft warning and a hard block, checked in `post-receive` against `git count-objects -vH`. Something like warn at 500 MB, refuse further pushes at 1 GB. Surface it as `carn repo size` and on the repo settings page so it's never a surprise.
 
-These are guardrails against accidents, not defenses against attack — you're the only person who can push.
+These are guardrails against accidents, not defenses against attacks.
 
-And in the Caddy site block for the git routes: `flush_interval -1` (pack streaming is long-lived and chunked, and Caddy's auto-detection of streaming responses is undocumented — don't rely on it), don't let `encode` re-compress an already-compressed pack, and raise timeouts well above your largest clone.
+Add `flush_interval -1` to the Caddy site block for the git routes. Pack streaming is long-lived and chunked, and Caddy's auto-detection of streaming responses is undocumented, so don't rely on it. Don't let `encode` re-compress an already-compressed pack, and raise timeouts well above your largest clone.
 
-## 05 · Data model
+## TODO: 05 · Data model
 
 _Ten tables — the whole MLP plus releases_
 
