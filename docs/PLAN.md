@@ -400,110 +400,101 @@ These are guardrails against accidents, not defenses against attacks.
 
 Add `flush_interval -1` to the Caddy site block for the git routes. Pack streaming is long-lived and chunked, and Caddy's auto-detection of streaming responses is undocumented, so don't rely on it. Don't let `encode` re-compress an already-compressed pack, and raise timeouts well above your largest clone.
 
-## TODO: 05 · Data model
+## 05 · Data model
 
-_Ten tables — the whole MLP plus releases_
+_Ten tables for the whole MLP, plus releases_
 
-Postgres is the source of truth for everything _except_ git objects, which live on disk and are read through plumbing. Never mirror commit data into the database beyond caches you can rebuild.
+Postgres is the source of truth for everything _except_ git objects, which live on disk and are read through plumbing. Never mirror commit data into the database beyond rebuildable caches.
 
-```
+```sql
 users          id, handle, display_name, email, is_admin, created_at
-               -- no password column, ever. SSH keys are the only credential.
+               -- no password column; SSH keys are the only credential
 
-ssh_keys       id, user_id, name, public_key, fingerprint,
-               created_at, last_used_at
-               -- unique on fingerprint. This is your entire auth system.
+ssh_keys       id, user_id, name, public_key, fingerprint, created_at, last_used_at
+               -- unique on fingerprint; This is the entire auth system
 
-repos          id (uuid), owner_id, name, description, default_branch,
-               next_number, created_at
-               -- unique (owner_id, lower(name)); id drives the disk path,
-               -- so rename is one UPDATE. No is_public — everything is.
+repos          id (uuid), owner_id, name, description, default_branch, next_number, created_at
+               -- unique (owner_id, lower(name)); id drives the disk path, rename is one UPDATE, everything is public
 
-repo_grants    repo_id, user_id, level    -- 'write' | 'admin'
-               -- read is implicit for everyone. Absence of a row = read-only.
+repo_grants    repo_id, user_id, level
+               -- level enum = write | admin; read is implicit for everyone
 
-issues         id, repo_id, number, author_id, title, body,
-               parent_id NULL,            -- an issue with children IS an epic
-               state, created_at, closed_at
+issues         id, repo_id, number, author_id, title, body, parent_id NULL, state, created_at, closed_at
+               -- an issue with children is an epic; shares repos.next_number with pull_requests for number
 
-pull_requests  id, repo_id, number, author_id, title, body,
-               source_branch, target_branch,
-               state,                     -- open | merged | closed
-               merge_commit_sha, merge_strategy,
-               issue_id NULL,             -- issue → branch → PR
-               created_at, merged_at
-               -- number comes from the SAME repos.next_number as issues
+pull_requests  id, repo_id, number, author_id, title, body, source_branch, target_branch, state, merge_commit_sha, merge_strategy, issue_id NULL, created_at, merged_at
+               -- state enum = open | merged | closed; issue → branch → PR; shares repos.next_number with issues for number
 
-comments       id, subject_type, subject_id, author_id, body, created_at,
-               file_path NULL, line NULL  -- inline review, roadmap
-               -- one table for issues and PRs; they're the same thread
+comments       id, subject_type, subject_id, author_id, body, created_at, file_path NULL, line NULL
+               -- one table for issues and PRs since they're the same thread; inline review is on the roadmap
 
-events         id, subject_type, subject_id, actor_id, kind,
-               payload, created_at
-               -- opened | closed | reopened | pushed | merged | referenced
-               -- renders timelines, powers the activity feed, is your audit log
+events         id, subject_type, subject_id, actor_id, kind, payload, created_at
+               -- opened | closed | reopened | pushed | merged | referenced; renders timelines, powers the activity feed + audit log
 
 releases       id, repo_id, tag_name, target_sha, name, body, created_at
-               -- tag IS the release, as you proposed. Tarballs from
-               -- `git archive` on demand — never stored.
+               -- tags are releases, releases are tags; tarballs from `git archive` on demand, never stored
 
 settings       key, value, updated_at
-               -- single-row-per-key placeholder: site title, default branch
-               -- name, mirror targets. Viewer prefs go in a cookie instead.
+               -- single-row-per-key placeholder: site title, default branch, name, mirror targets; viewer prefs go in a cookie
 ```
 
-### Epics instead of labels
+### Epics are the new labels
 
-**`issues.parent_id`, self-referential** — an issue with children _is_ an epic. No separate milestones table, no epic type, no migration when you decide something should have been an epic all along. A standalone issue is one with a null parent and no children; promoting it is a single `UPDATE` on its would-be children.
+**`issues.parent_id`, self-referential:** an issue with children _is_ an epic. No separate milestones table, no epic type. A standalone issue has a null parent and no children; promoting it is a single `UPDATE` on its would-be children.
 
-Labels are cut entirely. For one person, an epic plus open/closed carries the weight labels usually carry on a team, where they mostly encode _who should look at this_ — a question you don't have.
+Labels are cut entirely. For one person, an epic plus open/closed carries the same weight labels usually have for a team, where they mostly encode _who should look at this?_
 
-### Ownership, admins, and how far to take it
+### Ownership and admins
 
-One role — admin — and an admin you add can un-add you. With one amendment, costing a single column rather than a second role:
+There's only one role: admin. Yet there's a difference between admins and repo _owners_. An admin you add can remove you in turn. But an admin can never undo repo ownership:
 
 > **OWNER IS A FACT, ADMIN IS A GRANT**
 >
-> Keep `repos.owner_id` as the immutable creator, and make the rule: **an admin can grant and revoke any grant except the owner's.** Transferring ownership requires the owner. That's not a second role — `repo_grants` still holds only `write` and `admin` — it's one line in the authorization check.
+> Keep `repos.owner_id` as the immutable creator, and make the rule: **an admin can grant and revoke any grant except the owner's.** Transferring ownership requires the owner. It's not a second role; `repo_grants` still holds only `write` and `admin`. It's one line in the authorization check.
 >
-> Not about malice — about the accident. A mis-typed `carn repo grant --revoke` that locks you out of your own repository is recoverable only by editing Postgres by hand. One immutable column removes that.
+> This isn't about preventing repo coups. It's about avoiding painful accidents. A mis-typed `carn repo grant --revoke` that locks you out of your own repository is only recoverable by manually editing the database. Fixed with a single immutable column.
 
-### Users have almost no footprint
+### Users have a minuscule footprint
 
-Three parts:
+There's three areas that users typically inhabit, and we're skipping two of them:
 
-- **Handles: yes, you need them anyway.** Not for URLs — for the SSH key lookup, for the CLI's identity, and for mapping a commit's author email back to a user so the UI can say who did something. That's already in `users.handle`.
-- **`/users` and `/u/:handle` pages: no.** With one user they'd be a directory of one. Build them the week a second person needs one, and the `/r/` prefix has already reserved the space.
-- **`@mention` autolinking: no.** There's nobody to mention, and no notification for a mention to trigger. `#12` is the autolink that earns its place; drop `@handle` from the cross-reference rule entirely, which also removes the `user@example.com` false-positive gotcha and makes that rule simpler.
+- **Handles: yes, you need them anyway.** Not for URLs, but for the SSH key lookup, the CLI's identity, and for mapping a commit's author email back to a user so the UI can say who did what. It's already in `users.handle`.
+- **`/users` and `/u/:handle` pages: no.** With one user, they'd be a directory of one. Build them if and when they're needed.
+- **`@mention` autolinking: no.** There's nobody to mention, and no notification for a mention to trigger.
 
-### Do issues need PRs? Almost — and that's the interesting bit
+### Do issues need PRs?
 
 A PR needs no issue; plenty of changes are just changes. But an issue's _natural_ resolution is a PR that satisfies it, and that asymmetry is worth making visible rather than leaving implicit in a nullable foreign key.
 
-**Render it as a ladder on the issue page** — a five-step state showing exactly where a piece of work has got to:
+**Render it as a ladder on the issue page:** a five-step state showing exactly where a piece of work has gotten to:
 
 ```
-OPEN ─── BRANCH ─── PR #15 ─── MERGED ─── CLOSED
-                 12-conflict-output      2 commits, ready
+OPEN → BRANCH → PR → MERGED → CLOSED
 ```
 
-Each step is derived, not stored: the branch exists if a ref matching `<n>-*` is present, the PR exists if a row points back with `issue_id`, merged comes from its state. Nothing new in the schema — it's a read across data you already have, which is why it's cheap.
+Each step is derived, not stored: the branch exists if a ref matching `<n>-*` is present, the PR exists if a row points back with `issue_id`, and merged comes from its state. There's nothing new in the schema.
 
-The payoff is that the ladder _is_ the affordance. At each step the next action is the obvious button: _Create branch_ when there's only an issue, _Open PR_ when the branch has commits, _Merge_ when the PR is clean. That's the "little Jira," and it's a template rather than a feature. The escape hatches stay open — close an issue as wontfix, or fix it in a direct commit to `main` and let the `closes #12` reference do the work; the ladder just shows a shorter path.
+The payoff is the ladder _is_ the affordance. At each step, the next action is the obvious button: _Create branch_ when there's only an issue, _Open PR_ when the branch has commits, _Merge_ when the PR is clean. That's the "little Jira," and it's a template rather than a feature. The escape hatches stay open: close an issue as wontfix, or fix it in a direct commit to `main` and let the `closes #12` reference do the work; the ladder just shows a shorter path.
 
 ### One comments table, one events table
 
-Issues and PRs are the same object with different attachments — a title, a body, a thread, a timeline. Polymorphic `subject_type`/`subject_id` columns keep them one code path in the UI and one query for the activity feed later. The alternative, parallel `issue_comments` and `pr_comments` tables, means writing every rendering and notification path twice.
+Issues and PRs are the same object with different attachments: a title, a body, a thread, and a timeline. Polymorphic `subject_type`/`subject_id` columns keep them as one code path in the UI and one query for the activity feed (later on the roadmap). The alternative, parallel `issue_comments` and `pr_comments` tables, means writing every rendering and notification path twice.
 
 ## 06 · Interface
 
-_Nine views, one design language, no owner in the URL_
+_One design language across every view_
 
-The page shapes are specified in the companion study: [**Càrn Layout →**](https://claude.ai/code/artifact/587c7ac1-5712-4927-bb82-8e5a80731f80). The pre-build mockups that study was drawn against are archived at [the original artifact](https://claude.ai/code/artifact/6a95e6fc-3a60-416b-a496-b713a5005be1); the shipped pages have superseded them.
+The page shapes are specified in a [companion study](https://claude.ai/code/artifact/587c7ac1-5712-4927-bb82-8e5a80731f80). The [pre-build mockups](https://claude.ai/code/artifact/6a95e6fc-3a60-416b-a496-b713a5005be1) the study was drawn against are also available. The shipped pages have since superseded them.
 
-One rule resolves every page: **the display face is worn by whatever the page is about.** On a list that's the items — filenames, repo names, issue titles. On a show page it's the single title. On a create page it's the question. Everything else is mono, small, and quiet.
+One rule defines every page: **the display font face is for whatever the page is about.** On a list that's the items: filenames, repo names, issue titles. On a show page it's the subject title. On a create page it's the question. Everything else is in a monospace font; small and quiet.
 
-File rows carry three constants: **directories in `--accent-text` with a trailing slash** (it survives grayscale, and `-text` rather than `--accent` because a filename is bold at 16.8px where the clamp bottoms out and therefore owes 4.5:1), **full-row hit areas** with hover and focus states, and **last-commit subject plus age** in mono with tabular numerals. Sixteen rows, then `Show all N`. Of those three, only the first ships on the file tree today — see `docs/LAYOUT.md` §02, which owns what is built and what 1e still owes.
+File rows carry three constants:
+
+1. **Directories in `--accent-text` with trailing slashes.**
+2. **Table cell hit areas** with hover and focus states.
+3. **Last-commit subject plus age** in a monospace font with tabular numerals.
+
+Show at most sixteen rows, then a link to `Show all [N]`.
 
 #### The repo view
 
@@ -512,7 +503,7 @@ File rows carry three constants: **directories in `--accent-text` with a trailin
 │ SITE [Repos](/repos)     [Create new repo](/new) │
 ├──────────────────────────────────────────────────┤
 │                                                  │
-│ (repo name: visually hidden h1)                  │
+│ (repo name: hidden h1)                           │
 │                                                  │
 │ file preview                                list │
 │ lists                                    sidebar │
@@ -527,76 +518,83 @@ File rows carry three constants: **directories in `--accent-text` with a trailin
 
 ### URL structure
 
-**`/prs` and `/prs/:n`.** Consistent between list and item, and it matches what people say out loud.
+**`/prs` and `/prs/:n`.** Consistent between lists and items, and it matches what people say out loud.
 
 **No owner segment, and `/r/` in front of the repo.** Dropping the owner follows from admin-created accounts: with a handful of users and globally unique repo names there's nothing for it to disambiguate. Change `repos`' unique constraint from `(owner_id, lower(name))` to `lower(name)`; `owner_id` stays on the row for attribution, it just isn't in the path.
 
-> **WHAT THE PREFIX BUYS**
+> **WHY USING THE `/r/` PREFIX IS A GOOD IDEA**
 >
-> Repo names would otherwise share a namespace with top-level routes, and with push-to-create a typo is enough to claim one. **`/r/` makes the collision structurally impossible** — no reserved-word list to maintain, no validation rule, no failure mode. It also keeps the top level free and legible: `/` for the index, `/new`, `/settings`, and `/u/:handle` later if collaborators arrive.
+> Repo names would otherwise share a namespace with top-level routes, and with push-to-create, a typo is enough to claim one. **The `/r/` prefix makes the collision structurally impossible.** There's no reserved-word list to maintain, no validation rules, and no failure mode. It also keeps the top level free and legible: `/` for the index, `/new`, `/settings`, and `/u/:handle` later if needed for collaborators.
 
 **`/r/:repo/commits` for the log, `?ref=main` to scope it, and `/r/:repo/commits/:sha` for a single commit.** Keeping the ref in a query parameter avoids the collision between a branch name and a SHA occupying the same path slot.
 
-#### The nine views
+#### The views
 
 | Route                   | View       | Notes                                                    |
 | ----------------------- | ---------- | -------------------------------------------------------- |
-| `/`                     | Repo list  | The whole site index. Name, description, created.        |
-| `/r/:repo`              | Repo       | File tree + rendered README. The page that sells it.     |
+| `/`                     | Repo list  | The whole site index. Name, description, creation date.  |
+| `/r/:repo`              | Repo       | File tree + rendered README.                             |
 | `/r/:repo/blob/:rev/*`  | Blob       | Highlighted source. Raw link points at the blob origin.  |
-| `/r/:repo/tree/:rev/*`  | Tree       | The tree below the root. `/r/:repo` is the root itself.   |
+| `/r/:repo/tree/:rev/*`  | Tree       | The tree below the root. `/r/:repo` is the root itself.  |
 | `/r/:repo/commits`      | Log        | `?ref=` to scope. Paginated by SHA cursor, not `--skip`. |
-| `/r/:repo/commits/:sha` | Commit     | Diff + cross-refs resolved. Immutable — cache forever.   |
+| `/r/:repo/commits/:sha` | Commit     | Diff + cross-refs resolved. Immutable, cache forever.    |
 | `/r/:repo/branches`     | Branches   | Each row links to the log scoped to that ref.            |
 | `/r/:repo/tags`         | Tags       | Same. A tag gets a page of its own in Phase 5.           |
-| `/r/:repo/issues`       | Issue list | Open/closed filter. Epics show children nested.          |
+| `/r/:repo/issues`       | Issue list | Open/closed filter. Epics show nested children.          |
 | `/r/:repo/issues/:n`    | Issue      | Body, thread, timeline, "create branch" action.          |
-| `/r/:repo/prs`          | PR list    | Same shell as the issue list — same table underneath.    |
+| `/r/:repo/prs`          | PR list    | Same shell as the issue list.                            |
 | `/r/:repo/prs/:n`       | PR         | Diff, thread, mergeability, merge button.                |
 
-#### Everything else on the wire
+#### Everything else with an endpoint
 
-The complete surface outside the nine:
+The complete surface outside those:
 
-| Route                                                  | Kind  | Note                                                                          |
-| ------------------------------------------------------ | ----- | ----------------------------------------------------------------------------- |
-| `/new` · `/settings` · `/r/:repo/settings`             | Web   | Post-MLP. Admin forms; see the settings split below.                          |
-| `/r/:repo/releases` · `/r/:repo/releases/:tag`         | Web   | Phase 5.                                                                      |
-| `/r/:repo/header/:asset`                               | Web   | The committed header image, addressed by blob OID. Immutable — cache forever. |
-| `/r/:repo/info/refs` · `POST /r/:repo/git-upload-pack` | Git   | Anonymous read only. No `git-receive-pack` over HTTP, ever — push is SSH.     |
-| `/r/:repo/archive/:rev.tar.gz`                         | Git   | `git archive` on demand. The tightest rate-limit zone.                        |
-| Any view + `.json`                                     | API   | Read API — the same view model, serialized. No separate route tree.           |
-| `POST /api/r/:repo/statuses/:sha`                      | API   | The one machine-callable write. GitHub-shaped. See §07.                       |
-| `/carn.<hash>.css`                                     | Asset | The stylesheet, hashed on its own bytes. Immutable — cache forever.           |
-| `/fonts/:face`                                         | Asset | The three woff2 faces. Not content-addressed, so a week with an ETag, not forever. |
-| `/images/:image`                                       | Asset | Four fixed files: the two favicons, the touch icon, the `og:image` card. Not content-addressed, so a week, not forever. |
-| `/health`                                              | Ops   | What Caddy health-checks and what the SIGTERM handler flips.                  |
-| `/robots.txt` · `/sitemap.xml`                         | Ops   | See below — both matter more here than on a normal site.                      |
-| `/r/:repo/commits.atom` and friends                    | Feeds | Atom per repo for commits, releases, and issues, plus a global activity feed. |
-| `cube./r/:repo/raw/:rev/*`                             | Blobs | Separate origin. `text/plain` + `sandbox` CSP.                                |
-| `cube./`                                               | Blobs | The easter egg. See §12.                                                      |
+| Route                             | Kind  | Note                                                                          |
+| --------------------------------- | ----- | ----------------------------------------------------------------------------- |
+| Any view + `.json`                | API   | Read API. Same view model, serialized. No separate route tree.                |
+| `POST /api/r/:repo/statuses/:sha` | API   | The one machine-callable write. GitHub-shaped. See §07.                       |
+| `/carn.<hash>.css`                | Asset | The stylesheet, hashed on its own bytes. Immutable; cache forever.            |
+| `/fonts/:face`                    | Asset | The three font faces. Not content-addressed.                                  |
+| `/images/:image`                  | Asset | Two favicons, Apple touch icon, `og:image` card. Not content-addressed.       |
+| `cube./r/:repo/raw/:rev/*`        | Blobs | Separate origin. `text/plain` + `sandbox` CSP.                                |
+| `cube./`                          | Blobs | The easter egg. See §12.                                                      |
+| `/r/:repo/commits.atom` + friends | Feeds | Atom per repo for commits, releases, and issues, plus a global activity feed. |
+| `/r/:repo/archive/:rev.tar.gz`    | Git   | `git archive` on demand. The tightest rate-limit zone.                        |
+| `/r/:repo/info/refs`              | Git   | Anonymous read only.                                                          |
+| `POST /r/:repo/git-upload-pack`   | Git   | No `git-receive-pack` over HTTP; push is SSH.                                 |
+| `/health`                         | Ops   | What Caddy health-checks and what the SIGTERM handler flips.                  |
+| `/robots.txt`                     | Ops   | See below.                                                                    |
+| `/sitemap.xml`                    | Ops   | See below.                                                                    |
+| `/new`                            | Web   | Post-MLP admin form.                                                          |
+| `/settings`                       | Web   | Post-MLP admin form for site-specific settings.                               |
+| `/r/:repo/settings`               | Web   | Post-MLP admin form for Repo-specific settings.                               |
+| `/r/:repo/header/:asset`          | Web   | The header image, addressed by blob OID. Immutable; cache forever.            |
+| `/r/:repo/releases`               | Web   | Phase 5.                                                                      |
+| `/r/:repo/releases/:tag`          | Web   | Phase 5.                                                                      |
 
 #### Sitemap and robots.txt
 
-A performance decision, not an SEO one, and it has one rule: **list repo, issue, and PR pages only. Never commits, never blobs, never archives.** A sitemap enumerating every commit page would be an _invitation_ into the most expensive endpoints — a crawler walking every tag × every archive format is the traffic pattern that pins a fair-share CPU.
+**The sitemap should list repo, issue, and PR pages only. Never commits, blobs, or archives.** A sitemap enumerating every commit page would be an _invitation_ into the most expensive endpoints. We don't need crawlers walking every tag × every archive format.
 
-`robots.txt` is the other half and it does real work: disallow `/r/*/archive/`, `/r/*/commits/`, `/r/*/blob/`, and the blob host entirely. Together with the §04 rate-limit tiers that's three independent layers on the same risk, which is about right given it's the one that can take the box down.
+`robots.txt` helps enforce this by disallowing `/r/*/archive/`, `/r/*/commits/`, `/r/*/blob/`, and the blob host entirely. Together with the §04 rate-limit tiers, we have three independent layers to mitigate the same risk factors.
 
 #### Feeds
 
-**Atom**, four of them, all trivial once `events` exists: per-repo commits, per-repo releases, per-repo issues, and a global activity feed. Atom over RSS for RFC-3339 dates, mandatory stable IDs, and real `xml:base` handling. Serve as `application/atom+xml` and put `<link rel="alternate">` in the page head so readers autodiscover.
+Four feeds: per-repo commits, per-repo releases, per-repo issues, and a global activity feed. All trivial once `events` exists.
 
-This is also what removes any need for notifications.
+**Atom over RSS** for RFC-3339 dates, mandatory stable IDs, and real `xml:base` handling. Serve as `application/atom+xml` and put `<link rel="alternate">` in the page header for autodiscovery.
 
-#### Settings are two things
+This also removes any need for notifications.
 
-Three, in fact:
+#### Settings
 
-- **Site settings** (`settings` table, key/value, admin-only): site title, the _default_ default-branch name for new repos, the reserved-name list, the mirror target _pattern_.
-- **Repo settings** (columns on `repos`): description, this repo's actual default branch, its specific mirror remote, archived flag.
-- **Viewer preferences** (a cookie): diff view mode, tab width. There's no session to hang these on and no reason to want one — a cookie is the correct storage for a preference that belongs to a browser rather than a person. The palette is not one of them: it follows `prefers-color-scheme` so that every page stays byte-identical for every visitor.
+Split into three facets:
 
-The distinction: _default branch name_ is a site setting because it's a policy for repos that don't exist yet; _default branch_ is a repo setting because it's a fact about one repo. Same for mirrors — the site knows the pattern, the repo knows its remote.
+- **Site settings** (`settings` table, key/value, admin-only): site title, the _default_ default-branch name for new repos, the reserved-name list, and the mirror target _pattern_.
+- **Repo settings** (columns on `repos`): description, this repo's actual default branch, its specific mirror remote, and archived flag.
+- **Viewer preferences** (browser cookie): diff view mode and tab width.
+
+Distinguishing between default branch settings: _default branch name_ is a site setting because it's a policy for repos that don't exist yet. _default branch_ is a setting for an individual repository.
 
 ## 07 · API and CLI
 
