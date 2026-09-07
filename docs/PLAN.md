@@ -598,65 +598,67 @@ Distinguishing between default branch settings: _default branch name_ is a site 
 
 ## 07 · API and CLI
 
-_Both of your questions have the same answer_
+We're doing both, built on a shared mechanism, with an unconventional API that's as punk as it gets.
 
-Both, built on one mechanism — because a conventional version of either would undo the best decision in the plan.
+### Why a conventional API sucks
 
-### The problem with a conventional API
+A write API needs to authenticate its caller. The normal answer is personal access tokens; which means a tokens table, a generation UI, hashing, scopes, expiry, and revocation. Our SSH key-only credential system renders it all moot.
 
-A write API needs to authenticate its caller. The normal answer is personal access tokens — which means a tokens table, a generation UI, hashing, scopes, expiry, revocation, and a second credential for you to leak. That is precisely the credential system that "SSH keys only" deleted. Adding it back for the convenience of `curl` would be a bad trade.
+But what about `curl`? I love `curl`, I want `curl`!
 
-### The answer: the CLI speaks SSH
+### The answer: have the CLI speak SSH
 
-Your SSH listener already authenticates a public key, resolves it to a user, and receives an arbitrary command string in the `exec` request. Today it dispatches two commands: `git-upload-pack` and `git-receive-pack`. There is no reason it can't dispatch more.
+The SSH listener already authenticates a public key, resolves it to a user, and receives an arbitrary command string in the `exec` request. Today it dispatches two commands: `git-upload-pack` and `git-receive-pack`. There's no reason it can't dispatch more.
 
-```
+```bash
 $ ssh git@carn.fyi issue create linklater "Merge button eats conflicts"
 $ ssh git@carn.fyi issue list linklater --open
 $ ssh git@carn.fyi pr merge linklater 14 --squash
 $ ssh git@carn.fyi repo rename oldname newname
 ```
 
-Same key, same auth path, same authorization check. **No tokens, ever.** The `carn` binary is then a thin argument-forwarding wrapper over `ssh` — a few hundred lines including help text and output formatting, with the actual command implementations living in the app where they already are. This is how Charm's soft-serve works, and it is the single most elegant consequence of your no-passwords stance.
+Same key, same auth path, same authorization check. **No tokens, ever.** The `carn` binary is then a thin argument-forwarding wrapper over `ssh`. This is how Charm's soft-serve works, and it's the single most elegant consequence of the "no passwords" stance.
 
-### The read API is nearly free
+### The read API is (nearly) free
 
-Everything is public, so reads need no authentication at all. Content-negotiate the existing SSR routes: `Accept: application/json` — or a `.json` suffix, which is friendlier to `curl` — returns the same view model your template renders, serialized. No separate route tree, no separate contract, no drift between them, and it stays correct for free because it's the same object.
+Everything is public, so reads don't need authentication. Content-negotiate the existing SSR routes: `Accept: application/json` (or a `.json` suffix that's `curl` friendly) returns a serialized version of the same view model rendered by the template. There's no separate route tree, no separate contract, and no drift between them.
 
-> **ONE THING TO DESIGN DELIBERATELY**
+> **ONE THING TO DESIGN DIFFERENTLY**
 >
-> Make the **commit status endpoint** the exception, and shape it like GitHub's: `POST /api/r/:repo/statuses/:sha` taking `state`, `context`, `description`, `target_url`. It's the one write endpoint that genuinely needs to be callable by a machine that has no SSH key — an external CI job. That schema is universally understood, so every future CI backend becomes a drop-in. See [§10](#mirror); it's the seam the whole CI story hangs on.
+> **Shape the commit status endpoint like GitHub's.** `POST /api/r/:repo/statuses/:sha` taking `state`, `context`, `description`, and `target_url`. It's the one write endpoint that genuinely needs to be callable by a machine that has no SSH key, i.e. an external CI job.
 
-### Where comments come from
+### What about comments?
 
-This is the one place the no-credentials stance has a visible consequence, and it's worth stating plainly rather than discovering in Phase 3.
+This is one place the no-credentials stance has a visible consequence.
 
-**The web UI has no authenticated visitors, so it cannot accept writes. Comments come from the CLI.**
+**The web UI has no authenticated visitors, so it cannot accept writes. Comments have come from the CLI.**
 
-```
+```bash
 $ carn issue comment linklater 12 "merge-tree exits 1 on unknown refs too"
-$ carn issue comment linklater 12 --editor      # opens $EDITOR
+$ carn issue comment linklater 12 --editor  # opens $EDITOR
 ```
 
-The identity is the SSH key, resolved to a `users` row, exactly as it is for a push. It's coherent, it's the same code path as everything else, and for long bodies it's arguably _better_ — `--editor` gives you vim or Nova rather than a textarea that loses your draft.
+The identity is the SSH key resolved to a `users` row. It's coherent, it's the same code path as everything else, and for long bodies it's arguably _better_; `--editor` gives you vim or Nova rather than a textarea that could lose your draft.
 
-> **THE ESCAPE HATCH, IF IT EVER CHAFES**
+> **THE ESCAPE HATCH**
 >
-> If you later want to comment from a phone or a borrowed laptop, the fix does _not_ require introducing a password or a token. Add `carn web-login`: it runs over SSH, mints a short-lived signed cookie value, and prints a one-time URL. Clicking it sets the cookie and the web UI unlocks writes for that browser. The SSH key remains the only real credential — the session is derived from it, not a second thing to leak. Build it when you miss it, not before.
+> If you later want to comment from a phone or borrowed laptop, the fix doesn't require introducing a password or token. Add `carn web-login`: it runs over SSH, mints a short-lived signed cookie, and prints a one-time URL. Clicking on the URL sets the cookie and the web UI unlocks writes for that browser. Build it when you need it.
 
 ### Packaging the CLI
 
-Shipped on npm. Three constraints shape the naming:
+Shipped on npm as [@nschneble/carn](https://www.npmjs.com/package/@nschneble/carn). Three constraints shaped the naming:
 
-- **npm forbids non-ASCII package names.** `càrn` is rejected — "name can only contain URL-friendly characters," since the name becomes part of a URL. So does any capital letter.
-- **`cairn` is taken** (an abandoned React Native styling package, last published 2022), and — more awkwardly — **`cairn-cli` was published in May 2026** and already claims `cairn` as its _binary_ name. The whole `cairn-*` namespace has filled up this year.
-- **Unscoped `carn` is rejected at publish time.** The registry returns 404 for it — but npm also runs a server-side similarity guard that only fires on publish, and it refuses `carn` as too close to `yarn`, `cron`, and `acorn`. A 404 means unregistered, not publishable.
+- **npm forbids non-ASCII package names.** `càrn` was rejected because a "name can only contain URL-friendly characters," since the name becomes part of the URL. Same with capital letters.
+- **`cairn` is taken** by an abandoned React Native styling package, last published in 2022. More awkwardly, **`cairn-cli` was published in May 2026** and already claims `cairn` as its _binary_ name. The whole `cairn-*` namespace is littered like satellites in low Earth orbit.
+- **Unscoped `carn` was rejected at publish time.** npm runs a server-side similarity guard that only fires on publish, and it refused `carn` as too close to `yarn`, `cron`, and `acorn`.
 
-So: package **`@nschneble/carn`**, binary **`carn`**. Scoped names skip the similarity check entirely, and the `bin` key is independent of the package name, so the command you type is unaffected. Scoped packages default to _restricted_ — set `publishConfig.access` to `public` in `package.json` rather than remembering `--access public` on every publish.
+**TL;DR: The package is `@nschneble/carn` and the binary is `carn`.**
 
-### One command that earns the CLI on its own
+Scoped names skip the similarity check entirely, and the `bin` key is independent of the package name, so the typed commands are unaffected. Scoped packages default to _restricted_; ensure `publishConfig.access` is set to `public` in `package.json`.
 
-`carn tidy`. Details in [§10](#mirror): after the forge deletes a merged branch, this deletes every local branch whose upstream is gone.
+### No more dead branch clutter
+
+Fixes a hearty gripe with GitHub. If you squash merge and delete the remote, the local copy will persist because it doesn't think it's been merged yet. Infuriating and dumb. The solution? `carn tidy`. Details in [§10](#mirror): after the forge deletes a merged branch, this deletes every local branch whose upstream is gone.
 
 ## 08 · The build
 
