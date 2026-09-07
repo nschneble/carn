@@ -106,7 +106,7 @@ The subprocess counter is the only test that'll catch a specific way this codeba
 
 > **WHY TO BOTHER WITH A MIRROR CI**
 >
-> Tuffgal's design, where **CI is the sole writer of baselines**, pairs nicely with the GitHub Actions plan in §10. Lint and typecheck on the mirror are nice-to-haves. A _visual review as a PR gate_ is the show. The `tuffgal-action` runs on the mirror, publishes candidates as artifacts, and you approve with `tuffgal approve --from` and commit.
+> Tuffgal's design, where **CI is the sole writer of baselines**, pairs nicely with the GitHub Actions plan in §. Lint and typecheck on the mirror are nice-to-haves. A _visual review as a PR gate_ is the show. The `tuffgal-action` runs on the mirror, publishes candidates as artifacts, and you approve with `tuffgal approve --from` and commit.
 >
 > The status endpoint (§07) becomes the natural place for Tuffgal's exit code, where **2 (pending baselines) is a distinct state from 1 (failure)**, so we can support "review needed" as a real state in between pass/fail.
 
@@ -151,7 +151,7 @@ _Settled and assumed by everything downstream_
 - **Themes:** Light and dark modes. Dark by default cuz it's the punkiest.
 - **URLs:** /r/ prefix: `/r/:repo`. Structurally kills any namespace collisions. No reserved list.
 - **Visibility:** Public, always.
-- **Write path:** CLI only. The web UI is read-only at MLP. The admin forms in §06 come after it. Comments over SSH.
+- **Write path:** CLI only. Comments over SSH. The web UI is read-only until the merge button in 08 · 04, which is the sole exception for the MLP. The admin forms in §06 come after.
 
 ### Issues and PRs share a per-repo counter
 
@@ -528,6 +528,13 @@ Show at most sixteen rows, then a link to `Show all [N]`.
 
 **`/r/:repo/commits` for the log, `?ref=main` to scope it, and `/r/:repo/commits/:sha` for a single commit.** Keeping the ref in a query parameter avoids the collision between a branch name and a SHA occupying the same path slot.
 
+**`/r/:repo/tree/:rev/` redirects 301 to `/r/:repo`.** The repo page is the
+root tree, so a tree URL names something below it and a bare ref names
+nothing. The redirect drops the ref, which is what the breadcrumb has always
+done: `repoTrail` links the repo segment at `/r/:repo` with no ref on every
+page, so climbing out of a tree has never preserved one. Nothing in the product
+links to the bare form. §13 carries the real fix, `/r/:repo?ref=`.
+
 #### The views
 
 | Route                   | View       | Notes                                                    |
@@ -536,6 +543,7 @@ Show at most sixteen rows, then a link to `Show all [N]`.
 | `/r/:repo`              | Repo       | File tree + rendered README.                             |
 | `/r/:repo/blob/:rev/*`  | Blob       | Highlighted source. Raw link points at the blob origin.  |
 | `/r/:repo/tree/:rev/*`  | Tree       | The tree below the root. `/r/:repo` is the root itself.  |
+| `/r/:repo/tree/:rev/`   | Tree       | Redirects 301 to `/r/:repo`.                             |
 | `/r/:repo/commits`      | Log        | `?ref=` to scope. Paginated by SHA cursor, not `--skip`. |
 | `/r/:repo/commits/:sha` | Commit     | Diff + cross-refs resolved. Immutable, cache forever.    |
 | `/r/:repo/branches`     | Branches   | Each row links to the log scoped to that ref.            |
@@ -662,104 +670,92 @@ Fixes a hearty gripe with GitHub. If you squash merge and delete the remote, the
 
 ## 08 · The build
 
-_Ordered by dependency, gated on a working artifact_
+_Ordered by dependency and gated on working artifacts_
 
-**Issues come before PRs**, because they build the markdown pipeline, the comment thread, the numbering sequence, and cross-reference autolinking — all of which PRs reuse. And **deployment comes early**, so the ops are learned while the app is still simple.
+Each build phase may comprise multiple implementation briefs and PRs. The numbered phases are units of scope. The lettered briefs in `docs/phases/` are units of review; one PR each.
+
+**Issues come before PRs** because they build the Markdown pipeline, comment thread, numbering sequence, and cross-reference autolinking; all of which PRs reuse. **Deployment comes early** while things are still relatively simple.
 
 ### Before you start
 
-An hour of errands · none of it code
+Everything here blocks something later on and is more annoying to do mid-build:
 
-Everything here blocks something later and is more annoying to do mid-build.
+- **Buy the box.** InterServer, 2 slices.
+- **Harden it** per the VPS playbook: key-only SSH, UFW, scoped `deploy` user, 2 GB swap.
+- **Add the DNS records:** `carn.fancyenchiladas.net` and `gelatinous-cube.fancyenchiladas.net`, A and AAAA, pointed at the box _before_ Caddy starts; it needs them resolving to complete the ACME challenge.
+- **Create GitHub mirror repo** as a plain new repo, _not_ a fork. A fork's commits never count toward your contribution graph.
+- **Generate a dedicated mirror deploy key (ed25519).** Add it to the GitHub repo with write access and keep it out of your laptop's agent.
+- **Generate a second personal SSH key and store it somewhere safe.** Put a printout in a drawer. §11 has the full recovery story.
+- **Claim the npm name** `@nschneble/carn`. See §07.
+- **Create the Càrn repo itself on GitHub.** It migrates to Càrn when Phase 1 ships.
+- **Build the Carn Sans font subset** with the compensated small-caps recipe.
 
-- **Buy the box.** InterServer, 2 slices. Re-check the price on their own page first.
-- **Harden it** per the VPS playbook — key-only SSH, UFW, a scoped `deploy` user, 2 GB swap.
-- **Add the DNS records:** `carn.fancyenchiladas.net` and `gelatinous-cube.fancyenchiladas.net`, A and AAAA, pointed at the box _before_ Caddy starts — it needs them resolving to complete the ACME challenge, and starting early just burns failed attempts toward a rate limit.
-- **Create the GitHub mirror repo** — as a plain new repo, _not_ a fork. A fork's commits never count toward your contribution graph.
-- **Generate a dedicated mirror deploy key** (ed25519), add it to the GitHub repo with write access, and keep it out of your laptop's agent.
-- **Generate a second personal SSH key and put it somewhere you won't lose** — a hardware token, a printout in a drawer, another machine. Not on the laptop. §11 has the full recovery story.
-- **Claim the npm name** `@nschneble/carn` — unscoped `carn` is refused by npm's similarity guard for being too close to `yarn`, `cron`, and `acorn`, which is why the package is scoped and the binary is not. See §07.
-- **Create the Càrn repo itself** — on GitHub for now; it migrates to Càrn the day Phase 1 ships, a useful first migration to rehearse.
-- **Build the Carn Sans subset** with the compensated small-caps recipe. Half an hour, and it unblocks the stylesheet. A second small-caps family is not an alternative — `docs/BRAND.md` §03 forecloses it in favor of merging `smcp`/`c2sc` into Carn Sans itself.
-
-> **GATE** — `ssh deploy@carn.fancyenchiladas.net` works and both hostnames resolve
+> **GATE:** `ssh deploy@carn.fancyenchiladas.net` works and both hostnames resolve.
 
 ### 00 · The spike
 
-One evening · throwaway code · go / no-go
-
-Prove the transport before committing to anything. One file: `ssh2` server on :2222, one hardcoded public key, accept the `exec` request, spawn `git-receive-pack` against a bare repo in `/tmp`. Push to it from your laptop. Then the same for clone.
+Prove the transport works before committing to anything. One file: `ssh2` server on :2222, one hardcoded public key, accept the `exec` request, spawn `git-receive-pack` against a bare repo in `/tmp`. Push to it from your laptop. Then the same for clone.
 
 Separately, spawn `git merge-tree --write-tree` on two divergent branches and confirm a tree OID comes out.
 
-> **GATE** — `git push` to your own daemon succeeds → everything after is a web app
+> **GATE:** `git push` to your own daemon succeeds.
 
-### 01 · Core — repos, keys, browsing
-
-2–3 evenings · the irreducible thing
+### 01 · Core: repos, keys, browsing
 
 - `users`, `ssh_keys`, `repos`, `repo_grants`. Seed yourself as admin from a migration.
 - SSH listener authenticating against `ssh_keys`, resolving the repo `name` → UUID → disk path.
 - Anonymous smart-HTTP read, with the three corrections in §03.
 - Repo list, file tree, blob view with highlighting, commit log, single-commit diff, branch and tag lists, rendered README.
-- **Push-to-create** — ~10 lines in the SSH path.
-- **Rename** — `carn repo rename` or a form. One `UPDATE`, because the disk path is a UUID.
+- **Push-to-create:** ~10 lines in the SSH path.
+- **Rename:** `carn repo rename`. One `UPDATE` since the disk path is a UUID.
 
-> **GATE** — your dotfiles repo lives here and the page looks good
+> **GATE:** Your dotfiles repo lives here and the page looks good.
 
 ### 02 · Ship it
 
-One evening · reuses your existing pipeline
-
-- Compose file, Caddy config, the git config block from §04, 2 GB swap at `swappiness=10`.
-- CI builds the image on a version tag, deploys over SSH as a scoped `deploy` user — the Linklater pattern.
-- **SIGTERM handling** in the Node app: flip `/health` to 503, keep serving, wait ~2s, then close. Plus `stop_grace_period: 60s`. This is 90% of the zero-downtime story for ~20 lines.
-- Backups: `pg_dump` _and_ a tar of the repos directory, nightly, offsite. The repos are the irreplaceable half.
+- Compose file, Caddy config, git config block from §04, 2 GB swap at `swappiness=10`.
+- CI builds the image on a version tag, deploys over SSH as a scoped `deploy` user, e.g. the Linklater pattern.
+- **SIGTERM handling** in the Node app: flip `/health` to 503, keep serving, wait ~2s, then close. Plus `stop_grace_period: 60s`.
+- Backups: `pg_dump` _and_ a tar of the repos directory, nightly, offsite.
 - Cron `git gc` across all repos, off-peak.
 - The mirror hook from §10, before the box holds anything you'd miss.
 
-> **GATE** — a restore test — restore the dump and tar into a throwaway box, then clone from it
+> **GATE:** A restore test. Restore the dump and tar into a throwaway box, then clone from it.
 
 ### 03 · Issues
 
-2 evenings · builds half of Phase 4
-
-- Markdown pipeline: markdown-it, the URL allowlist, the raw-blob origin.
+- Markdown pipeline: markdown-it, URL allowlist, raw-blob origin.
 - Issues table, epics via `parent_id`, comments, events timeline, open/closed.
 - Per-repo numbering via `repos.next_number`, in-transaction.
-- Cross-reference autolinking as a core rule registered `before('text_join')`. `closes #12` in a merged PR closes the issue.
+- Cross-reference autolinking as a core rule registered in `before('text_join')`; `closes #12` in a merged PR closes the issue.
 - **Create branch from issue** → branch named `12-short-slug`.
+- **A minimal CLI over `SSH exec`:** `issue create`, `issue comment`, `issue close`. §07's command surface, widened first by Phase 1f for `repo rename`. The web takes no writes, so this is the only way to reach the gate below.
 
-> **GATE** — you file, discuss, and close a real issue — and branch from one
+> **GATE:** From a terminal window, you file a real issue, comment on it, and close it.
 
 ### 04 · Pull requests
 
-3–4 evenings · the expensive one
-
 - Open a PR: source and target branch, title, body. Merge-base, then `diff-tree` against it.
-- PR page: file-by-file diff, thread (reusing Phase 3's), timeline.
+- PR page: file-by-file diff, thread (reusing Phase 3), timeline.
 - Mergeability check with `merge-tree --quiet`, cached against the pair of head OIDs so it isn't re-run on every render.
 - Merge button: merge commit, **squash**, or fast-forward. CAS loop with re-merge on conflict.
-- **Auto-delete the source branch on merge** — §10 covers why this fixes the stale-local-branch problem.
+- **Auto-delete the source branch on merge:** §10 covers why this fixes the stale-local-branch problem.
 - Auto-close on push when a PR's commits land in its target by other means.
 
-> **GATE** — you merge a real change to a real project through your own UI
+> **GATE:** You merge a real change to a real project through your own UI.
 
 ### 05 · Releases
 
-1 evening
+**Tags are releases.** An annotated tag plus notes plus optional attached artifacts, one table keyed on `tag_name`. Tarballs from `git archive` served on demand (rather than stored).
 
-Tag _is_ release, as you proposed. An annotated tag plus notes plus optional attached artifacts, one table keyed on `tag_name`. Tarballs from `git archive` on demand rather than stored.
+> **GATE:** You cut a real release, write its notes, and download a tarball that extracts to the tagged tree.
 
 ### 06 · The CLI
 
-1–2 evenings · pure upside
+The `carn` binary from §07, wrapping `ssh`. Start with `issue create`, `issue comment`, `issue list`, `pr list`, `pr merge`,
+`repo rename`, and `tidy`. Everything else accretes.
 
-The `carn` binary from §07, wrapping `ssh`. Start with `issue create`, `issue comment`, `issue list`, `pr list`, `pr merge`, `repo rename`, and `tidy`. Everything else accretes.
-
-Since the web UI is read-only, `issue comment` _is_ how you comment — so a minimal CLI belongs in Phase 3 rather than here.
-
-**Roughly 11–14 focused evenings**, live on the internet after four or five. Deliberately front-loaded: you push to your own server on night one, and it's deployed before it's finished.
+> **GATE:** You install `@nschneble/carn` from npm on a machine that has never built it, and file an issue with it.
 
 ## 09 · Hosting and deploys
 
@@ -1057,6 +1053,7 @@ _After the MLP — each an explicit decision, not a drift_
 - A landing page and an FAQ — see below
 - **GitHub Actions workflow format**, executed by `forgejo-runner exec`
 - **Native Tuffgal** — report refs, image triptych, `carn tuffgal approve`
+- The root tree at a ref other than the default — `/r/:repo?ref=v1.2.0`, so a tag's contents are viewable and `/r/:repo/tree/:rev/` has somewhere lossless to redirect
 
 #### Maybe
 
