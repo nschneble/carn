@@ -759,54 +759,61 @@ The `carn` binary from §07, wrapping `ssh`. Start with `issue create`, `issue c
 
 ## 09 · Hosting and deploys
 
-_The VPS playbook, applied — plus two questions answered_
+_The VPS playbook, applied_
 
-**A second InterServer VPS at 2 slices — 4 GB, 80 GB, ~$6/month.** The reason is CPU, not RAM: InterServer allocates roughly one core per two slices on a fair-share basis, and `pack-objects` during a clone is exactly the spiky single-core workload fair-share scheduling handles worst. Co-locating means a clone makes Linklater visibly slow. It also buys independent blast radius, which matters when you're redeploying constantly during the build.
+**A second InterServer VPS (alongside Linklater's) at 2 slices: 4 GB, 80 GB, ~$6/month.** The reason is CPU, not RAM. InterServer allocates roughly one core per two slices on a fair-share basis, and `pack-objects` during a clone is exactly the spiky single-core workload fair-share scheduling handles the worst. Co-locating means cloning a repo would slow down Linklater if they shared a box. A second box also keeps the blast radius independent, which matters when you're redeploying constantly during the build.
 
-| Component               | Steady state      | Note                                                     |
-| ----------------------- | ----------------- | -------------------------------------------------------- |
-| OS (minimal Debian)     | ~150 MB           |                                                          |
-| Docker + containerd     | ~150 MB           |                                                          |
-| Postgres                | ~350 MB           | Metadata only — small                                    |
-| Node app + SSH listener | ~400 MB           | Cap heap at 768 MB                                       |
-| Caddy                   | ~30 MB            |                                                          |
-| `git` subprocesses      | burst, 100–400 MB | **The new variable** — bounded by §04 config + semaphore |
-| Page cache              | ~2.5 GB           | Comfortable                                              |
+| Component               | Steady state      | Notes                             |
+| ----------------------- | ----------------- | --------------------------------- |
+| Caddy                   | ~30 MB            |                                   |
+| Docker + containerd     | ~150 MB           |                                   |
+| `git` subprocesses      | burst, 100–400 MB | Bounded by §04 config + semaphore |
+| Node app + SSH listener | ~400 MB           | Cap heap at 768 MB                |
+| OS (minimal Debian)     | ~150 MB           |                                   |
+| Page cache              | ~2.5 GB           | Comfortable                       |
+| Postgres                | ~350 MB           | Metadata only; small              |
 
-4 GB is the tier — the one workload where the playbook's "2 GB is genuinely enough" doesn't hold, because git's memory use is bursty and hard to bound. Re-check the price on InterServer's own page before buying.
+4 GB is the tier; it's the one workload where the Linklater playbook's "2 GB is genuinely enough" doesn't hold, because git's memory use is bursty and hard to bound.
 
 ### Deploys
 
-No blue-green. About twenty lines gets ~90% of the benefit:
+No blue-green. But about twenty lines gets ~90% of the benefit:
 
-- **A SIGTERM handler:** flip `/health` to 503, keep serving real traffic, wait past `health_interval × health_fails`, then `server.close()` and let in-flight requests finish.
-- **`stop_grace_period: 60s`** in Compose — the default is 10, which will SIGKILL a long clone.
+- **A SIGTERM handler:** flip `/health` to 503, keep serving real traffic, wait past `health_interval × health_fails`, then close both listeners and let what's running finish.
+- **The SSH drain is what matters.** HTTP requests are short and Fastify's `close()` already waits for them. A clone or push over SSH is the long operation the grace period exists for, so `sshServer.close(callback)` has to be given its callback, and the process exits on that or on a cap under `stop_grace_period`, whichever comes first.
+- **`stop_grace_period: 60s`** in Compose; the default is 10s, which'd SIGKILL a long clone.
 - **`docker compose up -d --wait`** with a real `healthcheck:` on the app service.
-- **`lb_try_duration 30s`** in Caddy, which converts the restart gap from errors into slow requests. Users see a spinner, not a 502.
+- **`lb_try_duration 30s`** in Caddy, which converts the restart gap from errors into slow requests.
 
-Realistic gap: about three seconds, _held_ rather than failed. Nothing short of true blue-green saves a clone already streaming a packfile — and that clone is yours, seconds before you pressed deploy.
+**Realistic gap:** about three seconds, _held_ rather than failed. A clone already streaming a packfile survives if it finishes inside `stop_grace_period`; past that, nothing short of true blue-green saves it.
 
 ### Migrations
 
-Two rules, both non-negotiable. **Never drop or rename a column in the same deploy as the code change.** And **always `SET lock_timeout`** — otherwise a migration queues behind a long git operation, takes an `ACCESS EXCLUSIVE` lock, and blocks everything. That's the most common way a "zero-downtime" deploy causes a total outage.
+There's only two rules when it comes to migrations.
 
-Enforce it with **`squawk`** (v2.62), a Postgres migration linter with 41 rules covering the whole `strong_migrations` surface. The ORMs are no help here — Prisma, Drizzle, Kysely, TypeORM, and node-pg-migrate are runners with no safety analysis. Squawk lints `.sql`, which is what Prisma and Drizzle Kit generate: point it at `migrations/*/migration.sql` in CI, pin `--pg-version` to the server, commit a `.squawk.toml`, and add the pre-commit hook for local feedback.
+1. **Never drop or rename a column in the same deploy as the code change.**
+2. **Always `SET lock_timeout`.** Otherwise a migration queues behind a long git operation, takes an `ACCESS EXCLUSIVE` lock, and blocks everything.
 
-Rules on from day one: `require-concurrent-index-creation`, `constraint-missing-not-valid`, `adding-not-nullable-field`, `renaming-column`, `changing-column-type`, `require-lock-timeout`, `prefer-timestamptz`.
+**Enforce with `squawk`** (^2.62), a Postgres migration linter with 40+ rules covering the whole `strong_migrations` surface. The ORMs are no help here. Prisma, Drizzle, Kysely, TypeORM, and node-pg-migrate are all runners with no safety analysis. Squawk lints `.sql`, which is what Prisma generates. Point it at `migrations/*/migration.sql` in CI, pin `--pg-version` to the server, commit a `.squawk.toml`, and add the pre-commit hook for local feedback.
 
-Two notes, since the folklore has drifted: **adding a column with a constant default has been safe since Postgres 11** — only a _volatile_ default (`gen_random_uuid()`) still rewrites the table. And **non-concurrent index creation has never improved and never will**; setting `NOT NULL` on an existing column still scans every row unless you add a `NOT VALID` check constraint, validate it separately, then set the flag.
+Squawk rules to enable on day one: `adding-not-nullable-field`, `changing-column-type`, `constraint-missing-not-valid`, `prefer-timestamptz`, `renaming-column`, `require-concurrent-index-creation`, and `require-lock-timeout`.
 
-Keep `eugene` for the one frightening migration a year — its `trace` mode executes the migration against a scratch database and reports the locks genuinely taken.
+> **TWO NOTES on COLUMNS**
+>
+> 1. Adding a column with a constant default has been safe since Postgres 11. Only a _volatile_ default (e.g. `gen_random_uuid()`) still rewrites the table.
+> 2. Non-concurrent index creation has never improved (and never will). Setting `NOT NULL` on an existing column still scans every row, unless you add a `NOT VALID` check constraint, validate it separately, and then set the flag.
 
 ### The port swap
 
-Admin SSH moves to :2222 and git takes :22, so the clone URL is `git@carn.fancyenchiladas.net:linklater` with no port and no `~/.ssh/config` entry for anyone cloning. Note that a high admin port is _not_ a security improvement — it reduces bot log noise, nothing more. Do it in Phase 2, in this order, and there is no window where you're locked out:
+Admin SSH moves to :2222 and git takes :22, so the clone URL becomes `git@carn.fancyenchiladas.net:linklater` with no port and no `~/.ssh/config` entry for anyone cloning. **Note:** a high admin port isn't a security improvement. It reduces bot log noise. That's it.
 
-1. Add `Port 2222` to `sshd_config` _alongside_ `Port 22`. Reload. Both now listen.
-2. `ufw allow 2222/tcp`. Open a **second terminal** and confirm login on 2222 _before touching anything else_. Keep the first session open.
-3. Update the CI deploy job's port and run one deploy to prove it.
-4. Remove `Port 22` from `sshd_config`, reload, verify 2222 still works.
-5. Now bind the forge's `ssh2` listener to :22 and open it in UFW.
+Do the swap in Phase 2, in this order, and there won't be any lockout windows:
+
+1. Add `Port 2222` to `sshd_config` _alongside_ `Port 22`. Reload.
+2. Set `ufw allow 2222/tcp`. Open a second terminal and confirm login on 2222 _before touching anything else_. Keep the first session open.
+3. Update the CI deploy job's port and run a deploy.
+4. Remove `Port 22` from `sshd_config`. Reload. Verify 2222 still works.
+5. Bind the forge's `ssh2` listener to :22 and open it in UFW.
 
 ## 10 · Mirroring, CI, and stale branches
 
