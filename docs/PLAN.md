@@ -1031,110 +1031,119 @@ Length costs nothing. Nobody types this host. It only appears in generated `href
 
 ## 13 · Roadmap
 
-_After the MLP — each an explicit decision, not a drift_
+_Explicit decisions after the MLP ships_
 
-#### Yes — queued
+#### YES (queued up)
 
-- Full-text search over issues and PRs — Postgres `tsvector`, not Elasticsearch
-- Activity feed, per repo and global — the `events` table already carries it
+- Activity feed, per repo and global (the `events` table already carries it)
+- A landing page and an FAQ (see below)
 - Branch protection on `main`
+- `carn export`: exports repo issues as Markdown files
 - CI, via the §10 progression
-- Outgoing webhooks
-- `carn export` — issues out as markdown
-- **Wikis** — a repo of markdown, an evening's work
-- A landing page and an FAQ — see below
+- Full-text search over issues and PRs; Postgres `tsvector`, not Elasticsearch
 - **GitHub Actions workflow format**, executed by `forgejo-runner exec`
-- **Native Tuffgal** — report refs, image triptych, `carn tuffgal approve`
-- The root tree at a ref other than the default — `/r/:repo?ref=v1.2.0`, so a tag's contents are viewable and `/r/:repo/tree/:rev/` has somewhere lossless to redirect
+- **Native Tuffgal:** report refs, image triptych, `carn tuffgal approve`
+- Outgoing webhooks
+- The root tree at a ref other than the default, e.g. `/r/:repo?ref=v1.2.0`, so a tag's contents are viewable and `/r/:repo/tree/:rev/` has somewhere lossless to redirect
+- **Wikis**
 
-#### Maybe
+#### Maybe?
 
+- A rendered blob view: Markdown as prose, SVG as an imag
 - Inline diff comments
-- Web writes via `carn web-login`
+- Line wrapping in the blob view (as a URL, not a control)
+- Owner and collaborator filters on the repo index (waiting on an index long enough to need them)
 - Real small caps merged into Carn Sans (`smcp`/`c2sc`)
-- Line wrapping in the blob view — a URL, not a control; there is no client JavaScript to toggle with
-- A rendered view of a blob that has one — markdown as prose, SVG as a picture
-- Owner and collaborator filters on the repo index — waiting on an index long enough to need them
+- Web writes via `carn web-login`
 
-#### Never
+#### Never.
 
-- Private repos
-- Open signups
-- Passwords or tokens
-- Labels
-- Git LFS
-- Package registry
-- A GitHub Actions _runner_
-- Bot users
-- Federation
-- Email patch workflow
-- Mercurial
-- Orgs and teams
-- Rebase-merge
 - An SPA rewrite
+- A GitHub Actions runner
+- Bot users
+- Email patch workflow
+- Federation
+- Git LFS
+- Labels
+- Mercurial
+- Open signups
+- Orgs and teams
+- Package registry
+- Passwords or tokens
+- Private repos
+- Rebase-merge
 
 ### Inline diff comments
 
-They earn their place at work, where you're reviewing someone else's unfamiliar code and need to point at line 47. On a personal forge you're reviewing your own change from an hour ago, and a thread is enough.
+They're useful when you're reviewing a work colleague's unfamiliar code and need to point at line 47. On a personal forge you're reviewing your own changes from an hour ago. A thread is plenty.
 
-The cost is also higher than it looks. Anchoring a comment to a line means storing the blob SHA plus the line number and then deciding what happens when the branch is force-pushed and that line no longer exists — GitHub's "outdated" state exists because there's no good answer. The columns sit in `comments` if that changes; leave them empty.
+Besides, it's not easy. Anchoring a comment to a line means storing the blob SHA plus the line number and then deciding what happens when the branch is force-pushed and that line no longer exists. GitHub's "outdated" state exists because there's really no good answer. The columns sit in `comments` if that changes; leave them empty.
 
-### The blob view shows one form of a file
+### The blob view only shows one file form
 
-Two of the entries above are the same gap seen twice: a blob has more than one honest representation and the page offers no way to ask for the other one.
+A blob can have more than one honest representation, and the page doesn't offer a way to choose between them.
 
-**Wrapping.** `.src` is `overflow-x: auto`, so a line that cannot break scrolls sideways. That is right for code, where a wrapped line lies about its indentation, and wrong for prose committed as markdown or for a file with one 1,180-character line. With no client JavaScript the toggle is a URL — `?wrap=1`, re-rendered with `white-space: pre-wrap` — which makes it a second cache key on every blob and a second baseline on every story that covers one. Cheap to build, and it doubles a surface that is currently exactly one page per path.
+- **Wrapping.** `.src` is `overflow-x: auto`, so a line that cannot break scrolls sideways. That's correct for source code, but wrong for Markdown-committed prose. It'd be a URL toggle: `?wrap=1`, re-rendered with `white-space: pre-wrap`; which makes it a second cache key on every blob and a second baseline on every story that covers one.
+- **Rendering.** A Markdown file renders on the repo page and shows up as plain text in the blob view. An SVG is more cumbersome. `src/repos/blob-asset.ts` serves rasters only, because an SVG blob is repo-controlled active content whose `<title>` and `<text>` would otherwise enter the host page's a11y tree. It's excluded on purpose.
 
-**Rendering.** A markdown file renders on the repo page and shows as source in the blob view, and nothing links the two. An SVG is further away than it looks: `src/repos/blob-asset.ts` serves rasters only, because an SVG blob is repo-controlled active content whose `<title>` and `<text>` would enter the host page's accessibility tree. It is excluded on purpose, not missing.
-
-**Both wait on the raw origin.** `gelatinous-cube` is where repo-controlled bytes are already going to be served sandboxed, and it is the same decision twice: once the origin exists, "show me the bytes" and "show me the rendering" become a pair, and building either half before then means building it again afterward.
+**Both await the raw origin to become available.** `gelatinous-cube` is where repo-controlled bytes are going to be served sandboxed, and once the origin exists, "Show me the bytes" and "Show me the rendering" become a linked pair.
 
 ### Cross-repo PRs
 
-Not useful as designed, and the reason is a genuine tension rather than a technicality.
+The very design of the system discourages the idea.
 
-> **"PUBLIC AND OPEN SOURCE" + "ADMIN-CREATED ACCOUNTS ONLY" = READ-ONLY OPEN SOURCE**
+> **PUBLIC AND OPEN SOURCE + ADMIN-CREATED ACCOUNTS = READ-ONLY OPEN SOURCE**
 >
-> Anyone can read every repo, clone it, and fork it elsewhere. **Nobody can contribute back** — there's no signup, so there's no account, so there's no branch to open a PR from. That's the right position for a personal forge, but it means "open source by default" describes the _license_ and the _visibility_, not the _participation_.
+> Anyone can read any repo, clone it, and fork it elsewhere. **But nobody can contribute back.** There's no signup, no accounts, and thus no branch to open a PR from. It means "open source by default" as a product stance describes the _license_ and the _visibility_, not the _participation_.
 >
-> Three answers exist without changing the model: add them as a user, take a patch by email and `git am` it, or accept a pull request on the GitHub mirror. The third is the best — the mirror already exists for CI, and it makes GitHub the contribution front door while Càrn stays the canonical home.
+> Three solutions exist without changing the model:
+>
+> 1. Add someone as a collaborator.
+> 2. Accept patches by email and `git am` them.
+> 3. Accept pull requests on the GitHub mirror.
+>
+> The third is the best option. The mirror already exists for CI, and it makes GitHub the contribution front door while Càrn remains the canonical home.
 
-Forks within Càrn only matter if it grows several users who don't trust each other, which is explicitly not the plan.
+Forks within Càrn only matter if it grows into an ecosystem where there's a bevy of users who don't trust each other, which is explicitly not the plan.
 
 ### Git LFS
 
-Git stores every version of every file forever, and every clone gets the whole history. One 200 MB binary revised thirty times is ~6 GB in every clone, permanently — and git's delta compression is near-useless on binaries. LFS keeps those files out of the object database: a `clean` filter hashes the real content, stashes the blob, and commits a ~130-byte pointer file instead; a `smudge` filter fetches the blob on checkout. Git only ever sees the pointer.
+Git stores every version of every file, forever. Every clone gets the whole history. A single 200 MB binary that's revised 30 times is ~6 GB in every clone, and git's delta compression is nearly useless on binaries. LFS keeps those files out of the object database: a `clean` filter hashes the real content, stashes the blob, and commits a ~130-byte pointer file instead. A `smudge` filter fetches the blob on checkout. Git only ever sees the pointer.
 
-Server side you'd implement the LFS **Batch API** — one endpoint (`POST /:repo.git/info/lfs/objects/batch`) that takes a list of `{oid, size}` and returns signed upload/download URLs. The endpoint itself is a day or two; the cost is everything around it — auth on those URLs, quota accounting, and garbage-collecting unreferenced OIDs, which requires walking history because nothing tells you when an OID stops being referenced.
+Server side, you'd implement the **LFS Batch API**. A single endpoint (e.g. `POST /:repo.git/info/lfs/objects/batch`) that takes a list of `{oid, size}` and returns signed upload/download URLs. The endpoint itself is trivial, but the surrounding cost (and bloat) isn't: auth, quota accounting, and garbage-collecting unreferenced OIDs, which requires walking history because nothing tells you when an OID stops being referenced.
 
-**Never, for source code.** LFS pays for itself on game art, PSDs, datasets, and model weights. Text deltas beautifully and is exactly what git was built for. Adding it buys a new failure mode — clone succeeds, files are 130-byte pointers, because the visitor lacks `git-lfs` — in exchange for nothing. The one thing that would force it is migrating in a repo that _already_ contains LFS pointers, which is an interop obligation rather than a feature.
+**Never use LFS for source code.** LFS is designed for binary assets: game art, PSDs, datasets, model weights. Plain text deltas beautifully. The one thing that'd force it is migrating a repo that _already_ contains LFS pointers, which is an interop obligation rather than a feature. Let's just say we'll skip that.
 
-### The landing page is the "never" list
+### The landing page is a "never list" showcase
 
-**The constraints _are_ the positioning.** Every forge's marketing page is a feature grid; this one is a list of things it refuses to do.
+**The constraints are the positioning.** Every forge's marketing page is a feature grid; this one is a list of things it refuses to do.
 
-It also does real work beyond tone. Someone landing on a repo needs to know within about four seconds that there is no sign-up button and why — otherwise the absence reads as an unfinished site rather than a position.
+It also does real work beyond tone. Someone landing on a repo needs to know within a few seconds that there's no sign-up button, and why. Otherwise the absence reads like it's an unfinished project.
 
-Pair it with an FAQ that has exactly one job: **tell a would-be contributor what to actually do.** "Can I contribute?" → fork the GitHub mirror and open a PR there; it's the inbox, càrn is the record. That page turns the constraint from exclusionary into merely unusual.
+Pair with an FAQ with one job: **tell a would-be contributor what to actually do.** "Can I contribute?" → fork the GitHub mirror and open a PR there; it's the inbox, Càrn is the record. That page turns a constraint into something that's just a bit quirky.
 
-Punk lands when it's _specific_. "No private repos, ever" is punk. "No sign-ups, no tokens, no passwords, no tracking, no JavaScript" is punk. Naming a rival is a competitor slide, and it ages badly on a page still running in three years.
+Punk lands when it's _specific_. "No private repos, ever" is punk. "No sign-ups, no tokens, no passwords, no tracking, no JavaScript" is punk. No need to say how Microsoft will eventually ruin GitHub. Very not punk.
 
 ### Cloning and forking
 
-**Anyone can clone, and anyone can fork.** Clone is anonymous over HTTPS with no account. "Fork" in the git sense is just `clone` plus `push` to somewhere else — a mirror on GitHub, their own forge, a hard drive. None of that needs a feature from you, and none of it can be taken away, which is the strongest guarantee an open-source host can offer.
+**Anyone can clone, anyone can fork.** Cloning is anonymous over HTTPS. "Forking" in the git sense is just `clone` plus a `push` elsewhere; a GitHub mirror, an external hard drive, etc.
 
-What you don't have is _forking into càrn_, and that's the deliberate part. The two paths that stay open for real participation: add someone as a collaborator (one CLI command, and you were always going to vet them), or take their PR on the GitHub mirror. One wrinkle on that second path worth documenting in the FAQ — **you can't merge it on GitHub**, because the mirror force-pushes and your next push would overwrite it. The flow is `gh pr checkout <n>`, push the branch into càrn, review and merge there; their GitHub PR closes on its own when the commits land downstream.
+What you don't have, deliberately, is _forking into Càrn_. It's still possible for someone to participate if they're added as a collaborator; an untrusted fork can only come from a PR on the GitHub mirror.
 
-### Wikis and package registries — opposite answers
+One wrinkle on the GitHub path: You can't actually merge it on GitHub. The mirror force-pushes and your next push would just overwrite it. The correct flow is: `gh pr checkout <n>`, push the branch into Càrn, then review and merge there. Their GitHub PR will close on its own when the commits land downstream.
 
-**Wikis are cheap.** A wiki is a git repo full of markdown, rendered, and you will already have: bare repo creation, SSH push, markdown rendering, cross-reference autolinking, and a file browser. A wiki is a repo named `<repo>.wiki`, a route that renders its markdown instead of listing its files, and roughly nothing else — call it an evening. It's also the most tenet-1 feature on the list — literally just git, editable with a normal editor and normal commits.
+### Wikis and package registries
 
-**Package registries are a whole second product.** There's no such thing as "a registry" — there's an npm registry, an OCI registry, a PyPI registry, a Maven registry, each with its own protocol, auth model, and storage semantics. Forgejo supports twenty-plus ecosystems and that's a large fraction of its codebase. Meanwhile npm and GHCR work fine and cost nothing.
+**Wikis are cheap.** A wiki is just a git repo of rendered Markdown. And we'd already have bare repo creation, SSH push, markdown rendering, cross-reference autolinking, and a file browser. A wiki is a repo named `<repo>.wiki` and a route that renders its Markdown instead of listing its files. It's also the most first-tenet feature on the list; literally just git, editable with a normal editor and normal commits.
+
+**Package registries are a whole other beast.** To start, there's no such thing as a wholesale "registry." There are npm registries, OCI registries, PyPI registries, Maven registries, etc. Each with its own protocol, auth model, and storage semantics. Forgejo supports 20+ ecosystems and it's a huge chunk of its codebase. Meanwhile npm and GHCR work fine and cost nothing.
 
 ### Labels
 
-Never. They mostly encode _who should look at this_ and _what kind of work is this_ — the first question doesn't exist here, and epics answer the second better. One less table, one less filter UI.
+Don't need 'em! They mostly encode the _who should look at this?_ and _what kind of work is this?_ questions. The first question doesn't exist here, and epics answer the second one better.
 
-### Webhooks — what they're actually for
+### Webhooks
 
-For a single-user forge: **almost nothing, until CI exists.** Then they become the thing that triggers it, and the general-purpose escape hatch for everything you haven't thought of — a deploy trigger, a static-site rebuild, a notification. Cheap to add — a table of URLs, a signed POST, a retry — and the difference between "I'd have to modify Càrn" and "I'd write a 20-line receiver." After the status endpoint, not before.
+We don't really need webhooks until CI drops in Phase 2 and we have the status endpoint.
+
+But after? They're what triggers it. They function as a general purpose escape hatch for everything we haven't (yet) built: deploy triggers, static-site rebuilds, notifications. It's also cheap to add; a table of URLs, a signed POST, and a retry.
