@@ -817,155 +817,136 @@ Do the swap in Phase 2, in this order, and there won't be any lockout windows:
 
 ## 10 · Mirroring, CI, and stale branches
 
-_Three questions with one shared mechanism_
+_Three questions and a shared mechanism_
 
-### Mirroring — a post-receive hook to GitHub
+### Mirroring: a post-receive hook to GitHub
 
-Settled: push-only, GitHub only. Codeberg is dropped — you haven't used it, and it turns out to have disabled new pull mirrors anyway, so it offered nothing GitHub doesn't.
+GitHub push-only. See list of concerns below.
 
-Four verified gotchas, of which the second is the one that gets people:
-
-```
+```bash
 #!/bin/sh
 # hooks/post-receive
-REPO_DIR=$(git rev-parse --absolute-git-dir)   # MUST be before unset
+REPO_DIR=$(git rev-parse --absolute-git-dir)  # MUST come before `unset`
 {
-  unset GIT_DIR GIT_QUARANTINE_PATH GIT_OBJECT_DIRECTORY \
-        GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_INDEX_FILE
+  unset GIT_DIR GIT_QUARANTINE_PATH GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_INDEX_FILE
+
   export GIT_DIR="$REPO_DIR"
   export GIT_SSH_COMMAND='ssh -i /run/secrets/mirror_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes'
+
   flock -w 120 "/run/mirror-$(basename "$REPO_DIR").lock" \
-    git push --prune --quiet github \
-        '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' \
-    || logger -t git-mirror "mirror push FAILED: $REPO_DIR"
-} >/dev/null 2>&1 </dev/null &    # all three fds — see below
+    git push --prune --quiet github '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' || \
+    logger -t git-mirror "mirror push FAILED: $REPO_DIR"
+} >/dev/null 2>&1 </dev/null &  # all three fds (see below)
 ```
 
 1. **The hook blocks the pusher.** A hook that sleeps 5s makes your `git push` take 5s.
-2. **`&` alone does _not_ make it async.** Measured: `( sleep 5 ) &` still blocked for the full 5 seconds. The child inherits stdout and stderr, which _are_ the pipe back to your terminal, and git waits for EOF on it. You must redirect **all three** file descriptors. This is the finding that surprises everyone.
+2. **`&` alone doesn't make it async.** Measured: `( sleep 5 ) &` still blocked for the full 5 seconds. The child inherits stdout and stderr, which _are_ the pipe back to your terminal, and git waits for EOF on it. You must redirect **all three** file descriptors.
 3. **`GIT_DIR` is set, and it's relative** (literally `.`). Capture the absolute path first or any `cd` breaks the hook with a baffling "does not appear to be a git repository."
-4. **Use explicit refspecs, not `--mirror`.** Verified: `--mirror` pushes everything under `refs/` — including `refs/pull/*` and any internal refs your forge keeps. It also force-pushes and deletes. Explicit `+refs/heads/*` and `+refs/tags/*` plus `--prune` gives you the same sync with none of the leakage.
+4. **Use explicit refspecs, not `--mirror`.** Verified: `--mirror` pushes everything under `refs/`, including `refs/pull/*` and any internal refs your forge keeps. It also force-pushes and deletes. Explicit `+refs/heads/*` and `+refs/tags/*` plus `--prune` gives you the same sync.
 
-Better still: have the hook drop a marker in a spool directory and let a systemd timer drain it every minute. Idempotent, survives reboots, retries for free, one place to alert from — and it becomes the trigger point for CI below.
+**Better still:** have the hook drop a marker in a spool directory and let a `systemd` timer drain it every minute. Idempotent, survives reboots, retries for free, and it's one place to alert from. The spool doubles as the CI trigger below.
 
-The spool doubles as the CI trigger below, which is the reason to build it that way rather than pushing inline.
-
-### CI — a four-stage progression, and the seam that matters
+### CI: a four-stage progression
 
 Since the repos already mirror, the mirror _is_ the CI host.
 
-|       | Stage                                                                          | Cost       | What it gets you                                                                                                                                                          |
-| ----- | ------------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Now   | Client-side `pre-push` hook running lint, typecheck, and `tuffgal run --local` | 30 min     | ~95% of the value, and the only stage with _instant_ feedback. Local mode is advisory and self-diffs against a gitignored cache, so it never touches committed baselines. |
-| Next  | GitHub Actions on the mirror — lint, typecheck, and `tuffgal-action`           | A weekend  | Zero new infrastructure on your VPS, and this is where Tuffgal earns its keep: CI is the sole writer of baselines, so visual review becomes a real PR gate.               |
-| Then  | Report status back to your forge                                               | 1 evening  | **The architectural step.** A final `if: always()` step curls your commit-status endpoint (§07).                                                                          |
-| Later | `forgejo-runner exec` on your own box                                          | 2 evenings | Runs GitHub-Actions-compatible YAML with _no forge at all_ — you invoke it, read the exit code. Same YAML, so both paths coexist.                                         |
+| When  | Stage                                                        | What it gets you                                                                                                      |
+| ----- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Now   | Client-side `pre-push` hook running lint, typecheck, tuffgal | ~95% of the value, and the only stage with instant feedback. Tuffgal in local mode never touches committed baselines. |
+| Next  | GitHub Actions on mirror: lint, typecheck, `tuffgal-action`  | Zero new infrastructure on the VPS. CI is the sole baseline writer, so visual review becomes a real PR gate.          |
+| Then  | Report status back to the forge                              | The architectural step. A final `if: always()` step curls your commit-status endpoint (§07).                          |
+| Later | `forgejo-runner exec` on the VPS                             | Runs GHA-compatible YAML without a forge. You invoke it, then read the exit code. Same YAML, so both paths coexist.   |
 
-> **THE RUNNER MUST BE arm64, OR STAGE 2 RE-SHOOTS EVERY BASELINE**
+> **THE RUNNER MUST BE arm64**
 >
-> Càrn's Tuffgal baselines are captured in a container pinned to `linux/arm64`,
-> and that was availability rather than taste: amd64 Chromium does not merely
-> run slowly under emulation on Apple silicon, it aborts (`qemu/rcu.h`,
-> SIGABRT). `docs/STACK.md` records the pin and the crash.
+> Càrn's Tuffgal baselines are captured in a container pinned to `linux/arm64`. amd64 Chromium crashes under emulation on Apple silicon. `docs/STACK.md` records the pin and the crash.
 >
-> GitHub's `ubuntu-latest` is x86_64. A workflow that runs `tuffgal-action` on
-> the default runner rasterises through a different FreeType and Skia path than
-> the baselines were shot on, and on a product whose identity is a custom
-> subset webfont at six weights, essentially every glyph edge differs. The
-> first CI run would fail wholesale and the only fix would be re-shooting every
-> baseline — throwing away the one signal a baseline carries.
+> GitHub's `ubuntu-latest` is x86_64. A workflow that runs `tuffgal-action` on the default runner rasterises through a different FreeType and Skia path than the baselines were shot on, and on a product whose identity is a custom subset webfont at six weights, essentially every glyph edge differs. The first CI run would fail wholesale and the only fix would be re-shooting every baseline.
 >
-> **Select an arm64 runner for the Tuffgal job.** Confirm availability and
-> pricing on the plan of the day; hosted arm64 runners are recent enough that
-> the answer moves. If arm64 is genuinely unavailable, the decision is to
-> re-shoot the baselines on x86_64 **once, deliberately, in their own commit**
-> — not to discover the mismatch as a red build.
+> **Select an arm64 runner for the Tuffgal job.** Confirm availability and pricing. If arm64 is unavailable, re-shoot the baselines on x86_64 **once, deliberately, in their own commit**.
 
-Two things worth knowing before you build on this. **Mirror pushes do trigger GitHub Actions** — the famous "pushes with a token don't trigger workflows" restriction is scoped to pushes made _from inside an Actions run_ using the automatic `GITHUB_TOKEN`, to prevent recursion. A push from your VPS with a deploy key is an ordinary external push. Confirm it empirically in five minutes before you rely on it.
+Two things worth knowing before you build on this. **Mirror pushes do trigger GitHub Actions.** The famous "pushes with a token don't trigger workflows" restriction is scoped to pushes made _from inside an Actions run_ using the automatic `GITHUB_TOKEN`, to prevent recursion. A push from your VPS with a deploy key is an ordinary external push.
 
 > **NOT COUPLED TO GITHUB**
 >
-> The direction of the dependency does the work: **Càrn never calls GitHub. GitHub calls Càrn.** A workflow's last step POSTs to your status endpoint; càrn has no idea what produced it and no code path that reaches out. If GitHub vanished tomorrow you'd lose _a producer of statuses_, not a function — every page still renders, every merge still works, the commit page just shows no status.
+> The direction of the dependency does the work. **Càrn never calls GitHub. GitHub calls Càrn.** A workflow's last step POSTs to your status endpoint. Càrn has no idea what produced it and no code path that reaches out. If GitHub vanished tomorrow you'd lose _a producer of statuses_, not a function. Every page still renders, every merge still works; the commit page just shows no status.
 >
-> So build the status endpoint at stage 3 and shape it like GitHub's commit statuses (`state`, `context`, `description`, `target_url`). That schema is the seam. The local `forgejo-runner exec` path at stage 4 posts to the identical endpoint, which means "real CI" is a swap of the producer, not a rewrite — and the two can run side by side while you're deciding.
+> **Stage 2 is CI-lite, deliberately.** Twenty lines of YAML on infrastructure that already exists, goes green/red today, and is designed from the start to be thrown away.
 >
-> Stage 2 is **CI-lite, deliberately** — twenty lines of YAML on infrastructure that already exists, green/red today, designed from the start to be thrown away.
+> Build the status endpoint in Stage 3 and shape it like GitHub's commit statuses: `state`, `context`, `description`, and `target_url`. The local `forgejo-runner exec` path in Stage 4 posts to the identical endpoint, which means "real CI" is a swap of the producer, not a rewrite, and the two can run side-by-side.
 
-On the tempting shortcut — a `post-receive` hook running a container directly: it's viable, but be clear-eyed. CI by definition runs code from the repo; `npm ci` executes lifecycle scripts. While you're the only pusher that's exactly as dangerous as running `npm test` on your laptop, i.e. fine. The moment anyone else can push, or you build a PR branch, it's remote code execution on your VPS. If you do it: `--memory=1g --cpus=1 --pids-limit=512`, a hard `timeout`, `flock` to one job at a time, build the exact pushed SHA via `git archive`, and **never bind-mount the Docker socket** — that's trivially root on the host and the single most common self-hosted-CI compromise.
+It may be tempting to simply have a `post-receive` hook running a container directly. It's viable, but CI by definition runs code from the repo; `npm ci` executes lifecycle scripts. The moment other users can push, or you build a PR branch, it's remote code execution on your VPS.
 
-### The GitHub Actions format, not the runner
+### Leave the runner, take the GitHub Actions format
 
-**Adopt the workflow format.** That brings `actions/checkout`, `actions/setup-node`, `actions/cache` and your own `tuffgal-action` working unchanged, and — the part that matters most day to day — **one workflow file instead of two.** Without this, every repo carries a `.github/workflows/ci.yml` for the mirror and a `.carn/ci.yml` for home, and they drift the first week. Forgejo made the same bet.
+**Adopt the workflow format.** It allows `actions/checkout`, `actions/setup-node`, `actions/cache`, and your own `tuffgal-action` to work as-is, and it's only one workflow file. Without this, every repo would carry a `.github/workflows/ci.yml` for the mirror and a `.carn/ci.yml` for the primary.
 
-**Do not implement the runner.** Full fidelity means `${{ }}` expression evaluation, contexts, matrix expansion, service containers, and a spec someone else keeps extending. Delegate it. `forgejo-runner exec` is a maintained soft-fork of `act`, already speaks the format, and runs a workflow _with no forge at all_. Càrn's job is to store the workflow, queue a job, shell out, and read an exit code. It never parses an expression.
+**Don't implement the runner.** Full fidelity means `${{ }}` expression evaluation, contexts, matrix expansion, service containers, and an ever-expanding spec. Delegate it instead. `forgejo-runner exec` is a maintained soft-fork of `act`, already speaks the format, and runs a workflow without a forge. Càrn's job is to store the workflow, queue a job, shell out, and read an exit code. It never parses an expression.
 
 > **OWN THE QUEUE, NOT THE PROTOCOL**
 >
-> `forgejo-runner` in _daemon_ mode expects a Forgejo-compatible API — registration, job polling, log streaming. That's a protocol to implement, not a config to write, and it buys you remote runners and parallelism you don't need. **Skip the daemon.** Càrn owns a job table in Postgres and invokes `forgejo-runner exec` as a subprocess, the same way it already invokes `git`. Same semaphore, same timeouts, same kill-on-disconnect discipline from §03.
+> `forgejo-runner` in daemon mode expects a Forgejo-compatible API: registration, job polling, log streaming, etc. That's an unnecessary protocol to implement. **Skip it.** Càrn owns a job table in Postgres and invokes `forgejo-runner exec` as a subprocess, the same way it already invokes `git`. Same semaphore, same timeouts, same kill-on-disconnect discipline from §03.
 
-Read `.carn/workflows/` first, fall back to `.github/workflows/` — the same fallback Forgejo uses.
+Read `.carn/workflows/` first, then fall back to `.github/workflows/`. It's the same fallback Forgejo uses.
 
-### Tuffgal, native
+### Native Tuffgal
 
-**Càrn's read-only web UI and CLI-first write path fit Tuffgal's review flow better than GitHub's own primitives do.**
+**Càrn's read-only web UI and CLI-first write path fit Tuffgal's review flow better than GitHub's own primitives.**
 
-`tuffgal-action` already implements the entire review experience: a sticky PR comment with side-by-side thumbnails, checkbox approval, an `@tuffgal approve` command, artifact upload, a per-PR Pages preview, and a bot that pushes baselines back to the branch. Càrn has none of those primitives, and adding them literally would mean a bot identity, web writes, artifact storage, static hosting, and interactive checkboxes — four of which contradict settled decisions and the fifth violates "no client JS."
+`tuffgal-action` already implements the entire review experience: a sticky PR comment with side-by-side thumbnails, checkbox approval, a `@tuffgal approve` command, artifact upload, a per-PR Pages preview, and a bot that pushes baselines back to the branch. Càrn has none of those primitives, and adding them individually would mean a bot identity, web writes, artifact storage, static hosting, and interactive checkboxes. Pass.
 
-But every one of those primitives has a Càrn-shaped substitute that already exists:
+Every one of those primitives has an existing Càrn-shaped substitute:
 
-| What Tuffgal needs       | On GitHub                                | On Càrn                                                                                                                                                       | New work        |
-| ------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| Publish the report       | Artifact + `gh-pages` branch             | Push it to `refs/carn/reports/<sha>`. It's static HTML and PNGs — **that's a git tree**, served from the blob origin you already built.                       | none            |
-| Show diffs in review     | Sticky bot comment with thumbnails       | The PR page renders a before/after/diff triptych from the status payload. Read-only, no bot, no comment.                                                      | ~50 lines       |
-| Approve baselines        | Checkbox, `@tuffgal approve`, bot pushes | `carn tuffgal approve <repo> <n>` — fetches candidates, runs `tuffgal approve --from`, commits, pushes. Authenticated by the same SSH key as everything else. | one CLI verb    |
-| Report the outcome       | Check run + job status                   | The commit status endpoint from §07, with `action_required` as a first-class state.                                                                           | already planned |
-| Skip on approval commits | Short-circuit detection                  | Identical logic, nothing forge-specific about it.                                                                                                             | none            |
+| What Tuffgal needs       | On GitHub                                | On Càrn                                                                                                    | New work     |
+| ------------------------ | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------ |
+| Approve baselines        | Checkbox, `@tuffgal approve`, bot pushes | `carn tuffgal approve <repo> <n>` fetches candidates, runs `tuffgal approve --from`, commits, and pushes.  | One CLI verb |
+| Publish report           | Artifact + `gh-pages` branch             | Push to `refs/carn/reports/<sha>`. It's static HTML + PNGs (a.k.a a git tree) served from the blob origin. | None         |
+| Report the outcome       | Check run + job status                   | The commit status endpoint from §07, with `action_required` as a first-class state.                        | Planned      |
+| Show diffs in review     | Sticky bot comment with thumbnails       | The PR page renders a before/after/diff triptych from the status payload. Read-only, no bot, no comment.   | ~50 lines    |
+| Skip on approval commits | Short-circuit detection                  | Identical logic; nothing forge-specific about it.                                                          | none         |
 
-**Zero new architectural primitives.** The report is a git tree; the approval is a push; the review is a page. Each substitution is _more_ in keeping with tenet 1 than the thing it replaces — a baseline set living in refs is inspectable with plain `git`, which an S3 artifact never is.
+**Zero new architectural primitives.** The report is a git tree. The approval is a push. The review is a page. Each substitution is _more_ in keeping with the first tenet than the original primitives. Baselines living in refs are inspectable with plain `git`, unlike S3 artifacts.
 
-> **FIRST-CLASS BY CONVENTION, NOT BY COUPLING**
+> **FIRST-CLASS BY CONVENTION**
 >
-> **Not automatic for all repos.** A CLI tool, a dotfiles repo, or a Rust library gets nothing from visual regression, and auto-enabling means every one carries a no-op or failing check. Detect it instead: a repo has visual checks when it has a `tuffgal.config.ts`, which costs you nothing since you're already reading the tree.
+> **Not automatic for all repos.** CLI tools, dotfiles repos, and Rust libraries get nothing from visual regression. Go with good ol' detection instead: a repo has visual checks when it has a `tuffgal.config.ts` file in its repo root.
 >
-> And no hardcoding. The status API is rich enough that Tuffgal slots in with _no Tuffgal-specific code in Càrn_ — a status carries a state, a payload, and optionally an image triptych, a shape any visual tool could emit. Tuffgal is first-class as the reference integration, not as a special case.
+> No hardcoding! The status API is rich enough that Tuffgal slots in with _no Tuffgal-specific code in Càrn_. A status carries a state, a payload, and optionally an image triptych, a shape any visual tool could emit. Tuffgal is first-class as the reference integration.
 
-Two practical notes. `tuffgal-action` is a **composite** action — shell plus Node, no Docker image, no hosted-runner magic — so `forgejo-runner exec` handles it with only `actions/upload-artifact` needing a substitute, and that's exactly the step Càrn replaces with a report ref. And a Postgres `services:` block is the shakiest part under `act`-family runners; a plain `docker run` in a setup step is less elegant and more likely to work.
+Two practical notes:
 
-The sequencing, then — nothing here before the MLP ships, and each step useful alone: **status endpoint → workflow storage + `forgejo-runner exec` → report refs → image triptych on the PR page → `carn tuffgal approve`.** Tuffgal lands at step four and has everything it needs by step five.
+1. `tuffgal-action` is a **composite action**: shell plus Node, no Docker image, no hosted-runner magic; so `forgejo-runner exec` handles it with only `actions/upload-artifact` needing a substitute, which Càrn replaces with a report ref.
+2. A Postgres `services:` block is the shakiest part under `act`-family runners; a plain `docker run` in a setup step is less elegant but more likely to work properly.
 
-The loop closes: Càrn's own repo is tested by Tuffgal, running on Càrn's CI, built to run Tuffgal.
+Nothing here ships before the MLP, but here's the sequence for when it does: **status endpoint → workflow storage + `forgejo-runner exec` → report refs → image triptych on the PR page → `carn tuffgal approve`.** Tuffgal lands at Step 4 and has everything it needs by Step 5.
+
+The loop closes once Càrn's own repo is tested by Tuffgal, running on Càrn's CI, built to run Tuffgal.
 
 ### Stale local branches after a squash merge
 
-**Why it happens:** after a squash merge, the source branch's commits aren't ancestors of the target — one new commit carries the combined diff. So `git branch --merged` doesn't list it, and `git branch -d` refuses with "not fully merged."
+**Why it happens:** after a squash merge, the source branch's commits aren't ancestors of the target; one new commit carries the combined diff. So `git branch --merged` doesn't list it, and `git branch -d` refuses with "not fully merged."
 
-Two things worth knowing before reaching for the obvious tools:
+Two things worth knowing:
 
-- **`git cherry` does not detect squash merges.** Verified — it reported all three squashed commits as unapplied. It compares patch-ids of individual commits, and the squash produced one commit whose patch-id matches none of them.
-- **`git diff target...source` is the wrong dot count.** Three-dot means `merge-base..source` — "what the branch changed" — which is non-empty for any branch with commits. Two-dot works immediately after the squash but breaks the moment `main` moves on.
+- **`git cherry` doesn't detect squash merges.** Verified: it reported all three squashed commits as unapplied. It compares patch-ids of individual commits, and the squash produced one commit whose patch-id didn't match any of them.
+- **`git diff target...source` is the wrong dot count.** Three-dot means `merge-base..source`, e.g. what the branch changed. `It's non-empty for any branch with commits. Two-dot works immediately after the squash but breaks the moment `main` moves on.
 
-**The server-side fix is the one that matters: auto-delete the source branch on merge** (Phase 4). That converts a hard content question into a trivial one — the branch is gone, so the client just needs to notice.
+**The server-side fix:** auto-delete the source branch on merge. Currently scheduled for Phase 4. The client-side is two settings and a command. Set `git config --global fetch.prune true`, but _not_ `fetch.pruneTags`, which deletes local tags. Then:
 
-**The client-side half** is two settings and a command. Set `git config --global fetch.prune true` (but _not_ `fetch.pruneTags`, which deletes local tags and reliably surprises people). Then:
-
-```
+```bash
 # verified output: prints "feature2", then "Deleted branch feature2"
 git fetch --prune
 git for-each-ref --format '%(if:equals=[gone])%(upstream:track)%(then)%(refname:short)%(end)' \
-    refs/heads | grep . | xargs -r git branch -D
+  refs/heads | grep . | xargs -r git branch -D
 ```
 
-That's `carn tidy`. Wrap it with a protected-branch guard and a dry-run default. Note the literal token is `[gone]` with brackets, and that an in-sync branch prints _empty_ — not `ok` — so naive field-splitting misreads it.
+That's `carn tidy`. Wrap it with a protected-branch guard and a dry-run default. Note the literal token is `[gone]` with brackets, and that an in-sync branch prints _empty_ (not `ok`) so naive field-splitting misreads it. For the rarer case of a branch whose remote wasn't deleted, there _is_ a robust deletion-independent test: synthesize the squash commit and then use `git cherry` on it:
 
-For the rarer case of a branch whose remote wasn't deleted, there _is_ a robust deletion-independent test: synthesize the squash commit and then use `git cherry` on it.
-
-```
-git cherry main "$(git commit-tree "$(git rev-parse feature^{tree})" \
-                     -p "$(git merge-base main feature)" -m _)"
-# → "- 410cc78 _"   the leading '-' means already applied upstream
+```bash
+git cherry main "$(git commit-tree "$(git rev-parse feature^{tree})" -p "$(git merge-base main feature)" -m _)"
 ```
 
-Verified correct both immediately after a squash and after `main` moved on with unrelated commits. Build a throwaway commit whose tree is the feature tip and whose parent is the merge-base; its patch-id is exactly the squashed diff.
+Verified immediately after a squash and after `main` moved on with unrelated commits. If you build a throwaway commit whose tree is the feature tip and whose parent is the merge-base, its patch-id is exactly the squashed diff.
 
 ## 11 · Risks
 
