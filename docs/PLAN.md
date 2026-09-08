@@ -950,80 +950,84 @@ Verified immediately after a squash and after `main` moved on with unrelated com
 
 ## 11 · Risks
 
-_Ranked by what actually costs you something_
+_Ranked by how utterly screwed you'd be if it actually happens_
 
-|          | Risk                                                                                                                               | Mitigation                                                                                                                                                                                                     |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Critical | **It becomes the only home of your code before it's trustworthy.** A bad force-push, a disk failure, a bug in your own merge path. | The §10 mirror, in **Phase 2** — before the box holds anything you'd miss. Plus `core.logAllRefUpdates = true`: reflogs are _off by default in bare repos_ and are your only undo after a bad force-push.      |
-| Critical | **You lose the laptop.** One SSH key is the only credential for the only forge holding all your code.                              | See below — this needs a paragraph, not a cell.                                                                                                                                                                |
-| High     | Subprocess resource exhaustion — abandoned clones piling up `pack-objects`, or one big clone pinning the shared core.              | Global semaphore, hard timeouts, kill-on-disconnect, plus the §04 config. Git's memory knobs bound one process; nothing but a semaphore bounds ten.                                                            |
-| Medium   | Content-injection through rendered markdown or a committed `.html`/`.svg` blob.                                                    | Largely designed out by `html: false` (§04). The residue is a URL policy, not a sanitizer: scheme allowlist, `rel="nofollow ugc"`, CSP `img-src`, and blobs on a separate origin.                              |
-| Medium   | You build 70% and stall — the classic fate of a side project with no external forcing function.                                    | The phase gates exist for this. Phase 0 is one evening to "I pushed to my own server," Phase 2 puts it on the internet, and if Phase 4 stalls you still have a repo browser with issues that you'd keep using. |
-| Medium   | `ssh2` is bus-factor 1 at roughly one release a year.                                                                              | Fine for personal use. The escape hatch is OpenSSH with `AuthorizedKeysCommand` — a contained change, since authorization already lives in your app.                                                           |
-| Low      | Path traversal via repo or ref names.                                                                                              | Designed out by UUID-derived paths. Still reject refs beginning with `-` and always pass `--`.                                                                                                                 |
-| Low      | Scope creep back toward re-implementing GitHub.                                                                                    | §13 makes each addition a decision rather than a drift. The "never" column does real work.                                                                                                                    |
+| Level    | Risk                                                                                                               | Mitigation strategy                                                                                                                                         |
+| -------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Critical | It becomes the only home of your code before it's trustworthy. One mistake away from a bad outcome.                | The §10 mirror in Phase 2. Plus `core.logAllRefUpdates = true`: reflogs are off by default, and they're the only undo after a bad force-push.               |
+| Critical | You lose your laptop. One SSH key is the only credential for the only forge holding all your code.                 | See below.                                                                                                                                                  |
+| High     | Subprocess resource exhaustion; abandoned clones piling up `pack-objects`, or a big clone pinning the shared core. | Global semaphore, hard timeouts, kill-on-disconnect, plus the §04 config.                                                                                   |
+| Medium   | Content-injection through rendered Markdown or a committed `.html`/`.svg` blob.                                    | Largely designed out by `html: false` (§04). The residue is a URL policy: scheme allowlist, `rel="nofollow ugc"`, CSP `img-src`, and separate origin blobs. |
+| Medium   | You build 70% and stall. Classic Tony Stark fate.                                                                  | Why the phase gates exist. If Phase 4 stalls, you'd still have a repo browser with issues. Hehe.                                                            |
+| Medium   | `ssh2` is bus-factor 1 at roughly one release a year.                                                              | Fine for personal use. The escape hatch is OpenSSH with `AuthorizedKeysCommand`.                                                                            |
+| Low      | Path traversal via repo or ref names.                                                                              | Designed out by UUID-derived paths. Still reject refs beginning with `-` and always pass `--`.                                                              |
+| Low      | Scope creep back toward re-implementing GitHub.                                                                    | §13 makes each addition a decision. "Never" column FTW.                                                                                                     |
 
-### Losing the key — the answer is more of the same mechanism
+### Losing your SSH key
 
 No new mechanism is needed. Three layers, in order of how often you'd reach for them:
 
-- **Register more than one key.** `ssh_keys` is already one-to-many. Add a second keypair that never travels — on a hardware token in a drawer, on the desktop, or printed and folded into a safe. Lose the laptop, delete its row from the surviving machine, done. **The recovery credential is the same kind of thing as the primary one** — no second code path, no shared secret, nothing new to implement.
-- **Use a hardware-backed key for the laptop:** `ssh-keygen -t ed25519-sk`. The private key material lives on the FIDO2 token, not the disk — so a stolen laptop is an inconvenience rather than a compromise, and you can be unhurried about revoking.
-- **The VPS is the root of trust**, and that's the bottom of the stack. You own the box; InterServer gives you console access. The break-glass is `docker compose exec app carn admin key add` — an admin verb that runs _locally on the host_ and needs no SSH into Càrn, only shell on the machine.
+- **Register more than one key.** `ssh_keys` is already one-to-many. Add a second keypair that never travels; print it out and toss it in a safe. If you lose your laptop, delete its row from the surviving machine, retrieve your printed-out key, and you're back in business.
+- **Use a hardware-backed key for your laptop:** `ssh-keygen -t ed25519-sk`. The private key material lives on the FIDO2 token, not the disk, so a stolen laptop is just a (costly) inconvenience.
+- **The VPS is the root of trust**, and that's the bottom of the stack. You own the box; InterServer gives you console access. The break-glass procedure is `docker compose exec app carn admin key add`.
 
-> **WRITE THE BREAK-GLASS PROCEDURE DOWN IN PHASE 1, WHILE YOU STILL REMEMBER THE SCHEMA**
+> **WRITE DOWN THE BREAK-GLASS PROCEDURE**
 >
-> Four lines in the repo's README: how to reach the console, how to exec into the container, the exact command, how to verify. Recovery is always possible — you own the hardware. The failure mode is reverse-engineering your own `ssh_keys` table from memory at 11pm.
+> Add four lines to the repo's README: how to reach the console, how to exec into the container, the exact command, and how to verify. Recovery is always possible since you own the hardware. The failure mode is reverse-engineering your own `ssh_keys` table from memory.
 
-**Revocation is instant.** Every SSH connection re-reads the key table, so deleting a row is sufficient — no cached authorization, no session to expire. Don't optimize that away with a key cache later.
+**Revocation is instant.** Every SSH connection re-reads the key table, so deleting a row is sufficient; no cached authorization, no session to expire. Don't optimize this away with a key cache.
 
 ## 12 · Naming
 
 _Three registers, one rule_
 
-**Càrn** on every visual surface. **Carn** in ASCII prose, where it's still a proper noun but the accent can't render. **`carn`** for every identifier a machine parses — hostname, npm package, binary, database, containers. BRAND §01 states the rule and why an accented hostname is settled rather than stylistic.
+**Càrn** on every visual surface. **Carn** in ASCII prose, where it's still a proper noun but we can't render the accent. **`carn`** for every identifier parsed by machines: hostnames, npm packages, binaries, databases, containers. BRAND §01 states the rule.
 
 > **WHY THE HOSTNAME CAN'T CARRY THE ACCENT**
 >
-> `càrn.fancyenchiladas.net` punycodes to `xn--crn-9ka.fancyenchiladas.net`. Browsers handle that transparently and would display the pretty form. **OpenSSH does not.** I grepped the current OpenSSH source: there is not a single occurrence of `idn`, `idna`, `punycode`, or `xn--` anywhere in the connection path. It passes your raw UTF-8 bytes straight to `getaddrinfo()` with only `AI_CANONNAME` set — never `AI_IDN`, which is opt-in on glibc and doesn't exist at all on macOS. So `git clone git@càrn.fancyenchiladas.net:linklater` simply fails on your MacBook, and the copy-paste clone URL on every repo page would be broken.
+> `càrn.fancyenchiladas.net` punycodes to `xn--crn-9ka.fancyenchiladas.net`. Browsers handle that transparently and would display the pretty form. **OpenSSH does not.** It passes your raw UTF-8 bytes straight to `getaddrinfo()` with only `AI_CANONNAME` set; never `AI_IDN`, which is opt-in on glibc and doesn't exist at all on macOS. So `git clone git@càrn.fancyenchiladas.net:linklater` simply fails, and the copy/paste clone URL on every repo page would be broken.
 >
-> Two more, while we're here. **Caddy doesn't accept Unicode site addresses either** — and it fails _silently_, serving a 200 with an empty body rather than a config error (issues #6404 and #6673). You'd have to write the punycode in the Caddyfile regardless. And Let's Encrypt requires the A-label form on the order. Meanwhile macOS hands back NFD-normalized strings, so `à` can arrive as two codepoints and punycode to `xn--carn-rvc` — a completely different label from the NFC form. That's a permanent low-grade footgun in your own host-matching code.
+> **Caddy doesn't accept Unicode site addresses either.** It fails silently, serving a 200 with an empty body rather than a config error (issues #6404 and #6673). You'd have to write the punycode in the Caddyfile regardless. Let's Encrypt requires the A-label form on the order. Meanwhile macOS hands back NFD-normalized strings, so `à` can arrive as two codepoints and punycode to `xn--carn-rvc`; a completely different label from the NFC form.
 
-If the accented form should resolve too, register the IDN and 301 it to the ASCII host over HTTPS. Browsers are the only surface where IDN works end to end, so that redirect is as far as it should go.
+If the accented form needs to resolve too, register the IDN and 301 it to the ASCII host over HTTPS. Browsers are the only surface where IDN works end to end, so that redirect is as far as it should go.
 
-**An Càrn Gorm** is "the blue cairn" — Cairngorm's own root. (Trivia: the Gaelic name for the _range_ isn't a plural of that at all — it's _Am Monadh Ruadh_, "the red mountains." English named the whole range after one blue peak.)
+**An Càrn Gorm** is "the blue cairn", e.g. Cairngorm's own root. Fun fact: the Scottish Gaelic name for the range isn't a plural of that at all. It's _Am Monadh Ruadh_, or "the red mountains." English named the whole range after one blue peak.
 
 ### Càrn
 
-_KAARN · masculine · cairn, heap of stones — also a verb: to heap, pile up, accumulate_
+_KAARN · masculine · cairn, heap of stones · verb: to heap, pile up, accumulate_
 
-Masculine noun, genitive and plural _cùirn_. A heap that _many passers-by each add one stone to_, and which _marks a route for those who follow_ — a commit history and a public repo in one image. It doubles as a verb: to heap, pile up, accumulate.
+Masculine noun, genitive and plural _cùirn_. A heap that _many passers-by each add one stone to_, and which _marks a route for those who follow_. A commit history and a public repo in one image. It doubles as a verb: to heap, pile up, accumulate.
 
 `Càrn · carn.fancyenchiladas.net · npm: @nschneble/carn`
 
 ### Where each spelling goes
 
-| Surface                                   | Form     | Why                                                                                                                              |
-| ----------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Page titles, nav, footer, README, docs    | **Càrn** | The real word. Nothing here is parsed by a machine.                                                                              |
-| Hostname, clone URLs, TLS cert, Caddyfile | `carn.`  | OpenSSH can't resolve IDN; Caddy fails silently on Unicode addresses.                                                            |
-| npm package                               | `@nschneble/carn` | npm forbids non-ASCII names outright, and unscoped `carn` is refused by the similarity guard (`yarn`, `cron`, `acorn`). |
-| Binary on `$PATH`                         | `carn`   | A scope is a registry namespace, not a command name. `cairn` and `cairn-cli` are both taken; the latter already claims the `cairn` binary name. |
-| Repo, database, container names           | `carn`   | Anywhere a shell or a config file has to type it.                                                                                |
+| Surface                                   | Form              | Why                                                                                                                  |
+| ----------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Binary on `$PATH`                         | `carn`            | A scope is a registry namespace. `cairn` and `cairn-cli` are both taken; the latter claimed the `cairn` binary name. |
+| Hostname, clone URLs, TLS cert, Caddyfile | `carn.`           | OpenSSH can't resolve IDN; Caddy fails silently on Unicode addresses.                                                |
+| npm package                               | `@nschneble/carn` | npm forbids non-ASCII names outright, and unscoped `carn` is refused by the similarity guard.                        |
+| Page titles, nav, footer, README, docs    | **Càrn**          | The real word. Never parsed by machines.                                                                             |
+| Repo, database, container names           | `carn`            | Anywhere a shell or a config file has to type it.                                                                    |
 
-Grave accents in Gaelic are meaning-bearing, not decorative — `obair` is "work," `òbair` is "retch." Only grave accents exist in modern Gaelic; acutes are pre-1981 and appear only in older dictionaries.
+Grave accents in Scottish Gaelic are meaning-bearing, not decorative. `obair` is "work," `òbair` is "retch." Only grave accents exist in modern Gaelic; acutes are pre-1981 and appear only in older dictionaries.
 
 ### The blob host
 
-**`gelatinous-cube.fancyenchiladas.net`.** A gelatinous cube is a dungeon monster that _engulfs objects into itself, where they remain suspended and visible while it slowly digests them_. That is a blob store. It is also, specifically, an _opaque container that isolates whatever it has swallowed from everything around it_, which is the exact security property the second origin exists to provide.
+**`gelatinous-cube.fancyenchiladas.net`.** A gelatinous cube is a dungeon monster that _engulfs objects into itself, where they remain suspended and visible while it slowly digests them_. That's a blob store. It's also, specifically, an _opaque container that isolates whatever it's swallowed from everything around it_, which is the exact security property the second origin exists to provide.
 
-Length costs nothing — nobody types this host, it only appears in generated `href`s.
+Length costs nothing. Nobody types this host. It only appears in generated `href`s.
 
 > **THE EASTER EGG AT `/`**
 >
-> Safe, and for a stronger reason than it looks. Under `Content-Security-Policy: default-src 'none'; sandbox`, **every blob response lands in its own unique opaque origin** — not the host origin, and not even the same origin as any other blob. So a first-party page at `/` shares an origin with nothing. This is a better posture than the classic sandbox-domain setup, where user content can attack other user content on the same host.
+> Under `Content-Security-Policy: default-src 'none'; sandbox`, **every blob response lands in its own unique opaque origin**; not the host origin, and not even the same origin as another blob. So a first-party page at `/` doesn't share an origin. This is a better posture than the classic sandbox-domain setup, where user content can attack other user content on the same host.
 >
-> Three conditions. **Never set a cookie on that origin** — and check that no app cookie is scoped to `.fancyenchiladas.net` with a leading dot, or the blob host receives it; use exact-host scoping and the `__Host-` prefix. **Keep the page static and self-contained** — no query-param reflection, no JS reading `location`. And **make the blob branch the default and the easter egg an exact-match exception on `/`**, never a prefix. The risk isn't the page — it's introducing conditional header logic on an origin whose whole model was one unconditional strict policy. A future refactor letting a blob path fall through to the page branch would serve untrusted content without `sandbox`. Assert the CSP on a representative blob path in the contract tests.
+> Three conditions to meet:
+>
+> 1. **Never set a cookie on that origin** and check that no app cookie is scoped to `.fancyenchiladas.net` with a leading dot, or the blob host receives it. Use exact-host scoping and the `__Host-` prefix.
+> 2. **Keep the page static and self-contained.** No query-param reflection.
+> 3. **Make the blob branch the default and the easter egg an exact-match exception on `/`**, never a prefix. The risk isn't the page; it's introducing conditional header logic on an origin whose whole model is one unconditional strict policy. A future refactor letting a blob path fall through to the page branch would serve untrusted content without `sandbox`. Assert the CSP on a representative blob path in the contract tests.
 
 ## 13 · Roadmap
 
