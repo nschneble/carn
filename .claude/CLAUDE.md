@@ -382,6 +382,14 @@ confusion, and it caused most of phase 1's revision rounds.
 **A directive says what'd close it.** If a brief can't name the check,
 story, or measurement that proves an item done, it isn't ready to dispatch.
 
+**A table cell holds a phrase, not a paragraph.** If cells run to several
+sentences the table is the wrong shape. Either the content wants prose
+under its own headings, or the row keeps a short pointer and the detail
+goes in a section below it. The 1e contract-test list is the example not to
+repeat: its widest cell is 613 characters. Tables are column-aligned, on
+the pattern in `docs/phases/1a-foundation.md`. Never the compact
+`|---|---|` form.
+
 **Line width.** The docs are never reflowed; they're edited a paragraph at
 a time. Phase briefs wrap at 75 characters. Never wrap a table row, a
 heading, or a fenced block, and never break where the next line would start

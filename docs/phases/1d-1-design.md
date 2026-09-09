@@ -7,13 +7,13 @@ names one phase for all seven views; it's split here because 1d settles
 every visual decision against two pages you can judge, and 1e applies a
 settled system to five more.
 
-| Sub-phase | Scope | State |
-|---|---|---|
-| 1a | Schema, Fastify skeleton, `html` tag | Merged, PR #1 |
-| 1b | SSH listener, auth, push-to-create | Merged, PR #2 |
-| 1c | Anonymous smart-HTTP | Merged, PR #4 |
-| **1d** | Design system, repo list, repo show | This document |
-| 1e | Blob, commit log, diff, branch and tag lists | Next |
+| Sub-phase | Scope                                        | State         |
+| --------- | -------------------------------------------- | ------------- |
+| 1a        | Schema, Fastify skeleton, `html` tag         | Merged, PR #1 |
+| 1b        | SSH listener, auth, push-to-create           | Merged, PR #2 |
+| 1c        | Anonymous smart-HTTP                         | Merged, PR #4 |
+| **1d**    | Design system, repo list, repo show          | This document |
+| 1e        | Blob, commit log, diff, branch and tag lists | Next          |
 
 **Read `.claude/CLAUDE.md` first, in full**, then `docs/BRAND.md`, then
 `docs/STACK.md`. `BRAND.md` isn't reference material for this phase. It's
@@ -27,11 +27,11 @@ small-caps recipe.
 Verified 2026-08-27. If `npm install` resolves outside these majors, **stop
 and report it**.
 
-| Package | Verified | Major | Note |
-|---|---|---|---|
-| `markdown-it` | 15.0.0 | **15** | **New major. Spike it first. See below.** |
-| `highlight.js` | 11.12.0 | **11** | Not needed until 1e. Don't install it yet. |
-| `tuffgal` | 0.2.0-alpha.8 | **0** | Pre-1.0, unstable API by its own README. Pin the exact version. |
+| Package        | Verified      | Major  | Note                                                            |
+| -------------- | ------------- | ------ | --------------------------------------------------------------- |
+| `markdown-it`  | 15.0.0        | **15** | **New major. Spike it first. See below.**                       |
+| `highlight.js` | 11.12.0       | **11** | Not needed until 1e. Don't install it yet.                      |
+| `tuffgal`      | 0.2.0-alpha.8 | **0**  | Pre-1.0, unstable API by its own README. Pin the exact version. |
 
 New dependencies this phase: `markdown-it`, `tuffgal`, `axe-core`, and
 `playwright`. Nothing else. Archivo was already in `fonts/`; the mono face

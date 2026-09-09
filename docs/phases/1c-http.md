@@ -4,12 +4,12 @@ _Clone over HTTP without a key. No pages, no push._
 
 Third of six briefs making up Phase 1 of `docs/PLAN.md` §08.
 
-| Sub-phase | Scope | State |
-|---|---|---|
-| 1a | Schema, Fastify skeleton, `html` tag | Merged, PR #1 |
-| 1b | SSH listener, auth, push-to-create | Merged, PR #2 |
-| **1c** | Anonymous smart-HTTP read | This document |
-| 1d | Browsing views + the design system | Next |
+| Sub-phase | Scope                                | State         |
+| --------- | ------------------------------------ | ------------- |
+| 1a        | Schema, Fastify skeleton, `html` tag | Merged, PR #1 |
+| 1b        | SSH listener, auth, push-to-create   | Merged, PR #2 |
+| **1c**    | Anonymous smart-HTTP read            | This document |
+| 1d        | Browsing views + the design system   | Next          |
 
 **Read `.claude/CLAUDE.md` first, in full**, then `docs/STACK.md`. This
 brief doesn't repeat them. Where any two disagree, CLAUDE.md wins, and you
@@ -22,9 +22,9 @@ should say so rather than choosing quietly.
 Verified 2026-08-26. If `npm install` resolves outside these majors, **stop
 and report it** rather than adapting the code.
 
-| Package | Verified | Major | Note |
-|---|---|---|---|
-| `fastify` | 5.12.1 | **5** | Already installed. The raw content-type parser below is a v5 API. |
+| Package   | Verified | Major | Note                                                              |
+| --------- | -------- | ----- | ----------------------------------------------------------------- |
+| `fastify` | 5.12.1   | **5** | Already installed. The raw content-type parser below is a v5 API. |
 
 **No new dependencies.** Gunzip comes from `node:zlib`. If you find
 yourself wanting `@fastify/compress`, stop. It solves response compression,

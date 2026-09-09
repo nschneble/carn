@@ -226,12 +226,12 @@ were long. But each of these carried a fact that exists nowhere else in the
 code, and three of them are the reasons behind constraints 1e is about to
 lean on. Restore the fact; keep the shorter prose.
 
-| File | What was cut | Why it matters |
-|---|---|---|
-| `src/repos/header.ts:3` | "one ls-tree per page, cached on the tip's OID" | The only record that the header costs one spawn and is cached. 1e's spawn budget is asserted at 12 per render. |
-| `src/repos/tree.ts:3` | "which is the whole reason CLAUDE.md caps a render at twelve spawns" | Same budget, seen from the other side. Without it the four-times-slower claim reads as trivia. |
-| `src/html/filename.ts:3` | "no whitespace between the runs: a newline inside `README.<span>md</span>` becomes a space in the accessible name, the clipboard, and find-in-page" | A warning against a specific edit, removed in the same commit that added indentation to every other HTML template. |
-| `src/repos/header.ts:20` | `maxHeaderBytes`, "what the 100 KB budget leaves after fonts and the page" | The replacement inverts the derivation. 16 KB is not chosen to leave room; it is what remains. `docs/BRAND.md` 06 has the reconciled arithmetic. |
+| File                     | What was cut                                                                                                                                        | Why it matters                                                                                                                                   |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/repos/header.ts:3`  | "one ls-tree per page, cached on the tip's OID"                                                                                                     | The only record that the header costs one spawn and is cached. 1e's spawn budget is asserted at 12 per render.                                   |
+| `src/repos/tree.ts:3`    | "which is the whole reason CLAUDE.md caps a render at twelve spawns"                                                                                | Same budget, seen from the other side. Without it the four-times-slower claim reads as trivia.                                                   |
+| `src/html/filename.ts:3` | "no whitespace between the runs: a newline inside `README.<span>md</span>` becomes a space in the accessible name, the clipboard, and find-in-page" | A warning against a specific edit, removed in the same commit that added indentation to every other HTML template.                               |
+| `src/repos/header.ts:20` | `maxHeaderBytes`, "what the 100 KB budget leaves after fonts and the page"                                                                          | The replacement inverts the derivation. 16 KB is not chosen to leave room; it is what remains. `docs/BRAND.md` 06 has the reconciled arithmetic. |
 
 `src/repos/wordmark.ts` and `src/git/oid.ts` lost their `BRAND.md 06`
 citations and a sentence each. Lower stakes, but restore the citations at

@@ -51,14 +51,14 @@ condition holds on exactly one page.** `/r/:repo` has a mark. Tree, commit
 log, branches and tags don't, so §02's rule doesn't reach them, no section
 replaces it, and each of the four invented a heading. The measured result:
 
-| View | `<h1>` class | Renders as |
-|---|---|---|
-| `/r/:repo` | `.vh` | hidden |
-| blob | `.t-item` | 1.05–1.42rem, small caps |
-| tree | `.t-label` | 11px mono, `--ink-faint`, raw path, no `smallCaps()` |
-| commit log | `.t-label` | 11px mono |
-| commit | **`.t-l`** | **1.75–2.7rem uppercase, `"wght" 760`** |
-| branches, tags | `.t-label` | 11px mono |
+| View           | `<h1>` class | Renders as                                           |
+| -------------- | ------------ | ---------------------------------------------------- |
+| `/r/:repo`     | `.vh`        | hidden                                               |
+| blob           | `.t-item`    | 1.05–1.42rem, small caps                             |
+| tree           | `.t-label`   | 11px mono, `--ink-faint`, raw path, no `smallCaps()` |
+| commit log     | `.t-label`   | 11px mono                                            |
+| commit         | **`.t-l`**   | **1.75–2.7rem uppercase, `"wght" 760`**              |
+| branches, tags | `.t-label`   | 11px mono                                            |
 
 Four treatments across six pages, with a 2.7rem display heading on one page
 and an 11px faint caption on the page beside it.

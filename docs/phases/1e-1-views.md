@@ -4,13 +4,13 @@ _Everything left that only reads. After this, Phase 1 is done._
 
 Fifth and last of the briefs making up Phase 1 of `docs/PLAN.md` §08.
 
-| Sub-phase | Scope | State |
-|---|---|---|
-| 1a | Schema, Fastify skeleton, `html` tag | Merged, PR #1 |
-| 1b | SSH listener, auth, push-to-create | Merged, PR #2 |
-| 1c | Anonymous smart-HTTP | Merged, PR #4 |
-| 1d | Design system, repo list, repo show | In review |
-| **1e** | Blob, log, commit, branch and tag lists | This document |
+| Sub-phase | Scope                                   | State         |
+| --------- | --------------------------------------- | ------------- |
+| 1a        | Schema, Fastify skeleton, `html` tag    | Merged, PR #1 |
+| 1b        | SSH listener, auth, push-to-create      | Merged, PR #2 |
+| 1c        | Anonymous smart-HTTP                    | Merged, PR #4 |
+| 1d        | Design system, repo list, repo show     | In review     |
+| **1e**    | Blob, log, commit, branch and tag lists | This document |
 
 **Read `.claude/CLAUDE.md` first, in full**, then `docs/BRAND.md`, then
 `docs/LAYOUT.md`, then `docs/STACK.md`. All four were audited and corrected
@@ -27,12 +27,12 @@ change a doc, re-run that script and say so in the handoff.
 Verified 2026-08-28. If `npm install` resolves outside these majors, **stop
 and report it**.
 
-| Package | Verified | Major | Note |
-|---|---|---|---|
-| `highlight.js` | 11.12.0 | **11** | New this phase. Latest is still 11.12.0, no drift since `STACK.md` recorded it. |
-| `markdown-it` | 15.0.1 | **15** | Patch bump from the pinned 15.0.0. Read the changelog before taking it; the 1d spike's four answers were measured against .0. |
-| `tuffgal` | 0.2.2-alpha.1 | **0** | Pin exactly. Still pre-1.0 with an unstable API. Bumped from 0.2.1-alpha.1 during the visual-coverage wave for the `browserArgs` seam (`nschneble/tuffgal#49`). |
-| `prisma` | 7.x | **7** | `latest` is **8.0.0-rc.12**. The standing hazard: never install Prisma by tag. |
+| Package        | Verified      | Major  | Note                                                                                                                                                            |
+| -------------- | ------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `highlight.js` | 11.12.0       | **11** | New this phase. Latest is still 11.12.0, no drift since `STACK.md` recorded it.                                                                                 |
+| `markdown-it`  | 15.0.1        | **15** | Patch bump from the pinned 15.0.0. Read the changelog before taking it; the 1d spike's four answers were measured against .0.                                   |
+| `tuffgal`      | 0.2.2-alpha.1 | **0**  | Pin exactly. Still pre-1.0 with an unstable API. Bumped from 0.2.1-alpha.1 during the visual-coverage wave for the `browserArgs` seam (`nschneble/tuffgal#49`). |
+| `prisma`       | 7.x           | **7**  | `latest` is **8.0.0-rc.12**. The standing hazard: never install Prisma by tag.                                                                                  |
 
 New dependencies this phase: **`highlight.js` only.** Nothing else.
 
@@ -134,12 +134,12 @@ not shrink and stay counted.
 constant**: `remaining = budget − (fonts + stylesheet + chrome)`, so it
 tracks automatically when the stylesheet changes. Four cases:
 
-| | render | escape hatch |
-|---|---|---|
-| Text under cap | whole | — |
-| Text over cap | first `remaining` bytes, broken on a line boundary | `Show entire file` |
-| Binary under cap | inline, `loading="lazy"`, plus metadata | `Open raw` |
-| Binary over cap | metadata and "too large to show here" | `Open raw` |
+|                  | render                                             | escape hatch       |
+| ---------------- | -------------------------------------------------- | ------------------ |
+| Text under cap   | whole                                              | —                  |
+| Text over cap    | first `remaining` bytes, broken on a line boundary | `Show entire file` |
+| Binary under cap | inline, `loading="lazy"`, plus metadata            | `Open raw`         |
+| Binary over cap  | metadata and "too large to show here"              | `Open raw`         |
 
 `loading="lazy"` defers bytes, it doesn't remove them. Keep it for
 time-to-first-render; don't count it against the budget.
@@ -308,13 +308,13 @@ is worth more than the diff:
 
 Record that rule in `docs/STACK.md` and re-run `scripts/docs-artifact.mjs`.
 
-| Call site | Verdict |
-|---|---|
-| `src/repos/resolve.ts:34` | **Stays.** The DSL is wrong, twice. |
-| `src/repos/list.ts:17` | **Stays.** The DSL cannot express the sort. |
+| Call site                      | Verdict                                                                     |
+| ------------------------------ | --------------------------------------------------------------------------- |
+| `src/repos/resolve.ts:34`      | **Stays.** The DSL is wrong, twice.                                         |
+| `src/repos/list.ts:17`         | **Stays.** The DSL cannot express the sort.                                 |
 | `test/support/visual-db.ts:46` | **Gone already.** `db.user.findUnique({ where: { handle: "nschneble" } })`. |
-| `test/support/visual-db.ts:62` | **Stays.** `TRUNCATE` has no DSL form. |
-| `test/support/visual-db.ts:65` | **Gone already.** `db.repo.createMany`, one round trip instead of N. |
+| `test/support/visual-db.ts:62` | **Stays.** `TRUNCATE` has no DSL form.                                      |
+| `test/support/visual-db.ts:65` | **Gone already.** `db.repo.createMany`, one round trip instead of N.        |
 
 **`resolve.ts`.** The comment on line 33 gives half the reason; it should
 give both. Prisma's `mode: "insensitive"` compiles to `ILIKE`, and
@@ -382,12 +382,12 @@ be a declaration rather than a literal inside a `where` clause.
 shape of `test/contract/ssh-auth.contract.ts:67`, the store plus an array
 recording what it was asked, and assert four things:
 
-| case | expected |
-|---|---|
-| `userId` is `repo.ownerId` | `true`, **and the fake was never called** |
-| not owner, `isAdmin` | `true` |
-| not owner, grant at `write` or `admin` | `true` |
-| not owner, no row at all | `false`, not a throw |
+| case                                   | expected                                  |
+| -------------------------------------- | ----------------------------------------- |
+| `userId` is `repo.ownerId`             | `true`, **and the fake was never called** |
+| not owner, `isAdmin`                   | `true`                                    |
+| not owner, grant at `write` or `admin` | `true`                                    |
+| not owner, no row at all               | `false`, not a throw                      |
 
 The first row is the one that matters and the one a database-backed test
 can't make: it's the difference between an owner push costing zero
@@ -520,11 +520,11 @@ it's small enough to add here.
 
 **What the rows link to**, once this exists:
 
-| Row | Target |
-|---|---|
-| File | `/r/:repo/blob/:rev/<path>` |
-| Directory | `/r/:repo/tree/:rev/<path>` |
-| Gitlink | nothing, a plain row, per the decision already taken |
+| Row       | Target                                               |
+| --------- | ---------------------------------------------------- |
+| File      | `/r/:repo/blob/:rev/<path>`                          |
+| Directory | `/r/:repo/tree/:rev/<path>`                          |
+| Gitlink   | nothing, a plain row, per the decision already taken |
 
 Re-enable the hover wash and the `::after` overlay on `.tree` in the same
 commit. `LAYOUT.md:102` calls a wash with no click target a false

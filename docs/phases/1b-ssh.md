@@ -5,12 +5,12 @@ pages._
 
 Second of four briefs making up Phase 1 of `docs/PLAN.md` §08.
 
-| Sub-phase | Scope | State |
-|---|---|---|
-| 1a | Schema, Fastify skeleton, `html` tag | Done, PR #1 |
-| **1b** | SSH listener, auth against `ssh_keys`, push-to-create | This document |
-| 1c | Anonymous smart-HTTP read | Next |
-| 1d | Browsing views + the design system | After that |
+| Sub-phase | Scope                                                 | State         |
+| --------- | ----------------------------------------------------- | ------------- |
+| 1a        | Schema, Fastify skeleton, `html` tag                  | Done, PR #1   |
+| **1b**    | SSH listener, auth against `ssh_keys`, push-to-create | This document |
+| 1c        | Anonymous smart-HTTP read                             | Next          |
+| 1d        | Browsing views + the design system                    | After that    |
 
 **Read `.claude/CLAUDE.md` first, in full**, then `docs/STACK.md`. This
 brief doesn't repeat them. Where any two disagree, CLAUDE.md wins and you
@@ -24,10 +24,10 @@ Verified at the time of writing. If `npm install` resolves something
 outside these majors, **stop and report it** rather than adapting the
 code. That failure mode cost 1a two rounds.
 
-| Package | Verified | Major | Note |
-|---|---|---|---|
-| `ssh2` | 1.17.0 | 1 | Proven end-to-end in Phase 0 on this hardware. The three gotchas in CLAUDE.md are confirmed against exactly this version. |
-| `@types/ssh2` | 1.15.5 | 1 | `ssh2` ships no types of its own. Dev dependency. |
+| Package       | Verified | Major | Note                                                                                                                      |
+| ------------- | -------- | ----- | ------------------------------------------------------------------------------------------------------------------------- |
+| `ssh2`        | 1.17.0   | 1     | Proven end-to-end in Phase 0 on this hardware. The three gotchas in CLAUDE.md are confirmed against exactly this version. |
+| `@types/ssh2` | 1.15.5   | 1     | `ssh2` ships no types of its own. Dev dependency.                                                                         |
 
 `ssh2` pulls `asn1` and `bcrypt-pbkdf` as real dependencies, and `nan` +
 `cpu-features` as **optional** ones that compile native code. Let them fail
@@ -127,12 +127,12 @@ doesn't listen.
 
 Added to `config.ts`, same fail-fast `read()` it already uses:
 
-| Var | Required | Default |
-|---|---|---|
-| `CARN_SSH_PORT` | no | `2222` |
-| `CARN_SSH_HOST` | no | `127.0.0.1` |
-| `CARN_SSH_HOST_KEY` | no | `./local/ssh_host_ed25519_key` |
-| `CARN_REPO_ROOT` | no | `./local/repos` |
+| Var                 | Required | Default                        |
+| ------------------- | -------- | ------------------------------ |
+| `CARN_SSH_PORT`     | no       | `2222`                         |
+| `CARN_SSH_HOST`     | no       | `127.0.0.1`                    |
+| `CARN_SSH_HOST_KEY` | no       | `./local/ssh_host_ed25519_key` |
+| `CARN_REPO_ROOT`    | no       | `./local/repos`                |
 
 Defaults are dev defaults; `local/` is already gitignored. Production
 values arrive in Phase 2, which also decides whether the public listener

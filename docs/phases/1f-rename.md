@@ -7,14 +7,14 @@ Sixth of six briefs making up Phase 1 of `docs/PLAN.md` §08. That section
 names one phase, `01 · Core: repos, keys, browsing`, and lists six bullets.
 Five have shipped. This closes the sixth.
 
-| Sub-phase | Scope | State |
-|---|---|---|
-| 1a | Schema, Fastify skeleton, `html` tag | Merged, PR #1 |
-| 1b | SSH listener, auth, push-to-create | Merged, PR #2 |
-| 1c | Anonymous smart-HTTP | Merged, PR #4 |
-| 1d | Design system, repo list, repo show | Merged, PR #5 |
-| 1e | Blob, tree, commit log, diff, branch and tag lists | PR #7 |
-| **1f** | Rename, tree-root redirect | This document |
+| Sub-phase | Scope                                              | State         |
+| --------- | -------------------------------------------------- | ------------- |
+| 1a        | Schema, Fastify skeleton, `html` tag               | Merged, PR #1 |
+| 1b        | SSH listener, auth, push-to-create                 | Merged, PR #2 |
+| 1c        | Anonymous smart-HTTP                               | Merged, PR #4 |
+| 1d        | Design system, repo list, repo show                | Merged, PR #5 |
+| 1e        | Blob, tree, commit log, diff, branch and tag lists | PR #7         |
+| **1f**    | Rename, tree-root redirect                         | This document |
 
 **Read `.claude/CLAUDE.md` first, in full.** Then `docs/PLAN.md` §06 for URL
 structure and §05 for ownership. This phase ships no new visual surface, so
@@ -93,11 +93,11 @@ Today it reads:
 After this phase that sentence is wrong. It has to change, and it exists in
 three files that must move in the same commit:
 
-| File | Line | What it is |
-|---|---|---|
-| `src/ssh/exec.ts` | 29 | the source |
-| `scripts/verify-phase-1b.sh` | 21 | `BAD_COMMAND`, asserted at 502 |
-| `test/contract/ssh-transport.contract.ts` | 420 | a regex over the same text |
+| File                                      | Line | What it is                     |
+| ----------------------------------------- | ---- | ------------------------------ |
+| `src/ssh/exec.ts`                         | 29   | the source                     |
+| `scripts/verify-phase-1b.sh`              | 21   | `BAD_COMMAND`, asserted at 502 |
+| `test/contract/ssh-transport.contract.ts` | 420  | a regex over the same text     |
 
 Miss one and 1e's check 24 fails, because it cascades 1a through 1d. This
 isn't a test to fix until it goes green. It's a deliberate three-site
@@ -199,10 +199,10 @@ The route is registered as `/r/:repo/tree/:rev/*`, and `ignoreTrailingSlash`
 isn't set on the Fastify instance (`src/app.ts:17`), so it defaults to
 false. Measured against a bare Fastify with that one route:
 
-| URL | Result |
-|---|---|
-| `/r/gantry/tree/main/` | matches, `*` is `""` |
-| `/r/gantry/tree/main` | **404 at the router** |
+| URL                        | Result                   |
+| -------------------------- | ------------------------ |
+| `/r/gantry/tree/main/`     | matches, `*` is `""`     |
+| `/r/gantry/tree/main`      | **404 at the router**    |
 | `/r/gantry/tree/main/apps` | matches, `*` is `"apps"` |
 
 So `path === ""`, the branch that returns `noTreeRoot` today and becomes

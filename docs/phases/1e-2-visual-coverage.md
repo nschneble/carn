@@ -53,18 +53,18 @@ uninteresting, say so and leave it out rather than adding a story for it.
 Every row is in `verify-phase-1e.sh` today. The work is porting it to the
 fixture, not inventing it.
 
-| Case | How `build_seed` makes it |
-|---|---|
-| Blob over the cap | `big.ts`, 3000 generated lines, past the computed source cap |
-| Binary under the cap | `small.bin`, 512 NUL bytes. Git's own heuristic is a NUL in the first 8000. |
-| Inline images | `logo.png`, `docs/arch.png`, `wide.png` via `write_pngs` |
-| Gitlink | `update-index --add --cacheinfo 160000,...,vendor/lib`, no submodule needed |
+| Case                  | How `build_seed` makes it                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------- |
+| Blob over the cap     | `big.ts`, 3000 generated lines, past the computed source cap                                |
+| Binary under the cap  | `small.bin`, 512 NUL bytes. Git's own heuristic is a NUL in the first 8000.                 |
+| Inline images         | `logo.png`, `docs/arch.png`, `wide.png` via `write_pngs`                                    |
+| Gitlink               | `update-index --add --cacheinfo 160000,...,vendor/lib`, no submodule needed                 |
 | Tree past the row cap | `NESTED_DIR` (`apps/web/src`) with `NESTED_ROWS - 1` = 19 modules against a `ROW_CAP` of 16 |
-| Deep path | `DEEP_PATH` = `apps/web/src/deep.ts`, three levels for the breadcrumb |
-| Log pagination | `ROW_CAP + 6` = 22 commits, more than one page |
-| Non-default branch | `topic`, cut at commit 3 |
-| Lightweight tag | `v1.0.0`, before the commit run |
-| Annotated tag | `v1.1.0` with a message, after it |
+| Deep path             | `DEEP_PATH` = `apps/web/src/deep.ts`, three levels for the breadcrumb                       |
+| Log pagination        | `ROW_CAP + 6` = 22 commits, more than one page                                              |
+| Non-default branch    | `topic`, cut at commit 3                                                                    |
+| Lightweight tag       | `v1.0.0`, before the commit run                                                             |
+| Annotated tag         | `v1.1.0` with a message, after it                                                           |
 
 Two cases it does **not** have, and both are worth adding:
 
