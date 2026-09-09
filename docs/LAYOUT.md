@@ -62,7 +62,7 @@ _Sixteen rows · show-all · header image above_
 
 Filenames use the display font face. The repo name is a visually hidden `<h1>`: the header image or generated mark carry the page identity on screen, and `.vh` keeps the name accessible. Directories render in `--accent-text` with a trailing slash.
 
-A list view without a header image or generated mark has no page identity, so its `<h1>` is visible and takes the display font face at item size. This is the the same treatment §06 gives the blob view. `.t-label` is a caption class and never a page title. `.t-l` is headline size and belongs to the create view, where one question governs the entire page.
+A list view without a header image or generated mark has no page identity, so its `<h1>` is visible and takes the display font face at item size. This is the same treatment §06 gives the blob view. `.t-label` is a caption class and never a page title. `.t-l` is headline size and belongs to a page whose whole content is one statement: the error page today, the create view when it lands.
 
 Visible titles over item rows with the same look-and-feel need additional differentiation, hence `.t-item--title`. The file tree, branch/tag lists, and repo index page all utilize the modifier. A show page's title doesn't though, because there's nothing under a blob's filename or a commit's subject that needs distinction.
 

@@ -385,6 +385,12 @@ async function showCommit(
 // the oid is the whole address, so the response is immutable. the guard is
 // that cat-file refuses anything that is not a blob of this repo, the read
 // is capped, and the bytes have to actually be the raster the url claims
+// no committed() guard, unlike serveHeader: that one already has the
+// resolved header to check against, and here proving an oid is reachable
+// would cost a spawn per image against the twelve-spawn budget. every repo
+// is public, the oid is unguessable, and the sniff pins the bytes to the
+// format the url claims. the residue is an unreachable blob that git's own
+// transport would refuse to serve
 async function serveBlobAsset(
   request: FastifyRequest<AssetRoute>,
   reply: FastifyReply,

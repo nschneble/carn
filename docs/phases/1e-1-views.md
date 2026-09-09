@@ -159,7 +159,7 @@ data:`, so a second hostname is blocked, and widening `img-src` would undo
 the isolation the origin exists for. Serve a small image blob first-party
 through the content-addressed immutable route `/r/:repo/header/:asset`
 already established, including its `committed()` guard against reading an
-arbitrary OID. Generalise that route; don't write a second one.
+arbitrary OID. Generalize that route; don't write a second one.
 
 ## The four carried decisions
 
@@ -190,7 +190,7 @@ a terminal browser, an email client, anything that never got the stylesheet
 where a `<ul>` over a CSS grid collapses to a list of runs. The semantics
 are the honest ones too, once 1e fills the commit-subject and age columns.
 
-`<thead>`, `scope="col"`, real `<th>`. `BRAND.md:562` already specifies
+`<thead>`, `scope="col"`, real `<th>`. `BRAND.md` §04 already specifies
 `--ink` for the rule under a heading that opens a table, so the design was
 drawn for this. `best-practice` brings `empty-table-header`,
 `scope-attr-valid`, and `table-duplicate-name`, dormant until now and live
@@ -200,9 +200,9 @@ a cached memory of it.
 
 **The row overlay retires with it.** Don't port `.nm::after` into a `<tr>`
 `position: relative` on a table row is patchy in WebKit, and you don't
-need it: `BRAND.md:684` already says the subject and age become links to
-the commit in this phase. Three cells, three links, no overlay. The overlay
-stops being a concept rather than becoming a Safari bug.
+need it: `BRAND.md` §05's Tables already says the subject and age become
+links to the commit in this phase. Three cells, three links, no overlay.
+The overlay stops being a concept rather than becoming a Safari bug.
 
 **Tuffgal captures two breakpoints, 375 and 1440.** They bracket the
 stylesheet's single `min-width: 640px` query, which is a complete test of
@@ -271,7 +271,7 @@ page boundary, where it's least likely to be noticed. This is the same
 defect as check 6's SHA-cursor requirement for the log, arriving from a
 different direction.
 
-Replace the comment's last clause accordingly. Don't build the pagination
+Replace the comment's last clause accordingly. Don't build the pagination.
 The index is uncapped at MLP and that hasn't changed. Fix what the
 comment promises, so the next person to need it starts from the right
 mechanism.
@@ -378,7 +378,7 @@ round trips, and `writeLevels` is a named constant because `grant_level`
 has exactly two members today and the list that must not gain `read` should
 be a declaration rather than a literal inside a `where` clause.
 
-**What 1e owes it's the test**, which doesn't exist. Build a fake on the
+**What 1e owes it is the test**, which doesn't exist. Build a fake on the
 shape of `test/contract/ssh-auth.contract.ts:67`, the store plus an array
 recording what it was asked, and assert four things:
 
@@ -400,12 +400,12 @@ test. Say which happened in the handoff.
 
 ## Carried from 1d's deferred batch
 
-- **The file tree's right-hand columns.** `LAYOUT.md:70` and `PLAN.md:468`
-  specify last-commit subject at 190px and age at 46px. One bounded `git
-  log --name-status` walk attributes every path. **Not one spawn per
-  row**; the spawn budget isn't the obstacle, TTFB is. Bound it with
-  `--max-count` and leave un-attributed paths blank rather than walking
-  forever.
+- **The file tree's right-hand columns.** `BRAND.md` §05's Tables specifies
+  age at 46px and gives the subject whatever the name column leaves. One
+  bounded `git log --name-status` walk attributes every path. **Not one
+  spawn per row**; the spawn budget isn't the obstacle, TTFB is. Bound it
+  with `--max-count` and leave un-attributed paths blank rather than
+  walking forever.
 - **`renderPaths` is still unpinned.** It collapsed to two entries
   correctly when the theme cookie retired, but nothing asserts its length
   or contents, so shrinking it to one still passes. `deepStrictEqual` on
@@ -494,9 +494,9 @@ counts, which the diff body doesn't summarize, and one rule beats two.
 
 ## The tree route
 
-**Added to the phase after the brief was written.** `BRAND.md:719` says
-every breadcrumb segment is navigable, *"`src` goes to the tree at that
-path"*, and `LAYOUT.md:102` has been holding the file tree's hover wash
+**Added to the phase after the brief was written.** `BRAND.md` §05's
+Breadcrumbs says every breadcrumb segment is navigable, *"`src` goes to the
+tree at that path"*, and `LAYOUT.md` had been holding the file tree's wash
 and `::after` overlay switched off *"until 1e gives a file row somewhere to
 go."* Neither is satisfiable without a route that serves a tree below the
 root, and the phase didn't have one. Nick added it rather than narrow the
@@ -527,10 +527,9 @@ it's small enough to add here.
 | Gitlink   | nothing, a plain row, per the decision already taken |
 
 Re-enable the hover wash and the `::after` overlay on `.tree` in the same
-commit. `LAYOUT.md:102` calls a wash with no click target a false
-affordance, and the reverse, a click target with no wash, is just as
-wrong,
-and that line is the one that has been waiting.
+commit. `LAYOUT.md` calls a wash with no click target a false affordance,
+and the reverse, a click target with no wash, is just as wrong. That line
+is the one that has been waiting.
 
 ## The breadcrumb
 
@@ -571,7 +570,7 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1d settled.
 5. With `CARN_RAW_ORIGIN` unset the escape-hatch links are absent, not
    broken; with it set they point at that origin. Assert both
 6. `GET /r/:repo/commits` paginates by **SHA cursor, not `--skip`**.
-   assert the cursor, and that page two doesn't re-read page one
+   Assert the cursor, and that page two doesn't re-read page one
 7. The commit page always shows the file list with `+`/`−`, inlines diffs
    while the running total fits, and links the remainder. Assert a one-file
    commit renders whole and a large one links the tail
@@ -634,7 +633,8 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1d settled.
     directory under the temporary repo root
 
 Cross-reference autolinking (`#12` resolution) is issues-phase scope, not
-1e's. See `PLAN.md:664`. Carried into this brief by mistake; dropped.
+1e's. `PLAN.md` §04 has the design and §08 puts it in the issues phase.
+Carried into this brief by mistake; dropped.
 
 Checks 3, 6, 9, 10, and 26 are the phase's real gate. Each covers a failure
 that's invisible when it happens: a hardcoded cap silently stops tracking

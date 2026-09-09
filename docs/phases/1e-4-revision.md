@@ -18,12 +18,12 @@ review findings**, and **Phase size**.
 Three things this document isn't asking for, so they don't get invented on
 the way past:
 
-- **Line numbers in the blob view.** `docs/LAYOUT.md:187`: "No line
+- **Line numbers in the blob view.** `docs/LAYOUT.md` §06: "No line
   numbers. Nothing goes inside `<pre>` but the file's own bytes." Working
   as specified.
-- **A `Show entire file` link.** `docs/PLAN.md:312` defers the raw origin
+- **A `Show entire file` link.** `docs/PLAN.md` §04 defers the raw origin
   to Phase 2 and gates the hatch on `CARN_RAW_ORIGIN`;
-  `docs/LAYOUT.md:190-191` says the truncation notice is deliberately not
+  `docs/LAYOUT.md` §06 says the truncation notice is deliberately not
   an escape hatch, and that with no origin configured the link is absent
   rather than disabled. Working as specified.
 - **`noTreeRoot`.** `/r/:repo/tree/:rev/` erroring is deliberate and
@@ -117,6 +117,13 @@ crumb.
 
 ## 4 · Branches and tags drop the table and adopt the Row component
 
+> **Superseded.** ~~Convert `ref-list.ts` to `<li class="row">`.~~ It was,
+> in `106cac4`, and then reversed: `f0f6262` moved all five index views onto
+> the Table component, so refs is a `<table class="tbl">` like the tree, the
+> log, the repo index and the commit file list. `docs/BRAND.md` carries the
+> component and the WebKit bug number behind the overlay's retirement. What
+> changed is the destination, not the reason the overlay had to go.
+
 `src/html/ref-list.ts` is the only list in the product built as `<table>` +
 `<thead>`, the only one with visible column headers, and one of two where
 the subject and age cells are links. The tree, log and commit file list are
@@ -192,7 +199,7 @@ affords four 150px tracks, so the blob's three fields leave column 4
 genuinely empty, so that one does collapse, and the three stretch to fill
 one row. The commit page's four fields fill it exactly.
 
-`.meta` is BRAND's Meta block (`docs/BRAND.md:686`). If the `.meta` rules
+`.meta` is BRAND's Meta block (`docs/BRAND.md` §05). If the `.meta` rules
 sit inside the component fence that `test/contract/tokens.contract.ts`
 asserts verbatim, the BRAND fence changes with the stylesheet, byte for
 byte. Check before editing.
@@ -312,7 +319,7 @@ build. The section needs to settle, at minimum:
 - That it's links, never a tab widget. No `role="tablist"`, no
   `aria-selected`, since each destination is a page load
 - Whether the current page's own entry appears and how it's marked. The
-  Chip component's `.chip--current` rule (`docs/BRAND.md:670`) is the
+  Chip component's `.chip--current` rule (`docs/BRAND.md` §05) is the
   precedent: weight and border, not color alone
 - `target-size`: the gate runs WCAG 2.2 AA, so every entry needs the hit
   area the Row component already documents
@@ -341,7 +348,7 @@ look like a bug in the tree route.
 Register a handler in `buildApp()` that renders the error page. It needs a
 failure that's honest about knowing nothing. The route didn't match, so
 there's no repo, ref or path to name. Add one to `src/html/error-page.ts`
-beside the existing ten, with `path: "/404"` like its neighbours, and 404
+beside the existing ten, with `path: "/404"` like its neighbors, and 404
 as the status.
 
 Two things to get right:
@@ -422,9 +429,9 @@ spawn, one more field. A lightweight tag's ref names a commit and yields
   turning a one-spawn page into an N-spawn one against a documented budget
   of twelve. Real, wanted, and its own decision.
 - **A redirect from `/r/:repo/tree/:rev/` to `/r/:repo`.** `noTreeRoot` is
-  deliberate. Whether an error is the right answer there's worth
-  revisiting once item 9 has made the neighbouring URL an error page too,
-  and not before.
+  deliberate. Whether an error is the right answer is worth revisiting
+  once item 9 has made the neighboring URL an error page too, and not
+  before.
 - **The raw origin, `og:image`, and line numbers.** See the top of this
   document.
 - **Nav on every repo view.** See item 8.
@@ -441,7 +448,9 @@ Assert at least:
 
 - Every visible page title renders `.t-item`, and no page renders `.t-l` or
   a `.t-label` `<h1>`
-- `src/html/ref-list.ts` emits no `<table>`, `<thead>` or `<th>`
+- ~~`src/html/ref-list.ts` emits no `<table>`, `<thead>` or `<th>`~~ See
+  item 4. Every list is a `<table class="tbl">` now; the check went the
+  other way and asserts the component instead
 - `--diff-add` and `--diff-del` appear in both palettes, and `.diff .a` and
   `.diff .d` resolve to different values
 - `docs/BRAND.md`'s token fence and `styles.ts`'s `tokens` are

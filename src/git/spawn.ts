@@ -8,7 +8,7 @@ import { Semaphore } from "./semaphore.js";
 
 export const gitConcurrency = availableParallelism();
 
-export type GitOutcome = "exited" | "timed-out" | "cancelled";
+export type GitOutcome = "exited" | "timed-out" | "canceled";
 
 export type GitResult = {
   code: number | null;
@@ -78,7 +78,7 @@ export async function spawnGit(options: GitOptions): Promise<GitChild> {
   }, options.timeoutMs);
 
   const cancel = () => {
-    kill("cancelled");
+    kill("canceled");
   };
 
   options.signal?.addEventListener("abort", cancel, { once: true });
@@ -134,8 +134,8 @@ export async function runGit(options: GitOptions): Promise<void> {
     throw new Error(`git ${command} timed out after ${options.timeoutMs}ms`);
   }
 
-  if (result.outcome === "cancelled") {
-    throw new Error(`git ${command} was cancelled`);
+  if (result.outcome === "canceled") {
+    throw new Error(`git ${command} was canceled`);
   }
 
   if (result.code !== 0) {

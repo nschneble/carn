@@ -12,6 +12,8 @@ import { repoTrail } from "./breadcrumb.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
 
+// seven, and in .t-mono rather than small caps: BRAND's small-caps rule
+// exempts this column because a SHA is a machine identifier
 export const shortShaChars = 7;
 
 export const commitsLabel = "Commits";

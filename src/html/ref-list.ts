@@ -111,7 +111,7 @@ function document(view: RefListPage, refs: Ref[], more: boolean): string {
 }
 
 // a subject runs to 500 characters, so a row has no fixed weight a read
-// cap could have been derived from. halving rather than modelling: one
+// cap could have been derived from. halving rather than modeling: one
 // enormous subject defeats an average
 export function refListPage(view: RefListPage): string {
   const { refs, more } = view.list;

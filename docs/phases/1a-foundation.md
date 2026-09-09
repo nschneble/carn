@@ -167,7 +167,7 @@ Runtime: `fastify`, `@prisma/client`, `@prisma/adapter-pg`. Dev: `prisma`,
 `typescript`, `@types/node`, `squawk-cli`, `@biomejs/biome`.
 
 `pg` is a transitive dependency of the adapter. Don't add it directly.
-the adapter owns the `Pool`, and a second copy in `package.json` invites a
+The adapter owns the `Pool`, and a second copy in `package.json` invites a
 version skew that only shows up under load.
 
 Licenses check out for AGPL: `pg` is MIT, the Prisma packages Apache-2.0.
@@ -488,7 +488,7 @@ for attribute values; don't "optimize" either away.
 > of which are escaped, so `foo onmouseover=alert(1)` interpolated into
 > `<a href=${x}>` renders as a live event handler.
 >
-> The escape set is correct and stays as it's. The missing half is the
+> The escape set is correct and stays as it is. The missing half is the
 > invariant it depends on: **every attribute value in every template is
 > quoted.** Expanding the set instead would mean escaping spaces in body
 > text, bloating every page against the 100 KB budget to buy nothing that
@@ -501,7 +501,7 @@ for attribute values; don't "optimize" either away.
 > nothing to enforce.
 
 > **On the no-unit-tests rule.** CLAUDE.md forbids unit tests, and this is
-> not one. `escaping.contract.ts` asserts a security contract, and the same
+> not one. `escaping.contract.ts` asserts a security contract, in the same
 > category as the header and page-weight tests, and one a screenshot can't
 > see. It's the only function in 1a that gets assertions. Don't take it
 > as license to test anything else.
@@ -563,8 +563,7 @@ X-Content-Type-Options: nosniff
 Referrer-Policy: no-referrer
 ```
 
-No `script-src` beyond `default-src 'none'`, because there's zero client
-JS on the
+No `script-src` beyond `default-src 'none'`, because zero client JS on the
 critical path is a budget, and the CSP is where it becomes enforceable.
 HSTS is Caddy's job in Phase 2, not the app's. Send it as one header string
 so `headers.contract.ts` can assert on it exactly.
@@ -574,7 +573,7 @@ so `headers.contract.ts` can assert on it exactly.
 ## Exit criteria
 
 Implement these as `scripts/verify-phase-1a.sh`, printing `PASS`/`FAIL` per
-check and exiting non-zero if any fail. Each must be mechanically decidable
+check and exiting non-zero if any fail. Each must be mechanically decidable.
 No judgment calls.
 
 1. `npm ci` completes clean
@@ -620,7 +619,7 @@ Run the diff and follow whichever case you land in:
 - **Empty diff.** The engine doesn't model them. Check 5 stands as
   written. Nothing further to do.
 - **Diff contains only the functional index and/or the CHECK constraint.**
-  this is drift by design. Change check 5 to assert the diff output
+  This is drift by design. Change check 5 to assert the diff output
   mentions _nothing but_ those two objects, name them explicitly in the
   assertion, and put a comment in the script explaining that they're
   intentional and unrepresentable. A bare "ignore drift" isn't acceptable.

@@ -74,14 +74,18 @@ gone the check finds zero annotations and stops discriminating entirely.
 
 Two more differences in the same block:
 
-- **`ui-monospace` was dropped from `--f-mono`.** Restore it. This is a
-  functional regression, not punctuation: `ui-monospace` is the keyword
-  that resolves to the platform's UI monospace face, and on Apple platforms
-  `"SF Mono"` by family name frequently doesn't resolve for web content.
-  The fallback chain is measurably weaker without it.
-- `/* spacing — 4px base */` became `/* spacing (4px base) */`. Either
-  spelling is fine; the two files have to agree. `docs/BRAND.md` has the em
-  dash.
+- ~~**`ui-monospace` was dropped from `--f-mono`.** Restore it.~~
+  **Superseded.** Nick dropped it deliberately in a later pass, moving
+  `docs/BRAND.md` and `src/html/styles.ts` together so the verbatim
+  contract holds. Nothing records the reason. The argument this item made
+  was that the drop is a functional regression rather than punctuation:
+  `ui-monospace` is the keyword that resolves to the platform's UI
+  monospace face, and on Apple platforms `"SF Mono"` by family name
+  frequently doesn't resolve for web content, so the fallback chain is
+  measurably weaker without it.
+- ~~`/* spacing — 4px base */` became `/* spacing (4px base) */`.~~
+  **Settled as the parenthetical.** Either spelling was fine and the two
+  files have to agree; they both carry `(4px base)` now.
 
 Everything else in the styles diff is genuinely cosmetic and stays: the
 `css` template tag, the collapsed `font-variation-settings`, the blank
@@ -268,7 +272,7 @@ corrected comment.
 - `badRepoName.next` lost its recovery path. It read "…up to 64 characters.
   Check the URL, or find the repo in all repos." and now stops at the
   character count. The `All repos` link below still exists, but the
-  sentence that tells someone what to do with it's gone. Restore the
+  sentence that tells someone what to do with it is gone. Restore the
   second half.
 - "A name is **comprised of** letters, digits…". `comprised of` is the one
   usage the construction doesn't have. "A name is letters, digits, dots,

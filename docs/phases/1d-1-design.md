@@ -135,7 +135,7 @@ Strict CommonMark, one deviation: `table` enabled, nothing else.
 - README rendering is `raw()`'s only caller in this phase. Everything else
   goes through `html` and is escaped.
 - No sanitizer. CLAUDE.md §04 explains why: with `html: false` there's no
-  raw HTML to sanitize, and adding one implies there's.
+  raw HTML to sanitize, and adding one implies there is.
 
 ## Type, and the thing most likely to go wrong
 

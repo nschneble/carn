@@ -125,7 +125,7 @@ test(
 );
 
 test(
-  "an abandoned git call is killed and acknowledged as cancelled",
+  "an abandoned git call is killed and acknowledged as canceled",
   bounded,
   async () => {
     const abandoned = new AbortController();
@@ -141,10 +141,10 @@ test(
 
     assert.deepStrictEqual(await child.done, {
       code: null,
-      outcome: "cancelled",
+      outcome: "canceled",
     });
 
-    // cancelled is spawn.ts's own word for it; ESRCH is the kernel's
+    // canceled is spawn.ts's own word for it; ESRCH is the kernel's
     assert.throws(
       () => {
         process.kill(pid, 0);
@@ -341,5 +341,5 @@ test("an abandoned capture throws", bounded, async () => {
   await delay(50);
   abandoned.abort();
 
-  await assert.rejects(capturing, /was cancelled/);
+  await assert.rejects(capturing, /was canceled/);
 });

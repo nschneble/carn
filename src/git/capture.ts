@@ -46,8 +46,8 @@ export async function captureGit(options: CaptureOptions): Promise<Capture> {
     throw new Error(`git ${command} timed out after ${options.timeoutMs}ms`);
   }
 
-  if (result.outcome === "cancelled") {
-    throw new Error(`git ${command} was cancelled`);
+  if (result.outcome === "canceled") {
+    throw new Error(`git ${command} was canceled`);
   }
 
   return { code: result.code, stdout: Buffer.concat(chunks) };
