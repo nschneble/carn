@@ -1,24 +1,24 @@
 # Phase 1e · PR revision, round one
 
 _Nick did a visual pass over the six new routes against `npm run
-visual:seed`. The views work. The finish does not — and the failures are
+visual:seed`. The views work. The finish doesn't, and the failures are
 systemic, not scattered, which is why this is one document rather than a
 list of nits._
 
-**The baselines have not been reviewed, deliberately.** Every item below
+**The baselines haven't been reviewed, deliberately.** Every item below
 moves pixels, so every item invalidates a capture. Reviewing baselines
 first and fixing after would spend the review twice. Land this, re-shoot
 once, then the baseline review is a review of something worth approving.
 
 Read `.claude/CLAUDE.md` in full, then `docs/BRAND.md`, `docs/LAYOUT.md`,
 `docs/PLAN.md` §§ on the blob and raw origin. Two sections of
-`.claude/CLAUDE.md` govern this work directly: **Nick's edits are not
+`.claude/CLAUDE.md` govern this work directly: **Nick's edits aren't
 review findings**, and **Phase size**.
 
-Three things this document is not asking for, so they don't get invented on
+Three things this document isn't asking for, so they don't get invented on
 the way past:
 
-- **Line numbers in the blob view.** `docs/LAYOUT.md:187` — "No line
+- **Line numbers in the blob view.** `docs/LAYOUT.md:187`: "No line
   numbers. Nothing goes inside `<pre>` but the file's own bytes." Working
   as specified.
 - **A `Show entire file` link.** `docs/PLAN.md:312` defers the raw origin
@@ -31,7 +31,7 @@ the way past:
   `/r/:repo/tree/:rev` behave the same way instead of returning JSON.
 
 **Doc order matters.** Items 1 and 8 add or change a section in
-`docs/LAYOUT.md` and `docs/BRAND.md`. Write the doc, then the markup — not
+`docs/LAYOUT.md` and `docs/BRAND.md`. Write the doc, then the markup, not
 the reverse, and not both at once. `docs/BRAND.md` and `docs/LAYOUT.md`
 regenerate through `scripts/docs-artifact.mjs`; run it after each doc edit.
 
@@ -48,7 +48,7 @@ every later item is cosmetically downstream of them.
 §02 says a list view's `<h1>` is `.vh`, and gives the reason: the header
 image or generated mark already carries identity on screen. **That
 condition holds on exactly one page.** `/r/:repo` has a mark. Tree, commit
-log, branches and tags do not, so §02's rule doesn't reach them, no section
+log, branches and tags don't, so §02's rule doesn't reach them, no section
 replaces it, and each of the four invented a heading. The measured result:
 
 | View | `<h1>` class | Renders as |
@@ -67,28 +67,28 @@ and an 11px faint caption on the page beside it.
 
 > The exemption is conditional on the mark. A list view that carries no header
 > image and no generated wordmark has nothing else holding identity, so its
-> `<h1>` is visible and takes the display face at item size — the same
+> `<h1>` is visible and takes the display face at item size, the same
 > treatment §06 gives the blob view, and for the same reason. `.t-label` is a
 > caption class and never a page title; `.t-l` is headline size and belongs to
 > the create view, where one question is the entire page.
 
 Say in §06 that the blob view is now one of several pages under that rule
-rather than a lone exception, and keep §06's own paragraph — the small-caps
+rather than a lone exception, and keep §06's own paragraph. The small-caps
 part is still specific to filenames.
 
 ## 2 · One heading treatment: `.t-item` on all six
 
 `.t-item` everywhere a page title is visible. Concretely:
 
-- `src/html/tree-page.ts` — `.t-label` → `.t-item`, and run the path
-  through `smallCaps()` as `src/html/blob-page.ts:124` already does. It is
+- `src/html/tree-page.ts`: `.t-label` → `.t-item`, and run the path
+  through `smallCaps()` as `src/html/blob-page.ts:124` already does. It's
   a path; it gets the path treatment.
-- `src/html/commit-log.ts` — `.t-label` → `.t-item` on `Commits on ${ref}`.
-- `src/html/ref-list.ts` — `.t-label` → `.t-item` on `Branches` / `Tags`.
-- `src/html/commit-page.ts:203` — **`.t-l` → `.t-item`** on the commit
+- `src/html/commit-log.ts`: `.t-label` → `.t-item` on `Commits on ${ref}`.
+- `src/html/ref-list.ts`: `.t-label` → `.t-item` on `Branches` / `Tags`.
+- `src/html/commit-page.ts:203`: **`.t-l` → `.t-item`** on the commit
   subject.
 
-**`smallCaps()` applies to path-shaped headings only** — blob and tree.
+**`smallCaps()` applies to path-shaped headings only**, blob and tree.
 Prose headings (`Commits on main`, `Branches`, a commit subject) render
 plain. `.t-item` already sets `"case" 1`, which is what a path needs for `. -
 /`; a sentence is unharmed by it.
@@ -96,21 +96,21 @@ plain. `.t-item` already sets `"case" 1`, which is what a path needs for `. -
 Leave alone, so they don't get swept up:
 
 - `<h2 class="t-label">Files</h2>` on the repo page. A section heading
-  inside a page is not a page title, and `.t-label` is right for it.
+  inside a page isn't a page title, and `.t-label` is right for it.
 - `.t-label` on the truncation notices (`Showing the first …`). Same
   reason.
 - The repo page's `<h1 class="vh">`. It has a mark; §02's condition holds.
 
 Axe's `best-practice` set pins one `<h1>` per page. None of this changes
-the count — check that it still doesn't.
+the count. Check that it still doesn't.
 
 ## 3 · Tree's heading currently repeats its own breadcrumb in a different voice
 
 With item 2 applied, `/r/gantry/tree/main/apps/web/src` reads `Càrn »
 gantry » apps » web » src` in mono, then `APPS/WEB/SRC` in small caps. §06
-already blesses this for the blob view — "path and title are different
-registers, not a repetition" — and the same defense holds here, so **keep
-both and let the register carry it.** Do not shorten the heading to the
+already blesses this for the blob view: "path and title are different
+registers, not a repetition". The same defense holds here, so **keep
+both and let the register carry it.** Don't shorten the heading to the
 last segment: the `<title>` and the `og:title` use the full path, and a
 heading that disagrees with the tab is worse than one that agrees with the
 crumb.
@@ -124,8 +124,8 @@ all `<li class="row">`. `docs/BRAND.md:676` specifies the Row component and
 BRAND is the authority.
 
 The comment at the top of `ref-list.ts` gives the reason it went its own
-way — `position: relative` on a `<tr>` is patchy in WebKit, so a row-wide
-`::after` overlay could not be drawn. **Converting to `<li>` removes that
+way. `position: relative` on a `<tr>` is patchy in WebKit, so a row-wide
+`::after` overlay couldn't be drawn. **Converting to `<li>` removes that
 problem rather than colliding with it**, which is the thing to notice
 before rewriting the comment.
 
@@ -139,24 +139,24 @@ Convert to the log's shape exactly:
 </li>
 ```
 
-- `<thead>` goes. The columns were named by header cells; they are now
+- `<thead>` goes. The columns were named by header cells; they're now
   named by visually hidden text inside the cells, which is what the log
   does at `src/html/commit-log.ts:44`. Give `.msg` the same treatment the
-  age gets — `<span class="vh">Subject </span>` — so the accessible name
+  age gets, `<span class="vh">Subject </span>`, so the accessible name
   survives the table's removal rather than being quietly dropped with it.
 - `.refs` styling in `src/html/styles.ts:865-928` goes with the markup. The
   `.row` rules already cover hover, hit area and alignment.
 - **Keep the empty-cell guard.** `subject()` at `ref-list.ts:45` renders a
   bare cell when a commit message is empty, because a link with no text has
-  no accessible name. The `<li>` form needs the same guard — a bare `<span
+  no accessible name. The `<li>` form needs the same guard: a bare `<span
   class="msg"></span>`, matching how `tree-list.ts:44` handles an untouched
   entry.
 - Keep `refListPage`'s halving loop unchanged. It measures whatever
-  `document()` renders and does not care what the markup is.
+  `document()` renders and doesn't care what the markup is.
 
 Once this lands, `.msg`/`.age` hover behavior is identical across log and
-refs, and the tree — whose `.msg`/`.age` are `<span>`s, correctly, since a
-tree row's whole target is the file — is the only one that doesn't
+refs. And the tree, whose `.msg`/`.age` are `<span>`s, correctly, since a
+tree row's whole target is the file, is the only one that doesn't
 underline. That difference is meaningful and stays.
 
 ## 5 · `.meta` orphans its last field at narrow widths
@@ -164,12 +164,12 @@ underline. That difference is meaningful and stays.
 `src/html/styles.ts:416` is `repeat(auto-fit, minmax(150px, 1fr))` with no
 responsive rule anywhere. Below ~640px it resolves to two columns; the blob
 view's three fields put `Language` alone in column 1 at half width. It does
-not stretch — `auto-fit` collapses a column only when that column receives
+not stretch. `auto-fit` collapses a column only when that column receives
 no items anywhere in the grid, and here both columns are occupied. What
 reads as broken is `.meta > div`'s `border-bottom`, which draws across half
 the page while `.meta`'s own full-width `border-top` sits above it.
 
-Match the file's existing convention — every other responsive rule in
+Match the file's existing convention. Every other responsive rule in
 `styles.ts` is a `min-width: 640px` block:
 
 ```css
@@ -189,7 +189,7 @@ Match the file's existing convention — every other responsive rule in
 
 Below 640px an orphan is unexpressible. At 640px and up the content column
 affords four 150px tracks, so the blob's three fields leave column 4
-genuinely empty — that one does collapse — and the three stretch to fill
+genuinely empty, so that one does collapse, and the three stretch to fill
 one row. The commit page's four fields fill it exactly.
 
 `.meta` is BRAND's Meta block (`docs/BRAND.md:686`). If the `.meta` rules
@@ -203,11 +203,11 @@ byte. Check before editing.
 
 ## 6 · Added and removed lines are the same color
 
-`src/html/styles.ts:853` — `.diff .a, .diff .d { color: var(--ink); }`.
+`src/html/styles.ts:853`, `.diff .a, .diff .d { color: var(--ink); }`.
 Both. The comment above it says "the + and the − carry direction; the tone
-is only the second signal," but there is no second signal: the tone
+is only the second signal," but there's no second signal: the tone
 separates changed from unchanged and nothing separates added from removed.
-The comment describes an intent the rule does not implement.
+The comment describes an intent the rule doesn't implement.
 
 **Two new tokens**, `--diff-add` and `--diff-del`. Constraints, all of
 which are enforced or enforceable:
@@ -218,8 +218,8 @@ which are enforced or enforceable:
 - Each resolves to a six-digit hex. Same test loops every token that isn't
   `--f-*`, `--s[1-9]`, or `--measure`.
 - **4.5:1 against `--sunk`** in both palettes. `.src` is `background:
-  var(--sunk)` at `styles.ts:523` and diff text is 12.5px, so it is small
-  text on the sunk ground and owes AA. `--ground` is not the binding
+  var(--sunk)` at `styles.ts:523` and diff text is 12.5px, so it's small
+  text on the sunk ground and owes AA. `--ground` isn't the binding
   constraint here.
 - Separable in grayscale, so they differ in **lightness as well as hue**.
   The `+` and `−` characters stay as the non-color signal, and 1.4.1 is
@@ -245,11 +245,11 @@ the mark survives a rendering that flattens color:
 .diff .d { color: var(--diff-del); border-left: 2px solid var(--diff-del); padding-left: var(--s2); }
 ```
 
-**Do not reach for `display: block` on those spans to get a full-width row
+**Don't reach for `display: block` on those spans to get a full-width row
 tint.** `diffBody` at `commit-page.ts:118` joins the rendered lines with
 `\n`; a block-level span supplies its own line break and the newline then
 supplies a second, double-spacing every changed line. If a full-bleed row
-is wanted later, the join changes with it — one thing, deliberately, not as
+is wanted later, the join changes with it: one thing, deliberately, not as
 a side effect.
 
 Extend `@media (forced-colors: active)` if the border needs to survive
@@ -259,7 +259,7 @@ there; `styles.ts:597` is where that block starts.
 
 `commit-page.ts:70-83` builds every file row identically whether its `href`
 is `#f-3` on this page or `changeHref(...)` to a page of its own. Two
-destinations, one presentation. That — not the fitting strategy — is what
+destinations, one presentation. That, not the fitting strategy, is what
 makes the split look arbitrary.
 
 **Keep the strategy.** Fitting as many diffs as the budget allows is right;
@@ -282,9 +282,9 @@ one Nick hit. Add a second sentence for `shape.diffs < candidates.length`:
 
 Both sentences use `.t-label` and sit where the existing one does.
 
-Binary files are a third case — they have no diff at all and their row
+Binary files are a third case. They have no diff at all, and their row
 links to a change page that says so (`noDiff()` at `commit-page.ts:346`).
-They should not carry `Own page` as though a diff were waiting. Give them
+They shouldn't carry `Own page` as though a diff were waiting. Give them
 nothing, or `Binary`, and keep `counts()` unchanged since it already
 renders `Binary` in the count cell.
 
@@ -297,24 +297,24 @@ renders `Binary` in the count cell.
 Grepped across `src/html/` and `src/routes/`, the complete set of inbound
 links:
 
-- `/r/:repo/commits` — the commit page's own breadcrumb, and ref-list rows
-- `/r/:repo/branches` — **nothing**
-- `/r/:repo/tags` — **nothing**
+- `/r/:repo/commits`: the commit page's own breadcrumb, and ref-list rows
+- `/r/:repo/branches`: **nothing**
+- `/r/:repo/tags`: **nothing**
 
 Two routes shipped with no way in. The repo page is `identity → h1.vh →
 Files → README` and carries no navigation at all.
 
-**This is a new component, so `docs/BRAND.md` gets it first.** There is no
+**This is a new component, so `docs/BRAND.md` gets it first.** There's no
 nav or tabs component in BRAND today. Write the section, regenerate, then
 build. The section needs to settle, at minimum:
 
-- Whether it is a `<nav>` with `aria-label`, and what the label is
-- That it is links, never a tab widget — no `role="tablist"`, no
+- Whether it's a `<nav>` with `aria-label`, and what the label is
+- That it's links, never a tab widget. No `role="tablist"`, no
   `aria-selected`, since each destination is a page load
-- Whether the current page's own entry appears and how it is marked. The
+- Whether the current page's own entry appears and how it's marked. The
   Chip component's `.chip--current` rule (`docs/BRAND.md:670`) is the
   precedent: weight and border, not color alone
-- `target-size` — the gate runs WCAG 2.2 AA, so every entry needs the hit
+- `target-size`: the gate runs WCAG 2.2 AA, so every entry needs the hit
   area the Row component already documents
 
 **Put it on the repo page only, in this revision.** `/r/:repo` is the hub
@@ -323,14 +323,14 @@ on every repo view is a larger idea about product chrome and belongs to
 whichever phase takes that up.
 
 Entries: **Commits**, **Branches**, **Tags**. `commitsHref` and `refsHref`
-are already exported and are the only correct sources for those URLs — no
+are already exported and are the only correct sources for those URLs. No
 string literals.
 
 ## 9 · Every unmatched URL returns JSON
 
 `buildApp()` in `src/app.ts` has no `setNotFoundHandler`. Fastify's default
 handler answers `/r/gantry/tree/main`, `/nonsense`, and every typo in the
-product with `{"message":"Route GET:… not found","error":"Not Found"}` — in
+product with `{"message":"Route GET:… not found","error":"Not Found"}`. In
 a project where the error page is a documented design surface with ten
 failure states.
 
@@ -339,15 +339,15 @@ URL that misses, and because leaving it open makes item 7's sibling case
 look like a bug in the tree route.
 
 Register a handler in `buildApp()` that renders the error page. It needs a
-failure that is honest about knowing nothing — the route did not match, so
-there is no repo, ref or path to name. Add one to `src/html/error-page.ts`
+failure that's honest about knowing nothing. The route didn't match, so
+there's no repo, ref or path to name. Add one to `src/html/error-page.ts`
 beside the existing ten, with `path: "/404"` like its neighbours, and 404
 as the status.
 
 Two things to get right:
 
 - **The `onSend` hook must still run.** CSP, `X-Content-Type-Options` and
-  `Referrer-Policy` are set there for every reply; a 404 is not exempt.
+  `Referrer-Policy` are set there for every reply; a 404 isn't exempt.
 - **It must not swallow the git HTTP transport's own 404s.** `git-http.ts`
   answers unknown repos on `/r/:repo/info/refs`; those are matched routes
   replying 404 and are untouched by a not-found handler, but check that a
@@ -358,35 +358,35 @@ Two things to get right:
 ## 10 · `Newer ←` on the commit log
 
 `loadCommitLog` pages by SHA cursor, forward only: `next` is the boundary
-commit and there is no back edge. `src/repos/log.ts:3-6` explains why
-`--skip` was rejected and that reasoning stands — do not reintroduce it.
+commit and there's no back edge. `src/repos/log.ts:3-6` explains why
+`--skip` was rejected and that reasoning stands. Don't reintroduce it.
 
 **Carry the cursor stack in the URL.** The page-start cursors are already
 known to whoever navigated there; they cost nothing to keep and no extra
 git call to use:
 
-- `?ref=main` — page one, no `from`, no `back`
-- `?ref=main&from=A` — page two, `back=` empty
-- `?ref=main&from=B&back=A` — page three
+- `?ref=main`: page one, no `from`, no `back`
+- `?ref=main&from=A`: page two, `back=` empty
+- `?ref=main&from=B&back=A`: page three
 - `Newer ←` pops the last entry: from page three it links
   `?ref=main&from=A`, from page two it links `?ref=main`
 
 Rules:
 
 - Every entry validates against `oidPattern`, the same guard `from` gets at
-  `log.ts:66`. One bad entry rejects the whole parameter — fall back to
+  `log.ts:66`. One bad entry rejects the whole parameter. Fall back to
   page one rather than half-trusting it.
 - Cap the stack at 32 entries. Past that, drop the oldest and let `Newer`
   walk as far as the stack reaches; the alternative is an unbounded URL.
 - `Newer ←` renders only when the stack is non-empty. `Older →` keeps its
   existing condition.
-- `commitsHref` gains the parameter. It is imported by `ref-list.ts` and
+- `commitsHref` gains the parameter. It's imported by `ref-list.ts` and
   `commit-page.ts`; neither passes a stack, and both must keep producing
   the URLs they produce today.
 - The route's query schema and `showCommits` in `repo-page.ts` accept and
   thread it.
 
-Mirror `Older →`'s markup exactly — same `.showall` paragraph, same
+Mirror `Older →`'s markup exactly: same `.showall` paragraph, same
 `aria-hidden` arrow, arrow on the leading side for `Newer`.
 
 ---
@@ -397,7 +397,7 @@ Mirror `Older →`'s markup exactly — same `.showall` paragraph, same
 
 Correctly, given the query. `src/repos/refs.ts:2-5` selects
 `contents:subject` and `creatordate` **because** both fields populate for a
-commit and for a tag object — that uniformity is exactly why the row cannot
+commit and for a tag object, and that uniformity is exactly why the row can't
 tell them apart. The comment is right and the choice was right; it just
 left nothing for the view to show.
 
@@ -407,12 +407,12 @@ spawn, one more field. A lightweight tag's ref names a commit and yields
 
 - `Ref` gains `annotated: boolean`.
 - `parse()` at `refs.ts:38` splits on `\0` into four parts now, not three.
-  Its `undefined` guard covers every destructured name — extend it, don't
+  Its `undefined` guard covers every destructured name. Extend it, don't
   leave the new one unchecked.
 - Tag rows get a marker built the way `marker()` at `ref-list.ts:38` builds
   `Default`: `<span class="t-micro"> Annotated</span>`, on tag lists only.
-- The existing guard at `refs.ts:47-50` — a tag naming a blob or tree has
-  an empty `creatordate` and is skipped — stays exactly as it is.
+- The existing guard at `refs.ts:47-50`, where a tag naming a blob or tree
+  has an empty `creatordate` and is skipped, stays exactly as it is.
 
 ---
 
@@ -422,7 +422,7 @@ spawn, one more field. A lightweight tag's ref names a commit and yields
   turning a one-spawn page into an N-spawn one against a documented budget
   of twelve. Real, wanted, and its own decision.
 - **A redirect from `/r/:repo/tree/:rev/` to `/r/:repo`.** `noTreeRoot` is
-  deliberate. Whether an error is the right answer there is worth
+  deliberate. Whether an error is the right answer there's worth
   revisiting once item 9 has made the neighbouring URL an error page too,
   and not before.
 - **The raw origin, `og:image`, and line numbers.** See the top of this
@@ -434,7 +434,7 @@ spawn, one more field. A lightweight tag's ref names a commit and yields
 # The verify script
 
 `scripts/verify-phase-1e.sh` has 31 checks. Add to it rather than starting
-a new script — `.claude/CLAUDE.md`'s Phase size section says sub-phases
+a new script. `.claude/CLAUDE.md`'s Phase size section says sub-phases
 share one growing script. Number from 32.
 
 Assert at least:
@@ -445,13 +445,13 @@ Assert at least:
 - `--diff-add` and `--diff-del` appear in both palettes, and `.diff .a` and
   `.diff .d` resolve to different values
 - `docs/BRAND.md`'s token fence and `styles.ts`'s `tokens` are
-  byte-identical — `tokens.contract.ts` already asserts it; the check is
+  byte-identical. `tokens.contract.ts` already asserts it; the check is
   here so a failure names itself in the gate output
 - An unmatched URL returns `text/html` and the error page's heading, not
   JSON
 - `/r/:repo` links to all three of commits, branches and tags
-- Page two of a log carries a `Newer` link and page one does not
-- An annotated tag row carries the marker and a lightweight one does not
+- Page two of a log carries a `Newer` link and page one doesn't
+- An annotated tag row carries the marker and a lightweight one doesn't
 - `.meta` declares `grid-template-columns: 1fr` outside any media query
 
 **Follow the check-18 lesson.** `verify-phase-1d.sh` check 16 failed on an
@@ -462,8 +462,8 @@ shape matches the loosest pattern that still discriminates.
 # Stories and baselines
 
 `tuffgal/stories/` has eight stories covering the six routes and the dead
-ends. **They should need no structural change** — every item here alters
-presentation, not navigation. If a story breaks, that is a finding about
+ends. **They should need no structural change.** Every item here alters
+presentation, not navigation. If a story breaks, that's a finding about
 the change, not about the story: report it before editing the story to
 match.
 
@@ -479,9 +479,9 @@ Report, before Nick reviews anything:
 - The `docs/LAYOUT.md` §02 paragraph and the `docs/BRAND.md` nav section,
   as written, and confirmation that `scripts/docs-artifact.mjs` ran
 - The two diff token values, both palettes, with measured ratios against
-  `--sunk` — and say plainly if either misses 4.5:1 rather than shipping it
+  `--sunk`, and say plainly if either misses 4.5:1 rather than shipping it
 - `npx tsc --noEmit`, `biome check .`, `npm run test`, and `sh
   scripts/verify-phase-1e.sh`, all clean, before the baselines re-shoot
 - Whether any story needed editing, and why
-- Anything in this document you could not build, and what stopped you
-- Anything you changed that is **not** in this document, and why
+- Anything in this document you couldn't build, and what stopped you
+- Anything you changed that's **not** in this document, and why

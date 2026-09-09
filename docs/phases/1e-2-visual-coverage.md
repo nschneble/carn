@@ -17,7 +17,7 @@ And `tuffgal/stories/read-a-repo.json` drives two actions, `/` and
 pagination, no non-default branch, no truncated blob, no binary, no
 gitlink, and no tree deep enough to cap. Five of the six new views can only
 be seen in their least interesting state, and `/r/:repo/commits/:sha/*`
-cannot be reached at all.
+can't be reached at all.
 
 **This is a fixture and story problem, not a code problem.** Nothing below
 changes `src/`.
@@ -26,21 +26,21 @@ changes `src/`.
 
 ## 1 · Discovery, and most of it is already answered
 
-Do not go hunting. Read these three, in this order, and report what you
-find before writing anything:
+Don't go hunting. Read these three, in this order, and report what you find
+before writing anything:
 
 - **`scripts/verify-phase-1e.sh`, `build_seed()` at line 532.** This is the
-  corpus. It already builds every case the visual fixture lacks — see the
+  corpus. It already builds every case the visual fixture lacks. See the
   table below.
 - **`seed_git()` at line 182.** How that script pins dates and identity:
   `GIT_AUTHOR_DATE`, `GIT_COMMITTER_DATE`, and fixed name and email on
-  every invocation. Byte-reproducibility depends on this and
+  every invocation. Byte-reproducibility depends on this, and
   `.claude/CLAUDE.md` requires it.
-- **The 1e contract tests** — `blob-page`, `commit-log`, `commit`, `refs`,
+- **The 1e contract tests:** `blob-page`, `commit-log`, `commit`, `refs`,
   `tree-page`. Each builds its own repo under `mkdtemp`. Report which view
   states they already assert, because **anything a contract test proves
-  does not also need a screenshot.** The visual pass is for what a human
-  eye catches and an assertion does not: spacing, wrapping, truncation that
+  doesn't also need a screenshot.** The visual pass is for what a human eye
+  catches and an assertion doesn't: spacing, wrapping, truncation that
   lands mid-word, a table that collapses badly, a mark that overflows its
   box.
 
@@ -56,9 +56,9 @@ fixture, not inventing it.
 | Case | How `build_seed` makes it |
 |---|---|
 | Blob over the cap | `big.ts`, 3000 generated lines, past the computed source cap |
-| Binary under the cap | `small.bin`, 512 NUL bytes — git's own heuristic is a NUL in the first 8000 |
+| Binary under the cap | `small.bin`, 512 NUL bytes. Git's own heuristic is a NUL in the first 8000. |
 | Inline images | `logo.png`, `docs/arch.png`, `wide.png` via `write_pngs` |
-| Gitlink | `update-index --add --cacheinfo 160000,...,vendor/lib` — no submodule needed |
+| Gitlink | `update-index --add --cacheinfo 160000,...,vendor/lib`, no submodule needed |
 | Tree past the row cap | `NESTED_DIR` (`apps/web/src`) with `NESTED_ROWS - 1` = 19 modules against a `ROW_CAP` of 16 |
 | Deep path | `DEEP_PATH` = `apps/web/src/deep.ts`, three levels for the breadcrumb |
 | Log pagination | `ROW_CAP + 6` = 22 commits, more than one page |
@@ -68,9 +68,9 @@ fixture, not inventing it.
 
 Two cases it does **not** have, and both are worth adding:
 
-- **A blob over the cap that is also unwrappable** — one very long line
-  with no break opportunity. `8f4eb1a` says a path that cannot wrap was
-  already handled; the fixture should show it.
+- **A blob over the cap that's also unwrappable**, one very long line with
+  no break opportunity. `8f4eb1a` says a path that can't wrap was already
+  handled; the fixture should show it.
 - **A commit that overflows the budget**, so the commit page inlines some
   diffs and links the rest, and `/r/:repo/commits/:sha/*` becomes
   reachable. Committing `big.ts` in its own commit does this.
@@ -78,8 +78,8 @@ Two cases it does **not** have, and both are worth adding:
 ## 3 · The fixture changes
 
 `test/support/fixture-repos.ts` types a repo as `commit: { message, at,
-files } | null` — singular. There is no shape in which a second commit, a
-branch or a tag can be expressed. That is the root of it.
+files } | null`, singular. There's no shape in which a second commit, a
+branch or a tag can be expressed. That's the root of it.
 
 - Widen `FixtureRepo` to carry **`commits`** (ordered), **`branches`**, and
   **`tags`** (each tag annotated or lightweight). Keep every existing
@@ -87,12 +87,12 @@ branch or a tag can be expressed. That is the root of it.
 - Teach `scripts/build-fixture.ts` to write those refs. It currently only
   ever does `update-ref refs/heads/main` at line 95.
 - **Keep the four repos that exist and what they prove.** `sparrow` with no
-  commits and `moonlight` are the empty states; they are not spare
-  capacity. Add a fifth repo for the dense cases rather than loading them
-  onto `linklater`, whose job is to look like a real project.
-- **Byte-reproducible, or it is not a fixture.** Every commit, tag and
+  commits and `moonlight` are the empty states; they aren't spare capacity.
+  Add a fifth repo for the dense cases rather than loading them onto
+  `linklater`, whose job is to look like a real project.
+- **Byte-reproducible, or it isn't a fixture.** Every commit, tag and
   branch gets a pinned author and committer date and a fixed identity, as
-  `seed_git()` does. Build the tarball twice and diff it; if the bytes
+  `seed_git()` does. Build the tarball twice and diff it. If the bytes
   differ, stop and report why rather than committing it.
 - Frozen-clock dates: every timestamp must sit sensibly behind `frozenNow`
   (`2026-02-01T12:00:00.000Z`) so ages read as plausible rather than as
@@ -102,13 +102,13 @@ branch or a tag can be expressed. That is the root of it.
 
 `tuffgal/stories/read-a-repo.json` runs two actions. Add actions for each
 new route and compose them into stories that follow the links rather than
-navigating cold — a breadcrumb or a row link that has rotted is exactly
-what a navigation story catches and a direct `navigate` does not.
+navigating cold. A breadcrumb or a row link that has rotted is exactly what
+a navigation story catches and a direct `navigate` doesn't.
 
 Cover, at minimum:
 
 - Tree at a nested path, and the same path with `?all=1`
-- A blob under the cap, a blob truncated, a blob that cannot wrap
+- A blob under the cap, a blob truncated, a blob that can't wrap
 - A binary blob under the cap, and its inline image
 - The commit log, page one and page two through `Older →`
 - A commit that inlines everything, and one that links the tail
@@ -117,29 +117,29 @@ Cover, at minimum:
 - Tags, with both a lightweight and an annotated one
 - A tree containing the gitlink row
 
-`/` and `/r/linklater` keep the actions and expectations they already have
-— those two are 1d's reviewed pages and their stories are not to be
-rewritten. They have no baselines to preserve, though: nothing has ever
-been captured, so they are shot for the first time in this wave alongside
-everything else. See §5.
+`/` and `/r/linklater` keep the actions and expectations they already have.
+Those two are 1d's reviewed pages and their stories aren't to be rewritten.
+They have no baselines to preserve, though: nothing has ever been captured,
+so they're shot for the first time in this wave alongside everything else.
+See §5.
 
 ## 5 · The first baselines, and where they are shot
 
 **No baseline has ever been written.** `tuffgal/baselines/{dark,light}`
-hold nothing but `.gitkeep`, and there is no `.github/workflows/`. An
+hold nothing but `.gitkeep`, and there's no `.github/workflows/`. An
 earlier draft of this document told you to run the current baselines and
-confirm they pass; that instruction was wrong and is withdrawn. Nothing to
-re-shoot — these are the first.
+confirm they pass. That instruction was wrong and is withdrawn. There's
+nothing to re-shoot. These are the first.
 
-**They are captured in a Linux container matching what CI will run, not on
+**They're captured in a Linux container matching what CI will run, not on
 the laptop.** Tuffgal's own principle is that CI is the sole writer of
-baselines, and the reason is not ceremony: macOS rasterises text through
+baselines, and the reason isn't ceremony: macOS rasterizes text through
 CoreText and Linux through FreeType and Skia, with different hinting,
 antialiasing and subpixel positioning. On a product whose identity is a
 custom subset webfont at six weights, essentially every glyph edge differs.
 Laptop-shot baselines would mismatch wholesale on the first CI run.
 
-This wave builds the capture environment. Not a CI pipeline — one compose
+This wave builds the capture environment. Not a CI pipeline: one compose
 service and a script, which the GitHub Actions workflow later invokes
 rather than reimplements.
 
@@ -149,7 +149,7 @@ rather than reimplements.
   baselines irreproducible, which is the whole point of shooting them here.
 - **Pin the architecture, and say which.** ~~`platform: linux/amd64`
   matches the likely GitHub runner at the cost of emulation speed.~~
-  **Settled as `linux/arm64`**: amd64 Chromium does not merely run slowly
+  **Settled as `linux/arm64`**: amd64 Chromium doesn't merely run slowly
   under Colima on Apple silicon, it aborts (`qemu/rcu.h`, SIGABRT), so
   amd64 was unavailable rather than expensive. `docs/STACK.md` records it.
   The consequence is real and belongs to whoever writes the CI workflow:
@@ -159,37 +159,37 @@ rather than reimplements.
   satisfy that and must match what CI will use.
 - **Inside the compose network Postgres is `postgres:5432`, not
   `127.0.0.1:5433`.** The published port is a host convenience.
-  `DATABASE_URL` differs inside the container and that is the first thing
+  `DATABASE_URL` differs inside the container, and that's the first thing
   that will bite.
 - The visual server and Tuffgal both run inside the container, so
   `visualOrigin` at `127.0.0.1:4173` needs no change.
 - **Carry `--force-color-profile=srgb`, as the 1d capture work
   established.** ~~Not possible: `tuffgal@0.2.1-alpha.1` exposes no seam
   for Chromium launch arguments.~~ **Settled as never missing.**
-  Playwright's own Chromium launch already carries this flag by default —
+  Playwright's own Chromium launch already carries this flag by default.
   `playwright-core@1.62.1` bundles it in `chromiumSwitches`, so a bare
   `chromium.launch({ headless: true })` sets it regardless of Tuffgal's
-  version. `tuffgal.config.ts` carries no `browserArgs` entry for it;
+  version. `tuffgal.config.ts` carries no `browserArgs` entry for it.
   Tuffgal's real `browserArgs` seam (`0.2.2-alpha.1`,
   `nschneble/tuffgal#49`) exists for a launch flag Playwright doesn't
   already set, which this isn't. `docs/STACK.md` has the detail.
 
 Land the fixture, the tarball, the stories, the capture environment and the
 baselines as one wave, with one commit that says **baselines shot for the
-first time** — which is the true sentence — and the reason beside it.
+first time**, which is the true sentence, and the reason beside it.
 
 ## 6 · Out of scope
 
-- Any change under `src/`. If a view cannot be exercised without a code
-  change, that is a finding — report it, do not make it.
+- Any change under `src/`. If a view can't be exercised without a code
+  change, that's a finding. Report it, don't make it.
 - **A GitHub Actions workflow.** This wave builds the capture environment
-  CI will later use. It does not build CI.
+  CI will later use. It doesn't build CI.
 - **Deleting contract tests.** `.claude/CLAUDE.md` now says the deletion
   follows an approved baseline, never a written story. Propose the removals
   as a reasoned per-assertion list and stop.
 - New routes, new views, new copy.
-- Anything the contract tests already prove and the eye cannot see. Say
-  what you left out and why.
+- Anything the contract tests already prove and the eye can't see. Say what
+  you left out and why.
 
 ## Handoff
 
@@ -198,7 +198,7 @@ first time** — which is the true sentence — and the reason beside it.
 - Whether the tarball built byte-identically twice
 - The exact Playwright image tag and the architecture you pinned, and why
 - Whether the capture reproduced: shoot twice, and report whether the two
-  runs are byte-identical. If they are not, the environment is not pinned
-  and the baselines are not baselines
-- Any case in §2 you could not build, and what stopped you
+  runs are byte-identical. If they aren't, the environment isn't pinned and
+  the baselines aren't baselines.
+- Any case in §2 you couldn't build, and what stopped you
 - The story and action count, before and after

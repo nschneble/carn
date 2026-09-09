@@ -3,21 +3,21 @@
 _The first pages anyone sees. The only phase where your eye is the gate._
 
 Fourth of five briefs making up Phase 1 of `docs/PLAN.md` §08. That section
-names one phase for all seven views; it is split here because 1d settles
+names one phase for all seven views; it's split here because 1d settles
 every visual decision against two pages you can judge, and 1e applies a
 settled system to five more.
 
 | Sub-phase | Scope | State |
 |---|---|---|
-| 1a | Schema, Fastify skeleton, `html` tag | Merged — PR #1 |
-| 1b | SSH listener, auth, push-to-create | Merged — PR #2 |
-| 1c | Anonymous smart-HTTP | Merged — PR #4 |
+| 1a | Schema, Fastify skeleton, `html` tag | Merged, PR #1 |
+| 1b | SSH listener, auth, push-to-create | Merged, PR #2 |
+| 1c | Anonymous smart-HTTP | Merged, PR #4 |
 | **1d** | Design system, repo list, repo show | This document |
 | 1e | Blob, commit log, diff, branch and tag lists | Next |
 
 **Read `.claude/CLAUDE.md` first, in full**, then `docs/BRAND.md`, then
-`docs/STACK.md`. `BRAND.md` is not reference material for this phase — it
-is the specification. `docs/LAYOUT.md` covers the two directions and the
+`docs/STACK.md`. `BRAND.md` isn't reference material for this phase. It's
+the specification. `docs/LAYOUT.md` covers the two directions and the
 small-caps recipe.
 
 ---
@@ -29,13 +29,13 @@ and report it**.
 
 | Package | Verified | Major | Note |
 |---|---|---|---|
-| `markdown-it` | 15.0.0 | **15** | **New major. Spike it first — see below.** |
-| `highlight.js` | 11.12.0 | **11** | Not needed until 1e. Do not install it yet. |
+| `markdown-it` | 15.0.0 | **15** | **New major. Spike it first. See below.** |
+| `highlight.js` | 11.12.0 | **11** | Not needed until 1e. Don't install it yet. |
 | `tuffgal` | 0.2.0-alpha.8 | **0** | Pre-1.0, unstable API by its own README. Pin the exact version. |
 
 New dependencies this phase: `markdown-it`, `tuffgal`, `axe-core`, and
 `playwright`. Nothing else. Archivo was already in `fonts/`; the mono face
-was not, and this phase builds it — see `fonts/README.md`.
+wasn't, and this phase builds it. See `fonts/README.md`.
 `@types/markdown-it` was installed and then dropped, because 15 is
 self-typed. `docs/STACK.md` records why; don't add it back.
 
@@ -50,7 +50,7 @@ before a line of the pipeline is written:
    html: false }` explicitly regardless, but establish the fact.
 2. `validateLink` moved from an instance property to a prototype method in
    15. Does assigning `md.validateLink = fn` still shadow it? **Prove the
-       allowlist actually rejects `javascript:`** — do not infer it from
+       allowlist actually rejects `javascript:`**. Don't infer it from
        the assignment appearing to work.
 3. Is `text_join` still the last core rule, and does
    `md.core.ruler.before('text_join', ...)` still position a rule
@@ -59,7 +59,7 @@ before a line of the pipeline is written:
 4. Does an escaped `\#12` survive un-linked?
 
 Report all four. Then amend CLAUDE.md's markdown-it section with what you
-measured — it currently describes 14.x and is the last stale section left.
+measured. It currently describes 14.x and is the last stale section left.
 
 ## What 1d is
 
@@ -72,17 +72,17 @@ GET /r/:repo     repo show — file tree at the default branch + rendered README
 
 Plus everything they need: the stylesheet from `BRAND.md`'s token block,
 self-hosted Carn Sans and Carn Mono (renamed subsets of Archivo and IBM
-Plex Mono — OFL reserves the name "Plex"), both palettes, compensated small
+Plex Mono; OFL reserves the name "Plex"), both palettes, compensated small
 caps, the generated wordmark, and header-image resolution.
 
 ## What 1d is not
 
-- Blob view, syntax highlighting, commit log, diff, branch and tag lists —
-  all 1e. **Do not install `highlight.js`.**
-- Issues, PRs, or anything they need — Phases 3 and 4
-- `/new`, `/settings`, `/r/:repo/settings` — admin forms, later
-- Atom feeds, `robots.txt`, `sitemap.xml` — later
-- Cross-reference autolinking (`#12`) — 1e, though the spike answers its
+- Blob view, syntax highlighting, commit log, diff, branch and tag lists.
+  All 1e. **Don't install `highlight.js`.**
+- Issues, PRs, or anything they need. Phases 3 and 4.
+- `/new`, `/settings`, `/r/:repo/settings`. Admin forms, later.
+- Atom feeds, `robots.txt`, `sitemap.xml`. Later.
+- Cross-reference autolinking (`#12`). That's 1e, though the spike answers its
   question now
 - Any change to the SSH or HTTP git paths. If either needs a fix to make 1d
   work, say so rather than editing it in passing.
@@ -92,10 +92,10 @@ caps, the generated wordmark, and header-image resolution.
 - Every migration file starts with `BEGIN;` and ends with `COMMIT;`
 - `.squawk.toml` holds environmental facts only; silencing is inline
 - The init migration's `require-lock-timeout` / `require-statement-timeout`
-  ignore does not carry forward
-- Findings sort into lifecycle artefact / capacity ceiling / correctness;
+  ignore doesn't carry forward
+- Findings sort into lifecycle artifact / capacity ceiling / correctness;
   correctness findings are never silenced
-- The verify script must be idempotent — scratch database, `mktemp -d` repo
+- The verify script must be idempotent: scratch database, `mktemp -d` repo
   root, ephemeral ports, one trap
 - `git grep` for `shell: true` uses 1a's **scoped** form, path-limited to
   `src test scripts prisma`, with a positive control. The literal string
@@ -115,27 +115,27 @@ event handler.
 
 **A contract test that scans template source for an interpolation landing
 in an unquoted attribute position, and fails.** Static, zero runtime cost.
-Give it a positive control — a fixture with `href=${x}` that the scanner
-must catch — so a scanner matching nothing cannot pass.
+Give it a positive control, a fixture with `href=${x}` that the scanner
+must catch, so a scanner matching nothing can't pass.
 
-This is not optional and it is not deferrable. 1c shipped an injection
+This isn't optional and it isn't deferrable. 1c shipped an injection
 defect that built clean, passed 61 tests, and passed its verify script
 twice, because no gate looked for that class. 1d renders user-controlled
-data — repo names, descriptions, commit subjects, README bodies — into HTML
-on every page.
+data into HTML on every page: repo names, descriptions, commit subjects,
+README bodies.
 
 ## Markdown
 
 Strict CommonMark, one deviation: `table` enabled, nothing else.
 
-- `new MarkdownIt('commonmark', { html: false })` — always explicit
+- `new MarkdownIt('commonmark', { html: false })`, always explicit
 - Replace `validateLink` with an **allowlist** (`https`, `http`, `mailto`,
   plus data-image forms). The default is a blocklist of four schemes, which
   fails open.
 - README rendering is `raw()`'s only caller in this phase. Everything else
   goes through `html` and is escaped.
-- No sanitizer. CLAUDE.md §04 explains why: with `html: false` there is no
-  raw HTML to sanitize, and adding one implies there is.
+- No sanitizer. CLAUDE.md §04 explains why: with `html: false` there's no
+  raw HTML to sanitize, and adding one implies there's.
 
 ## Type, and the thing most likely to go wrong
 
@@ -150,23 +150,23 @@ gets lost:
   real filename.
 - **Pin `lang="en"` on filenames.** Under Turkish, `i` uppercases to `İ`.
 
-The display face never sets body copy. On the list, it is worn by the repo
+The display face never sets body copy. On the list, it's worn by the repo
 names; on the show page, by the single title. Everything else is mono,
 small, and quiet.
 
 ## Themes
 
-The token block in `BRAND.md` is copied **verbatim**. It is built so that
+The token block in `BRAND.md` is copied **verbatim**. It's built so that
 no color is defined only inside a media query, which is what makes both
 render paths resolve. Dark is the bare `:root`; light is redefined inside
 `prefers-color-scheme: light`. A token left only inside that query is empty
 under dark, which is the default, so changing the structure breaks a case
-that is invisible in testing.
+that's invisible in testing.
 
 **`prefers-color-scheme` and nothing else.** No theme cookie, no
 `data-theme`, no client-side switching, no flash, no JavaScript. Every page
 is one set of bytes for every visitor, which is what makes it genuinely
-cacheable and why no response carries `Vary`. A `<noscript>` is not needed
+cacheable and why no response carries `Vary`. A `<noscript>` isn't needed
 because nothing needs script.
 
 ## Budgets
@@ -187,15 +187,15 @@ where they start binding:
   defined solely inside the light media query resolves to nothing, and it
   is the state the token block's structure exists to protect, so neither
   path is optional. The audit runs against real HTTP, not `setContent`: the
-  sheet's `@font-face` src is root-relative and cannot resolve at
+  sheet's `@font-face` src is root-relative and can't resolve at
   `about:blank`, and an audit on fallback fonts measures the wrong glyphs
   for every font-sensitive rule, `target-size` first among them.
 
 The axe ruleset is `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`.
 The last is above the standard CLAUDE.md tenet 3 states, and is adopted
-deliberately: it is clean today, and its `target-size` rule pins the
+deliberately: it's clean today, and its `target-size` rule pins the
 repo-row hit area, which otherwise rests on a screenshot baseline alone.
-Dropping the tag later is a decision, not a cleanup — a `target-size`
+Dropping the tag later is a decision, not a cleanup. A `target-size`
 failure is answered at the hit area, or by an explicit note from Nick.
 
 **Open question, Nick's to settle:** tenet 3 commits to WCAG 2.1 AA while
@@ -209,7 +209,7 @@ rather than leaving it silent.
 ## Tuffgal
 
 First phase with anything to screenshot, so Tuffgal enters here rather than
-at Phase 4 — nine screens arriving at once is where a wrong baseline hides.
+at Phase 4. Nine screens arriving at once is where a wrong baseline hides.
 
 - One story covering both pages, run once per color scheme. Tuffgal pins
   `colorScheme` per run and records it as a pixel-affecting manifest key,
@@ -224,7 +224,7 @@ at Phase 4 — nine screens arriving at once is where a wrong baseline hides.
   screens, rather than later with nine.
 
 Tuffgal is pre-1.0 with an explicitly unstable API. If its README and its
-actual behavior disagree, **report it rather than working around it** —
+actual behavior disagree, **report it rather than working around it**.
 Nick maintains it, and a wrong workaround here becomes a bug report he
 never receives.
 
@@ -235,7 +235,7 @@ never receives.
 `scripts/verify-phase-1d.sh`, printing `PASS`/`FAIL` per check, exiting
 non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
 
-1. `npm ci && npm run build` — zero errors under `strict`
+1. `npm ci && npm run build`, zero errors under `strict`
 2. `GET /` returns 200 and lists every repo in the database
 3. `GET /r/:repo` returns 200 with the file tree at the default branch and
    the rendered README
@@ -243,26 +243,26 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
    would be here and how to make one
 5. A nonexistent repo returns 404; an invalid name is refused before any
    database query
-6. **No interpolation lands in an unquoted attribute position** — source
+6. **No interpolation lands in an unquoted attribute position**. Source
    scan, with a positive control proving the scanner catches a planted one
 7. A repo named with an escape sequence never reaches a response body
 8. A README containing `<script>`, `javascript:`, and `<img onerror=>`
-   renders inert — assert the output, not the absence of an error. A README
+   renders inert. Assert the output, not the absence of an error. A README
    containing a remote `https:` image renders as an `<img>` with its `alt`
-   intact: the markdown layer does not strip it, and CSP is what stops the
+   intact: the markdown layer doesn't strip it, and CSP is what stops the
    request. Assert the tag is present and the CSP header is unchanged.
-9. `validateLink` rejects `javascript:` — the allowlist, proven, not the
-   assignment
+9. `validateLink` rejects `javascript:`. The allowlist, proven, not the
+   assignment.
 10. In both render paths, enumerate every custom property named in
     `BRAND.md`'s token block and assert each resolves to a non-empty value
-    on `:root`. Not a spot check, not a screenshot — read them back with
+    on `:root`. Not a spot check, not a screenshot. Read them back with
     `getComputedStyle(document.documentElement).getPropertyValue()` and
     fail on the first empty string. Give it a positive control: delete one
     token from a fixture and confirm the check empties in exactly the dark
-    path, since that is where a light-only declaration goes missing.
+    path, since that's where a light-only declaration goes missing.
 11. Zero axe violations across both render paths, `colorScheme: 'light'`
-    and `colorScheme: 'dark'`. The second is not optional and is not
-    covered by the first — set it explicitly in the context. Run against
+    and `colorScheme: 'dark'`. The second isn't optional and isn't
+    covered by the first. Set it explicitly in the context. Run against
     the gallery as well as both pages, over real HTTP so the fonts and the
     stylesheet load, and assert both families reached `loaded` before any
     audit runs. Prove the harness bites three ways: a fixture with a known
@@ -270,18 +270,18 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
     must be reported in its own palette and only there; and a document
     whose stylesheet 404s must fail the font check.
 12. **Under 100 KB per page**, fonts and all
-13. **Fewer than 12 `spawn` calls** rendering a repo page — instrument the
-    wrapper and count
+13. **Fewer than 12 `spawn` calls** rendering a repo page. Instrument the
+    wrapper and count.
 14. Zero `<script>` tags on either page
 15. The DOM under small caps holds the true lowercase, and filenames carry
     `lang="en"`
 16. The Tuffgal story passes for both pages under both color schemes,
     against the pinned fixture and a frozen clock
-17. `git grep` finds no shell-enabled spawn — scoped form, positive control
+17. `git grep` finds no shell-enabled spawn. Scoped form, positive control.
 18. Every `.ts` under `src`, `test`, and `scripts` opens with the SPDX line
 19. `package.json` adds only `markdown-it`, `tuffgal`, `axe-core`, and
     `playwright`. `axe-core` and `playwright` are devDependencies;
-    `@types/markdown-it` and `@axe-core/playwright` are not installed.
+    `@types/markdown-it` and `@axe-core/playwright` aren't installed.
 20. `npx squawk prisma/migrations/**/*.sql` exits 0
 21. 1a, 1b, and 1c verify scripts all still pass in full
 22. Running this script twice gives the same result, leaving no
@@ -292,36 +292,36 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
     not. Assert both halves. The negative half is the one that matters: an
     over-broad match nofollows the site's own navigation, which is
     invisible in rendering and wrong. Cover inline, autolink, and reference
-    link forms — all three reach `link_open` by different paths.
+    link forms. All three reach `link_open` by different paths.
 
 Check 23 joins 6 through 9 as part of the phase's real gate, despite its
 number. It was appended rather than inserted, so nothing renumbers.
 
-Checks 6 through 9 are the phase's real gate. Each covers a failure that is
+Checks 6 through 9 are the phase's real gate. Each covers a failure that's
 invisible when it happens: a page renders, looks right, and is wrong. Check
-13 is second — a file list calling `cat-file` per row is pixel-identical
+13 is second. A file list calling `cat-file` per row is pixel-identical
 and four times slower.
 
 ## What only Nick can judge
 
 Every check above is mechanical, and none of them says whether it looks
-good. That gate is his, and it is the one this phase exists for.
+good. That gate is his, and it's the one this phase exists for.
 
 Make it easy to reach: when the phase is done, give him the exact commands
 to see both pages in both palettes with a repo that has real content in it.
-Not screenshots — the running thing.
+Not screenshots. The running thing.
 
 ## Handoff notes
 
 - All four answers from the markdown-it spike, and what you amended in
   CLAUDE.md
 - Whether `@types/markdown-it@14` matched the 15.0.0 runtime API. Answered
-  ahead of the handoff: it did not, and the dependency was dropped
+  ahead of the handoff: it didn't, and the dependency was dropped
 - Any place Tuffgal's README and behavior disagreed
 - Any place CLAUDE.md, `BRAND.md`, `docs/STACK.md`, and this brief
   disagreed
-- Anything you wanted to add and did not, with the reason
+- Anything you wanted to add and didn't, with the reason
 
-If something here is wrong about the world, **stop and say so.** Several
+If something here's wrong about the world, **stop and say so.** Several
 amendments in every phase so far have been defects in the brief rather than
-the code — including one that would have killed git on every clone.
+the code, including one that would have killed git on every clone.
