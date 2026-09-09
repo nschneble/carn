@@ -5,6 +5,22 @@
 # Prints PASS or FAIL for each of the 17 checks and exits non-zero if any
 # fail. Reads DATABASE_URL from the environment, falling back to ./.env.
 
+# bash, not sh: arrays, pipefail, and a process substitution at the squawk
+# check. Under sh most of this parses and then dies a thousand lines in, so
+# refuse up front where the message can still say why.
+if [ -z "${BASH_VERSION:-}" ]; then
+  echo "This script needs bash. Run ./scripts/verify-phase-1a.sh or bash scripts/verify-phase-1a.sh" >&2
+  exit 1
+fi
+
+case "${SHELLOPTS:-}" in
+  *posix*)
+    echo "This script needs bash outside POSIX mode, which drops process substitution." >&2
+    echo "Run ./scripts/verify-phase-1a.sh rather than sh scripts/verify-phase-1a.sh" >&2
+    exit 1
+    ;;
+esac
+
 # not set -e: this runs commands expected to fail and reads their status
 set -uo pipefail
 

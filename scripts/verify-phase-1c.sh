@@ -6,6 +6,22 @@
 # fail. Reads DATABASE_URL from the environment, falling back to ./.env.
 # State lands in three places; the EXIT trap tears down all three.
 
+# bash, not sh: arrays, pipefail, and a process substitution at the squawk
+# check. Under sh most of this parses and then dies a thousand lines in, so
+# refuse up front where the message can still say why.
+if [ -z "${BASH_VERSION:-}" ]; then
+  echo "This script needs bash. Run ./scripts/verify-phase-1c.sh or bash scripts/verify-phase-1c.sh" >&2
+  exit 1
+fi
+
+case "${SHELLOPTS:-}" in
+  *posix*)
+    echo "This script needs bash outside POSIX mode, which drops process substitution." >&2
+    echo "Run ./scripts/verify-phase-1c.sh rather than sh scripts/verify-phase-1c.sh" >&2
+    exit 1
+    ;;
+esac
+
 # not set -e: this runs commands expected to fail and reads their status
 set -uo pipefail
 

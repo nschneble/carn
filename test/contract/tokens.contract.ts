@@ -451,7 +451,7 @@ test("the wash covers what takes a click, by row or by cell", () => {
 test("BRAND.md's stated ratios are the measured ones", () => {
   const stated = [
     ...brand.matchAll(
-      /^- `(--[a-z-]+)` — (#[0-9A-F]{6}) · ([\d.]+):1 on ground, ([\d.]+):1 on sunk$/gm,
+      /^\| `(--[a-z-]+)`\s+\| (#[0-9A-F]{6}) \| ([\d.]+):1 on --ground, ([\d.]+):1 on --sunk\s+\|$/gm,
     ),
   ];
   assert.strictEqual(
@@ -484,7 +484,7 @@ test("BRAND.md's stated ratios are the measured ones", () => {
 test("the token block's own accent annotations are the measured ones", () => {
   const annotated = [
     ...tokens.matchAll(
-      /--(accent(?:-text)?): (#[0-9a-f]{6}); \/\* ([\d.]+):1 on ground, ([\d.]+) on sunk/g,
+      /--(accent(?:-text)?): (#[0-9a-f]{6}); \/\* ([\d.]+):1 against --ground, ([\d.]+):1 against --sunk/g,
     ),
   ];
   assert.strictEqual(annotated.length, 2);

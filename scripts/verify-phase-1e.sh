@@ -7,6 +7,22 @@
 # 24 runs 1a, 1b, 1c and 1d, and each of those runs the ones before it, so
 # a full run takes tens of minutes.
 
+# bash, not sh: arrays, pipefail, and a process substitution at the squawk
+# check. Under sh most of this parses and then dies a thousand lines in, so
+# refuse up front where the message can still say why.
+if [ -z "${BASH_VERSION:-}" ]; then
+  echo "This script needs bash. Run ./scripts/verify-phase-1e.sh or bash scripts/verify-phase-1e.sh" >&2
+  exit 1
+fi
+
+case "${SHELLOPTS:-}" in
+  *posix*)
+    echo "This script needs bash outside POSIX mode, which drops process substitution." >&2
+    echo "Run ./scripts/verify-phase-1e.sh rather than sh scripts/verify-phase-1e.sh" >&2
+    exit 1
+    ;;
+esac
+
 # not set -e: this runs commands expected to fail and reads their status
 set -uo pipefail
 
@@ -1867,13 +1883,13 @@ readonly TITLE_48="BRAND documents the nav, the widened small caps rule, both mo
 wrong=""
 grep -qF "### Repo nav" docs/BRAND.md \
   || wrong="$wrong BRAND carries no Repo nav section;"
-grep -qF "link treatment every other link in the product carries" docs/BRAND.md \
+grep -qF "take the link treatment" docs/BRAND.md \
   || wrong="$wrong BRAND does not record the nav's link treatment;"
-grep -qF "The rule is the name column, not the filename." docs/BRAND.md \
+grep -qF "the name column, not the filename" docs/BRAND.md \
   || wrong="$wrong BRAND still scopes small caps to filenames alone;"
 grep -qF "A SHA is a machine identifier" docs/BRAND.md \
   || wrong="$wrong BRAND does not record the commit log's mono deviation;"
-grep -qF "would fight the diff blocks directly under it" docs/BRAND.md \
+grep -qF "counts that only align in a monospaced face" docs/BRAND.md \
   || wrong="$wrong BRAND does not record the file list's mono deviation;"
 grep -qF ".t-note" docs/BRAND.md \
   || wrong="$wrong BRAND does not document .t-note;"

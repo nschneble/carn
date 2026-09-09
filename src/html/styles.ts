@@ -27,21 +27,21 @@ export const tokens = css`:root {
   --rule-soft: #212424;
 
   /* brand */
-  --accent: #ff4d95; /* 6.17:1 on ground, 5.21 on sunk — large type, rules */
-  --accent-text: #ff6ea8; /* 7.36:1 on ground, 6.22 on sunk — links, small text */
-  --accent-fill: var(--accent); /* the pink a small label sits on — see 02 */
+  --accent: #ff4d95; /* 6.17:1 against --ground, 5.21:1 against --sunk */
+  --accent-text: #ff6ea8; /* 7.36:1 against --ground, 6.22:1 against --sunk */
+  --accent-fill: var(--accent);
   --accent-wash: #331020;
   --on-accent: #0e0f0f;
 
   /* diff */
-  --diff-add: #7ee08a; /* 9.98:1 on sunk — added lines */
-  --diff-del: #cf7848; /* 4.97:1 on sunk — removed lines */
+  --diff-add: #7ee08a; /* 9.98:1 against --sunk */
+  --diff-del: #cf7848; /* 4.97:1 against --sunk */
 
   /* type */
   --f-display: "Carn Sans", "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --f-mono: "Carn Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --f-mono: "Carn Mono", "IBM Plex Mono", "SF Mono", Menlo, monospace;
 
-  /* spacing — 4px base */
+  /* spacing (4px base) */
   --s1: 4px;
   --s2: 8px;
   --s3: 12px;
@@ -72,8 +72,8 @@ export const tokens = css`:root {
     --accent-fill: var(--accent-text);
     --accent-wash: #fbe2ed;
     --on-accent: #ffffff;
-    --diff-add: #1c6e2f; /* 5.36:1 on sunk — added lines */
-    --diff-del: #5a1c00; /* 11.12:1 on sunk — removed lines */
+    --diff-add: #1c6e2f; /* 5.36:1 against --sunk */
+    --diff-del: #5a1c00; /* 11.12:1 against --sunk */
   }
 }
 
@@ -139,14 +139,14 @@ export const components = css`body {
 
 .skip {
   display: inline-block;
-  font-family: var(--f-mono);
-  font-size: 12px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
   background: var(--surface);
   color: var(--ink);
   border: 1px solid var(--ink);
   padding: 14px 18px;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
   text-decoration: none;
 }
 
@@ -184,8 +184,6 @@ export const components = css`body {
   overflow-wrap: anywhere;
 }
 
-/* a list page's own title, over its own rows: same face and size, tone
-   is the only separator — see 02 */
 .t-item--title {
   color: var(--ink-soft);
 }
@@ -205,7 +203,7 @@ export const components = css`body {
   color: var(--ink-faint);
 }
 
-/* a short explanatory sentence, not a caption — see 03 */
+/* a short explanatory sentence */
 .t-note {
   font-family: var(--f-mono);
   font-size: 11px;
@@ -230,12 +228,12 @@ export const components = css`body {
   text-transform: uppercase;
 }
 
-/* compensated small caps (base wght 700, wdth 110) */
+/* compensated small caps (base: "wdth" 110, "wght" 700) */
 .sc {
-  text-transform: uppercase;
-  font-size: 0.79em;
   font-variation-settings: "wdth" 117, "wght" 824;
+  font-size: 0.79em;
   letter-spacing: 0.056em;
+  text-transform: uppercase;
   margin-right: -0.056em;
 }
 
@@ -243,6 +241,10 @@ export const components = css`body {
 
 .btn {
   display: inline-flex;
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  border: 1px solid var(--accent-fill);
+  padding: 14px 18px;
   align-items: center;
   justify-content: space-between;
   gap: var(--s4);
@@ -250,10 +252,6 @@ export const components = css`body {
   font-size: 12px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  background: var(--accent-fill);
-  color: var(--on-accent);
-  border: 1px solid var(--accent-fill);
-  padding: 14px 18px;
   text-decoration: none;
   cursor: pointer;
 }
@@ -265,8 +263,8 @@ export const components = css`body {
 
 .btn--ghost {
   background: none;
-  color: var(--ink);
   border-color: var(--ink);
+  color: var(--ink);
 }
 
 .btn:hover {
@@ -303,27 +301,27 @@ export const components = css`body {
 
 .field > label {
   display: block;
+  margin-bottom: var(--s2);
+  color: var(--ink-mid);
   font-family: var(--f-mono);
   font-size: 10.5px;
   font-weight: 500;
   letter-spacing: 0.11em;
   text-transform: uppercase;
-  color: var(--ink-mid);
-  margin-bottom: var(--s2);
 }
 
 .field .box {
   display: block;
-  width: 100%;
   box-sizing: border-box;
+  width: 100%;
   background: var(--surface);
+  color: var(--ink);
   border: 1px solid var(--ink-mid);
   border-radius: 0;
   padding: 13px 15px;
   font-family: var(--f-display);
   font-variation-settings: "wdth" 100, "wght" 400;
   font-size: 15.5px;
-  color: var(--ink);
 }
 
 .field .box::placeholder {
@@ -336,10 +334,10 @@ export const components = css`body {
 }
 
 .field .hint {
+  margin-top: var(--s2);
+  color: var(--ink-faint);
   font-family: var(--f-mono);
   font-size: 10.5px;
-  color: var(--ink-faint);
-  margin-top: var(--s2);
 }
 
 /* chips */
@@ -352,30 +350,27 @@ export const components = css`body {
 
 .chip {
   display: inline-block;
-  font-family: var(--f-mono);
-  font-size: 11px;
-  letter-spacing: 0.05em;
   background: var(--sunk);
+  color: var(--ink-soft);
   border: 1px solid var(--ink-mid);
   border-radius: 999px;
   padding: 8px 15px;
-  color: var(--ink-soft);
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
 }
 
 .chip--current {
   background: var(--accent-fill);
   border: 2px solid var(--accent-fill);
+  color: var(--on-accent);
   padding: 7px 14px;
   font-weight: 500;
-  color: var(--on-accent);
 }
 
 /* row tables (list views) */
 
-/* no display value on any table element, and fixed rather than auto: auto
-   never sizes a column under its min-content, and a name that does not
-   wrap has the whole string as its minimum, so the table outgrows the
-   viewport instead of the name ellipsing */
+/* no display values on any table element; fixed not auto */
 .tbl {
   width: calc(100% + var(--s2));
   margin-left: calc(var(--s2) * -1);
@@ -414,14 +409,13 @@ export const components = css`body {
   padding-left: var(--s2);
 }
 
-/* the gutter bleed sits inside the link, not on the cell, so the whole
-   width the wash covers is the width that takes a click */
+/* gutter bleed sits inside link so the whole wash width is clickable */
 .tbl tbody th:first-child > *,
 .tbl tbody td:first-child > * {
   padding-left: var(--s2);
 }
 
-/* every cell here is a link, so the row is genuinely the target */
+/* every cell here is a link */
 .log tbody tr:hover,
 .log tbody tr:focus-within,
 .refs tbody tr:hover,
@@ -429,7 +423,7 @@ export const components = css`body {
   background: var(--sunk);
 }
 
-/* the name is the only link, so the wash stops where the click does */
+/* the name is the only link so the wash stays inside the clickable area */
 .tree tbody .nm:hover,
 .tree tbody .nm:focus-within,
 .repos tbody .nm:hover,
@@ -454,10 +448,10 @@ export const components = css`body {
 .tbl a:hover,
 .tbl a:focus-visible {
   text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-/* the name is the link text and the row's accessible name, so it wraps
-   rather than truncating — see LAYOUT 02 */
+/* name is link text + row's a11y name, so it wraps not truncates */
 .tbl .nm > * {
   color: var(--ink);
 }
@@ -544,24 +538,24 @@ export const components = css`body {
 }
 
 .meta dd {
-  font-size: 13.5px;
-  margin: 0;
   color: var(--ink-soft);
+  font-size: 13.5px;
   line-height: 1.5;
+  margin: 0;
 }
 
 /* state tags */
 
 .tag {
   display: inline-block;
+  background: var(--accent-fill);
+  border: 1px solid var(--accent-fill);
+  color: var(--on-accent);
+  padding: 4px 9px;
   font-family: var(--f-mono);
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 4px 9px;
-  background: var(--accent-fill);
-  border: 1px solid var(--accent-fill);
-  color: var(--on-accent);
 }
 
 .tag--quiet {

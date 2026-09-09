@@ -878,11 +878,9 @@ It carries `<nav aria-label="Breadcrumb">` and an ordered list. It doesn't repla
 
 ### Repo nav
 
-_Commits, branches, and tags._ Oh my.
+_Commits, branches, and tags._
 
-The repo page carries the only way to visit commit logs, branches, and tags. `<nav aria-label="Repo views">` wraps three plain links. `commitsHref` and `refsHref` are the only correct sources for the three URLs.
-
-Each link is `inline-block` with its own padding, not inline text, so it clears the appropriate `target-size`.
+The repo page carries the only way to visit commit logs, branches, and tags. `<nav aria-label="Repo views">` wraps three entries. **The entries take the link treatment**, the same as every other link in the product. Mono, uppercase, and letter-spaced already marks them as navigation. `commitsHref` and `refsHref` are the only correct sources for the three URLs. Each link is `inline-block` with its own padding, not inline text, so it clears the appropriate `target-size`.
 
 **As of Phase 1e, repo nav is only on the repo page**, which means there's never a current page in the nav. A later phase that carries the nav onto the destination pages marks the current entry with `aria-current="page"` and the chip's `.chip--current` precedent, keeping it as an active link, unlike how the breadcrumb unlinks its current segment.
 
