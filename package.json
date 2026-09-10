@@ -24,10 +24,10 @@
   },
   "allowScripts": {
     "@prisma/engines@7.9.1": true,
-    "prisma@7.9.1": true,
-    "ssh2@1.17.0": true,
     "cpu-features@0.0.10": true,
-    "fsevents@2.3.2": true
+    "fsevents@2.3.2": true,
+    "prisma@7.9.1": true,
+    "ssh2@1.17.0": true
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
