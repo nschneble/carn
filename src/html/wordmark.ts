@@ -5,7 +5,7 @@
 // weight, width, and fill-or-outline with two colors (--accent, --ink)
 // and the ground
 
-import { html, type Raw } from "../html/index.js";
+import { html, type Raw } from "./index.js";
 
 const em = 100;
 const ascent = 0.89 * em;

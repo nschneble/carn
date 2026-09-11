@@ -8,7 +8,7 @@ import { captureGit } from "../git/capture.js";
 import { parseLsTree } from "../git/ls-tree.js";
 import { oidPattern } from "../git/oid.js";
 import { html, type Raw } from "../html/index.js";
-import { wordmark } from "./wordmark.js";
+import { wordmark } from "../html/wordmark.js";
 
 export type Slot = "light" | "dark";
 export type HeaderImage = { path: string; oid: string; bytes: number };

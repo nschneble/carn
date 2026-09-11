@@ -2,8 +2,8 @@
 
 import { html } from "../../src/html/index.js";
 import { stylesheet } from "../../src/html/styles.js";
+import { wordmark } from "../../src/html/wordmark.js";
 import { type HeaderImage, headerMarkup } from "../../src/repos/header.js";
-import { wordmark } from "../../src/repos/wordmark.js";
 
 function css(strings: TemplateStringsArray, ...values: unknown[]): string {
   return String.raw({ raw: strings }, ...values);

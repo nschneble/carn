@@ -238,7 +238,7 @@ lean on. Restore the fact; keep the shorter prose.
 | `src/html/filename.ts` | "no whitespace between the runs: a newline inside `README.<span>md</span>` becomes a space in the accessible name, the clipboard, and find-in-page" | A warning against a specific edit, removed in the same commit that added indentation to every other HTML template.                               |
 | `src/repos/header.ts`  | `maxHeaderBytes`, "what the 100 KB budget leaves after fonts and the page"                                                                          | The replacement inverts the derivation. 16 KB is not chosen to leave room; it is what remains. `docs/BRAND.md` 06 has the reconciled arithmetic. |
 
-`src/repos/wordmark.ts` and `src/git/oid.ts` lost their `BRAND.md 06`
+`src/html/wordmark.ts` and `src/git/oid.ts` lost their `BRAND.md 06`
 citations and a sentence each. Lower stakes, but restore the citations at
 least, since the docs are the source of truth and a comment that names its
 clause is how a reader gets there.

@@ -12,7 +12,7 @@ import { type Browser, chromium } from "playwright";
 import { html } from "../../src/html/index.js";
 import { page } from "../../src/html/page.js";
 import { styleHref, stylesheet } from "../../src/html/styles.js";
-import { wordmark } from "../../src/repos/wordmark.js";
+import { wordmark } from "../../src/html/wordmark.js";
 import { indexDocument } from "../gallery/repo-index.js";
 import { type Served, serve } from "../support/serve.js";
 
