@@ -121,7 +121,7 @@ Three mechanisms, in this order:
 a serve-time transform so `BRAND.md`'s token block stays byte-identical to
 `styles.ts` and its contract test keeps passing. Don't minify the source.
 
-**2 · Count wire bytes.** `repo-page.contract.ts:543` measures
+**2 · Count wire bytes.** `repo-page.contract.ts`'s weight check measures
 `Buffer.byteLength(markup, "utf8")`, uncompressed, against a budget
 describing what a visitor downloads on a cold cache. Nothing compresses yet
 because the Caddyfile is Phase 2. Compress in-process at a fixed level as
@@ -168,8 +168,8 @@ draw legibly, not what the identifier grammar allows. Five sites move in
 one commit: `namePattern` in `src/repos/resolve.ts`, the `CHECK` in the
 init migration, **two** pieces of refusal copy (`badRepoName.next` in
 `src/html/error-page.ts` and `refusals.badName` in `src/ssh/exec.ts`, both
-saying "64 characters" today), and `BAD_NAME` in `verify-phase-1b.sh:22`
-(check 13 greps that exact string). `verify-phase-1c.sh` isn't one of
+saying "64 characters" today), and `BAD_NAME` in `verify/phase-1b.sh`
+(check 13 greps that exact string). `phase-1c.sh` isn't one of
 them: its `BAD_NAME` mirrors `refusals.badName` in
 `src/routes/git-http.ts`, which names no number at all. **Change the
 number, not the sentence.** Those two strings were rewritten by Nick and
@@ -243,7 +243,7 @@ collation thought either. Its character classes are explicit ranges, not
 `[[:alpha:]]`, so ctype doesn't enter into it.
 
 **The second thing the pin buys is pagination.** The repo index is uncapped
-at MLP and the comment at `src/repos/list.ts:3` says so, but it names
+at MLP and the comment atop `src/repos/list.ts` says so, but it names
 `rev-list --count` as the eventual answer, citing `PLAN.md:215`. Both
 halves are wrong and both want fixing in this phase, because 1e is the
 phase that builds the pagination the comment was pointing at.
@@ -308,15 +308,16 @@ is worth more than the diff:
 
 Record that rule in `docs/STACK.md` and re-run `scripts/docs-artifact.mjs`.
 
-| Call site                      | Verdict                                                                     |
-| ------------------------------ | --------------------------------------------------------------------------- |
-| `src/repos/resolve.ts:34`      | **Stays.** The DSL is wrong, twice.                                         |
-| `src/repos/list.ts:17`         | **Stays.** The DSL cannot express the sort.                                 |
-| `test/support/visual-db.ts:46` | **Gone already.** `db.user.findUnique({ where: { handle: "nschneble" } })`. |
-| `test/support/visual-db.ts:62` | **Stays.** `TRUNCATE` has no DSL form.                                      |
-| `test/support/visual-db.ts:65` | **Gone already.** `db.repo.createMany`, one round trip instead of N.        |
+| Call site                     | Verdict                                                                     |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| `resolve.ts`'s name lookup    | **Stays.** The DSL is wrong, twice.                                         |
+| `list.ts`'s index query       | **Stays.** The DSL cannot express the sort.                                 |
+| `visual-db.ts`'s admin lookup | **Gone already.** `db.user.findUnique({ where: { handle: "nschneble" } })`. |
+| `visual-db.ts`'s `TRUNCATE`   | **Stays.** `TRUNCATE` has no DSL form.                                      |
+| `visual-db.ts`'s repo insert  | **Gone already.** `db.repo.createMany`, one round trip instead of N.        |
 
-**`resolve.ts`.** The comment on line 33 gives half the reason; it should
+**`resolve.ts`.** The comment above the query gives half the reason; it
+should
 give both. Prisma's `mode: "insensitive"` compiles to `ILIKE`, and
 `namePattern` permits `_`, which `LIKE` reads as a single-character
 wildcard, so `db.repo.findFirst({ where: { name: { equals: "my_repo",
@@ -334,14 +335,14 @@ pagination is the answer when it outgrows a page, and the sort would have
 to come back to SQL then. Keep the query, and give it a comment of the
 shape the rule asks for.
 
-**`visual-db.ts:62`.** `TRUNCATE ... CASCADE` is a statement the DSL has no
+**The `TRUNCATE`.** `TRUNCATE ... CASCADE` is a statement the DSL has no
 form of, and `deleteMany({})` is a different operation, not a translation.
 Note in passing that `RESTART IDENTITY` is inert here. Every key is a UUID
 and `next_number` is a plain default, so nothing has an identity to
 restart. Leave the clause or drop it; don't leave it there believing it
 does something.
 
-**`visual-db.ts:65`.** The `::uuid` casts exist only because the raw path
+**The repo insert.** The `::uuid` casts exist only because the raw path
 needs them. They go with the query.
 
 ## The extractions 1e finally justifies
@@ -379,7 +380,7 @@ has exactly two members today and the list that must not gain `read` should
 be a declaration rather than a literal inside a `where` clause.
 
 **What 1e owes it is the test**, which doesn't exist. Build a fake on the
-shape of `test/contract/ssh-auth.contract.ts:67`, the store plus an array
+shape of `ssh-auth.contract.ts`'s `store()` fake, the store plus an array
 recording what it was asked, and assert four things:
 
 | case                                   | expected                                  |
@@ -554,7 +555,7 @@ something that needs a decision, **stop and ask** rather than picking.
 
 ## Exit criteria
 
-`scripts/verify-phase-1e.sh`, printing `PASS`/`FAIL` per check, exiting
+`scripts/verify/phase-1e.sh`, printing `PASS`/`FAIL` per check, exiting
 non-zero if any fail. Idempotent, on the pattern 1a through 1d settled.
 
 1. `npm ci && npm run build`, zero errors under `strict`
@@ -606,7 +607,8 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1d settled.
 21. Every `.ts` under `src`, `test`, and `scripts` opens with the SPDX line
 22. `package.json` adds only `highlight.js`
 23. `npx squawk prisma/migrations/**/*.sql` exits 0
-24. 1a through 1d verify scripts all still pass in full
+24. `./scripts/verify/phase-1d.sh` still passes in full, which proves 1c,
+    1b and 1a through its own cascade
 25. A relative link and a relative image both resolve to the blob and asset
     routes; an absolute link is untouched; an anchor-only or query-only
     destination is left alone

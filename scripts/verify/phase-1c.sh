@@ -1,23 +1,20 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
-#
+
 # Phase 1c exit checks, from docs/phases/1c-http.md.
 # Prints PASS or FAIL for each of the 20 checks and exits non-zero if any
 # fail. Reads DATABASE_URL from the environment, falling back to ./.env.
 # State lands in three places; the EXIT trap tears down all three.
 
-# bash, not sh: arrays, pipefail, and a process substitution at the squawk
-# check. Under sh most of this parses and then dies a thousand lines in, so
-# refuse up front where the message can still say why.
 if [ -z "${BASH_VERSION:-}" ]; then
-  echo "This script needs bash. Run ./scripts/verify-phase-1c.sh or bash scripts/verify-phase-1c.sh" >&2
+  echo "This script needs bash. Run ./scripts/verify/phase-1c.sh or bash scripts/verify/phase-1c.sh" >&2
   exit 1
 fi
 
 case "${SHELLOPTS:-}" in
   *posix*)
     echo "This script needs bash outside POSIX mode, which drops process substitution." >&2
-    echo "Run ./scripts/verify-phase-1c.sh rather than sh scripts/verify-phase-1c.sh" >&2
+    echo "Run ./scripts/verify/phase-1c.sh rather than sh scripts/verify/phase-1c.sh" >&2
     exit 1
     ;;
 esac
@@ -25,7 +22,7 @@ esac
 # not set -e: this runs commands expected to fail and reads their status
 set -uo pipefail
 
-root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$root" || exit 1
 
 readonly EXPECTED_CHECKS=20
@@ -42,7 +39,7 @@ readonly MIGRATIONS="20260824223229_init 20260824223246_seed_admin"
 
 work=$(mktemp -d) || work=""
 if [ -z "$work" ]; then
-  echo "verify-phase-1c: gave no temp directory" >&2
+  echo "phase-1c: gave no temp directory" >&2
   exit 1
 fi
 readonly work
@@ -104,6 +101,31 @@ require_db() {
     return 1
   fi
   return 0
+}
+
+# the cascade is one link per script: each proves its predecessor, which
+# proved its own. a failing child's own failures are reproduced here, and
+# record() indents them one level, so a break in 1a is still readable from 1e
+cascade() {
+  local number=$1
+  local prior=$2
+  local title=$3
+  local out="$work/$number.$prior"
+  local status
+
+  "./scripts/verify/phase-$prior.sh" > "$out" 2>&1
+  status=$?
+
+  if [ "$status" -eq 0 ]; then
+    record PASS "$number" "$title" "$(tail -1 "$out")"
+    return 0
+  fi
+
+  record FAIL "$number" "$title" "$(awk '/^FAIL/ { inside = 1; print; next }
+/^[[:space:]]/ { if (inside) print; next }
+{ inside = 0 }' "$out")
+$(tail -1 "$out")"
+  return 1
 }
 
 require_build() {
@@ -638,7 +660,7 @@ fi
 stop_daemon
 unset GIT_SSH_COMMAND
 
-# torn down here, not at check 20: verify-phase-1b.sh's own check 23 counts
+# torn down here, not at check 20: phase-1b.sh's own check 23 counts
 # every carn_verify_% database, and would read this run's as a stray
 drop_scratch
 rm -rf "$repo_root"
@@ -755,22 +777,10 @@ else
 fi
 
 # 19
-# after the daemon is down: 1a's check 9 needs port 3000 and rebuilds dist
-readonly TITLE_19="verify-phase-1a.sh and verify-phase-1b.sh still pass in full"
+# after the daemon is down: 1a's check 9, down the chain, needs port 3000
+readonly TITLE_19="phase-1b.sh still passes in full"
 if require_db 19 "$TITLE_19"; then
-  ./scripts/verify-phase-1a.sh > "$work/19.1a" 2>&1
-  phase_1a_status=$?
-  ./scripts/verify-phase-1b.sh > "$work/19.1b" 2>&1
-  phase_1b_status=$?
-  if [ "$phase_1a_status" -ne 0 ]; then
-    record FAIL 19 "$TITLE_19" "$(grep '^FAIL' "$work/19.1a" | head -5)
-$(tail -1 "$work/19.1a")"
-  elif [ "$phase_1b_status" -ne 0 ]; then
-    record FAIL 19 "$TITLE_19" "$(grep '^FAIL' "$work/19.1b" | head -5)
-$(tail -1 "$work/19.1b")"
-  else
-    record PASS 19 "$TITLE_19" "$(tail -1 "$work/19.1a"), $(tail -1 "$work/19.1b")"
-  fi
+  cascade 19 1b "$TITLE_19"
 fi
 
 # 20

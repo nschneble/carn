@@ -1,23 +1,20 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
-#
-# Phase 1d exit checks, from docs/phases/1d-1-design.md. Prints PASS or FAIL
-# for each of the 23 checks and exits non-zero if any fail. Reads
-# DATABASE_URL from the environment, falling back to ./.env. Check 21 runs
-# 1a, 1b and 1c, and 1c runs 1a and 1b again, so a full run takes minutes.
 
-# bash, not sh: arrays, pipefail, and a process substitution at the squawk
-# check. Under sh most of this parses and then dies a thousand lines in, so
-# refuse up front where the message can still say why.
+# Phase 1d exit checks, from the two 1d briefs in docs/phases/.
+# Prints PASS or FAIL for each of the 23 checks and exits non-zero if any
+# fail. Reads DATABASE_URL from the environment, falling back to ./.env.
+# Check 21 re-runs 1c, so a full run takes a few minutes.
+
 if [ -z "${BASH_VERSION:-}" ]; then
-  echo "This script needs bash. Run ./scripts/verify-phase-1d.sh or bash scripts/verify-phase-1d.sh" >&2
+  echo "This script needs bash. Run ./scripts/verify/phase-1d.sh or bash scripts/verify/phase-1d.sh" >&2
   exit 1
 fi
 
 case "${SHELLOPTS:-}" in
   *posix*)
     echo "This script needs bash outside POSIX mode, which drops process substitution." >&2
-    echo "Run ./scripts/verify-phase-1d.sh rather than sh scripts/verify-phase-1d.sh" >&2
+    echo "Run ./scripts/verify/phase-1d.sh rather than sh scripts/verify/phase-1d.sh" >&2
     exit 1
     ;;
 esac
@@ -25,7 +22,7 @@ esac
 # not set -e: this runs commands expected to fail and reads their status
 set -uo pipefail
 
-root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$root" || exit 1
 
 readonly EXPECTED_CHECKS=23
@@ -45,7 +42,7 @@ readonly REL='rel="nofollow ugc"'
 
 work=$(mktemp -d) || work=""
 if [ -z "$work" ]; then
-  echo "verify-phase-1d: gave no temp directory" >&2
+  echo "phase-1d: gave no temp directory" >&2
   exit 1
 fi
 readonly work
@@ -109,6 +106,31 @@ require_db() {
     return 1
   fi
   return 0
+}
+
+# the cascade is one link per script: each proves its predecessor, which
+# proved its own. a failing child's own failures are reproduced here, and
+# record() indents them one level, so a break in 1a is still readable from 1e
+cascade() {
+  local number=$1
+  local prior=$2
+  local title=$3
+  local out="$work/$number.$prior"
+  local status
+
+  "./scripts/verify/phase-$prior.sh" > "$out" 2>&1
+  status=$?
+
+  if [ "$status" -eq 0 ]; then
+    record PASS "$number" "$title" "$(tail -1 "$out")"
+    return 0
+  fi
+
+  record FAIL "$number" "$title" "$(awk '/^FAIL/ { inside = 1; print; next }
+/^[[:space:]]/ { if (inside) print; next }
+{ inside = 0 }' "$out")
+$(tail -1 "$out")"
+  return 1
 }
 
 require_build() {
@@ -749,7 +771,7 @@ fi
 
 stop_daemon
 
-# torn down here, not at check 22: verify-phase-1b.sh's own check 23 counts
+# torn down here, not at check 22: phase-1b.sh's own check 23 counts
 # every carn_verify_% database, and would read this run's as a stray
 drop_scratch
 rm -rf "$repo_root"
@@ -863,20 +885,12 @@ else
 fi
 
 # 21
-# after the daemon is down and the scratch database is dropped: 1a's check
-# 9 needs port 3000, and 1b's check 23 reads a live scratch as a stray
-readonly TITLE_21="the 1a, 1b and 1c verify scripts all still pass in full"
+# after the daemon is down and the scratch database is dropped. both reach
+# here down the chain: 1a's check 9 needs port 3000, and 1b's check 23
+# reads a live scratch as a stray
+readonly TITLE_21="phase-1c.sh still passes in full"
 if require_db 21 "$TITLE_21"; then
-  failed=""
-  for phase in 1a 1b 1c; do
-    "./scripts/verify-phase-$phase.sh" > "$work/21.$phase" 2>&1 \
-      || failed="$failed $phase: $(grep '^FAIL' "$work/21.$phase" | head -3 | tr '\n' ' ')"
-  done
-  if [ -n "$failed" ]; then
-    record FAIL 21 "$TITLE_21" "$failed"
-  else
-    record PASS 21 "$TITLE_21" "$(tail -1 "$work/21.1a"), $(tail -1 "$work/21.1b"), $(tail -1 "$work/21.1c")"
-  fi
+  cascade 21 1c "$TITLE_21"
 fi
 
 # 22

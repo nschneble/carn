@@ -48,8 +48,8 @@ them stays where it is:
   target-size, stays.
 
 Assertions covered only in the fixture's one configuration are also left
-off. `refs.contract.ts:350`'s empty-list state and
-`blob-page.contract.ts:231`'s raw-origin-configured branch have no story
+off. `refs.contract.ts`'s empty-list state and
+`blob-page.contract.ts`'s raw-origin-configured branch have no story
 reaching them, so they aren't listed even as maybes. The visual harness
 never seeds an empty ref list and never sets `CARN_RAW_ORIGIN`.
 
@@ -170,19 +170,19 @@ earlier phase's story already does.
 
 ## Five the list deliberately excludes
 
-`tree-page.contract.ts:177` (`a nested path lists its own entries, not the
+`tree-page.contract.ts` (`a nested path lists its own entries, not the
 root's`) calls `listTree()` and asserts on the entries it returns, so no
 rendered capture can reach it at all. The listing it asserts on is one
 directory holding a directory, two files and a gitlink together; `gantry`'s
 gitlink sits alone under `vendor/`, and no other directory in the fixture
 mixes all three kinds.
 
-`tree-page.contract.ts:407` (`a ref and a name that need encoding get it`)
+`tree-page.contract.ts` (`a ref and a name that need encoding get it`)
 turns on a ref carrying a slash and a filename carrying a hash. `gantry`'s
 refs are `main` and `topic`, and its filenames (`deep.ts`, `mod-00.ts`, …)
 carry nothing that needs escaping.
 
-`commit.contract.ts:300` (`a one-file commit renders whole, and still shows
+`commit.contract.ts` (`a one-file commit renders whole, and still shows
 the file list`) turns on the commit having exactly one file: it asserts one
 diff block and `rowHrefs(markup) === ["#f-0"]`. Both captured commit pages
 are wider than that. `gantry-commit-inlined` is a two-file commit with
@@ -190,12 +190,12 @@ rows `#f-0` and `#f-1`, and `gantry-commit-shed` has six. The fixture has
 no one-file commit reachable from a story, so none of this test's own
 assertions are exercised.
 
-`commit-log.contract.ts:461` (`the older link is a real url with an escaped
+`commit-log.contract.ts` (`the older link is a real url with an escaped
 separator`) turns on a ref needing percent-encoding. `gantry`'s default
 branch is `main`, so the snapshot shows the `&`-separated form and never
 the `release%2F1.2` case the test exists for.
 
-`breadcrumb.contract.ts:323` (`the collapse drops the middle from the
+`breadcrumb.contract.ts` (`the collapse drops the middle from the
 layout and the a11y tree`) turns on a trail eight segments deep, at exactly
 the two breakpoints Tuffgal captures. No real story nests past six
 (`gantry-blob-deep` tops out at `Càrn` › `gantry` › `apps` › `web` › `src`
@@ -206,7 +206,6 @@ page.
 
 `refs.contract.ts`'s old `no row carries an overlay anchor` was rewritten
 during the revision into `three links per row, and no row overlay swallows
-the other two` (now line 275). That's a real successor, not a deletion,
-but it isn't the test the old document pointed at either. It's listed above
-under its current name and line. The old citation is gone, neither covered
-nor uncovered.
+the other two`. That's a real successor, not a deletion, but it isn't the
+test the old document pointed at either. It's listed above under its
+current name. The old citation is gone, neither covered nor uncovered.

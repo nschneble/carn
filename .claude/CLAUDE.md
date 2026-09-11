@@ -390,6 +390,12 @@ repeat: its widest cell is 613 characters. Tables are column-aligned, on
 the pattern in `docs/phases/1a-foundation.md`. Never the compact
 `|---|---|` form.
 
+**Cite files, not lines.** Paths survive edits. `BRAND.md:562` doesn't and
+it fails silently: the line number still resolves, but no guarantee it's
+what you originally cited. Name the file and section, the symbol, or the
+sentence. Every line citation written into the phase briefs went stale
+immediately after the cited doc was edited.
+
 **Line width.** The docs are never reflowed; they're edited a paragraph at
 a time. Phase briefs wrap at 75 characters. Never wrap a table row, a
 heading, or a fenced block, and never break where the next line would start

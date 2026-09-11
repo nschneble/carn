@@ -97,7 +97,7 @@ _The generated mark is deterministic; the same name always yields the same mark.
 Enforced in five locations:
 
 - `badRepoName.next` in `src/html/error-page.ts`
-- `BAD_NAME` in `verify-phase-1b.sh:22`
+- `BAD_NAME` in `scripts/verify/phase-1b.sh`
 - `CHECK` in the init migration
 - `namePattern` in `src/repos/resolve.ts`
 - `refusals.badName` in `src/ssh/exec.ts`

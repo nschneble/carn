@@ -215,7 +215,8 @@ test/
     escaping.contract.ts
     headers.contract.ts
 scripts/
-  verify-phase-1a.sh        the exit checks below, as a script
+  verify/
+    phase-1a.sh             the exit checks below, as a script
 compose.yaml                Postgres only
 .env.example                every var, with safe defaults
 .squawk.toml                environmental facts only — no excluded_rules
@@ -572,7 +573,7 @@ so `headers.contract.ts` can assert on it exactly.
 
 ## Exit criteria
 
-Implement these as `scripts/verify-phase-1a.sh`, printing `PASS`/`FAIL` per
+Implement these as `scripts/verify/phase-1a.sh`, printing `PASS`/`FAIL` per
 check and exiting non-zero if any fail. Each must be mechanically decidable.
 No judgment calls.
 

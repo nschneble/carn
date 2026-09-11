@@ -157,12 +157,12 @@ to check their credentials for a thing that has none.
 
 ## Exit criteria
 
-`scripts/verify-phase-1c.sh`, printing `PASS`/`FAIL` per check, exiting
+`scripts/verify/phase-1c.sh`, printing `PASS`/`FAIL` per check, exiting
 non-zero if any fail.
 
 **It must be idempotent**, on the pattern 1a and 1b settled: a scratch
 database created and dropped by the script, a `mktemp -d` repo root, an
-ephemeral port, all cleaned up through one trap. Read `verify-phase-1b.sh`
+ephemeral port, all cleaned up through one trap. Read `phase-1b.sh`
 before writing this one.
 
 1. `npm ci && npm run build`, zero errors under `strict`
@@ -195,9 +195,9 @@ before writing this one.
 16. Every `.ts` under `src`, `test`, and `scripts` opens with the SPDX line
 17. `package.json` dependencies are unchanged from 1b
 18. `npx squawk prisma/migrations/**/*.sql` exits 0
-19. `./scripts/verify-phase-1a.sh` and `./scripts/verify-phase-1b.sh` both
-    still pass in full
-20. Running `./scripts/verify-phase-1c.sh` twice in succession gives the
+19. `./scripts/verify/phase-1b.sh` still passes in full. One link, not the
+    whole chain: 1b proves 1a, so asserting both here runs 1a twice
+20. Running `./scripts/verify/phase-1c.sh` twice in succession gives the
     same result both times, leaving no `carn_verify_%` database, no rows
     beyond the admin seed, and no directory under the temporary repo root
 

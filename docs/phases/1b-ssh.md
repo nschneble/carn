@@ -85,7 +85,7 @@ These are project conventions now, not 1a trivia:
 Adds `ssh2` (runtime) and `@types/ssh2` (dev) to what 1a shipped:
 `fastify`, `@prisma/client`, `@prisma/adapter-pg` at runtime; `prisma`,
 `typescript`, `@types/node`, `squawk-cli`, `@biomejs/biome` in dev. Nothing
-else. Update the budget in `verify-phase-1a.sh` if you add to it, so the
+else. Update the budget in `phase-1a.sh` if you add to it, so the
 two scripts can't disagree.
 
 Fingerprints, host keys, and constant-time comparison all come from
@@ -110,7 +110,8 @@ src/
     spawn.ts          the guarded spawn wrapper (see below)
 scripts/
   add-key.ts          add an SSH key to the admin user
-  verify-phase-1b.sh  the exit checks
+  verify/
+    phase-1b.sh       the exit checks
 test/
   contract/
     ssh-transport.contract.ts
@@ -281,7 +282,7 @@ parsing library, no subcommands, no interactive prompts.
 
 ## Exit criteria
 
-`scripts/verify-phase-1b.sh`, printing `PASS`/`FAIL` per check, exiting
+`scripts/verify/phase-1b.sh`, printing `PASS`/`FAIL` per check, exiting
 non-zero if any fail.
 
 **It must be idempotent.** Run it twice back to back, from a dirty
@@ -290,7 +291,7 @@ failed this. Check 4 demanded an empty database, check 7 left a repo row
 behind, and the remedy it suggested re-applied the migrations it was trying
 to escape. It was fixed by giving those checks a scratch database created
 and dropped by the script; **follow that same pattern here**, and read
-`verify-phase-1a.sh` before writing this one.
+`phase-1a.sh` before writing this one.
 
 1b makes it harder, because state now lands in two places. A scratch
 database covers the rows; the repos on disk need a temporary
@@ -333,9 +334,9 @@ cleanup rather than leaving a listener behind on a failed run.
 20. Every `prisma/migrations/*/migration.sql` starts with `BEGIN;` and ends
     with `COMMIT;`
 21. `npx squawk prisma/migrations/**/*.sql` exits 0
-22. `./scripts/verify-phase-1a.sh` still passes in full. 1b must not
+22. `./scripts/verify/phase-1a.sh` still passes in full. 1b must not
     regress 1a.
-23. Running `./scripts/verify-phase-1b.sh` twice in succession gives the
+23. Running `./scripts/verify/phase-1b.sh` twice in succession gives the
     same result both times, and afterwards leaves behind no `carn_verify_%`
     database, no rows in `repos` or `ssh_keys` beyond the admin seed, and
     no directory under the temporary repo root

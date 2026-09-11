@@ -29,10 +29,10 @@ changes `src/`.
 Don't go hunting. Read these three, in this order, and report what you find
 before writing anything:
 
-- **`scripts/verify-phase-1e.sh`, `build_seed()` at line 532.** This is the
+- **`build_seed()` in `scripts/verify/phase-1e.sh`.** This is the
   corpus. It already builds every case the visual fixture lacks. See the
   table below.
-- **`seed_git()` at line 182.** How that script pins dates and identity:
+- **`seed_git()` in the same script.** How it pins dates and identity:
   `GIT_AUTHOR_DATE`, `GIT_COMMITTER_DATE`, and fixed name and email on
   every invocation. Byte-reproducibility depends on this, and
   `.claude/CLAUDE.md` requires it.
@@ -50,7 +50,7 @@ uninteresting, say so and leave it out rather than adding a story for it.
 
 ## 2 · What `build_seed()` already has
 
-Every row is in `verify-phase-1e.sh` today. The work is porting it to the
+Every row is in `phase-1e.sh` today. The work is porting it to the
 fixture, not inventing it.
 
 | Case                  | How `build_seed` makes it                                                                   |
@@ -85,7 +85,7 @@ branch or a tag can be expressed. That's the root of it.
   **`tags`** (each tag annotated or lightweight). Keep every existing
   field.
 - Teach `scripts/build-fixture.ts` to write those refs. It currently only
-  ever does `update-ref refs/heads/main` at line 95.
+  ever does `update-ref refs/heads/main`.
 - **Keep the four repos that exist and what they prove.** `sparrow` with no
   commits and `moonlight` are the empty states; they aren't spare capacity.
   Add a fifth repo for the dense cases rather than loading them onto

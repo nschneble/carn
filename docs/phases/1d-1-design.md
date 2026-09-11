@@ -232,7 +232,7 @@ never receives.
 
 ## Exit criteria
 
-`scripts/verify-phase-1d.sh`, printing `PASS`/`FAIL` per check, exiting
+`scripts/verify/phase-1d.sh`, printing `PASS`/`FAIL` per check, exiting
 non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
 
 1. `npm ci && npm run build`, zero errors under `strict`
@@ -283,7 +283,8 @@ non-zero if any fail. Idempotent, on the pattern 1a through 1c settled.
     `playwright`. `axe-core` and `playwright` are devDependencies;
     `@types/markdown-it` and `@axe-core/playwright` aren't installed.
 20. `npx squawk prisma/migrations/**/*.sql` exits 0
-21. 1a, 1b, and 1c verify scripts all still pass in full
+21. `./scripts/verify/phase-1c.sh` still passes in full, which proves 1b
+    and 1a through its own cascade
 22. Running this script twice gives the same result, leaving no
     `carn_verify_%` database, no rows beyond the admin seed, and no
     directory under the temporary repo root

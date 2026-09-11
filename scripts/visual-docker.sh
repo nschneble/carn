@@ -1,10 +1,9 @@
 #!/bin/sh
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Shoots the Tuffgal baselines in the Linux container CI will use, since
-# a laptop's CoreText renders every glyph differently from FreeType. Args
-# pass through to `tuffgal run`. A GitHub Actions job should call this,
-# not reimplement it.
+# Shoots Tuffgal baselines in the same Linux container CI will use, since
+# CoreText renders every glyph differently from FreeType. Args pass through
+# to `tuffgal run`. A GH Actions job should call this, not reimplement it.
 
 set -eu
 

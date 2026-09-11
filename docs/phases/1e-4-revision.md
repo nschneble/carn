@@ -27,8 +27,9 @@ the way past:
   an escape hatch, and that with no origin configured the link is absent
   rather than disabled. Working as specified.
 - **`noTreeRoot`.** `/r/:repo/tree/:rev/` erroring is deliberate and
-  commented at `src/routes/repo-page.ts:215-217`. Item 7 makes its sibling
-  `/r/:repo/tree/:rev` behave the same way instead of returning JSON.
+  commented in `showTree()` in `src/routes/repo-page.ts`. Item 7 makes
+  its sibling `/r/:repo/tree/:rev` behave the same way instead of
+  returning JSON.
 
 **Doc order matters.** Items 1 and 8 add or change a section in
 `docs/LAYOUT.md` and `docs/BRAND.md`. Write the doc, then the markup, not
@@ -81,11 +82,11 @@ part is still specific to filenames.
 `.t-item` everywhere a page title is visible. Concretely:
 
 - `src/html/tree-page.ts`: `.t-label` → `.t-item`, and run the path
-  through `smallCaps()` as `src/html/blob-page.ts:124` already does. It's
+  through `smallCaps()` as `blob-page.ts`'s `heading()` already does. It's
   a path; it gets the path treatment.
 - `src/html/commit-log.ts`: `.t-label` → `.t-item` on `Commits on ${ref}`.
 - `src/html/ref-list.ts`: `.t-label` → `.t-item` on `Branches` / `Tags`.
-- `src/html/commit-page.ts:203`: **`.t-l` → `.t-item`** on the commit
+- `src/html/commit-page.ts`: **`.t-l` → `.t-item`** on the commit
   subject.
 
 **`smallCaps()` applies to path-shaped headings only**, blob and tree.
@@ -127,7 +128,7 @@ crumb.
 `src/html/ref-list.ts` is the only list in the product built as `<table>` +
 `<thead>`, the only one with visible column headers, and one of two where
 the subject and age cells are links. The tree, log and commit file list are
-all `<li class="row">`. `docs/BRAND.md:676` specifies the Row component and
+all `<li class="row">`. `docs/BRAND.md` §05 specifies the Row component and
 BRAND is the authority.
 
 The comment at the top of `ref-list.ts` gives the reason it went its own
@@ -148,16 +149,16 @@ Convert to the log's shape exactly:
 
 - `<thead>` goes. The columns were named by header cells; they're now
   named by visually hidden text inside the cells, which is what the log
-  does at `src/html/commit-log.ts:44`. Give `.msg` the same treatment the
+  does in `src/html/commit-log.ts`. Give `.msg` the same treatment the
   age gets, `<span class="vh">Subject </span>`, so the accessible name
   survives the table's removal rather than being quietly dropped with it.
-- `.refs` styling in `src/html/styles.ts:865-928` goes with the markup. The
+- The `.refs` rules in `src/html/styles.ts` go with the markup. The
   `.row` rules already cover hover, hit area and alignment.
-- **Keep the empty-cell guard.** `subject()` at `ref-list.ts:45` renders a
+- **Keep the empty-cell guard.** `subject()` in `ref-list.ts` renders a
   bare cell when a commit message is empty, because a link with no text has
   no accessible name. The `<li>` form needs the same guard: a bare `<span
-  class="msg"></span>`, matching how `tree-list.ts:44` handles an untouched
-  entry.
+  class="msg"></span>`, matching how `tree-list.ts`'s `columns()` handles
+  an untouched entry.
 - Keep `refListPage`'s halving loop unchanged. It measures whatever
   `document()` renders and doesn't care what the markup is.
 
@@ -168,13 +169,14 @@ underline. That difference is meaningful and stays.
 
 ## 5 · `.meta` orphans its last field at narrow widths
 
-`src/html/styles.ts:416` is `repeat(auto-fit, minmax(150px, 1fr))` with no
-responsive rule anywhere. Below ~640px it resolves to two columns; the blob
-view's three fields put `Language` alone in column 1 at half width. It does
-not stretch. `auto-fit` collapses a column only when that column receives
-no items anywhere in the grid, and here both columns are occupied. What
-reads as broken is `.meta > div`'s `border-bottom`, which draws across half
-the page while `.meta`'s own full-width `border-top` sits above it.
+`src/html/styles.ts`'s `.meta` is `repeat(auto-fit, minmax(150px, 1fr))`
+with no responsive rule anywhere. Below ~640px it resolves to two columns;
+the blob view's three fields put `Language` alone in column 1 at half
+width. It does not stretch. `auto-fit` collapses a column only when that
+column receives no items anywhere in the grid, and here both columns are
+occupied. What reads as broken is `.meta > div`'s `border-bottom`, which
+draws across half the page while `.meta`'s own full-width `border-top` sits
+above it.
 
 Match the file's existing convention. Every other responsive rule in
 `styles.ts` is a `min-width: 640px` block:
@@ -210,7 +212,7 @@ byte. Check before editing.
 
 ## 6 · Added and removed lines are the same color
 
-`src/html/styles.ts:853`, `.diff .a, .diff .d { color: var(--ink); }`.
+`src/html/styles.ts` has `.diff .a, .diff .d { color: var(--ink); }`.
 Both. The comment above it says "the + and the − carry direction; the tone
 is only the second signal," but there's no second signal: the tone
 separates changed from unchanged and nothing separates added from removed.
@@ -225,7 +227,7 @@ which are enforced or enforceable:
 - Each resolves to a six-digit hex. Same test loops every token that isn't
   `--f-*`, `--s[1-9]`, or `--measure`.
 - **4.5:1 against `--sunk`** in both palettes. `.src` is `background:
-  var(--sunk)` at `styles.ts:523` and diff text is 12.5px, so it's small
+  var(--sunk)` in `styles.ts` and diff text is 12.5px, so it's small
   text on the sunk ground and owes AA. `--ground` isn't the binding
   constraint here.
 - Separable in grayscale, so they differ in **lightness as well as hue**.
@@ -240,7 +242,7 @@ which are enforced or enforceable:
   uses: `/* 5.9:1 on sunk — removed lines */`.
 
 **The token block is asserted verbatim between `docs/BRAND.md`'s first ` ```css
-` fence (line 21) and `tokens` in `src/html/styles.ts`.** Both files
+` fence and `tokens` in `src/html/styles.ts`.** Both files
 change, byte for byte, in the same commit. Editing one is a failing test,
 which is the point.
 
@@ -253,19 +255,20 @@ the mark survives a rendering that flattens color:
 ```
 
 **Don't reach for `display: block` on those spans to get a full-width row
-tint.** `diffBody` at `commit-page.ts:118` joins the rendered lines with
+tint.** `diffBody` in `commit-page.ts` joins the rendered lines with
 `\n`; a block-level span supplies its own line break and the newline then
 supplies a second, double-spacing every changed line. If a full-bleed row
 is wanted later, the join changes with it: one thing, deliberately, not as
 a side effect.
 
 Extend `@media (forced-colors: active)` if the border needs to survive
-there; `styles.ts:597` is where that block starts.
+there; `styles.ts` carries that block already.
 
 ## 7 · The commit page never says why some diffs are inline
 
-`commit-page.ts:70-83` builds every file row identically whether its `href`
-is `#f-3` on this page or `changeHref(...)` to a page of its own. Two
+`commit-page.ts`'s file-row builder treats every row identically whether
+its `href` is `#f-3` on this page or `changeHref(...)` to a page of its
+own. Two
 destinations, one presentation. That, not the fitting strategy, is what
 makes the split look arbitrary.
 
@@ -290,7 +293,7 @@ one Nick hit. Add a second sentence for `shape.diffs < candidates.length`:
 Both sentences use `.t-label` and sit where the existing one does.
 
 Binary files are a third case. They have no diff at all, and their row
-links to a change page that says so (`noDiff()` at `commit-page.ts:346`).
+links to a change page that says so (`noDiff()` in `commit-page.ts`).
 They shouldn't carry `Own page` as though a diff were waiting. Give them
 nothing, or `Binary`, and keep `counts()` unchanged since it already
 renders `Binary` in the count cell.
@@ -365,8 +368,9 @@ Two things to get right:
 ## 10 · `Newer ←` on the commit log
 
 `loadCommitLog` pages by SHA cursor, forward only: `next` is the boundary
-commit and there's no back edge. `src/repos/log.ts:3-6` explains why
-`--skip` was rejected and that reasoning stands. Don't reintroduce it.
+commit and there's no back edge. `src/repos/log.ts`'s top-of-file comment
+explains why `--skip` was rejected and that reasoning stands. Don't
+reintroduce it.
 
 **Carry the cursor stack in the URL.** The page-start cursors are already
 known to whoever navigated there; they cost nothing to keep and no extra
@@ -381,7 +385,7 @@ git call to use:
 Rules:
 
 - Every entry validates against `oidPattern`, the same guard `from` gets at
-  `log.ts:66`. One bad entry rejects the whole parameter. Fall back to
+  `log.ts`. One bad entry rejects the whole parameter. Fall back to
   page one rather than half-trusting it.
 - Cap the stack at 32 entries. Past that, drop the oldest and let `Newer`
   walk as far as the stack reaches; the alternative is an unbounded URL.
@@ -402,23 +406,24 @@ Mirror `Older →`'s markup exactly: same `.showall` paragraph, same
 
 ## 11 · A lightweight tag and an annotated tag are indistinguishable
 
-Correctly, given the query. `src/repos/refs.ts:2-5` selects
-`contents:subject` and `creatordate` **because** both fields populate for a
+Correctly, given the query. `src/repos/refs.ts`'s top-of-file comment
+explains why it selects `contents:subject` and `creatordate` **because**
+both fields populate for a
 commit and for a tag object, and that uniformity is exactly why the row can't
 tell them apart. The comment is right and the choice was right; it just
 left nothing for the view to show.
 
-Add `%(objecttype)` to the `for-each-ref` format at `refs.ts:75`. No second
+Add `%(objecttype)` to the `for-each-ref` format in `refs.ts`. No second
 spawn, one more field. A lightweight tag's ref names a commit and yields
 `commit`; an annotated tag's names a tag object and yields `tag`.
 
 - `Ref` gains `annotated: boolean`.
-- `parse()` at `refs.ts:38` splits on `\0` into four parts now, not three.
+- `parse()` in `refs.ts` splits on `\0` into four parts now, not three.
   Its `undefined` guard covers every destructured name. Extend it, don't
   leave the new one unchecked.
-- Tag rows get a marker built the way `marker()` at `ref-list.ts:38` builds
+- Tag rows get a marker built the way `marker()` in `ref-list.ts` builds
   `Default`: `<span class="t-micro"> Annotated</span>`, on tag lists only.
-- The existing guard at `refs.ts:47-50`, where a tag naming a blob or tree
+- The `undefined` guard inside `parse()`, where a tag naming a blob or tree
   has an empty `creatordate` and is skipped, stays exactly as it is.
 
 ---
@@ -440,7 +445,7 @@ spawn, one more field. A lightweight tag's ref names a commit and yields
 
 # The verify script
 
-`scripts/verify-phase-1e.sh` has 31 checks. Add to it rather than starting
+`scripts/verify/phase-1e.sh` has 31 checks. Add to it rather than starting
 a new script. `.claude/CLAUDE.md`'s Phase size section says sub-phases
 share one growing script. Number from 32.
 
@@ -463,7 +468,7 @@ Assert at least:
 - An annotated tag row carries the marker and a lightweight one doesn't
 - `.meta` declares `grid-template-columns: 1fr` outside any media query
 
-**Follow the check-18 lesson.** `verify-phase-1d.sh` check 16 failed on an
+**Follow the check-18 lesson.** `phase-1d.sh` check 16 failed on an
 anchored `sed` that assumed one breakpoint; 1e's check 18 passed the
 equivalent case with a tolerant `grep -c`. A check parsing another file's
 shape matches the loosest pattern that still discriminates.
@@ -489,8 +494,8 @@ Report, before Nick reviews anything:
   as written, and confirmation that `scripts/docs-artifact.mjs` ran
 - The two diff token values, both palettes, with measured ratios against
   `--sunk`, and say plainly if either misses 4.5:1 rather than shipping it
-- `npx tsc --noEmit`, `biome check .`, `npm run test`, and `sh
-  scripts/verify-phase-1e.sh`, all clean, before the baselines re-shoot
+- `npx tsc --noEmit`, `biome check .`, `npm run test`, and
+  `./scripts/verify/phase-1e.sh`, all clean, before the baselines re-shoot
 - Whether any story needed editing, and why
 - Anything in this document you couldn't build, and what stopped you
 - Anything you changed that's **not** in this document, and why

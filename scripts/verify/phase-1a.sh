@@ -1,22 +1,19 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
-#
+
 # Phase 1a exit checks, from docs/phases/1a-foundation.md.
 # Prints PASS or FAIL for each of the 17 checks and exits non-zero if any
 # fail. Reads DATABASE_URL from the environment, falling back to ./.env.
 
-# bash, not sh: arrays, pipefail, and a process substitution at the squawk
-# check. Under sh most of this parses and then dies a thousand lines in, so
-# refuse up front where the message can still say why.
 if [ -z "${BASH_VERSION:-}" ]; then
-  echo "This script needs bash. Run ./scripts/verify-phase-1a.sh or bash scripts/verify-phase-1a.sh" >&2
+  echo "This script needs bash. Run ./scripts/verify/phase-1a.sh or bash scripts/verify/phase-1a.sh" >&2
   exit 1
 fi
 
 case "${SHELLOPTS:-}" in
   *posix*)
     echo "This script needs bash outside POSIX mode, which drops process substitution." >&2
-    echo "Run ./scripts/verify-phase-1a.sh rather than sh scripts/verify-phase-1a.sh" >&2
+    echo "Run ./scripts/verify/phase-1a.sh rather than sh scripts/verify/phase-1a.sh" >&2
     exit 1
     ;;
 esac
@@ -24,7 +21,7 @@ esac
 # not set -e: this runs commands expected to fail and reads their status
 set -uo pipefail
 
-root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$root" || exit 1
 
 readonly EXPECTED_CHECKS=17
@@ -34,7 +31,7 @@ readonly TABLES="'users','ssh_keys','repos','repo_grants'"
 
 work=$(mktemp -d) || work=""
 if [ -z "$work" ]; then
-  echo "verify-phase-1a: gave no temp directory" >&2
+  echo "phase-1a: gave no temp directory" >&2
   exit 1
 fi
 readonly work

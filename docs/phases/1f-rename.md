@@ -62,7 +62,7 @@ string. Nothing about the transport changes when the CLI arrives.
 
 ### The exec parser has to widen, carefully
 
-`src/ssh/exec.ts:11` is:
+`commandPattern` in `src/ssh/exec.ts` is:
 
 ```ts
 const commandPattern = /^git-(receive|upload)-pack '([^']*)'$/;
@@ -78,10 +78,10 @@ patterns that each fully anchor beat one pattern with an alternation that
 is easy to misread.
 
 The new command takes two names and nothing else. Both go through
-`namePattern` (`src/repos/resolve.ts:8`) before any database work. Reuse
-`refusals.badName` verbatim. That copy is pinned by `verify-phase-1b.sh`
-check 13 and is one of the five sites `docs/LAYOUT.md` §03 says move
-together. Do not write a sixth variant of it.
+`namePattern` (`src/repos/resolve.ts`) before any database work. Reuse
+`refusals.badName` verbatim. That copy is pinned by
+`scripts/verify/phase-1b.sh` check 13 and is one of the five sites
+`docs/LAYOUT.md` §03 says move together. Do not write a sixth variant.
 
 ### `refusals.badCommand` becomes false, and it is pinned in three places
 
@@ -93,11 +93,11 @@ Today it reads:
 After this phase that sentence is wrong. It has to change, and it exists in
 three files that must move in the same commit:
 
-| File                                      | Line | What it is                     |
-| ----------------------------------------- | ---- | ------------------------------ |
-| `src/ssh/exec.ts`                         | 29   | the source                     |
-| `scripts/verify-phase-1b.sh`              | 21   | `BAD_COMMAND`, asserted at 502 |
-| `test/contract/ssh-transport.contract.ts` | 420  | a regex over the same text     |
+| File                                      | What it is                          |
+| ----------------------------------------- | ----------------------------------- |
+| `src/ssh/exec.ts`                         | `refusals.badCommand`, the source   |
+| `scripts/verify/phase-1b.sh`              | `BAD_COMMAND`, asserted by check 14 |
+| `test/contract/ssh-transport.contract.ts` | a regex over the same text          |
 
 Miss one and 1e's check 24 fails, because it cascades 1a through 1d. This
 isn't a test to fix until it goes green. It's a deliberate three-site
@@ -112,9 +112,9 @@ command is accepted. Rename the check as well as the string.
 
 ### Who may rename
 
-**Not `mayWrite`.** `src/repos/access.ts:38` returns true for anyone
-holding a `write` grant, and a collaborator who can push shouldn't be able
-to change the repo's public URL out from under every link to it.
+**Not `mayWrite`.** `mayWrite` in `src/repos/access.ts` returns true for
+anyone holding a `write` grant, and a collaborator who can push shouldn't
+be able to change the repo's public URL out from under every link to it.
 
 Add a predicate beside it, `mayAdminister` or whatever reads better, and
 make it true for the owner, for `user.isAdmin`, and for a grant at level
@@ -154,7 +154,7 @@ and it's a different phase if it's ever wanted.
 
 ## 2 · The tree root redirects
 
-`src/routes/repo-page.ts:221`:
+The `noTreeRoot` branch of `showTree()` in `src/routes/repo-page.ts`:
 
 ```ts
 if (path === "") return fail(request, reply, 404, noTreeRoot);
@@ -176,7 +176,7 @@ tree at v1.2.0", and `/r/gantry` renders `repo.branch`, which is
 asked for.
 
 It is still right, because the product already does exactly that, on every
-page, today. `repoTrail` in `src/html/breadcrumb.ts:18` returns
+page, today. `repoTrail` in `src/html/breadcrumb.ts` returns
 `{ label: repo, href: "/r/${repo}" }` with no ref in it, and all five page
 templates use it. On `/r/gantry/tree/v1.2.0/apps/api` the breadcrumb holds
 the ref while you climb, so `api` to `apps` stays on `v1.2.0`, and drops it
@@ -196,7 +196,7 @@ keep, and buys a dead end on a URL whose meaning is unambiguous.
 ### The trailing slash is two URLs, and only one of them reaches the code
 
 The route is registered as `/r/:repo/tree/:rev/*`, and `ignoreTrailingSlash`
-isn't set on the Fastify instance (`src/app.ts:17`), so it defaults to
+isn't set on the Fastify instance built in `src/app.ts`, so it defaults to
 false. Measured against a bare Fastify with that one route:
 
 | URL                        | Result                   |
@@ -207,8 +207,8 @@ false. Measured against a bare Fastify with that one route:
 
 So `path === ""`, the branch that returns `noTreeRoot` today and becomes
 the 301, is reachable only with the trailing slash. Without it the request
-never reaches `showTree` at all; it falls to `setNotFoundHandler`
-(`src/app.ts:32`) and gets `noSuchRoute`, the generic "Nothing here" page.
+never reaches `showTree` at all; it falls to `setNotFoundHandler` in
+`src/app.ts` and gets `noSuchRoute`, the generic "Nothing here" page.
 
 **The no-slash form is the one a person is more likely to type**, and it's
 currently the one the redirect wouldn't cover. Fix both. Register the bare
@@ -232,8 +232,8 @@ which is a new view state with its own baseline. It is in `PLAN.md` §13.
 
 ## 3 · Delete `noTreeRoot`
 
-Once the redirect lands, `src/html/error-page.ts:51` is unreachable. Remove
-it and its import in `src/routes/repo-page.ts:22`.
+Once the redirect lands, `noTreeRoot` in `src/html/error-page.ts` is
+unreachable. Remove it and its import in `src/routes/repo-page.ts`.
 
 No Tuffgal story captures it. `error-no-directory` navigates to
 `/r/gantry/tree/main/apps/nope`, which is `noSuchTree`, a different page. So
@@ -258,7 +258,7 @@ than taking this brief's word for it.
 
 ## Gates
 
-`scripts/verify-phase-1f.sh`, following the shape of its five predecessors:
+`scripts/verify/phase-1f.sh`, following the shape of its five predecessors:
 PASS or FAIL per check, non-zero exit if any fail, and one check that runs
 1a through 1e so the cascade stays whole.
 

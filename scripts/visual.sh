@@ -1,9 +1,9 @@
 #!/bin/sh
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Runs the Tuffgal stories against the real app with its own database,
-# repo root, and frozen clock. Args pass through, e.g. `--headed`, and
-# `--seed-only` seeds without running stories. Runs once per color scheme.
+# Runs Tuffgal against the real app with its own database, repo root, and
+# frozen clock. Args pass through, e.g. `--headed`, and `--seed-only` seeds
+# without running stories. Runs once per color scheme.
 
 set -eu
 
@@ -30,8 +30,7 @@ if [ ! -d dist/test/support ]; then
   exit 1
 fi
 
-# every pinned value the harness runs on, from the one file that declares
-# them, so the shell cannot drift from what the fixture was built for
+# every pinned value the harness runs on
 pinned=$(node --input-type=module -e \
   'import { frozenNow, visualDatabase, visualOrigin, visualRepoRoot }
      from "./dist/test/support/fixture-repos.js";
@@ -65,12 +64,15 @@ if [ "${1:-}" = "--seed-only" ]; then
     'import { resetVisualState } from "./dist/test/support/visual-db.js";
      await resetVisualState();'
 
-  echo "Seeded. Serve with:"
+  echo
+  echo "🌱 Seeded. Serve with:"
   echo "  CARN_FROZEN_NOW=$CARN_FROZEN_NOW \\"
   echo "  CARN_ORIGIN=$CARN_ORIGIN \\"
   echo "  CARN_REPO_ROOT=$CARN_REPO_ROOT \\"
   echo "  DATABASE_URL=$DATABASE_URL \\"
   echo "  node dist/scripts/visual-server.js"
+  echo
+
   exit 0
 fi
 
@@ -83,7 +85,7 @@ rank() {
     3) echo 2 ;;
     2) echo 1 ;;
     0) echo 0 ;;
-    # an undocumented code (a crash, a kill signal) outranks every known one
+    # an undocumented code (e.g. crash, kill signal) outranks known ones
     *) echo 4 ;;
   esac
 }

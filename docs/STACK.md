@@ -3,7 +3,9 @@
      is generated from this Markdown by `scripts/docs-artifact.mjs`. Edit
      here and run the script to update the build artifacts. -->
 
-# Stack currency
+**STACK CURRENCY**
+
+# Pinned majors, and the drift between them
 
 Every version-sensitive claim in a phase brief is written against the majors below. Process note: "Install latest stable" means the latest version **within** the pinned major here; not whatever `npm install` resolves to on the day. A brief written against a version that's moved was a repeated failure mode in Phase 1a.
 

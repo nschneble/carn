@@ -214,7 +214,6 @@ function header(name: string, size: number, directory: boolean): Buffer {
   }
 
   const block = Buffer.alloc(blockSize);
-
   block.write(name, 0, "utf8");
   block.write(octal(directory ? 0o755 : 0o644, 8), 100);
   block.write(octal(0, 8), 108);
@@ -241,7 +240,6 @@ function archive(stage: string): Buffer {
     const body = directory ? Buffer.alloc(0) : readFileSync(join(stage, name));
 
     blocks.push(header(name, body.length, directory));
-
     if (body.length === 0) continue;
 
     const padded = Math.ceil(body.length / blockSize) * blockSize;
@@ -262,7 +260,6 @@ const stage = join(work, "repos");
 
 try {
   mkdirSync(stage, { recursive: true });
-
   const tips = buildRepo(stage, work);
 
   writeFileSync(target, archive(stage));
