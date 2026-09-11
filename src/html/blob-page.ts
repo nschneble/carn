@@ -9,10 +9,10 @@ import { blobAssetPath } from "../repos/blob-asset.js";
 import { type BlobView, countLines } from "../repos/blob-view.js";
 import { pathTrail, repoTrail } from "./breadcrumb.js";
 import { pathName } from "./filename.js";
+import { blobHref } from "./hrefs.js";
 import { html, type Raw, raw } from "./index.js";
 import { page } from "./page.js";
 import { highlight, type Language, languageFor } from "./syntax.js";
-import { blobHref } from "./tree-list.js";
 import {
   budgetBytes,
   pageWireBytes,

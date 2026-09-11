@@ -14,8 +14,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
 
-import { changeHref, commitFilePage } from "../../src/html/commit-page.js";
+import { commitFilePage } from "../../src/html/commit-page.js";
 import { noSuchChange, noSuchCommit } from "../../src/html/error-page.js";
+import { changeHref } from "../../src/html/hrefs.js";
 import {
   budgetBytes,
   pageWireBytes,

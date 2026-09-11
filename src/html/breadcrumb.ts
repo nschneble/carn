@@ -4,8 +4,8 @@
 // items display: the collapsed ones go with display: none, so they leave
 // the accessibility tree along with the layout
 
+import { treeHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
-import { treeHref } from "./tree-list.js";
 
 // readonly because site below is one object every render is handed
 export type Crumb = { readonly label: string; readonly href: string | null };

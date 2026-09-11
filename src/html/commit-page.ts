@@ -8,12 +8,8 @@
 import { type CommitDetail, type DiffFile, hunks } from "../repos/commit.js";
 import { ageMarkup } from "./age.js";
 import { type Crumb, repoTrail } from "./breadcrumb.js";
-import {
-  commitHref,
-  commitsLabel,
-  commitsPath,
-  shortShaChars,
-} from "./commit-log.js";
+import { commitsLabel, shortShaChars } from "./commit-log.js";
+import { changeHref, commitHref, commitsPath } from "./hrefs.js";
 import { html, type Raw, raw } from "./index.js";
 import { page } from "./page.js";
 import {
@@ -40,11 +36,6 @@ const signatures: Record<string, string> = {
   X: "Good signature, expired",
   Y: "Good signature, expired key",
 };
-
-export function changeHref(repo: string, sha: string, path: string): string {
-  const segments = path.split("/").map(encodeURIComponent).join("/");
-  return `${commitHref(repo, sha)}/${segments}`;
-}
 
 function short(sha: string): string {
   return sha.slice(0, shortShaChars);

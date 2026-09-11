@@ -4,8 +4,8 @@ import type { Ref, RefKind, RefList } from "../repos/refs.js";
 import { sshRemote } from "../repos/remote.js";
 import { age } from "./age.js";
 import { repoTrail } from "./breadcrumb.js";
-import { commitsHref } from "./commit-log.js";
 import { plainName } from "./filename.js";
+import { commitsHref, refPlural, refsHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
 import { budgetBytes, pageWireBytes } from "./wire-weight.js";
@@ -17,17 +17,10 @@ export type RefListPage = {
   now: Date;
 };
 
-const nouns: Record<
-  RefKind,
-  { heading: string; column: string; many: string }
-> = {
-  branch: { heading: "Branches", column: "Branch", many: "branches" },
-  tag: { heading: "Tags", column: "Tag", many: "tags" },
+const nouns: Record<RefKind, { heading: string; column: string }> = {
+  branch: { heading: "Branches", column: "Branch" },
+  tag: { heading: "Tags", column: "Tag" },
 };
-
-export function refsHref(repo: string, kind: RefKind): string {
-  return `/r/${repo}/${nouns[kind].many}`;
-}
 
 function marker(view: RefListPage, ref: Ref): Raw {
   if (view.list.kind === "branch") {
@@ -61,7 +54,7 @@ function row(view: RefListPage, ref: Ref): Raw {
 function truncated(view: RefListPage, shown: number, more: boolean): Raw {
   if (!more) return html``;
 
-  return html`<p class="t-note">Showing the first ${shown} ${nouns[view.list.kind].many}.</p>
+  return html`<p class="t-note">Showing the first ${shown} ${refPlural[view.list.kind]}.</p>
       `;
 }
 
@@ -102,7 +95,7 @@ function document(view: RefListPage, refs: Ref[], more: boolean): string {
 
   return page({
     title: `${heading} · ${view.repo} · Càrn`,
-    description: `The ${nouns[view.list.kind].many} in ${view.repo}.`,
+    description: `The ${refPlural[view.list.kind]} in ${view.repo}.`,
     path: refsHref(view.repo, view.list.kind),
     crumbs: [...repoTrail(view.repo), { label: heading, href: null }],
     main: html`<h1 class="t-item t-item--title">${heading}</h1>

@@ -9,6 +9,7 @@ import type { CommitLog } from "../repos/log.js";
 import { sshRemote } from "../repos/remote.js";
 import { age } from "./age.js";
 import { repoTrail } from "./breadcrumb.js";
+import { commitHref, commitsHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
 
@@ -20,22 +21,6 @@ export const commitsLabel = "Commits";
 
 // past this many page-start cursors, newer stops rather than the url growing
 export const backStackCap = 32;
-
-export function commitsPath(repo: string): string {
-  return `/r/${repo}/commits`;
-}
-
-export function commitsHref(
-  repo: string,
-  ref: string,
-  from?: string | null,
-  back?: string[],
-): string {
-  let query = `${commitsPath(repo)}?ref=${encodeURIComponent(ref)}`;
-  if (from) query += `&from=${from}`;
-  if (back !== undefined && back.length > 0) query += `&back=${back.join(",")}`;
-  return query;
-}
 
 function capBack(back: string[]): string[] {
   return back.length > backStackCap ? back.slice(-backStackCap) : back;
@@ -49,10 +34,6 @@ export function parseBackStack(raw: string | string[] | undefined): string[] {
   return entries.every((entry) => oidPattern.test(entry))
     ? capBack(entries)
     : [];
-}
-
-export function commitHref(repo: string, sha: string): string {
-  return `${commitsPath(repo)}/${sha}`;
 }
 
 function row(

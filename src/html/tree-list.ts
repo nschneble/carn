@@ -9,6 +9,7 @@ import type { TreeEntry } from "../repos/tree.js";
 import { ageCell } from "./age.js";
 import { shortShaChars } from "./commit-log.js";
 import { pathName } from "./filename.js";
+import { blobHref, treeHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
 
 export type TreeListView = {
@@ -22,20 +23,6 @@ export type TreeListView = {
 };
 
 export const treeRowCap = 16;
-
-// a filename can carry a #, a ?, or a space, and a ref can carry a slash
-function trail(rev: string, path: string): string {
-  const segments = path.split("/").map(encodeURIComponent).join("/");
-  return `${encodeURIComponent(rev)}/${segments}`;
-}
-
-export function blobHref(repo: string, rev: string, path: string): string {
-  return `/r/${repo}/blob/${trail(rev, path)}`;
-}
-
-export function treeHref(repo: string, rev: string, path: string): string {
-  return `/r/${repo}/tree/${trail(rev, path)}`;
-}
 
 // a path the bounded log walk never reached renders blank rather than
 // costing a longer one, so both cells have an empty state. the span is

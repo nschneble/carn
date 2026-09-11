@@ -18,11 +18,11 @@ import { after, test } from "node:test";
 import {
   backStackCap,
   commitLogPage,
-  commitsHref,
   parseBackStack,
   shortShaChars,
 } from "../../src/html/commit-log.js";
 import { noSuchRef } from "../../src/html/error-page.js";
+import { commitsHref } from "../../src/html/hrefs.js";
 import { budgetBytes, pageWireBytes } from "../../src/html/wire-weight.js";
 import {
   type CommitLog,

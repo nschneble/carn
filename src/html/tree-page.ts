@@ -6,9 +6,10 @@
 import type { Tree } from "../repos/tree.js";
 import { pathTrail, repoTrail } from "./breadcrumb.js";
 import { pathName } from "./filename.js";
+import { treeHref } from "./hrefs.js";
 import { html } from "./index.js";
 import { page } from "./page.js";
-import { treeHref, treeList } from "./tree-list.js";
+import { treeList } from "./tree-list.js";
 
 export type TreePage = {
   repo: string;

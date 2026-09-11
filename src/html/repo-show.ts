@@ -9,10 +9,9 @@ import { headerAssetPath } from "../repos/header-asset.js";
 import { sshRemote } from "../repos/remote.js";
 import type { RepoView } from "../repos/show.js";
 import { site } from "./breadcrumb.js";
-import { commitsHref } from "./commit-log.js";
+import { commitsHref, refsHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
-import { refsHref } from "./ref-list.js";
 import { treeList } from "./tree-list.js";
 
 // the hub every breadcrumb passes through: nothing else reaches these three

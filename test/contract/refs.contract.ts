@@ -14,9 +14,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, test } from "node:test";
 
-import { commitsHref } from "../../src/html/commit-log.js";
 import { plainName } from "../../src/html/filename.js";
-import { refsHref } from "../../src/html/ref-list.js";
+import { commitsHref, refsHref } from "../../src/html/hrefs.js";
 import { budgetBytes, pageWireBytes } from "../../src/html/wire-weight.js";
 import { maxSubjectChars } from "../../src/repos/log.js";
 import { listRefs, maxRefs, type RefList } from "../../src/repos/refs.js";
