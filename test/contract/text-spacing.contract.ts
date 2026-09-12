@@ -8,7 +8,7 @@
 import assert from "node:assert";
 import { after, before, test } from "node:test";
 
-import { shortShaChars } from "../../src/html/commit-log.js";
+import { shortShaLength } from "../../src/html/commit-log.js";
 import { commitDocument, detail } from "../gallery/commit.js";
 import { commits, logDocument } from "../gallery/commit-log.js";
 import {
@@ -60,7 +60,7 @@ const names: Record<string, string[]> = {
   "/refs": branches.map((ref) => ref.name),
   "/refs-quiet": quiet.map((ref) => ref.name),
   "/index": populated.map((repo) => repo.name),
-  "/log": commits(16).map((commit) => commit.sha.slice(0, shortShaChars)),
+  "/log": commits(16).map((commit) => commit.sha.slice(0, shortShaLength)),
   "/commit": detail().files.map((file) => file.path),
 };
 

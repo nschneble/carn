@@ -119,8 +119,7 @@ export function languageFor(path: string): Language | null {
   return id === undefined ? null : (languages.get(id) ?? null);
 }
 
-// bounded by what it holds, not by how many: one entry runs to the whole
-// source cap, so a count would let a few big blobs take tens of megabytes
+// bounded by bytes, not entries: one blob can be the whole source cap
 const cache = new Map<string, string>();
 const cacheBytes = 8 * 1024 * 1024;
 let held = 0;
@@ -129,9 +128,7 @@ function key(oid: string, language: Language | null, bytes: number): string {
   return `${oid}\0${language?.id ?? ""}\0${bytes}`;
 }
 
-// blob content is oid-addressed and highlighting is pure, so a repeat view
-// costs a map read; the truncated length joins the key because a blob can
-// render at two lengths as the budget moves
+// the length joins the key: a blob renders at two as the budget moves
 export function highlight(options: {
   oid: string;
   source: string;

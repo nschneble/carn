@@ -46,7 +46,7 @@ export async function spawnGit(options: GitOptions): Promise<GitChild> {
   options.signal?.throwIfAborted();
   await semaphore.acquire(options.signal);
 
-  // a grant and an abort can land in the same tick; catch it before spawning
+  // a grant and abort can land in the same tick; catch it before spawning
   if (options.signal?.aborted === true) {
     semaphore.release();
     throw options.signal.reason;

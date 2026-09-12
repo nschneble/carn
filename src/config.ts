@@ -2,14 +2,12 @@
 
 function read(name: string, fallback?: string): string {
   const value = process.env[name] ?? fallback;
-
   if (value === undefined) {
     console.error(
-      `${name} isn't set. Pass --env-file=.env to node, or export ${name}.`,
+      `${name} isn't set. Pass --env-file=.env to node or export ${name}.`,
     );
     process.exit(1);
   }
-
   return value;
 }
 

@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// the masthead line, extended. one list, and the media query decides which
-// items display: the collapsed ones go with display: none, so they leave
-// the accessibility tree along with the layout
+// extends the masthead line with an asset trail; media queries decide
+// which items to collapse (to `display: none`) so they leave the a11y tree
 
 import { treeHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
@@ -20,7 +19,6 @@ export function repoTrail(repo: string): Crumb[] {
 
 export function pathTrail(repo: string, rev: string, path: string): Crumb[] {
   const names = path.split("/");
-
   return names.map((name, index) => ({
     label: name,
     href:
@@ -46,11 +44,9 @@ function item(crumb: Crumb, index: number, middle: boolean): Raw {
 
 export function breadcrumb(crumbs: Crumb[]): Raw {
   const last = crumbs.length - kept;
-
   const items = crumbs.map((crumb, index) =>
     item(crumb, index, index >= kept && index < last),
   );
-
   const fold =
     last > kept ? html`<li class="fold" aria-hidden="true"> » …</li>` : html``;
 

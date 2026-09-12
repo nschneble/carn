@@ -6,8 +6,7 @@
 
 import { html, type Raw } from "./index.js";
 
-// a path or filename: the last dot of the final segment splits it, the
-// stem taking .caps at full size and the extension .sc
+// the last dot of the final segment splits stem .caps from extension .sc
 export function pathName(name: string): Raw {
   const segment = name.lastIndexOf("/") + 1;
   const dot = name.lastIndexOf(".");
@@ -20,8 +19,7 @@ export function pathName(name: string): Raw {
   return html`<span class="caps">${name.slice(0, dot)}<span class="sc">${name.slice(dot)}</span></span>`;
 }
 
-// a ref or repo name: no extension exists to find, so nothing is looked
-// for. a tag is v1.1.0 whole and a branch's slash is a literal character
+// no extension to find: v1.1.0 stays whole and a slash is a literal
 export function plainName(name: string): Raw {
   return html`<span class="caps">${name}</span>`;
 }

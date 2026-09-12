@@ -24,8 +24,7 @@ export type CommitLog = {
 export const logRowCap = 16;
 export const logTimeoutMs = 5_000;
 
-// a subject longer than this is not a subject, and sixteen of them would
-// carry the page past its weight budget
+// sixteen subjects longer than this would carry the page past its budget
 export const maxSubjectChars = 500;
 
 const bytesPerCommit = 8192;

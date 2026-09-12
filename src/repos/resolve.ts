@@ -31,9 +31,7 @@ export async function resolveRepo(target: string): Promise<RepoLookup> {
     return { status: "invalid" };
   }
 
-  // raw: prisma's insensitive equals emits ILIKE, where _ is a wildcard,
-  // and ILIKE can't use repos_name_lower_key, so this would seq-scan on
-  // every repo page and every git request, HTTP and SSH alike
+  // raw: insensitive equals emits ILIKE, which seq-scans and wildcards _
   const rows = await db.$queryRaw<Omit<ResolvedRepo, "path">[]>`
     SELECT id, name, description, owner_id AS "ownerId",
            default_branch AS "defaultBranch"

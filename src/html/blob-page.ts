@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// the cap is computed from what the budget leaves after fonts, sheet, and
-// chrome, then checked against a real gzip of the real page. the source is
-// cut before it is highlighted, never after: a scope opening on one line
-// and closing forty later would leave cut markup unbalanced
+// cap is computed from the budget after subtracting fonts, sheets, and
+// chrome, then checked against a gzip of the page; source is cut before
+// it's highlighted, otherwise it leaves cut markup unbalanced
 
 import { blobAssetPath } from "../repos/blob-asset.js";
 import { type BlobView, countLines } from "../repos/blob-view.js";
@@ -27,8 +26,7 @@ export type BlobPage = {
   sheetWire?: number;
 };
 
-// measured over 88 files of this repo's own typescript: 604,313 source
-// bytes highlight and gzip to 210,433 wire bytes
+// 0.348 measured over 88 files here: 604,313 source bytes to 210,433 wire
 export const wirePerSourceByte = 0.348;
 
 const capPasses = 6;
@@ -46,8 +44,7 @@ const binaryLabels: Record<string, string> = {
 
 const units = ["B", "KB", "MB", "GB"];
 
-// a locale-sensitive formatter would read one way here and another in the
-// alpine container, so the separator is placed rather than negotiated
+// hand-rolled: a locale formatter would differ between here and alpine
 function formatCount(count: number): string {
   const digits = String(Math.trunc(Math.abs(count)));
   const groups: string[] = [];
@@ -95,7 +92,6 @@ function rawHref(origin: string, repo: string, blob: BlobView): string {
 
 function hatch(view: BlobPage, label: string): Raw {
   if (view.rawOrigin === undefined) return html``;
-
   const href = rawHref(view.rawOrigin, view.repo, view.blob);
 
   return html`
@@ -166,7 +162,6 @@ function sourceDocument(
 
 function declined(view: BlobPage, meta: Raw, why: string): string {
   const said = `${typeName(view.blob)}, ${formatBytes(view.blob.bytes)}. ${why}`;
-
   return shell(
     view,
     html`${heading(view.blob)}
@@ -206,8 +201,7 @@ function highlighted(
   return raw(highlight({ oid: blob.oid, source, language }));
 }
 
-// the number a stylesheet change has to move: exported so a contract test
-// can feed it a different served-sheet size and watch the cap follow
+// exported so a test can vary the sheet size and watch the cap follow
 export function sourceCapBytes(view: BlobPage): number {
   const sheetWire = view.sheetWire ?? stylesheetWireBytes;
   const language = languageFor(view.blob.path);
@@ -247,7 +241,6 @@ function textPage(view: BlobPage, source: string): string {
     );
 
   let shown = countLines(cutToBytes(source, capBytes));
-
   for (let pass = 0; pass < capPasses && shown > 0; pass += 1) {
     const rendered = cut(shown);
     const weight = pageWireBytes(rendered, sheetWire);
@@ -255,18 +248,15 @@ function textPage(view: BlobPage, source: string): string {
 
     const content = Math.max(1, weight - (budgetBytes - remaining));
     const fitted = Math.floor((shown * remaining) / content);
-    // never below one: zero here would skip the halving loop, and the
-    // reader would lose a line the budget could have afforded
+
+    // never zero: that would skip the halving loop below
     shown = Math.max(1, Math.min(fitted, shown - 1));
   }
 
-  // the model above averages the lines, which a file whose first line
-  // dwarfs the rest defeats: halving measures instead, and reaches nothing
-  // in log2 of the lines the cap allowed
+  // the average above loses to a file w/ one giant line, so this measures
   while (shown > 0) {
     const rendered = cut(shown);
     if (pageWireBytes(rendered, sheetWire) <= budgetBytes) return rendered;
-
     shown = Math.floor(shown / 2);
   }
 

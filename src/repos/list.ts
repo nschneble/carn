@@ -12,9 +12,7 @@ export type RepoSummary = {
 };
 
 export async function listRepos(): Promise<RepoSummary[]> {
-  // raw: prisma's orderBy takes columns, not expressions, so there is no
-  // DSL spelling of lower(name); orderBy: { name: "asc" } would sort the
-  // COLLATE "C" column and put Zebra before apple
+  // raw: prisma's orderBy takes columns, so lower(name) has no DSL spelling
   return db.$queryRaw<RepoSummary[]>`
     SELECT name, description, created_at AS "createdAt"
     FROM repos

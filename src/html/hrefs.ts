@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// every url the product generates. views import from here and this imports
-// nothing from src/html, so building a link can never pull one page module
-// into another's import graph
+// every url the product generates
 
 import type { RefKind } from "../repos/refs.js";
 

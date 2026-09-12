@@ -37,11 +37,7 @@ function baseOf(env: Env | undefined): RelativeBase | null {
   return { repo, rev };
 }
 
-// the tree is never consulted: a lookup per destination costs a spawn on a
-// link-heavy readme, renders the same readme differently on each ref, and
-// only trades a 404 for a link pointing somewhere wrong. markdown-it has
-// already encoded the destination, so only the rev is encoded here, and a
-// leading ./ goes because validPath refuses a . segment
+// no tree lookup: a spawn per link, and a 404 beats a link pointing wrong
 function rewrite(
   url: string | number | null,
   base: RelativeBase | null,
@@ -87,8 +83,7 @@ markdown.renderer.rules.image = (tokens, index, options, env, self) => {
     : self.renderToken(tokens, index, options);
 };
 
-// a wide code block scrolls its own container, which needs to be in the
-// tab order since nothing inside it is (WCAG scrollable-region-focusable)
+// a scrollable pre needs tabindex (WCAG scrollable-region-focusable)
 function focusable(html: string): string {
   return html.replace(/^<pre(?=[ >])/, '<pre tabindex="0"');
 }

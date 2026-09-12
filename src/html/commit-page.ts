@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// how many diffs fit is decided by gzipping the whole rendered document,
-// never by a per-byte model: every document this file returns is one it
-// measured under the budget, so a search that only returns a probe it
-// measured cannot ship a page it guessed at
+// how many diffs fit is decided by gzipping the whole rendered document
 
 import { type CommitDetail, type DiffFile, hunks } from "../repos/commit.js";
 import { ageMarkup } from "./age.js";
 import { type Crumb, repoTrail } from "./breadcrumb.js";
-import { commitsLabel, shortShaChars } from "./commit-log.js";
+import { commitsLabel, shortShaLength } from "./commit-log.js";
 import { changeHref, commitHref, commitsPath } from "./hrefs.js";
 import { html, type Raw, raw } from "./index.js";
 import { page } from "./page.js";
@@ -38,28 +35,25 @@ const signatures: Record<string, string> = {
 };
 
 function short(sha: string): string {
-  return sha.slice(0, shortShaChars);
+  return sha.slice(0, shortShaLength);
 }
 
 function binary(file: DiffFile): boolean {
   return file.added === null || file.deleted === null;
 }
 
-// the counts carry direction in the characters themselves, so the palette
-// is decoration and grayscale loses nothing
+// the + and the - carry direction, so color is decoration (WCAG 1.4.1)
 function counts(file: DiffFile): Raw {
   if (binary(file)) return html`Binary`;
-
   return html`+${file.added}<span class="vh"> added</span> −${file.deleted}<span class="vh"> removed</span>`;
 }
 
 function name(file: DiffFile): Raw {
   if (file.from === null) return html`${file.path}`;
-
   return html`${file.from}<span class="vh"> renamed to</span><span aria-hidden="true"> → </span>${file.path}`;
 }
 
-// binary carries no diff, so it gets no marker: nothing is ever inlined
+// binary carries no diff, so it gets no marker; nothing is ever inlined
 function destination(file: DiffFile, inlined: boolean): Raw {
   if (binary(file)) return html``;
 
@@ -98,8 +92,7 @@ function fileList(
       </div>`;
   }
 
-  // an empty table is not a table: a header row naming columns nothing
-  // fills is a worse answer than saying so in words
+  // no point in rendering an empty table
   if (shape.files === 0) {
     return html`<div class="empty">
         <p class="t-body">This commit changes ${files.length} files, more than this page can list.</p>
@@ -136,8 +129,7 @@ function fileList(
       </table>`;
 }
 
-// only a changed line is marked: the tone is a second signal behind the
-// + and the −, and it costs a span exactly where something changed
+// only a changed line is marked
 function diffBody(text: string): Raw {
   const lines = text.split("\n").map((line) => {
     if (line.startsWith("@@")) return html`<span class="h">${line}</span>`;
@@ -229,8 +221,6 @@ function head(view: CommitPage, linked: boolean): Raw {
       ${message(commit)}${meta(view)}`;
 }
 
-// the log the commit sits in, then the commit itself; a file view hangs
-// its path off the commit that changed it
 function trail(view: CommitPage, file: string | null): Crumb[] {
   const commit: Crumb[] = [
     ...repoTrail(view.repo),
@@ -283,9 +273,7 @@ function weight(view: CommitPage, markup: string): number {
   return pageWireBytes(markup, view.sheetWire ?? stylesheetWireBytes);
 }
 
-// the largest count whose real gzip-5 page fits, found by halving rather
-// than by walking: a probe is a whole document, so a forty-file commit
-// costs six of them instead of forty
+// a probe is a whole gzipped document, so this halves: six, not forty
 function largestFitting(
   ceiling: number,
   fits: (count: number) => string | null,
@@ -322,16 +310,13 @@ export function commitPage(view: CommitPage): string {
   const whole = render(view, all, candidates);
   if (weight(view, whole) <= budgetBytes) return whole;
 
-  // the rows come first: a commit touching thousands of paths can outweigh
-  // the page on the list alone, and a diff inlined above a list that does
-  // not fit would be measured against a document nobody can ship
+  // rows first: a long file list can outweigh the page on its own
   const listed = largestFitting(all.files, (files) => {
     const rendered = render(view, { files, diffs: 0 }, candidates);
     return weight(view, rendered) <= budgetBytes ? rendered : null;
   });
 
-  // header and meta with nothing under them is the smallest this page has,
-  // so there is no shorter document to fall back to
+  // the smallest this page gets, so there's nothing shorter to fall back to
   if (listed === null) return render(view, { files: 0, diffs: 0 }, candidates);
 
   const files = listed.count;
@@ -381,7 +366,6 @@ function noDiff(view: CommitPage, file: DiffFile): string {
 }
 
 // one file can outweigh the page on its own, so the same halving cuts it
-// on a line boundary and measures what is left
 export function commitFilePage(view: CommitPage, path: string): string | null {
   const index = view.commit.files.findIndex((file) => file.path === path);
   if (index === -1) return null;

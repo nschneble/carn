@@ -25,7 +25,7 @@ set -uo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$root" || exit 1
 
-readonly EXPECTED_CHECKS=56
+readonly EXPECTED_CHECKS=57
 readonly REPO_NAME=verify1e
 readonly ABSENT_NAME=absent1e
 readonly DEFAULT_ROOT=./local/repos
@@ -2160,6 +2160,27 @@ contract 56 "the four 1.4.12 spacing overrides cost the table nothing at 320px" 
   "no cell in any served table is childless" \
   "every cell's own box holds 24x24 under the spacing overrides" \
   "the spacing overrides cost the name column not one character"
+
+# 57
+# the url builders sit in one module so a link can never pull one page
+# module into another's graph, which is what closed the two import cycles
+# src/html carried. a sibling import here re-opens them silently
+readonly TITLE_57="hrefs.ts imports nothing from src/html"
+sibling='^import[^"]*from "\./'
+printf 'import { page } from "./page.js";\n' > "$work/57.control"
+if ! grep -qE "$sibling" "$work/57.control"; then
+  record FAIL 57 "$TITLE_57" "the pattern does not match a known sibling import; it cannot gate"
+else
+  siblings=$(grep -cE "$sibling" src/html/hrefs.ts)
+  importers=$(git grep --untracked -l 'from "\./hrefs\.js"' -- src/html | grep -c .)
+  if [ "$siblings" != "0" ]; then
+    record FAIL 57 "$TITLE_57" "$(grep -nE "$sibling" src/html/hrefs.ts)"
+  elif [ "$importers" -lt 2 ]; then
+    record FAIL 57 "$TITLE_57" "only $importers file(s) under src/html import hrefs.js; the module is not the one source"
+  else
+    record PASS 57 "$TITLE_57" "no sibling imports, and $importers views build their urls from it"
+  fi
+fi
 
 # 25, printed in its place
 readonly TITLE_25="relative links and images rewrite, and everything else is left alone"

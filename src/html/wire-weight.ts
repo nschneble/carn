@@ -30,8 +30,7 @@ export const fontBytes = faces.reduce(
 
 export const stylesheetWireBytes = gzipBytes(servedStylesheet);
 
-// what the budget has left once the fonts and the served sheet are paid
-// for, before any page chrome: the ceiling on a first-party inline asset
+// the ceiling on a first-party inline asset
 export const assetRoomBytes = budgetBytes - fontBytes - stylesheetWireBytes;
 
 export function pageWireBytes(
@@ -41,8 +40,7 @@ export function pageWireBytes(
   return fontBytes + sheetWire + gzipBytes(markup);
 }
 
-// gzip of chrome and content together beats the sum of the two, so sizing
-// against this under-fills rather than overruns
+// gzip beats the sum of the parts, so this under-fills, never overruns
 export function remainingWireBytes(
   chrome: string,
   sheetWire = stylesheetWireBytes,

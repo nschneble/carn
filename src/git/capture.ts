@@ -27,8 +27,7 @@ export async function captureGit(options: CaptureOptions): Promise<Capture> {
   const chunks: Buffer[] = [];
   let kept = 0;
 
-  // the stream stays flowing past the limit, or the child deadlocks on a
-  // full stdout pipe and only the timeout ends it
+  // keep reading past the limit or the child deadlocks on a full pipe
   child.stdout.on("data", (chunk: Buffer) => {
     const room = limit - kept;
     if (room <= 0) return;

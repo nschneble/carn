@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// three cells, three links to the same commit: a whole-row anchor would
-// forbid the subject and the age being links of their own, which is why
-// this row's hit area is each cell's own link and not an overlay
+// the commit log, sha-cursor paginated, newest first
 
 import { oidPattern } from "../git/oid.js";
 import type { CommitLog } from "../repos/log.js";
@@ -13,20 +11,15 @@ import { commitHref, commitsHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
 
-// seven, and in .t-mono rather than small caps: BRAND's small-caps rule
-// exempts this column because a SHA is a machine identifier
-export const shortShaChars = 7;
-
 export const commitsLabel = "Commits";
-
-// past this many page-start cursors, newer stops rather than the url growing
+export const shortShaLength = 7;
 export const backStackCap = 32;
 
 function capBack(back: string[]): string[] {
   return back.length > backStackCap ? back.slice(-backStackCap) : back;
 }
 
-// one bad entry rejects the whole list, never half-trusts a partial one
+// one bad entry rejects the whole list
 export function parseBackStack(raw: string | string[] | undefined): string[] {
   if (raw === undefined || Array.isArray(raw)) return [];
 
@@ -44,7 +37,7 @@ function row(
   const href = commitHref(repo, commit.sha);
 
   return html`<tr class="row">
-            <th class="nm" scope="row"><a class="t-mono" href="${href}">${commit.sha.slice(0, shortShaChars)}</a></th>
+            <th class="nm" scope="row"><a class="t-mono" href="${href}">${commit.sha.slice(0, shortShaLength)}</a></th>
             <td class="msg"><a href="${href}">${commit.subject}</a></td>
             <td class="age"><a href="${href}"><time datetime="${commit.at.toISOString()}">${age(commit.at, now)}</time></a></td>
           </tr>`;

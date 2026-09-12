@@ -5,8 +5,7 @@ import { breadcrumb, type Crumb } from "./breadcrumb.js";
 import { html, type Raw } from "./index.js";
 import { styleHref } from "./styles.js";
 
-// no crumbs is the index's own masthead: on / the wordmark is the current
-// segment and keeps the treatment it already has
+// no crumbs means /, where the wordmark is the current segment
 export type Page = {
   title: string;
   description: string;

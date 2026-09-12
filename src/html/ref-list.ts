@@ -32,9 +32,7 @@ function marker(view: RefListPage, ref: Ref): Raw {
   return ref.annotated ? html`<span class="t-micro"> Annotated</span>` : html``;
 }
 
-// git takes an empty message, and a link wrapped around one has no
-// accessible name at all, so the cell holds an empty span rather than a
-// nameless link — a childless cell measures nothing and shortens its row
+// an empty subject gets a span, never a link with no accessible name
 function subject(ref: Ref, href: string): Raw {
   if (ref.subject === "") return html`<td class="msg"><span></span></td>`;
 
@@ -103,9 +101,7 @@ function document(view: RefListPage, refs: Ref[], more: boolean): string {
   });
 }
 
-// a subject runs to 500 characters, so a row has no fixed weight a read
-// cap could have been derived from. halving rather than modeling: one
-// enormous subject defeats an average
+// a 500-char subject leaves no fixed row weight to model, so this measures
 export function refListPage(view: RefListPage): string {
   const { refs, more } = view.list;
   let shown = refs.length;

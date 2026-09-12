@@ -467,6 +467,10 @@ Assert at least:
 - Page two of a log carries a `Newer` link and page one doesn't
 - An annotated tag row carries the marker and a lightweight one doesn't
 - `.meta` declares `grid-template-columns: 1fr` outside any media query
+- `src/html/hrefs.ts` imports nothing from `src/html`, and more than one
+  view builds its urls from it. Added after the fact: the url builders
+  were scattered across five view modules, which was what closed two
+  import cycles in `src/html`, and a sibling import re-opens them
 
 **Follow the check-18 lesson.** `phase-1d.sh` check 16 failed on an
 anchored `sed` that assumed one breakpoint; 1e's check 18 passed the

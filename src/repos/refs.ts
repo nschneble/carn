@@ -25,8 +25,7 @@ export type RefList = {
 
 export const refTimeoutMs = 5_000;
 
-// a bound on the read, not on the page: what the list renders is settled
-// against the weight budget, in ref-list.ts
+// bounds the read; ref-list.ts settles what renders against the budget
 export const maxRefs = 250;
 
 const bytesPerRef = 1024;
@@ -50,9 +49,7 @@ function parse(listing: string): Ref[] {
       continue;
     }
 
-    // a tag can name a blob or a tree, and creatordate is empty on both.
-    // Number("") is 0, so an unguarded row would date itself to 1970 —
-    // and there is no log to scope a row that names no commit to
+    // a tag on a blob or tree has no creatordate, and Number("") is 0
     const at = Number(seconds);
     if (name === "" || seconds === "" || !Number.isFinite(at)) continue;
 

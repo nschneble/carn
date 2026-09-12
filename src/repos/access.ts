@@ -29,8 +29,7 @@ export const accessStore: AccessStore = {
       },
     });
 
-    // a userId with no row is an authenticated session whose user was
-    // deleted mid-connection; absence is a refusal, not an error
+    // no row means the user was deleted mid-connection: refuse, never throw
     return user?.isAdmin === true || (user?.grants.length ?? 0) > 0;
   },
 };

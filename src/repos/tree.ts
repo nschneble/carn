@@ -30,19 +30,16 @@ export type Tree = {
 
 export const treeTimeoutMs = 5_000;
 
-// far enough back to attribute a working tree's worth of entries, and a
-// bound rather than a promise: a path the walk never reaches renders blank
+// a bound, not a promise: a path the walk never reaches renders blank
 export const treeWalkCap = 100;
 
 const gitlinkMode = "160000";
 
-// --end-of-options makes a bare trailing -- a pathspec in its own right,
-// which matches nothing: ls-tree needs a real one, and the root's is "."
+// after --end-of-options a bare -- matches nothing; the root's is "."
 const wholeTree = ".";
 const bytesPerCommit = 16 * 1024;
 
-// a record opening with SOH is a commit header, not a status letter, which
-// a file named forty hex characters would otherwise imitate
+// SOH marks a commit header; a 40-hex filename would imitate one
 const headerMark = String.fromCharCode(1);
 const logFormat = "%x01%H%x00%at%x00%s";
 
@@ -79,11 +76,7 @@ function rank(entry: TreeEntry): number {
   return entry.kind === "directory" ? 0 : 1;
 }
 
-// three kinds and two ranks: comparing the kinds answers "after" to both
-// file-before-gitlink and gitlink-before-file, and a sort on an
-// inconsistent comparator orders by whatever it was handed. exported
-// because ls-tree hands this its entries in name order already, so no
-// input the parser can produce would show the difference
+// rank first: an inconsistent comparator orders by whatever it was handed
 export function orderTreeEntries(a: TreeEntry, b: TreeEntry): number {
   if (rank(a) !== rank(b)) return rank(a) - rank(b);
   return a.name < b.name ? -1 : 1;
@@ -110,9 +103,7 @@ function parse(listing: string, prefix: string): TreeEntry[] {
   return entries.sort(orderTreeEntries);
 }
 
-// one walk for the whole listing, newest first, stopping as soon as every
-// entry has a commit. the pathspec narrows the diff and lets git's history
-// simplification skip commits that never touched this directory
+// one walk for every entry, stopping once each has a commit
 async function attribute(options: {
   repoPath: string;
   rev: string;
@@ -144,8 +135,7 @@ async function attribute(options: {
 
   if (code !== 0) return;
 
-  // the last element is the tail after the final separator: empty on a
-  // whole capture, a half-written record on one the byte limit cut short
+  // the trailing element is empty, or a half record if the cap cut short
   const records = stdout.toString("utf8").split("\0");
   records.pop();
 
@@ -221,8 +211,7 @@ export async function listTree(options: {
 
   const entries = parse(stdout.toString("utf8"), prefix);
 
-  // git has no empty directories, so nothing under a path means it is not
-  // a tree: a blob, a gitlink, and an absent path all land here
+  // git has no empty directories, so nothing under a path means not a tree
   if (path !== "" && entries.length === 0) return null;
 
   if (entries.length > 0) {

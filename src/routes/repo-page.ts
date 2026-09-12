@@ -169,9 +169,6 @@ async function showBlob(
   reply: FastifyReply,
 ): Promise<FastifyReply> {
   const path = request.params["*"];
-
-  // the url settles this before any lookup, and it keeps the copy from
-  // naming a path that is not there
   if (path === "") return fail(request, reply, 404, noBlobPath);
 
   try {
@@ -206,18 +203,12 @@ async function showBlob(
   }
 }
 
-// there is no root form: /r/:repo is the root tree, so a path is what this
-// route is for. a path that is not a tree is a 404 rather than a redirect
-// to the blob route, because every link the product generates is right by
-// construction and a miss here was typed
+// no root form: /r/:repo is the root tree, and a non-tree path is a 404
 async function showTree(
   request: FastifyRequest<TreeRoute>,
   reply: FastifyReply,
 ): Promise<FastifyReply> {
   const path = request.params["*"];
-
-  // the shape of the url settles this one, so it is answered before any
-  // lookup: /r/:repo is the root tree, and this route names below it
   if (path === "") return fail(request, reply, 404, noTreeRoot);
 
   try {
@@ -255,9 +246,7 @@ async function showTree(
   }
 }
 
-// a ref the caller named and git cannot resolve is a 404, never a quiet
-// fall back to the default branch; only the unasked-for default is allowed
-// to come back empty, which is a repo with nothing pushed to it yet
+// a named ref git cannot resolve is a 404, never a fall back
 async function showCommits(
   request: FastifyRequest<LogRoute>,
   reply: FastifyReply,
@@ -265,8 +254,7 @@ async function showCommits(
   const asked = request.query.ref;
   const from = request.query.from ?? null;
 
-  // a repeated query key parses to an array, so the pair is only the two
-  // strings the loader is typed for once the array case is refused here
+  // a repeated query key parses to an array, which is refused here
   if (Array.isArray(asked) || Array.isArray(from)) {
     return fail(request, reply, 404, noSuchRef(String(asked ?? from)));
   }
@@ -343,9 +331,7 @@ async function showRefs(
   }
 }
 
-// :sha is a full object id and never a ref: /r/:repo/commits/:sha/* cannot
-// tell a ref carrying a slash from the path that follows it, and every
-// link the product generates already names the whole id
+// :sha is a full oid: a ref's slash is indistinguishable from the path
 async function showCommit(
   request: FastifyRequest<CommitRoute | ChangeRoute>,
   reply: FastifyReply,
@@ -382,15 +368,7 @@ async function showCommit(
   }
 }
 
-// the oid is the whole address, so the response is immutable. the guard is
-// that cat-file refuses anything that is not a blob of this repo, the read
-// is capped, and the bytes have to actually be the raster the url claims
-// no committed() guard, unlike serveHeader: that one already has the
-// resolved header to check against, and here proving an oid is reachable
-// would cost a spawn per image against the twelve-spawn budget. every repo
-// is public, the oid is unguessable, and the sniff pins the bytes to the
-// format the url claims. the residue is an unreachable blob that git's own
-// transport would refuse to serve
+// oid-addressed and immutable; cat-file refuses anything but a blob here
 async function serveBlobAsset(
   request: FastifyRequest<AssetRoute>,
   reply: FastifyReply,
@@ -425,10 +403,7 @@ async function serveBlobAsset(
   }
 }
 
-// path-addressed, because a readme's relative image names a path and
-// resolving it to an oid at render time would cost a lookup per image. the
-// format is the one the bytes sniff as, never the one the name claims. a
-// path resolves elsewhere on another rev, so this revalidates on the oid
+// path-addressed, so it revalidates on the oid the path resolves to
 async function serveAsset(
   request: FastifyRequest<BlobRoute>,
   reply: FastifyReply,

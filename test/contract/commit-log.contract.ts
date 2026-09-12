@@ -19,7 +19,7 @@ import {
   backStackCap,
   commitLogPage,
   parseBackStack,
-  shortShaChars,
+  shortShaLength,
 } from "../../src/html/commit-log.js";
 import { noSuchRef } from "../../src/html/error-page.js";
 import { commitsHref } from "../../src/html/hrefs.js";
@@ -372,7 +372,7 @@ test("a row carries three links to the commit, one per cell", () => {
 
   assert.ok(
     markup.includes(
-      `<th class="nm" scope="row"><a class="t-mono" href="${href}">${first.sha.slice(0, shortShaChars)}</a></th>`,
+      `<th class="nm" scope="row"><a class="t-mono" href="${href}">${first.sha.slice(0, shortShaLength)}</a></th>`,
     ),
     "the sha cell is not a mono link to the commit",
   );

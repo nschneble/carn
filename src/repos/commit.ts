@@ -29,12 +29,10 @@ export type CommitDetail = {
 
 export const commitTimeoutMs = 5_000;
 
-// a message longer than this is not a message, and the page carries it in
-// full above the diffs
+// the page carries the message in full, so this is what bounds it
 export const maxMessageChars = 20_000;
 
-// far past what any page can inline: the budget cuts the diffs long
-// before this does, and this only bounds what one commit may buffer
+// bounds the buffer only; the weight budget cuts diffs long before this
 export const maxPatchBytes = 4 * 1024 * 1024;
 
 const metaFormat = "%P%x00%an%x00%at%x00%G?%x00%B";
@@ -52,8 +50,7 @@ function count(field: string): number | null {
   return Number(field);
 }
 
-// a path may hold a tab, so the two counts are taken by offset and
-// everything after the second tab is the path
+// a path may hold a tab, so only the first two are split on
 function record(
   entry: string,
 ): { added: string; deleted: string; rest: string } | null {
@@ -70,8 +67,7 @@ function record(
   };
 }
 
-// a detected rename leaves the path field empty and spends the next two
-// fields on the source and the destination
+// a rename empties the path field and spends the next two on from and to
 function parseNumstat(listing: string): DiffFile[] {
   const fields = listing.split("\0");
   const files: DiffFile[] = [];
@@ -99,8 +95,7 @@ function parseNumstat(listing: string): DiffFile[] {
   return files;
 }
 
-// diff-tree walks the same queue for --numstat and for -p, so the patch
-// segments pair with the rows by position and no path is re-parsed
+// --numstat and -p walk one queue, so segments pair with rows by position
 function splitPatches(patch: string): string[] {
   if (patch === "") return [];
 
@@ -130,8 +125,7 @@ async function loadMeta(options: {
 
   if (code !== 0) return null;
 
-  // a tree or a blob oid exits 0 and prints nothing, so the body is the
-  // oracle for "that id is a commit", never the exit code
+  // a tree or blob oid exits 0 and prints nothing: read the body
   const listing = stdout.toString("utf8");
   const start = listing.indexOf("\n");
   if (start === -1) return null;
@@ -207,8 +201,7 @@ export async function loadCommit(options: {
 
   const segments = splitPatches(patches.stdout.toString("utf8"));
 
-  // a capture that filled its cap ends mid-hunk, so the last segment is
-  // dropped rather than inlined half-rendered
+  // a capture that hit its cap ends mid-hunk, so the last segment is dropped
   const whole =
     patches.stdout.length < maxPatchBytes
       ? segments.length
@@ -223,8 +216,7 @@ export async function loadCommit(options: {
   };
 }
 
-// the hunks alone: the path is already the heading above the block, and a
-// segment with no hunk at all is a rename, a mode change, or a binary
+// hunks only: a segment with none is a rename, a mode change, or a binary
 export function hunks(patch: string | null): string | null {
   if (patch === null) return null;
 

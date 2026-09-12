@@ -25,8 +25,7 @@ export type BlobView = {
   whole: boolean;
 };
 
-// above this a text blob cannot state its own line count without being
-// buffered whole, so it reports its size instead of truncating
+// past this a blob reports its size rather than buffering to count lines
 export const maxSourceBytes = 8 * 1024 * 1024;
 
 // git's own heuristic: a NUL in the first 8000 bytes

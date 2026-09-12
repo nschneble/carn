@@ -1040,9 +1040,7 @@ export const stylesheet = `${faces}\n${tokens}\n${components}\n${identity}\n${so
 
 export const servedStylesheet = minifyCss(stylesheet);
 
-// the hash covers what the route sends, not the source it came from: a
-// minifier change moves the served bytes without touching a single rule,
-// and the url is immutable for a year
+// hashes the served bytes, not the source: the url is immutable for a year
 export const styleHref = `/carn.${createHash("sha256")
   .update(servedStylesheet)
   .digest("hex")

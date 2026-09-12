@@ -3,11 +3,7 @@
 import { html } from "./index.js";
 import { page } from "./page.js";
 
-// og:url is a required Open Graph property, so an error page needs one that
-// is true. its own request path would invite indexing a bogus URL, and the
-// bare origin would claim the error is the home page. every 404 shares one
-// identity and every 503 shares another; neither is a route, so following
-// either lands on the page it names
+// path is each failure's own og:url, /404 or /503, never the request's
 export type Failure = {
   title: string;
   heading: string;
