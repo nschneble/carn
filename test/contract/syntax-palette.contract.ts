@@ -11,7 +11,7 @@ import { test } from "node:test";
 import { source } from "../../src/html/styles.js";
 import { languages } from "../../src/html/syntax.js";
 
-// the 40 classes the 18 registered languages can emit, walked out of their
+// the 52 classes every highlight.js grammar can emit, walked out of their
 // definitions. a dotted scope does not split into two hljs- classes:
 // scopeToCSSClass prefixes the head only, so title.function emits
 // `hljs-title function_` and the tail is bare. hljs-class and hljs-function
@@ -21,39 +21,51 @@ const documented = [
   "hljs-addition",
   "hljs-attr",
   "hljs-attribute",
+  "hljs-brace",
   "hljs-built_in",
+  "hljs-builtin-symbol",
   "hljs-bullet",
   "hljs-char",
+  "hljs-character",
   "hljs-class",
   "hljs-code",
   "hljs-comment",
+  "hljs-computation-expression",
   "hljs-deletion",
   "hljs-doctag",
   "hljs-emphasis",
   "hljs-function",
   "hljs-keyword",
+  "hljs-label",
   "hljs-link",
   "hljs-literal",
+  "hljs-message-name",
   "hljs-meta",
   "hljs-name",
+  "hljs-named-character",
   "hljs-number",
   "hljs-operator",
   "hljs-params",
+  "hljs-pattern",
   "hljs-property",
   "hljs-punctuation",
   "hljs-quote",
+  "hljs-regex",
   "hljs-regexp",
+  "hljs-rest_arg",
   "hljs-section",
   "hljs-selector-attr",
   "hljs-selector-class",
   "hljs-selector-id",
   "hljs-selector-pseudo",
   "hljs-selector-tag",
+  "hljs-slot",
   "hljs-string",
   "hljs-strong",
   "hljs-subst",
   "hljs-symbol",
   "hljs-tag",
+  "hljs-template-tag",
   "hljs-template-variable",
   "hljs-title",
   "hljs-type",
@@ -63,6 +75,7 @@ const documented = [
 // deliberately unstyled: each takes .src's own --ink, so a rule for one
 // would cost bytes and say nothing
 const inheritsDefault = [
+  "hljs-brace",
   "hljs-class",
   "hljs-function",
   "hljs-operator",
@@ -137,12 +150,12 @@ function auditedColors(found: Rule[]): Map<string, string> {
   return seen;
 }
 
-// the list above is derived from the registry, so a nineteenth language
-// can emit a class nobody decided the color of and no test would say so
+// the list above is derived from the registry, so an upstream version
+// bump can emit a class nobody decided the color of and no test would say
 test("the class list still describes the registry it was derived from", () => {
   assert.strictEqual(
     languages.size,
-    18,
+    194,
     "a language was registered or dropped, so the emittable class list needs re-deriving",
   );
 });

@@ -325,7 +325,7 @@ SVG is the special case. It's active content that can carry a `<script>` tag. Ei
 
 ### Syntax highlighting
 
-**Càrn relies on highlight.js 11.12.0.** We register only the languages actually being served (`highlight.js/lib/core` plus explicit `registerLanguage`): 15 ms init, 56 MB resident, ~49k lines/sec, and **class-based output at 111 bytes per line**. This was measured across 46 files sampled evenly through Linklater's 832-file TypeScript corpus, which gzipped to **10.2 B/line, 9.2% of raw**.
+**Càrn relies on highlight.js 11.12.0.** We register every grammar it ships, so no blob goes unhighlighted: 148 ms init, 70 MB resident, ~49k lines/sec, and **class-based output at 111 bytes per line**. This was measured across 46 files sampled evenly through Linklater's 832-file TypeScript corpus, which gzipped to **10.2 B/line, 9.2% of raw**.
 
 It's wired through markdown-it’s `highlight` option, whose return values are inserted verbatim, so we always have to return escaped HTML. **Cache highlighted blobs by content hash.** Highlighting is pure, so a hash→HTML cache removes the cost entirely on repeat views and keeps inside the TTFB budget.
 

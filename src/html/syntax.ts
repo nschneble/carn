@@ -1,110 +1,70 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// only the languages we serve are registered; the full bundle is 190 of
-// them. class-based output keeps the theme in the cached stylesheet
-// instead of inlining it into every blob
+// every grammar highlight.js ships, so no blob goes unhighlighted. the
+// cost is startup, not the wire: class-based output keeps the theme in
+// the cached stylesheet, and all 194 emit 52 classes between them
 
-import hljs from "highlight.js/lib/core";
-import bash from "highlight.js/lib/languages/bash";
-import c from "highlight.js/lib/languages/c";
-import cpp from "highlight.js/lib/languages/cpp";
-import css from "highlight.js/lib/languages/css";
-import diff from "highlight.js/lib/languages/diff";
-import dockerfile from "highlight.js/lib/languages/dockerfile";
-import go from "highlight.js/lib/languages/go";
-import ini from "highlight.js/lib/languages/ini";
-import java from "highlight.js/lib/languages/java";
-import javascript from "highlight.js/lib/languages/javascript";
-import json from "highlight.js/lib/languages/json";
-import markdown from "highlight.js/lib/languages/markdown";
-import python from "highlight.js/lib/languages/python";
-import rust from "highlight.js/lib/languages/rust";
-import sql from "highlight.js/lib/languages/sql";
-import typescript from "highlight.js/lib/languages/typescript";
-import xml from "highlight.js/lib/languages/xml";
-import yaml from "highlight.js/lib/languages/yaml";
+import hljs from "highlight.js";
+
+import prisma from "../../vendor/prisma.js";
+
+hljs.registerLanguage("prisma", prisma);
 
 export type Language = { id: string; label: string };
 
-const registry: [Language, unknown][] = [
-  [{ id: "bash", label: "Shell" }, bash],
-  [{ id: "c", label: "C" }, c],
-  [{ id: "cpp", label: "C++" }, cpp],
-  [{ id: "css", label: "CSS" }, css],
-  [{ id: "diff", label: "Diff" }, diff],
-  [{ id: "dockerfile", label: "Dockerfile" }, dockerfile],
-  [{ id: "go", label: "Go" }, go],
-  [{ id: "ini", label: "INI" }, ini],
-  [{ id: "java", label: "Java" }, java],
-  [{ id: "javascript", label: "JavaScript" }, javascript],
-  [{ id: "json", label: "JSON" }, json],
-  [{ id: "markdown", label: "Markdown" }, markdown],
-  [{ id: "python", label: "Python" }, python],
-  [{ id: "rust", label: "Rust" }, rust],
-  [{ id: "sql", label: "SQL" }, sql],
-  [{ id: "typescript", label: "TypeScript" }, typescript],
-  [{ id: "xml", label: "XML" }, xml],
-  [{ id: "yaml", label: "YAML" }, yaml],
-];
-
-export const languages = new Map(
-  registry.map(([language]) => [language.id, language]),
-);
-
-for (const [language, definition] of registry) {
-  hljs.registerLanguage(
-    language.id,
-    definition as Parameters<typeof hljs.registerLanguage>[1],
-  );
-}
-
-const byExtension: Record<string, string> = {
-  bash: "bash",
-  bashrc: "bash",
-  c: "c",
-  cc: "cpp",
-  cfg: "ini",
-  cjs: "javascript",
-  cpp: "cpp",
-  css: "css",
-  cts: "typescript",
-  diff: "diff",
-  dockerfile: "dockerfile",
-  editorconfig: "ini",
-  go: "go",
-  h: "c",
-  hh: "cpp",
-  hpp: "cpp",
-  htm: "xml",
-  html: "xml",
-  ini: "ini",
-  java: "java",
-  js: "javascript",
-  json: "json",
-  jsx: "javascript",
-  markdown: "markdown",
-  md: "markdown",
-  mjs: "javascript",
-  mts: "typescript",
-  py: "python",
-  pyi: "python",
-  rs: "rust",
-  sh: "bash",
-  sql: "sql",
-  svg: "xml",
-  toml: "ini",
-  ts: "typescript",
-  tsx: "typescript",
-  xhtml: "xml",
-  xml: "xml",
-  yaml: "yaml",
-  yml: "yaml",
-  zsh: "bash",
+// upstream's name, except where it names two languages at once
+const labels: Record<string, string> = {
+  bash: "Shell",
+  ini: "INI",
+  prisma: "Prisma",
+  xml: "XML",
 };
 
+export const languages = new Map<string, Language>(
+  hljs
+    .listLanguages()
+    .map((id) => [
+      id,
+      { id, label: labels[id] ?? hljs.getLanguage(id)?.name ?? id },
+    ]),
+);
+
+// two alias tokens are claimed by two grammars, so the winner is chosen
+const contested: Record<string, string> = {
+  ls: "livescript",
+  ml: "ocaml",
+};
+
+// extensions no grammar claims as an alias of its own
+const unclaimed: Record<string, string> = {
+  bashrc: "bash",
+  cfg: "ini",
+  editorconfig: "ini",
+  htm: "xml",
+  pyi: "python",
+};
+
+const byExtension = new Map<string, string>();
+
+for (const id of hljs.listLanguages()) {
+  for (const alias of [id, ...(hljs.getLanguage(id)?.aliases ?? [])]) {
+    const key = alias.toLowerCase();
+    if (!byExtension.has(key)) byExtension.set(key, id);
+  }
+}
+
+for (const [alias, id] of Object.entries(contested)) {
+  byExtension.set(alias, id);
+}
+
+for (const [extension, id] of Object.entries(unclaimed)) {
+  byExtension.set(extension, id);
+}
+
+// a whole filename, for the files that carry no extension
 const byName: Record<string, string> = {
   dockerfile: "dockerfile",
-  makefile: "bash",
+  makefile: "makefile",
 };
 
 export function languageFor(path: string): Language | null {
@@ -115,7 +75,7 @@ export function languageFor(path: string): Language | null {
   const dot = name.lastIndexOf(".");
   if (dot <= 0) return null;
 
-  const id = byExtension[name.slice(dot + 1)];
+  const id = byExtension.get(name.slice(dot + 1));
   return id === undefined ? null : (languages.get(id) ?? null);
 }
 
