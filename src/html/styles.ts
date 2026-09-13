@@ -8,6 +8,28 @@ function css(strings: TemplateStringsArray, ...values: unknown[]): string {
   return String.raw({ raw: strings }, ...values);
 }
 
+const faces = css`@font-face {
+  font-family: "Carn Sans";
+  src: url("/fonts/carn-sans.woff2") format("woff2-variations");
+  font-weight: 400 900;
+  font-stretch: 100% 125%;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Carn Mono";
+  src: url("/fonts/carn-mono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Carn Mono";
+  src: url("/fonts/carn-mono-500.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}`;
+
 export const tokens = css`:root {
   color-scheme: dark;
 
@@ -83,28 +105,6 @@ export const tokens = css`:root {
     --rule: var(--ink-mid);
     --rule-soft: var(--ink-faint);
   }
-}`;
-
-const faces = css`@font-face {
-  font-family: "Carn Sans";
-  src: url("/fonts/carn-sans.woff2") format("woff2-variations");
-  font-weight: 400 900;
-  font-stretch: 100% 125%;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Carn Mono";
-  src: url("/fonts/carn-mono-400.woff2") format("woff2");
-  font-weight: 400;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Carn Mono";
-  src: url("/fonts/carn-mono-500.woff2") format("woff2");
-  font-weight: 500;
-  font-display: swap;
 }`;
 
 export const components = css`body {
@@ -1038,11 +1038,10 @@ main > h1 {
   border-bottom-color: var(--ink);
 }`;
 
-export const stylesheet = `${faces}\n${tokens}\n${components}\n${identity}\n${source}\n${pages}\n`;
-
+export const stylesheet = `${faces}\n\n${tokens}\n\n${components}\n\n${identity}\n\n${source}\n\n${pages}\n`;
 export const servedStylesheet = minifyCss(stylesheet);
 
-// hashes the served bytes, not the source: the url is immutable for a year
+// hashes the served bytes, not the source
 export const styleHref = `/carn.${createHash("sha256")
   .update(servedStylesheet)
   .digest("hex")
