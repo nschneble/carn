@@ -2,9 +2,33 @@
 
 import { createHash } from "node:crypto";
 
+import { minifyCss } from "./minify-css.js";
+
 function css(strings: TemplateStringsArray, ...values: unknown[]): string {
   return String.raw({ raw: strings }, ...values);
 }
+
+const faces = css`@font-face {
+  font-family: "Carn Sans";
+  src: url("/fonts/carn-sans.woff2") format("woff2-variations");
+  font-weight: 400 900;
+  font-stretch: 100% 125%;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Carn Mono";
+  src: url("/fonts/carn-mono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Carn Mono";
+  src: url("/fonts/carn-mono-500.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}`;
 
 export const tokens = css`:root {
   color-scheme: dark;
@@ -25,17 +49,21 @@ export const tokens = css`:root {
   --rule-soft: #212424;
 
   /* brand */
-  --accent: #ff4d95; /* 6.17:1 on ground, 5.21 on sunk — large type, rules */
-  --accent-text: #ff6ea8; /* 7.36:1 on ground, 6.22 on sunk — links, small text */
-  --accent-fill: var(--accent); /* the pink a small label sits on — see 02 */
+  --accent: #ff4d95; /* 6.17:1 against --ground, 5.21:1 against --sunk */
+  --accent-text: #ff6ea8; /* 7.36:1 against --ground, 6.22:1 against --sunk */
+  --accent-fill: var(--accent);
   --accent-wash: #331020;
   --on-accent: #0e0f0f;
 
+  /* diff */
+  --diff-add: #7ee08a; /* 9.98:1 against --sunk */
+  --diff-del: #cf7848; /* 4.97:1 against --sunk */
+
   /* type */
   --f-display: "Carn Sans", "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --f-mono: "Carn Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --f-mono: "Carn Mono", "IBM Plex Mono", "SF Mono", Menlo, monospace;
 
-  /* spacing — 4px base */
+  /* spacing (4px base) */
   --s1: 4px;
   --s2: 8px;
   --s3: 12px;
@@ -66,6 +94,8 @@ export const tokens = css`:root {
     --accent-fill: var(--accent-text);
     --accent-wash: #fbe2ed;
     --on-accent: #ffffff;
+    --diff-add: #1c6e2f; /* 5.36:1 against --sunk */
+    --diff-del: #5a1c00; /* 11.12:1 against --sunk */
   }
 }
 
@@ -75,26 +105,6 @@ export const tokens = css`:root {
     --rule: var(--ink-mid);
     --rule-soft: var(--ink-faint);
   }
-}`;
-
-const faces = css`@font-face {
-  font-family: "Carn Sans";
-  src: url("/fonts/carn-sans.woff2") format("woff2-variations");
-  font-weight: 400 900;
-  font-stretch: 100% 125%;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Carn Mono";
-  src: url("/fonts/carn-mono-400.woff2") format("woff2");
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Carn Mono";
-  src: url("/fonts/carn-mono-500.woff2") format("woff2");
-  font-weight: 500;
-  font-display: swap;
 }`;
 
 export const components = css`body {
@@ -131,14 +141,14 @@ export const components = css`body {
 
 .skip {
   display: inline-block;
-  font-family: var(--f-mono);
-  font-size: 12px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
   background: var(--surface);
   color: var(--ink);
   border: 1px solid var(--ink);
   padding: 14px 18px;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
   text-decoration: none;
 }
 
@@ -173,6 +183,11 @@ export const components = css`body {
   font-feature-settings: "case" 1;
   font-size: clamp(1.05rem, 2.5vw, 1.42rem);
   line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.t-item--title {
+  color: var(--ink-soft);
 }
 
 .t-body {
@@ -190,6 +205,13 @@ export const components = css`body {
   color: var(--ink-faint);
 }
 
+/* a short explanatory sentence */
+.t-note {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  color: var(--ink-mid);
+}
+
 .t-micro {
   font-family: var(--f-mono);
   font-size: 9.5px;
@@ -203,12 +225,17 @@ export const components = css`body {
   font-size: 12.5px;
 }
 
-/* compensated small caps (base wght 700, wdth 110) */
-.sc {
+/* the whole name at full size; .sc nests inside it for the extension */
+.caps {
   text-transform: uppercase;
-  font-size: 0.79em;
+}
+
+/* compensated small caps (base: "wdth" 110, "wght" 700) */
+.sc {
   font-variation-settings: "wdth" 117, "wght" 824;
+  font-size: 0.79em;
   letter-spacing: 0.056em;
+  text-transform: uppercase;
   margin-right: -0.056em;
 }
 
@@ -216,6 +243,10 @@ export const components = css`body {
 
 .btn {
   display: inline-flex;
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  border: 1px solid var(--accent-fill);
+  padding: 14px 18px;
   align-items: center;
   justify-content: space-between;
   gap: var(--s4);
@@ -223,10 +254,6 @@ export const components = css`body {
   font-size: 12px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  background: var(--accent-fill);
-  color: var(--on-accent);
-  border: 1px solid var(--accent-fill);
-  padding: 14px 18px;
   text-decoration: none;
   cursor: pointer;
 }
@@ -238,8 +265,8 @@ export const components = css`body {
 
 .btn--ghost {
   background: none;
-  color: var(--ink);
   border-color: var(--ink);
+  color: var(--ink);
 }
 
 .btn:hover {
@@ -276,27 +303,27 @@ export const components = css`body {
 
 .field > label {
   display: block;
+  margin-bottom: var(--s2);
+  color: var(--ink-mid);
   font-family: var(--f-mono);
   font-size: 10.5px;
   font-weight: 500;
   letter-spacing: 0.11em;
   text-transform: uppercase;
-  color: var(--ink-mid);
-  margin-bottom: var(--s2);
 }
 
 .field .box {
   display: block;
-  width: 100%;
   box-sizing: border-box;
+  width: 100%;
   background: var(--surface);
+  color: var(--ink);
   border: 1px solid var(--ink-mid);
   border-radius: 0;
   padding: 13px 15px;
   font-family: var(--f-display);
   font-variation-settings: "wdth" 100, "wght" 400;
   font-size: 15.5px;
-  color: var(--ink);
 }
 
 .field .box::placeholder {
@@ -309,10 +336,10 @@ export const components = css`body {
 }
 
 .field .hint {
+  margin-top: var(--s2);
+  color: var(--ink-faint);
   font-family: var(--f-mono);
   font-size: 10.5px;
-  color: var(--ink-faint);
-  margin-top: var(--s2);
 }
 
 /* chips */
@@ -325,76 +352,122 @@ export const components = css`body {
 
 .chip {
   display: inline-block;
-  font-family: var(--f-mono);
-  font-size: 11px;
-  letter-spacing: 0.05em;
   background: var(--sunk);
+  color: var(--ink-soft);
   border: 1px solid var(--ink-mid);
   border-radius: 999px;
   padding: 8px 15px;
-  color: var(--ink-soft);
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
 }
 
 .chip--current {
   background: var(--accent-fill);
   border: 2px solid var(--accent-fill);
+  color: var(--on-accent);
   padding: 7px 14px;
   font-weight: 500;
-  color: var(--on-accent);
 }
 
-/* rows (list items) */
+/* row tables (list views) */
 
-.row {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0 var(--s4);
-  padding: 6px var(--s2) 6px 0;
+/* no display values on any table element; fixed not auto */
+.tbl {
+  width: calc(100% + var(--s2));
   margin-left: calc(var(--s2) * -1);
-  padding-left: var(--s2);
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.tbl th,
+.tbl td {
+  padding: 0;
+  font-weight: inherit;
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.tbl thead th {
+  border-bottom: 1px solid var(--ink);
+  padding: 0 var(--s4) var(--s2) 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tbl thead .age,
+.tbl thead .counts {
+  padding-right: 0;
+  text-align: right;
+}
+
+.tbl tbody th,
+.tbl tbody td {
   border-bottom: 1px solid var(--rule-soft);
-  align-items: baseline;
 }
 
-@media (min-width: 640px) {
-  .row {
-    grid-template-columns: minmax(0, 1fr) 190px 46px;
-  }
+.tbl thead th:first-child {
+  padding-left: var(--s2);
 }
 
-.row:hover,
-.row:focus-within {
+/* gutter bleed sits inside link so the whole wash width is clickable */
+.tbl tbody th:first-child > *,
+.tbl tbody td:first-child > * {
+  padding-left: var(--s2);
+}
+
+/* every cell here is a link */
+.log tbody tr:hover,
+.log tbody tr:focus-within,
+.refs tbody tr:hover,
+.refs tbody tr:focus-within {
   background: var(--sunk);
 }
 
-.row .nm {
-  color: var(--ink);
+/* the name is the only link so the wash stays inside the clickable area */
+.tree tbody .name:hover,
+.tree tbody .name:focus-within,
+.repos tbody .name:hover,
+.repos tbody .name:focus-within,
+.files tbody .name:hover,
+.files tbody .name:focus-within {
+  background: var(--sunk);
+}
+
+/* every cell is a target, so the box sits on the child that fills it */
+.tbl tbody th > *,
+.tbl tbody td > * {
+  display: block;
+  min-height: 24px;
+  padding: 6px var(--s4) 6px 0;
+}
+
+.tbl a {
   text-decoration: none;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.row .nm::after {
-  content: "";
-  position: absolute;
-  inset: 0;
+.tbl a:hover,
+.tbl a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-.row .nm:focus-visible {
+/* name is link text + row's a11y name, so it wraps not truncates */
+.tbl .name > * {
+  color: var(--ink);
+}
+
+.tbl .name a:focus-visible {
   outline-offset: -2px;
 }
 
-.row.is-dir .nm {
+.tbl .is-dir .name > * {
   color: var(--accent-text);
 }
 
-/* lifts them above the row-wide overlay so both stay selectable */
-
-.row .msg,
-.row .age {
-  position: relative;
+.tbl .msg > *,
+.tbl .age > * {
   font-family: var(--f-mono);
   font-size: 10px;
   color: var(--ink-faint);
@@ -403,18 +476,52 @@ export const components = css`body {
   white-space: nowrap;
 }
 
-.row .age {
+/* the metadata reads as one right-hand segment, against the name */
+.tbl thead .msg,
+.tbl .msg > * {
+  text-align: right;
+}
+
+/* metadata goes below the breakpoint; a subject that is a link stays */
+.repos .msg,
+.tree .msg {
+  display: none;
+}
+
+.tbl .age {
+  width: 46px;
+}
+
+.tbl .age > * {
+  padding-right: 0;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 640px) {
+  .repos .msg,
+  .tree .msg {
+    display: table-cell;
+  }
+
+  .tbl .name {
+    width: 65%;
+  }
 }
 
 /* meta blocks (labeled fields on show views) */
 
 .meta {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: 1fr;
   border-top: 1px solid var(--ink);
   margin: 0;
+}
+
+@media (min-width: 640px) {
+  .meta {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
 }
 
 .meta > div {
@@ -433,24 +540,24 @@ export const components = css`body {
 }
 
 .meta dd {
-  font-size: 13.5px;
-  margin: 0;
   color: var(--ink-soft);
+  font-size: 13.5px;
   line-height: 1.5;
+  margin: 0;
 }
 
 /* state tags */
 
 .tag {
   display: inline-block;
+  background: var(--accent-fill);
+  border: 1px solid var(--accent-fill);
+  color: var(--on-accent);
+  padding: 4px 9px;
   font-family: var(--f-mono);
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 4px 9px;
-  background: var(--accent-fill);
-  border: 1px solid var(--accent-fill);
-  color: var(--on-accent);
 }
 
 .tag--quiet {
@@ -516,6 +623,91 @@ export const identity = css`.hdr {
   }
 }`;
 
+export const source = css`.src {
+  background: var(--sunk);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  margin: var(--s5) 0 0;
+  padding: var(--s3) var(--s4);
+  overflow-x: auto;
+  tab-size: 2;
+}
+
+.src code {
+  font-family: inherit;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: var(--ink-mid);
+}
+
+.hljs-addition,
+.hljs-attr,
+.hljs-attribute,
+.hljs-bullet,
+.hljs-char,
+.hljs-code,
+.hljs-deletion,
+.hljs-link,
+.hljs-literal,
+.hljs-number,
+.hljs-regexp,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-string,
+.hljs-symbol,
+.hljs-template-variable,
+.hljs-variable {
+  color: var(--ink-soft);
+}
+
+/* 500 so the distinction survives grayscale and forced-colors */
+.hljs-built_in,
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta,
+.hljs-name,
+.hljs-section,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-tag,
+.hljs-tag,
+.hljs-title,
+.hljs-type {
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: 500;
+}
+
+.preview {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: var(--s5) 0 0;
+}
+
+/* the four tones collapse to one here; the weight and the border carry it */
+@media (forced-colors: active) {
+  .src {
+    border-color: CanvasText;
+  }
+
+  .diff .d {
+    border-left-style: dashed;
+  }
+}`;
+
 export const pages = css`a {
   color: var(--accent-text);
 }
@@ -565,16 +757,10 @@ main > h1 {
 
 /* repo index */
 
-.repos {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border-top: 1px solid var(--ink);
-}
-
 .empty p {
   max-width: var(--measure);
   margin: 0 0 var(--s4);
+  overflow-wrap: anywhere;
 }
 
 .empty code {
@@ -591,31 +777,159 @@ main > h1 {
   text-decoration: underline;
 }
 
-/* repo show */
+/* breadcrumb */
 
-.tree {
+/* one continuous inline run, so the separators are real selectable text
+   rather than a gap no Ctrl-F can match */
+.crumbs {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--ink);
+  color: var(--ink-mid);
+  overflow-wrap: anywhere;
 }
 
-/* no blob view yet, so the row overlay would only block selection */
-.tree .nm::after {
-  content: none;
+.crumbs li {
+  display: inline;
 }
 
-.tree .row {
-  grid-template-columns: minmax(0, 1fr);
+.crumbs a {
+  color: inherit;
+  text-decoration: none;
 }
 
-/* no click target yet, so the hover wash would be a false affordance */
-.tree .row:hover {
+.crumbs a:hover,
+.crumbs a:focus-visible {
+  text-decoration: underline;
+}
+
+/* Carn Mono ships two static faces, so the 500 is a weight, not an axis */
+.crumbs .here {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.crumbs .mid {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .crumbs .mid {
+    display: inline;
+  }
+
+  .crumbs .fold {
+    display: none;
+  }
+}
+
+/* repo show */
+
+.about {
+  max-width: var(--measure);
+  overflow-wrap: anywhere;
+}
+
+.repo-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0 0 var(--s7);
+  padding: 0;
+}
+
+.repo-nav a {
+  display: inline-block;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+  text-decoration: underline;
+  padding: 10px 14px;
+}
+
+/* a submodule is pinned here, not browsable, so its name takes no wash: a
+   wash with no click target under it is a false affordance */
+.tree .is-sub .name:hover,
+.tree .is-sub .name:focus-within {
   background: none;
+}
+
+.tree .pin > * {
+  color: var(--ink-mid);
 }
 
 .showall {
   margin: var(--s3) 0 0;
+}
+
+/* one commit */
+
+.sha {
+  color: var(--ink-faint);
+  margin: var(--s2) 0 0;
+}
+
+.commit-body {
+  font-family: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: var(--measure);
+  margin: var(--s4) 0 0;
+}
+
+.files {
+  margin-top: var(--s6);
+}
+
+/* a name and a fixed count, with no subject or age to hold a third
+   column, so the name takes the remainder rather than the shared split */
+.files .name {
+  width: auto;
+}
+
+.files .counts {
+  width: 116px;
+}
+
+.files .counts > * {
+  padding-right: 0;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.dpath {
+  color: var(--ink-soft);
+  margin: var(--s6) 0 0;
+  overflow-wrap: anywhere;
+}
+
+/* the tone is a second signal, separating added from removed too */
+.diff {
+  color: var(--ink-mid);
+  margin: var(--s3) 0 0;
+}
+
+.diff .a {
+  color: var(--diff-add);
+  border-left: 2px solid var(--diff-add);
+  padding-left: var(--s2);
+}
+
+.diff .d {
+  color: var(--diff-del);
+  border-left: 2px solid var(--diff-del);
+  padding-left: var(--s2);
+}
+
+.diff .h {
+  color: var(--ink-soft);
+  font-weight: 500;
 }
 
 /* rendered READMEs */
@@ -724,9 +1038,11 @@ main > h1 {
   border-bottom-color: var(--ink);
 }`;
 
-export const stylesheet = `${faces}\n${tokens}\n${components}\n${identity}\n${pages}\n`;
+export const stylesheet = `${faces}\n\n${tokens}\n\n${components}\n\n${identity}\n\n${source}\n\n${pages}\n`;
+export const servedStylesheet = minifyCss(stylesheet);
 
+// hashes the served bytes, not the source
 export const styleHref = `/carn.${createHash("sha256")
-  .update(stylesheet)
+  .update(servedStylesheet)
   .digest("hex")
   .slice(0, 16)}.css`;

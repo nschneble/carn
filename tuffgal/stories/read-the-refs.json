@@ -1,0 +1,4 @@
+{
+  "story": "A visitor checks which branches and tags a repo carries",
+  "actions": [{ "action": "gantry-branches" }, { "action": "gantry-tags" }]
+}

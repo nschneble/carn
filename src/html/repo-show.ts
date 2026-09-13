@@ -8,46 +8,52 @@ import { headerMarkup } from "../repos/header.js";
 import { headerAssetPath } from "../repos/header-asset.js";
 import { sshRemote } from "../repos/remote.js";
 import type { RepoView } from "../repos/show.js";
-import type { TreeEntry } from "../repos/tree.js";
-import { smallCaps } from "./filename.js";
+import { site } from "./breadcrumb.js";
+import { emptyState } from "./empty-state.js";
+import { commitsHref, refsHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
+import { refLabel } from "./ref-list.js";
+import { treeList } from "./tree-list.js";
 
-export const treeRowCap = 16;
-
-function row(entry: TreeEntry): Raw {
-  return entry.directory
-    ? html`<li class="row is-dir"><span class="nm t-item" lang="en">${smallCaps(entry.name)}/</span></li>`
-    : html`<li class="row"><span class="nm t-item" lang="en">${smallCaps(entry.name)}</span></li>`;
+// the hub every breadcrumb passes through: nothing else reaches these three
+function repoNav(repo: string, branch: string): Raw {
+  return html`<nav class="repo-nav" aria-label="Repo views">
+      <ul role="list">
+        <li><a href="${commitsHref(repo, branch)}">Commits</a></li>
+        <li><a href="${refsHref(repo, "branch")}">${refLabel("branch")}</a></li>
+        <li><a href="${refsHref(repo, "tag")}">${refLabel("tag")}</a></li>
+      </ul>
+    </nav>`;
 }
 
 function noCommits(view: RepoView): Raw {
-  return html`<div class="empty">
-        <p class="t-body">No commits yet. The file tree at ${view.branch} is shown here once something is pushed to it.</p>
-        <p><code class="t-mono">git push ${sshRemote(view.name)} ${view.branch}</code></p>
-      </div>`;
+  return emptyState(
+    `No commits yet. The file tree at ${view.branch} is shown here once something is pushed to it.`,
+    `git push ${sshRemote(view.name)} ${view.branch}`,
+  );
 }
 
-function tree(view: RepoView, showAll: boolean): Raw {
+function tree(view: RepoView, showAll: boolean, now: Date): Raw {
   if (view.entries.length === 0) return noCommits(view);
 
-  const shown = showAll ? view.entries : view.entries.slice(0, treeRowCap);
-  const list = html`<h2 class="t-label">Files</h2>
-      <ul class="tree" role="list">
-        ${shown.map(row)}
-      </ul>`;
-
-  if (shown.length === view.entries.length) return list;
-
-  return html`${list}
-      <p class="showall"><a class="t-mono" href="/r/${view.name}?all=1">Show all ${view.entries.length}<span aria-hidden="true"> →</span></a></p>`;
+  return html`<h2 class="t-label">Files</h2>
+      ${treeList({
+        repo: view.name,
+        rev: view.branch,
+        path: "",
+        entries: view.entries,
+        showAll,
+        allHref: `/r/${view.name}?all=1`,
+        now,
+      })}`;
 }
 
 function noReadme(view: RepoView): Raw {
-  return html`<div class="empty">
-        <p class="t-body">No README yet. A README.md at the root of ${view.branch} is rendered here, under the file tree.</p>
-        <p><code class="t-mono">git add README.md &amp;&amp; git commit -m "add README" &amp;&amp; git push</code></p>
-      </div>`;
+  return emptyState(
+    `No README yet. A README.md at the root of ${view.branch} is rendered here, under the file tree.`,
+    `git add README.md && git commit -m "add README" && git push`,
+  );
 }
 
 function readme(view: RepoView): Raw {
@@ -57,21 +63,27 @@ function readme(view: RepoView): Raw {
   return html`<div class="readme">
 
 <!-- (⌐■_■) real punks don't indent their READMEs -->
-${renderMarkdown(view.readme)}
+${renderMarkdown(view.readme, { repo: view.name, rev: view.branch })}
       </div>`;
 }
 
-function description(view: RepoView): string {
+function metaDescription(view: RepoView): string {
   if (view.tip === null) return "";
   if (view.readme === null) return "No README yet.";
 
   return renderPlainText(view.readme, 150);
 }
 
+function about(repo: RepoView): Raw {
+  if (!repo.description) return html``;
+  return html`<p class="t-body about">${repo.description}</p>`;
+}
+
 // the mark is decorative, so .vh carries the name as a real heading
 export function repoShowPage(view: {
   repo: RepoView;
   showAll: boolean;
+  now: Date;
 }): string {
   const { repo } = view;
 
@@ -83,11 +95,14 @@ export function repoShowPage(view: {
 
   return page({
     title: `${repo.name} · Càrn`,
-    description: `${description(repo)}`,
+    description: `${metaDescription(repo)}`,
     path: `/r/${repo.name}`,
+    crumbs: [site, { label: repo.name, href: null }],
     main: html`${identity}
       <h1 class="vh">${repo.name}</h1>
-      ${tree(repo, view.showAll)}
+      ${about(repo)}
+      ${repoNav(repo.name, repo.branch)}
+      ${tree(repo, view.showAll, view.now)}
       ${readme(repo)}`,
   });
 }

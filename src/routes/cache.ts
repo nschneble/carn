@@ -8,14 +8,13 @@ import { createHash } from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
 
 const htmlType = "text/html; charset=utf-8";
-const revalidate = "public, no-cache";
+export const revalidate = "public, no-cache";
 
 function etag(body: string): string {
   return `"${createHash("sha256").update(body).digest("hex").slice(0, 16)}"`;
 }
 
-// stamps the validators every rendered body needs, error pages included,
-// and reports whether the client already has this body
+// stamps the validators and reports whether the client has this body
 function stamp(
   request: FastifyRequest,
   reply: FastifyReply,

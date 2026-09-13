@@ -3,11 +3,7 @@
 import { html } from "./index.js";
 import { page } from "./page.js";
 
-// og:url is a required Open Graph property, so an error page needs one that
-// is true. its own request path would invite indexing a bogus URL, and the
-// bare origin would claim the error is the home page. every 404 shares one
-// identity and every 503 shares another; neither is a route, so following
-// either lands on the page it names
+// path is each failure's own og:url, /404 or /503, never the request's
 export type Failure = {
   title: string;
   heading: string;
@@ -20,7 +16,63 @@ export const noSuchRepo = (name: string): Failure => ({
   title: `No repo named ${name} · Càrn`,
   heading: "No repo here",
   said: `There's no repo named ${name} on this server.`,
-  next: "Find it in all repos.",
+  next: "Try looking in all repos.",
+  path: "/404",
+});
+
+export const noSuchFile = (path: string): Failure => ({
+  title: `No file at ${path} · Càrn`,
+  heading: "No file here",
+  said: `There's no file at ${path} on that ref.`,
+  next: "Check the path and the ref, or browse the repo.",
+  path: "/404",
+});
+
+export const noBlobPath: Failure = {
+  title: "No path here · Càrn",
+  heading: "No path here",
+  said: "That URL names a ref but no file inside it.",
+  next: "A file URL ends with the path to a file. The repo page lists what's there.",
+  path: "/404",
+};
+
+export const noSuchTree = (path: string): Failure => ({
+  title: `No directory at ${path} · Càrn`,
+  heading: "No directory here",
+  said: `There's no directory at ${path} on that ref.`,
+  next: "Check the path and the ref, or browse the repo.",
+  path: "/404",
+});
+
+export const noTreeRoot: Failure = {
+  title: "No path here · Càrn",
+  heading: "No path here",
+  said: "That URL names a ref but no path inside it.",
+  next: "The repo page is the root tree. A tree URL names something below it.",
+  path: "/404",
+};
+
+export const noSuchRef = (ref: string): Failure => ({
+  title: `No ref named ${ref} · Càrn`,
+  heading: "No ref here",
+  said: `There's no branch, tag, or commit named ${ref} in this repo.`,
+  next: "Check the ref, or browse the repo.",
+  path: "/404",
+});
+
+export const noSuchCommit = (sha: string): Failure => ({
+  title: `No commit ${sha} · Càrn`,
+  heading: "No commit here",
+  said: `There's no commit ${sha} in this repo.`,
+  next: "Check the id, or find it in the log.",
+  path: "/404",
+});
+
+export const noSuchChange = (path: string): Failure => ({
+  title: `No change to ${path} · Càrn`,
+  heading: "No change here",
+  said: `That commit doesn't change ${path}.`,
+  next: "Check the path, or read the whole commit.",
   path: "/404",
 });
 
@@ -36,7 +88,16 @@ export const badRepoName: Failure = {
   title: "Not a repo name · Càrn",
   heading: "Not a repo name",
   said: "That URL doesn't carry a repo name this server can look up.",
-  next: "A name is letters, digits, dots, dashes, and underscores, up to 64 characters. Check the URL, or find the repo in all repos.",
+  next: "A name is letters, numbers, dots, dashes, and underscores, up to 40 characters. Check the URL, or find the repo in all repos.",
+  path: "/404",
+};
+
+// no route matched, so there is no repo, ref, or path here to name
+export const noSuchRoute: Failure = {
+  title: "Nothing to see here · Càrn",
+  heading: "Nothing to see here",
+  said: "That URL doesn't match a route on this server.",
+  next: "Check the URL.",
   path: "/404",
 };
 

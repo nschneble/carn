@@ -1,0 +1,9 @@
+{
+  "story": "A visitor walks a repo's tree down to a file three levels in",
+  "actions": [
+    { "action": "gantry-show" },
+    { "action": "gantry-tree-nested" },
+    { "action": "gantry-tree-nested-all" },
+    { "action": "gantry-blob-deep" }
+  ]
+}

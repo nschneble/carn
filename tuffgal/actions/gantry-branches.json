@@ -1,0 +1,5 @@
+{
+  "action": "gantry-branches",
+  "steps": [{ "kind": "navigate", "path": "/r/gantry/branches" }],
+  "expect": { "anyOf": [{ "role": "link", "text": "topic" }] }
+}

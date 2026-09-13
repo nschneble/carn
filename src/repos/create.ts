@@ -26,7 +26,13 @@ export async function createRepo(
     async (tx) => {
       const row = await tx.repo.create({
         data: { name, ownerId },
-        select: { id: true, name: true, ownerId: true, defaultBranch: true },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          ownerId: true,
+          defaultBranch: true,
+        },
       });
       const path = repoPath(row.id);
 

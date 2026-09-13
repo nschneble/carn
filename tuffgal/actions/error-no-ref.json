@@ -1,0 +1,5 @@
+{
+  "action": "error-no-ref",
+  "steps": [{ "kind": "navigate", "path": "/r/gantry/commits?ref=nope" }],
+  "expect": { "anyOf": [{ "role": "heading", "text": "No ref here" }] }
+}

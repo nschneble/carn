@@ -2,32 +2,70 @@
 
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
+import { now } from "../clock.js";
+import { config } from "../config.js";
 import { readBlob } from "../git/blob.js";
+import { blobPage } from "../html/blob-page.js";
+import { commitLogPage, parseBackStack } from "../html/commit-log.js";
+import { commitFilePage, commitPage } from "../html/commit-page.js";
 import {
   badRepoName,
   errorPage,
   type Failure,
+  noBlobPath,
+  noSuchChange,
+  noSuchCommit,
+  noSuchFile,
+  noSuchRef,
   noSuchRepo,
+  noSuchTree,
+  noTreeRoot,
   unavailable,
 } from "../html/error-page.js";
+import { refListPage } from "../html/ref-list.js";
 import { repoShowPage } from "../html/repo-show.js";
+import { treePage } from "../html/tree-page.js";
+import { assetRoomBytes } from "../html/wire-weight.js";
+import { parseBlobAsset, sniffRaster } from "../repos/blob-asset.js";
+import { findBlobEntry, loadBlobView } from "../repos/blob-view.js";
+import { loadCommit } from "../repos/commit.js";
 import { type Header, maxHeaderBytes, resolveHeader } from "../repos/header.js";
 import {
   type HeaderAsset,
   headerType,
   parseHeaderAsset,
 } from "../repos/header-asset.js";
-import { resolveRepo } from "../repos/resolve.js";
+import { loadCommitLog } from "../repos/log.js";
+import { listRefs, type RefKind } from "../repos/refs.js";
+import { type ResolvedRepo, resolveRepo } from "../repos/resolve.js";
 import { loadRepoView } from "../repos/show.js";
-import { resolveTip } from "../repos/tree.js";
-import { sendPage, sendStatus } from "./cache.js";
+import { listTree, resolveTip } from "../repos/tree.js";
+import { revalidate, sendPage, sendStatus } from "./cache.js";
 
 type PageRoute = { Params: { repo: string }; Querystring: { all?: string } };
+type RefRoute = { Params: { repo: string } };
 type AssetRoute = { Params: { repo: string; asset: string } };
+type BlobRoute = { Params: { repo: string; rev: string; "*": string } };
+type TreeRoute = {
+  Params: { repo: string; rev: string; "*": string };
+  Querystring: { all?: string };
+};
+type LogRoute = {
+  Params: { repo: string };
+  Querystring: {
+    ref?: string | string[];
+    from?: string | string[];
+    back?: string | string[];
+  };
+};
+type CommitRoute = { Params: { repo: string; sha: string } };
+type ChangeRoute = { Params: { repo: string; sha: string; "*": string } };
 
 const forever = "public, max-age=31536000, immutable";
 const noImage = "No such header image.\n";
 const imageFailed = "The header image failed to load. Try again shortly.\n";
+const noAsset = "No such image.\n";
+const assetFailed = "The image failed to load. Try again shortly.\n";
 
 // the child dies with the response, never with the request body
 function abortWith(reply: FastifyReply): AbortSignal {
@@ -40,6 +78,10 @@ function abortWith(reply: FastifyReply): AbortSignal {
   return abandoned.signal;
 }
 
+function missingAsset(reply: FastifyReply, body: string): FastifyReply {
+  return reply.code(404).type("text/plain; charset=utf-8").send(body);
+}
+
 function fail(
   request: FastifyRequest,
   reply: FastifyReply,
@@ -49,27 +91,37 @@ function fail(
   return sendStatus(request, reply, status, errorPage({ failure }));
 }
 
+async function resolveOrFail(
+  request: FastifyRequest<{ Params: { repo: string } }>,
+  reply: FastifyReply,
+): Promise<ResolvedRepo | null> {
+  const found = await resolveRepo(request.params.repo);
+  if (found.status === "found") return found.repo;
+
+  const failure =
+    found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
+  await fail(request, reply, 404, failure);
+
+  return null;
+}
+
 async function showRepo(
   request: FastifyRequest<PageRoute>,
   reply: FastifyReply,
 ): Promise<FastifyReply> {
   try {
-    const found = await resolveRepo(request.params.repo);
-    if (found.status !== "found") {
-      const failure =
-        found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
-      return fail(request, reply, 404, failure);
-    }
+    const found = await resolveOrFail(request, reply);
+    if (found === null) return reply;
 
     const repo = await loadRepoView({
-      repo: found.repo,
+      repo: found,
       signal: abortWith(reply),
     });
 
     return sendPage(
       request,
       reply,
-      repoShowPage({ repo, showAll: request.query.all === "1" }),
+      repoShowPage({ repo, showAll: request.query.all === "1", now: now() }),
     );
   } catch (error) {
     request.log.error({ err: error }, "repo page: the page failed to render");
@@ -87,15 +139,12 @@ async function serveHeader(
   request: FastifyRequest<AssetRoute>,
   reply: FastifyReply,
 ): Promise<FastifyReply> {
-  const missing = () =>
-    reply.code(404).type("text/plain; charset=utf-8").send(noImage);
-
   try {
     const asset = parseHeaderAsset(request.params.asset);
-    if (asset === null) return missing();
+    if (asset === null) return missingAsset(reply, noImage);
 
     const found = await resolveRepo(request.params.repo);
-    if (found.status !== "found") return missing();
+    if (found.status !== "found") return missingAsset(reply, noImage);
 
     const signal = abortWith(reply);
     const commit = await resolveTip({
@@ -110,7 +159,7 @@ async function serveHeader(
       signal,
     });
 
-    if (!committed(header, asset)) return missing();
+    if (!committed(header, asset)) return missingAsset(reply, noImage);
 
     const body = await readBlob({
       repoPath: found.repo.path,
@@ -126,7 +175,285 @@ async function serveHeader(
   }
 }
 
+async function showBlob(
+  request: FastifyRequest<BlobRoute>,
+  reply: FastifyReply,
+): Promise<FastifyReply> {
+  const path = request.params["*"];
+  if (path === "") return fail(request, reply, 404, noBlobPath);
+
+  try {
+    const found = await resolveOrFail(request, reply);
+    if (found === null) return reply;
+
+    const blob = await loadBlobView({
+      repoPath: found.path,
+      rev: request.params.rev,
+      path,
+      signal: abortWith(reply),
+    });
+
+    if (blob === null) return fail(request, reply, 404, noSuchFile(path));
+
+    return sendPage(
+      request,
+      reply,
+      blobPage({
+        repo: found.name,
+        blob,
+        rawOrigin: config.rawOrigin,
+      }),
+    );
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the blob failed to render");
+    return fail(request, reply, 503, unavailable);
+  }
+}
+
+// no root form: /r/:repo is the root tree, and a non-tree path is a 404
+async function showTree(
+  request: FastifyRequest<TreeRoute>,
+  reply: FastifyReply,
+): Promise<FastifyReply> {
+  const path = request.params["*"];
+  if (path === "") return fail(request, reply, 404, noTreeRoot);
+
+  try {
+    const found = await resolveOrFail(request, reply);
+    if (found === null) return reply;
+
+    const { rev } = request.params;
+    const tree = await listTree({
+      repoPath: found.path,
+      rev,
+      path,
+      signal: abortWith(reply),
+    });
+
+    if (tree === null) return fail(request, reply, 404, noSuchTree(path));
+
+    return sendPage(
+      request,
+      reply,
+      treePage({
+        repo: found.name,
+        rev,
+        tree,
+        showAll: request.query.all === "1",
+        now: now(),
+      }),
+    );
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the tree failed to render");
+    return fail(request, reply, 503, unavailable);
+  }
+}
+
+// a named ref git cannot resolve is a 404, never a fall back
+async function showCommits(
+  request: FastifyRequest<LogRoute>,
+  reply: FastifyReply,
+): Promise<FastifyReply> {
+  const asked = request.query.ref;
+  const from = request.query.from ?? null;
+
+  // a repeated query key parses to an array, which is refused here
+  if (Array.isArray(asked) || Array.isArray(from)) {
+    return fail(request, reply, 404, noSuchRef(String(asked ?? from)));
+  }
+
+  try {
+    const found = await resolveOrFail(request, reply);
+    if (found === null) return reply;
+
+    const ref = asked ?? found.defaultBranch;
+    const log = await loadCommitLog({
+      repoPath: found.path,
+      ref,
+      from,
+      signal: abortWith(reply),
+    });
+
+    if (log === null && (asked !== undefined || from !== null)) {
+      return fail(request, reply, 404, noSuchRef(from ?? ref));
+    }
+
+    return sendPage(
+      request,
+      reply,
+      commitLogPage({
+        repo: found.name,
+        log: log ?? { ref, commits: [], next: null },
+        now: now(),
+        from,
+        back: parseBackStack(request.query.back),
+      }),
+    );
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the log failed to render");
+    return fail(request, reply, 503, unavailable);
+  }
+}
+
+async function showRefs(
+  request: FastifyRequest<RefRoute>,
+  reply: FastifyReply,
+  kind: RefKind,
+): Promise<FastifyReply> {
+  try {
+    const found = await resolveOrFail(request, reply);
+    if (found === null) return reply;
+
+    const list = await listRefs({
+      repoPath: found.path,
+      kind,
+      signal: abortWith(reply),
+    });
+
+    return sendPage(
+      request,
+      reply,
+      refListPage({
+        repo: found.name,
+        list,
+        defaultBranch: found.defaultBranch,
+        now: now(),
+      }),
+    );
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the ref list failed");
+    return fail(request, reply, 503, unavailable);
+  }
+}
+
+// :sha is a full oid: a ref's slash is indistinguishable from the path
+async function showCommit(
+  request: FastifyRequest<CommitRoute | ChangeRoute>,
+  reply: FastifyReply,
+): Promise<FastifyReply> {
+  const { sha } = request.params;
+  const path = (request.params as ChangeRoute["Params"])["*"] ?? null;
+
+  try {
+    const found = await resolveOrFail(request, reply);
+    if (found === null) return reply;
+
+    const commit = await loadCommit({
+      repoPath: found.path,
+      sha,
+      signal: abortWith(reply),
+    });
+
+    if (commit === null) return fail(request, reply, 404, noSuchCommit(sha));
+
+    const view = { repo: found.name, commit, now: now() };
+    if (path === null) return sendPage(request, reply, commitPage(view));
+
+    const one = commitFilePage(view, path);
+    if (one === null) return fail(request, reply, 404, noSuchChange(path));
+
+    return sendPage(request, reply, one);
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the commit failed to render");
+    return fail(request, reply, 503, unavailable);
+  }
+}
+
+// oid-addressed and immutable; cat-file refuses anything but a blob here
+async function serveBlobAsset(
+  request: FastifyRequest<AssetRoute>,
+  reply: FastifyReply,
+): Promise<FastifyReply> {
+  try {
+    const asset = parseBlobAsset(request.params.asset);
+    if (asset === null) return missingAsset(reply, noAsset);
+
+    const found = await resolveRepo(request.params.repo);
+    if (found.status !== "found") return missingAsset(reply, noAsset);
+
+    const body = await readBlob({
+      repoPath: found.repo.path,
+      oid: asset.oid,
+      limit: assetRoomBytes + 1,
+      signal: abortWith(reply),
+    }).catch(() => null);
+
+    if (body === null || body.length > assetRoomBytes)
+      return missingAsset(reply, noAsset);
+    if (sniffRaster(body)?.type !== asset.format.type)
+      return missingAsset(reply, noAsset);
+
+    return reply
+      .header("Cache-Control", forever)
+      .type(asset.format.type)
+      .send(body);
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the blob asset failed");
+    return reply.code(503).type("text/plain; charset=utf-8").send(assetFailed);
+  }
+}
+
+// path-addressed, so it revalidates on the oid the path resolves to
+async function serveAsset(
+  request: FastifyRequest<BlobRoute>,
+  reply: FastifyReply,
+): Promise<FastifyReply> {
+  try {
+    const found = await resolveRepo(request.params.repo);
+    if (found.status !== "found") return missingAsset(reply, noAsset);
+
+    const signal = abortWith(reply);
+    const entry = await findBlobEntry({
+      repoPath: found.repo.path,
+      rev: request.params.rev,
+      path: request.params["*"],
+      signal,
+    });
+
+    if (entry === null || entry.bytes > assetRoomBytes)
+      return missingAsset(reply, noAsset);
+
+    const tag = `"${entry.oid}"`;
+    const stamped = () =>
+      reply.header("Cache-Control", revalidate).header("ETag", tag);
+
+    if (request.headers["if-none-match"] === tag) {
+      return stamped().code(304).send();
+    }
+
+    const body = await readBlob({
+      repoPath: found.repo.path,
+      oid: entry.oid,
+      limit: assetRoomBytes + 1,
+      signal,
+    }).catch(() => null);
+
+    if (body === null) return missingAsset(reply, noAsset);
+
+    const format = sniffRaster(body);
+    if (format === null) return missingAsset(reply, noAsset);
+
+    return stamped().type(format.type).send(body);
+  } catch (error) {
+    request.log.error({ err: error }, "repo page: the readme image failed");
+    return reply.code(503).type("text/plain; charset=utf-8").send(assetFailed);
+  }
+}
+
 export function repoPageRoutes(app: FastifyInstance): void {
   app.get<AssetRoute>("/r/:repo/header/:asset", serveHeader);
+  app.get<AssetRoute>("/r/:repo/blob-asset/:asset", serveBlobAsset);
+  app.get<BlobRoute>("/r/:repo/asset/:rev/*", serveAsset);
+  app.get<BlobRoute>("/r/:repo/blob/:rev/*", showBlob);
+  app.get<TreeRoute>("/r/:repo/tree/:rev/*", showTree);
+  app.get<RefRoute>("/r/:repo/branches", (request, reply) =>
+    showRefs(request, reply, "branch"),
+  );
+  app.get<RefRoute>("/r/:repo/tags", (request, reply) =>
+    showRefs(request, reply, "tag"),
+  );
+  app.get<LogRoute>("/r/:repo/commits", showCommits);
+  app.get<ChangeRoute>("/r/:repo/commits/:sha/*", showCommit);
+  app.get<CommitRoute>("/r/:repo/commits/:sha", showCommit);
   app.get<PageRoute>("/r/:repo", showRepo);
 }

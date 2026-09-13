@@ -74,7 +74,7 @@ const admin = await db.user.findFirst({
 });
 
 if (admin === null) {
-  fail("No admin user. Apply the migrations with `npm run migrate` first.");
+  fail("No admin user. Apply migrations with `npm run migrate` first.");
 }
 
 const existing = await db.sshKey.findUnique({

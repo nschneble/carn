@@ -5,12 +5,15 @@
 // disagree on purpose. degrading to alt text is PLAN.md 04's privacy
 // control, and a proxy would serve first-party under CSP, not replace it
 
-import MarkdownIt from "markdown-it";
+import MarkdownIt, { type Env } from "markdown-it";
 import { type Raw, raw } from "../html/index.js";
+
+export type RelativeBase = { repo: string; rev: string };
 
 const dataImage = /^data:image\/(gif|png|jpeg|webp);/;
 const hasScheme = /^[a-z][a-z0-9+.-]*:/;
 const allowedScheme = /^(https?|mailto):/;
+const notAPath = /^[/#?]/;
 
 function allowLink(url: string): boolean {
   const target = url.trim().toLowerCase();
@@ -25,13 +28,43 @@ function allowLink(url: string): boolean {
 const markdown = new MarkdownIt("commonmark", { html: false }).enable("table");
 markdown.validateLink = allowLink;
 
+function baseOf(env: Env | undefined): RelativeBase | null {
+  const repo = env?.repo;
+  const rev = env?.rev;
+
+  if (typeof repo !== "string" || typeof rev !== "string") return null;
+
+  return { repo, rev };
+}
+
+// no tree lookup: a spawn per link, and a 404 beats a link pointing wrong
+function rewrite(
+  url: string | number | null,
+  base: RelativeBase | null,
+  route: string,
+): string | null {
+  if (typeof url !== "string" || url === "" || base === null) return null;
+  if (hasScheme.test(url.trim().toLowerCase())) return null;
+  if (notAPath.test(url)) return null;
+
+  const path = url.startsWith("./") ? url.slice(2) : url;
+
+  return `/r/${base.repo}/${route}/${encodeURIComponent(base.rev)}/${path}`;
+}
+
 const external = /^https?:/i;
 const defaultLinkOpen = markdown.renderer.rules.link_open;
+const defaultImage = markdown.renderer.rules.image;
 
 markdown.renderer.rules.link_open = (tokens, index, options, env, self) => {
-  const href = tokens[index].attrGet("href");
+  const token = tokens[index];
+  const local = rewrite(token.attrGet("href"), baseOf(env), "blob");
+
+  if (local !== null) token.attrSet("href", local);
+
+  const href = token.attrGet("href");
   if (href !== null && external.test(String(href).trim())) {
-    tokens[index].attrSet("rel", "nofollow ugc");
+    token.attrSet("rel", "nofollow ugc");
   }
 
   return defaultLinkOpen
@@ -39,8 +72,18 @@ markdown.renderer.rules.link_open = (tokens, index, options, env, self) => {
     : self.renderToken(tokens, index, options);
 };
 
-// a wide code block scrolls its own container, which needs to be in the
-// tab order since nothing inside it is (WCAG scrollable-region-focusable)
+markdown.renderer.rules.image = (tokens, index, options, env, self) => {
+  const token = tokens[index];
+  const local = rewrite(token.attrGet("src"), baseOf(env), "asset");
+
+  if (local !== null) token.attrSet("src", local);
+
+  return defaultImage
+    ? defaultImage(tokens, index, options, env, self)
+    : self.renderToken(tokens, index, options);
+};
+
+// a scrollable pre needs tabindex (WCAG scrollable-region-focusable)
 function focusable(html: string): string {
   return html.replace(/^<pre(?=[ >])/, '<pre tabindex="0"');
 }
@@ -62,8 +105,8 @@ markdown.renderer.rules.code_block = (tokens, index, options, env, self) =>
       : self.renderToken(tokens, index, options),
   );
 
-export function renderMarkdown(source: string): Raw {
-  return raw(markdown.render(source));
+export function renderMarkdown(source: string, base: RelativeBase): Raw {
+  return raw(markdown.render(source, base));
 }
 
 export function renderPlainText(source: string, limit: number): string {

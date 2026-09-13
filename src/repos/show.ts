@@ -7,6 +7,7 @@ import { listTree, resolveTip, type TreeEntry } from "./tree.js";
 
 export type RepoView = {
   name: string;
+  description: string | null;
   branch: string;
   tip: string | null;
   header: Header;
@@ -26,7 +27,12 @@ export async function loadRepoView(options: {
     signal,
   });
 
-  const shell = { name: repo.name, branch: repo.defaultBranch, tip };
+  const shell = {
+    name: repo.name,
+    description: repo.description,
+    branch: repo.defaultBranch,
+    tip,
+  };
 
   if (tip === null) {
     return {
@@ -37,11 +43,12 @@ export async function loadRepoView(options: {
     };
   }
 
-  const [header, entries] = await Promise.all([
+  const [header, tree] = await Promise.all([
     resolveHeader({ repoPath: repo.path, commit: tip, signal }),
-    listTree({ repoPath: repo.path, commit: tip, signal }),
+    listTree({ repoPath: repo.path, rev: tip, signal }),
   ]);
 
+  const entries = tree?.entries ?? [];
   const found = findReadme(entries);
 
   return {

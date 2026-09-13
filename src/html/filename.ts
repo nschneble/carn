@@ -1,31 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// lowercase runs go in .sc spans and everything else stays at full size,
-// so the DOM keeps the true filename. no whitespace between the runs: a
-// newline inside README.<span>md</span> becomes a space in the accessible
-// name, the clipboard, and find-in-page. BRAND.md 03
+// both names keep the true chars in the DOM w/ nothing in between, since a
+// newline is a space in the a11y name, clipboard, and find. BRAND.md 03
 
 import { html, type Raw } from "./index.js";
 
-function lowercase(char: string): boolean {
-  return char.toUpperCase() !== char;
-}
+// the last dot of the final segment splits stem .caps from extension .sc
+export function pathName(name: string): Raw {
+  const segment = name.lastIndexOf("/") + 1;
+  const dot = name.lastIndexOf(".");
 
-export function smallCaps(name: string): Raw {
-  const runs: (Raw | string)[] = [];
-  let index = 0;
-
-  while (index < name.length) {
-    const start = index;
-    const small = lowercase(name[start] as string);
-
-    while (index < name.length && lowercase(name[index] as string) === small) {
-      index += 1;
-    }
-
-    const run = name.slice(start, index);
-    runs.push(small ? html`<span class="sc">${run}</span>` : run);
+  if (dot < segment || dot === name.length - 1) {
+    return html`<span class="caps">${name}</span>`;
   }
 
-  return html`${runs}`;
+  // a leading dot is the extension here, unlike blob-page's extensionOf
+  return html`<span class="caps">${name.slice(0, dot)}<span class="sc">${name.slice(dot)}</span></span>`;
+}
+
+// no extension to find: v1.1.0 stays whole and a slash is a literal
+export function plainName(name: string): Raw {
+  return html`<span class="caps">${name}</span>`;
 }

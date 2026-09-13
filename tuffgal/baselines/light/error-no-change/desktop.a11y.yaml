@@ -1,0 +1,19 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - paragraph:
+    - link "Càrn":
+      - /url: /
+- main:
+  - heading "No change here" [level=1]
+  - paragraph: That commit doesn't change src/nope.ts.
+  - paragraph: Check the path, or read the whole commit.
+  - paragraph:
+    - link "All repos":
+      - /url: /
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

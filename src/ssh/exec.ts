@@ -29,7 +29,7 @@ export const refusals = {
     "This server runs git-upload-pack and git-receive-pack only. " +
     "Use git clone or git push.",
   badName:
-    "That's not a valid repo name. Names are up to 64 characters, " +
+    "That's not a valid repo name. Names are up to 40 characters, " +
     "starting with a letter or number, and containing only letters, " +
     "numbers, dots, dashes, and underscores.",
   noRepo: (name: string) =>

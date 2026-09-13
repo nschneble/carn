@@ -1,0 +1,5 @@
+{
+  "action": "error-no-directory",
+  "steps": [{ "kind": "navigate", "path": "/r/gantry/tree/main/apps/nope" }],
+  "expect": { "anyOf": [{ "role": "heading", "text": "No directory here" }] }
+}

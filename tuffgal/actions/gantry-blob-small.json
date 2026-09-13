@@ -1,0 +1,9 @@
+{
+  "action": "gantry-blob-small",
+  "steps": [
+    { "kind": "navigate", "path": "/r/gantry" },
+    { "kind": "click", "hint": { "role": "link", "text": "src/" } },
+    { "kind": "click", "hint": { "role": "link", "text": "manifest.ts" } }
+  ],
+  "expect": { "anyOf": [{ "role": "heading", "text": "src/manifest.ts" }] }
+}

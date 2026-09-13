@@ -8,7 +8,7 @@ import { Semaphore } from "./semaphore.js";
 
 export const gitConcurrency = availableParallelism();
 
-export type GitOutcome = "exited" | "timed-out" | "cancelled";
+export type GitOutcome = "exited" | "timed-out" | "canceled";
 
 export type GitResult = {
   code: number | null;
@@ -31,6 +31,19 @@ export type GitChild = {
   done: Promise<GitResult>;
 };
 
+export function throwOnOutcome(
+  result: GitResult,
+  command: string,
+  timeoutMs: number,
+): void {
+  switch (result.outcome) {
+    case "canceled":
+      throw new Error(`git ${command} was canceled`);
+    case "timed-out":
+      throw new Error(`git ${command} timed out after ${timeoutMs}ms`);
+  }
+}
+
 const semaphore = new Semaphore(gitConcurrency);
 
 function childEnv(gitProtocol: string | undefined): NodeJS.ProcessEnv {
@@ -46,7 +59,7 @@ export async function spawnGit(options: GitOptions): Promise<GitChild> {
   options.signal?.throwIfAborted();
   await semaphore.acquire(options.signal);
 
-  // a grant and an abort can land in the same tick; catch it before spawning
+  // a grant and abort can land in the same tick; catch it before spawning
   if (options.signal?.aborted === true) {
     semaphore.release();
     throw options.signal.reason;
@@ -78,16 +91,14 @@ export async function spawnGit(options: GitOptions): Promise<GitChild> {
   }, options.timeoutMs);
 
   const cancel = () => {
-    kill("cancelled");
+    kill("canceled");
   };
 
   options.signal?.addEventListener("abort", cancel, { once: true });
 
   const done = new Promise<GitResult>((resolve, reject) => {
     function finish(settle: () => void): void {
-      if (settled) {
-        return;
-      }
+      if (settled) return;
 
       settled = true;
       clearTimeout(timer);
@@ -129,14 +140,7 @@ export async function runGit(options: GitOptions): Promise<void> {
   });
 
   const result = await child.done;
-
-  if (result.outcome === "timed-out") {
-    throw new Error(`git ${command} timed out after ${options.timeoutMs}ms`);
-  }
-
-  if (result.outcome === "cancelled") {
-    throw new Error(`git ${command} was cancelled`);
-  }
+  throwOnOutcome(result, command, options.timeoutMs);
 
   if (result.code !== 0) {
     throw new Error(

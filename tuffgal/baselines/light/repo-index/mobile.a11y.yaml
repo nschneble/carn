@@ -1,0 +1,51 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - paragraph:
+    - link "Càrn":
+      - /url: /
+- main:
+  - heading "Repositories" [level=1]
+  - table "Repositories":
+    - caption: Repositories
+    - rowgroup:
+      - row "Name Age":
+        - columnheader "Name"
+        - columnheader "Age"
+    - rowgroup:
+      - row "gantry 3w":
+        - rowheader "gantry":
+          - link "gantry":
+            - /url: /r/gantry
+        - cell "3w":
+          - time: 3w
+      - row "linklater 2w":
+        - rowheader "linklater":
+          - link "linklater":
+            - /url: /r/linklater
+        - cell "2w":
+          - time: 2w
+      - row "moonlight 2d":
+        - rowheader "moonlight":
+          - link "moonlight":
+            - /url: /r/moonlight
+        - cell "2d":
+          - time: 2d
+      - row "sparrow 15m":
+        - rowheader "sparrow":
+          - link "sparrow":
+            - /url: /r/sparrow
+        - cell "15m":
+          - time: 15m
+      - row "thicket 6h":
+        - rowheader "thicket":
+          - link "thicket":
+            - /url: /r/thicket
+        - cell "6h":
+          - time: 6h
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

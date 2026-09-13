@@ -26,8 +26,12 @@ export default defineConfig({
   },
   baseUrl: visualOrigin,
   colorScheme: scheme,
+  // the two that bracket the stylesheet's single min-width: 640px query.
   // BRAND.md's 1440 is not in Tuffgal's registry, whose desktop is 1280
-  breakpoints: [{ name: "desktop", width: 1440, height: 900 }],
+  breakpoints: [
+    { name: "mobile", width: 375, height: 812 },
+    { name: "desktop", width: 1440, height: 900 },
+  ],
   // a forge page is mostly below the fold: tree, readme, footer
   captureMode: "fullPage",
   frozenTime: frozenNow,

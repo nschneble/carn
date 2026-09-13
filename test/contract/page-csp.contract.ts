@@ -12,7 +12,7 @@ import { type Browser, chromium } from "playwright";
 import { html } from "../../src/html/index.js";
 import { page } from "../../src/html/page.js";
 import { styleHref, stylesheet } from "../../src/html/styles.js";
-import { wordmark } from "../../src/repos/wordmark.js";
+import { wordmark } from "../../src/html/wordmark.js";
 import { indexDocument } from "../gallery/repo-index.js";
 import { type Served, serve } from "../support/serve.js";
 
@@ -150,8 +150,13 @@ test("the stylesheet arrives as a route and applies under the real CSP", async (
     String(state.sheets[0]).endsWith(styleHref),
     `the only stylesheet is ${state.sheets[0]}, not the served route`,
   );
-  assert.match(state.fontFamily, /^"Carn Mono"/);
-  assert.strictEqual(state.fontSize, "11px");
+  assert.match(state.fontFamily, /^"Carn Sans"/);
+  const size = Number.parseFloat(state.fontSize);
+  assert.ok(
+    size >= 16.8 && size <= 22.72,
+    // .t-item's clamp(1.05rem, 2.5vw, 1.42rem) at a 16px root
+    `h1 font-size ${state.fontSize} is outside .t-item's clamp range`,
+  );
 });
 
 // axe misses it: the UA blue differs from the ink, so the rule passes

@@ -1,0 +1,50 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - navigation "Breadcrumb":
+    - list:
+      - listitem:
+        - link "Càrn":
+          - /url: /
+      - listitem:
+        - link "gantry":
+          - /url: /r/gantry
+      - listitem: Tags
+- main:
+  - heading "Tags" [level=1]
+  - table "Tags":
+    - caption: Tags
+    - rowgroup:
+      - row "Tag Subject Age":
+        - columnheader "Tag"
+        - columnheader "Subject"
+        - columnheader "Age"
+    - rowgroup:
+      - row "v1.1.0 Annotated Version 2, with the deep path in place 1d":
+        - rowheader "v1.1.0 Annotated":
+          - link "v1.1.0 Annotated":
+            - /url: /r/gantry/commits?ref=v1.1.0
+        - cell "Version 2, with the deep path in place":
+          - link "Version 2, with the deep path in place":
+            - /url: /r/gantry/commits?ref=v1.1.0
+        - cell "1d":
+          - link "1d":
+            - /url: /r/gantry/commits?ref=v1.1.0
+            - time: 1d
+      - row "v1.0.0 Bring the assets in 3w":
+        - rowheader "v1.0.0":
+          - link "v1.0.0":
+            - /url: /r/gantry/commits?ref=v1.0.0
+        - cell "Bring the assets in":
+          - link "Bring the assets in":
+            - /url: /r/gantry/commits?ref=v1.0.0
+        - cell "3w":
+          - link "3w":
+            - /url: /r/gantry/commits?ref=v1.0.0
+            - time: 3w
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

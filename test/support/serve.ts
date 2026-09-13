@@ -18,7 +18,7 @@ export type Served = {
   close: () => Promise<void>;
 };
 
-export type ServedAsset = { type: string; body: string };
+export type ServedAsset = { type: string; body: string | Buffer };
 
 // documents and styles are read per request, so a caller may register a
 // fixture after the server is up

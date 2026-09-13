@@ -1,0 +1,8 @@
+{
+  "action": "gantry-show",
+  "steps": [
+    { "kind": "navigate", "path": "/" },
+    { "kind": "click", "hint": { "role": "link", "text": "gantry" } }
+  ],
+  "expect": { "anyOf": [{ "role": "heading", "text": "gantry" }] }
+}

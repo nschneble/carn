@@ -2,15 +2,19 @@
 
 function read(name: string, fallback?: string): string {
   const value = process.env[name] ?? fallback;
-
   if (value === undefined) {
     console.error(
-      `${name} isn't set. Pass --env-file=.env to node, or export ${name}.`,
+      `${name} isn't set. Pass --env-file=.env to node or export ${name}.`,
     );
     process.exit(1);
   }
-
   return value;
+}
+
+// treats empty strings and whitespace as unset, unlike `read()`
+function readOptional(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  return value === undefined || value === "" ? undefined : value;
 }
 
 function readPort(name: string, fallback: string): number {
@@ -48,6 +52,10 @@ export const config = Object.freeze({
   nodeEnv: read("NODE_ENV", "development"),
   origin: read("CARN_ORIGIN", "https://carn.fancyenchiladas.net"),
   port: readPort("PORT", "3000"),
+
+  // unset until Phase 2: the blob view's raw links are absent, not broken
+  rawOrigin: readOptional("CARN_RAW_ORIGIN"),
+
   repoRoot: read("CARN_REPO_ROOT", "./local/repos"),
   sourceUrl: read("CARN_SOURCE_URL", "https://github.com/nschneble/carn"),
   sshHost: read("CARN_SSH_HOST", "127.0.0.1"),

@@ -1,0 +1,28 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - navigation "Breadcrumb":
+    - list:
+      - listitem:
+        - link "Càrn":
+          - /url: /
+      - listitem:
+        - link "gantry":
+          - /url: /r/gantry
+      - listitem:
+        - link "assets":
+          - /url: /r/gantry/tree/main/assets
+      - listitem: cover.png
+- main:
+  - heading "assets/cover.png" [level=1]
+  - term: Size
+  - definition: 234.7 KB
+  - term: Type
+  - definition: PNG image
+  - paragraph: PNG image, 234.7 KB. Too large to show here.
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

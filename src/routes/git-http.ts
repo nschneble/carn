@@ -70,8 +70,7 @@ function refuse(reply: FastifyReply, status: number, message: string): void {
   noCache(reply, "text/plain").code(status).send(`${message}\n`);
 }
 
-// noHttpPush runs before lookup(), so an unvalidated name would otherwise
-// reach show_http_message() on the client's own terminal
+// noHttpPush runs before lookup(), so this name reaches the terminal
 function safeRepoName(name: string): string | null {
   return namePattern.test(name) ? name : null;
 }

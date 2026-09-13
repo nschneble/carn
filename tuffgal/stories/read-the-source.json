@@ -1,0 +1,8 @@
+{
+  "story": "A visitor reads a small file, a capped one, and one that cannot wrap",
+  "actions": [
+    { "action": "gantry-blob-small" },
+    { "action": "gantry-blob-truncated" },
+    { "action": "gantry-blob-unwrappable" }
+  ]
+}
