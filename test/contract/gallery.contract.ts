@@ -23,7 +23,7 @@ test("the gallery exercises every primitive and every state", () => {
     '<caption class="vh">Files</caption>',
     'class="row is-dir"',
     'class="row is-dir is-hover"',
-    'class="nm" scope="row"',
+    'class="name" scope="row"',
     'class="t-item" lang="en"',
     'class="msg"',
     'class="age"',

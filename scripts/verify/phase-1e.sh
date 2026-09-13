@@ -1538,13 +1538,13 @@ if require_daemon 30 "$TITLE_30" && require_seed 30 "$TITLE_30"; then
   printf '%s' "$sub_row" | grep -qF '<a ' \
     && wrong="$wrong the gitlink row carries a link;"
   # the tree row holds one link, the name, so the wash is on the name cell.
-  # the earlier pattern here was .nm::after, which never matched the
-  # .nm a::after the sheet actually shipped, so it never fired either way
-  grep -qE '^\.tree tbody \.nm:hover,' src/html/styles.ts \
+  # the earlier pattern here was .name::after, which never matched the
+  # .name a::after the sheet actually shipped, so it never fired either way
+  grep -qE '^\.tree tbody \.name:hover,' src/html/styles.ts \
     || wrong="$wrong the sheet no longer washes the tree's name cell on hover;"
   grep -qE '^\.tbl tbody tr:hover,' src/html/styles.ts \
     && wrong="$wrong a one-link row washes whole again, over columns that take no click;"
-  grep -qE '^\.tree \.is-sub \.nm:hover,' src/html/styles.ts \
+  grep -qE '^\.tree \.is-sub \.name:hover,' src/html/styles.ts \
     || wrong="$wrong the sheet no longer keeps the gitlink name out of the wash;"
   if [ -n "$wrong" ]; then
     record FAIL 30 "$TITLE_30" "$wrong"
@@ -1590,7 +1590,7 @@ printf '%s' "$markup_only" | grep -qF '<table class="tbl refs">' \
   || wrong="$wrong ref-list.ts emits no table;"
 printf '%s' "$markup_only" | grep -qF '<caption class="vh">' \
   || wrong="$wrong ref-list.ts emits no caption;"
-printf '%s' "$markup_only" | grep -qF '<th class="nm" scope="row">' \
+printf '%s' "$markup_only" | grep -qF '<th class="name" scope="row">' \
   || wrong="$wrong a ref row's first cell is not its header;"
 printf '%s' "$markup_only" | grep -qE '<li|role="list"' \
   && wrong="$wrong ref-list.ts still emits list markup;"
@@ -1765,9 +1765,9 @@ readonly TITLE_41="one .tbl rule widths every three-column table, and only .file
 wrong=""
 sheet_flat=$(tr '\n' ' ' < src/html/styles.ts)
 # two spaces of indent is the nesting: a top-level rule starts at column 0
-grep -A1 -E '^  \.tbl \.nm \{$' src/html/styles.ts | grep -qF 'width: 65%;' \
+grep -A1 -E '^  \.tbl \.name \{$' src/html/styles.ts | grep -qF 'width: 65%;' \
   || wrong="$wrong .tbl's shared name column width is missing from the 640 query;"
-grep -qE '^\.tbl \.nm \{$' src/html/styles.ts \
+grep -qE '^\.tbl \.name \{$' src/html/styles.ts \
   && wrong="$wrong the name column is widthed outside the query, where no subject column exists;"
 printf '%s' "$sheet_flat" | grep -qE '\.repos \.msg, \.tree \.msg \{[[:space:]]*display: none;' \
   || wrong="$wrong the description column is no longer dropped below the breakpoint;"
@@ -1775,10 +1775,10 @@ printf '%s' "$sheet_flat" | grep -qE '\.(log|refs) \.msg[^{]*\{[^}]*display:' \
   && wrong="$wrong a view whose subject is the row's link drops it at some width;"
 printf '%s' "$sheet_flat" | grep -qE '\.tbl \.age \{[[:space:]]*width: 46px;' \
   || wrong="$wrong .tbl's shared age column width is missing;"
-overrides=$(grep -cE '^\.(repos|tree|log|refs) \.(nm|age) \{' src/html/styles.ts)
+overrides=$(grep -cE '^\.(repos|tree|log|refs) \.(name|age) \{' src/html/styles.ts)
 [ "$overrides" = "0" ] \
   || wrong="$wrong $overrides per-view column override(s) reintroduce a second rule;"
-grep -qE '^\.files \.nm \{' src/html/styles.ts \
+grep -qE '^\.files \.name \{' src/html/styles.ts \
   || wrong="$wrong the two-column file list no longer takes the remainder;"
 if [ -n "$wrong" ]; then
   record FAIL 41 "$TITLE_41" "$wrong"
@@ -2102,13 +2102,13 @@ if require_daemon 54 "$TITLE_54" && require_seed 54 "$TITLE_54"; then
     caps=$(occurrences "$work/$page.body" '<caption class="vh">')
     # a rendered README carries its own <thead>, so the header row is
     # counted by the name column's own marker rather than by the tag
-    heads=$(occurrences "$work/$page.body" '<th class="nm t-label" scope="col">')
+    heads=$(matches "$work/$page.body" '<th class="name( [a-z-]+)* t-label" scope="col">')
     [ "$caps" = "$opened" ] \
       || wrong="$wrong /$page has $opened table(s) and $caps caption(s);"
     [ "$heads" = "$opened" ] \
       || wrong="$wrong /$page has $opened table(s) and $heads header row(s);"
     rows=$(occurrences "$work/$page.body" '<tr class="row')
-    headers=$(occurrences "$work/$page.body" '<th class="nm" scope="row">')
+    headers=$(matches "$work/$page.body" '<th class="name( [a-z-]+)*" scope="row">')
     [ "$rows" = "$headers" ] \
       || wrong="$wrong /$page draws $rows row(s) but $headers row header(s);"
     grep -qE '<th class="[a-z]+ t-label" scope="col">' "$work/$page.body" \

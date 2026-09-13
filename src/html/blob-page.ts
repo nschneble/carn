@@ -7,6 +7,7 @@
 import { blobAssetPath } from "../repos/blob-asset.js";
 import { type BlobView, countLines } from "../repos/blob-view.js";
 import { pathTrail, repoTrail } from "./breadcrumb.js";
+import { emptyState } from "./empty-state.js";
 import { pathName } from "./filename.js";
 import { blobHref } from "./hrefs.js";
 import { html, type Raw, raw } from "./index.js";
@@ -28,8 +29,6 @@ export type BlobPage = {
 
 // 0.348 measured over 88 files here: 604,313 source bytes to 210,433 wire
 export const wirePerSourceByte = 0.348;
-
-const capPasses = 6;
 
 const binaryLabels: Record<string, string> = {
   gz: "gzip archive",
@@ -166,9 +165,7 @@ function declined(view: BlobPage, meta: Raw, why: string): string {
     view,
     html`${heading(view.blob)}
       ${meta}
-      <div class="empty">
-        <p class="t-body">${said}</p>
-      </div>${hatch(view, "Open raw")}`,
+      ${emptyState(said)}${hatch(view, "Open raw")}`,
   );
 }
 
@@ -240,6 +237,7 @@ function textPage(view: BlobPage, source: string): string {
       count,
     );
 
+  const capPasses = 6;
   let shown = countLines(cutToBytes(source, capBytes));
   for (let pass = 0; pass < capPasses && shown > 0; pass += 1) {
     const rendered = cut(shown);

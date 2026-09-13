@@ -9,8 +9,6 @@ import { html, type Raw } from "./index.js";
 // readonly because site below is one object every render is handed
 export type Crumb = { readonly label: string; readonly href: string | null };
 
-const kept = 2;
-
 export const site: Crumb = { label: "Càrn", href: "/" };
 
 export function repoTrail(repo: string): Crumb[] {
@@ -41,6 +39,8 @@ function item(crumb: Crumb, index: number, middle: boolean): Raw {
 
   return middle ? html`<li class="mid">${body}</li>` : html`<li>${body}</li>`;
 }
+
+const kept = 2;
 
 export function breadcrumb(crumbs: Crumb[]): Raw {
   const last = crumbs.length - kept;

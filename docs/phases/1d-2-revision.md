@@ -275,8 +275,8 @@ corrected comment.
   character count. The `All repos` link below still exists, but the
   sentence that tells someone what to do with it is gone. Restore the
   second half.
-- "A name is **comprised of** letters, digits…". `comprised of` is the one
-  usage the construction doesn't have. "A name is letters, digits, dots,
+- "A name is **comprised of** letters, numbers…". `comprised of` is the one
+  usage the construction doesn't have. "A name is letters, numbers, dots,
   dashes, and underscores" was already right; if it needs a verb, "composed
   of".
 - `noSuchRepo.next`: "Find it in all repos." became "Try and find it in all

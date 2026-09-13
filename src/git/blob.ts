@@ -12,7 +12,7 @@ export async function readBlob(options: {
   signal?: AbortSignal;
 }): Promise<Buffer> {
   if (!oidPattern.test(options.oid)) {
-    throw new Error(`a blob read needs an object id, got ${options.oid}`);
+    throw new Error(`a blob read needs an object id (got ${options.oid})`);
   }
 
   const { code, stdout } = await captureGit({

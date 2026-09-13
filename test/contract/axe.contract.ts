@@ -653,7 +653,7 @@ test("every link in a commit row reaches a target-size verdict", async (t) => {
       // the cell carries the column class, not the link inside it, so the
       // selector axe reports is what says which column a target sits in
       const rows = settled.filter((node) =>
-        node.target.some((target) => /\.(nm|msg|age)\b/.test(String(target))),
+        node.target.some((target) => /\.(name|msg|age)\b/.test(String(target))),
       );
 
       assert.strictEqual(
@@ -1019,7 +1019,7 @@ test("the name wraps and the subject ellipsises", async () => {
     await page.goto(`${site.origin}/show-all`);
 
     const name = await page
-      .locator(".tree tbody .row:not(.is-sub) .nm > *")
+      .locator(".tree tbody .row:not(.is-sub) .name > *")
       .first()
       .evaluate((node) => ({
         wrap: getComputedStyle(node).whiteSpace,
@@ -1073,7 +1073,7 @@ test("the tree row's link fills its cell and the wash stops there", async (t) =>
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`${site.origin}/show`);
 
-    const cell = page.locator(".tree tbody .row:not(.is-sub) .nm").first();
+    const cell = page.locator(".tree tbody .row:not(.is-sub) .name").first();
     const filled = await cell.evaluate((node) => {
       const link = node.firstElementChild as HTMLElement;
       return {
@@ -1143,9 +1143,9 @@ test("a gitlink row is inert", async () => {
     await page.goto(`${site.origin}/tree-sub`);
 
     const row = page.locator(".tree tbody .is-sub").first();
-    const cell = row.locator(".nm");
+    const cell = row.locator(".name");
     const inert = await row.evaluate((node) => ({
-      tag: (node.querySelector(".nm")?.firstElementChild ?? node).tagName,
+      tag: (node.querySelector(".name")?.firstElementChild ?? node).tagName,
       links: node.querySelectorAll("a").length,
     }));
 

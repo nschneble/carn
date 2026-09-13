@@ -496,7 +496,7 @@ File rows carry three constants:
 
 Show at most sixteen rows, then a link to `Show all [N]`.
 
-#### The repo view
+### The repo view
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -1035,30 +1035,31 @@ Length costs nothing. Nobody types this host. It only appears in generated `href
 
 _Explicit decisions after the MLP ships_
 
-#### YES (queued up)
+### YES (queued up)
 
-- Activity feed, per repo and global (the `events` table already carries it)
-- A landing page and an FAQ (see below)
-- Branch protection on `main`
-- `carn export`: exports repo issues as Markdown files
-- CI, via the §10 progression
-- Full-text search over issues and PRs; Postgres `tsvector`, not Elasticsearch
-- **GitHub Actions workflow format**, executed by `forgejo-runner exec`
+- **Activity feed** per repo and global (`events` table already carries it)
+- **A landing page** and an FAQ (see below)
+- **Branch protection** on `main`
+- **`carn export`:** exports repo issues as Markdown files
+- **CI**, via the §10 progression
+- **Full-text search** over issues and PRs; Postgres `tsvector`, not Elasticsearch
+- **GitHub Actions workflow format** executed by `forgejo-runner exec`
+- **Internationalization:** every user-facing string in an `en-US` catalog; no second locale
 - **Native Tuffgal:** report refs, image triptych, `carn tuffgal approve`
-- Outgoing webhooks
-- The root tree at a ref other than the default, e.g. `/r/:repo?ref=v1.2.0`, so a tag's contents are viewable and `/r/:repo/tree/:rev/` has somewhere lossless to redirect
+- **Outgoing webhooks**
+- **The root tree at a ref other than the default**, e.g. `/r/:repo?ref=v1.2.0`, so a tag's contents are viewable and `/r/:repo/tree/:rev/` has somewhere lossless to redirect
 - **Wikis**
 
-#### Maybe?
+### Maybe?
 
-- A rendered blob view: Markdown as prose, SVG as an imag
-- Inline diff comments
-- Line wrapping in the blob view (as a URL, not a control)
-- Owner and collaborator filters on the repo index (waiting on an index long enough to need them)
-- Real small caps merged into Carn Sans (`smcp`/`c2sc`)
-- Web writes via `carn web-login`
+- **A rendered blob view**: Markdown as prose, SVG as an image
+- **Inline diff comments**
+- **Line wrapping in the blob view** (as a URL, not a control)
+- **Owner and collaborator filters** on the repo index (waiting on an index long enough to need them)
+- **Real small caps** merged into Carn Sans (`smcp`/`c2sc`)
+- **Web writes** via `carn web-login`
 
-#### Never.
+### Never.
 
 - An SPA rewrite
 - A GitHub Actions runner
@@ -1075,20 +1076,13 @@ _Explicit decisions after the MLP ships_
 - Private repos
 - Rebase-merge
 
-### Inline diff comments
+### Cloning and forking
 
-They're useful when you're reviewing a work colleague's unfamiliar code and need to point at line 47. On a personal forge you're reviewing your own changes from an hour ago. A thread is plenty.
+**Anyone can clone, anyone can fork.** Cloning is anonymous over HTTPS. "Forking" in the git sense is just `clone` plus a `push` elsewhere; a GitHub mirror, an external hard drive, etc.
 
-Besides, it's not easy. Anchoring a comment to a line means storing the blob SHA plus the line number and then deciding what happens when the branch is force-pushed and that line no longer exists. GitHub's "outdated" state exists because there's really no good answer. The columns sit in `comments` if that changes; leave them empty.
+What you don't have, deliberately, is _forking into Càrn_. It's still possible for someone to participate if they're added as a collaborator; an untrusted fork can only come from a PR on the GitHub mirror.
 
-### The blob view only shows one file form
-
-A blob can have more than one honest representation, and the page doesn't offer a way to choose between them.
-
-- **Wrapping.** `.src` is `overflow-x: auto`, so a line that cannot break scrolls sideways. That's correct for source code, but wrong for Markdown-committed prose. It'd be a URL toggle: `?wrap=1`, re-rendered with `white-space: pre-wrap`; which makes it a second cache key on every blob and a second baseline on every story that covers one.
-- **Rendering.** A Markdown file renders on the repo page and shows up as plain text in the blob view. An SVG is more cumbersome. `src/repos/blob-asset.ts` serves rasters only, because an SVG blob is repo-controlled active content whose `<title>` and `<text>` would otherwise enter the host page's a11y tree. It's excluded on purpose.
-
-**Both await the raw origin to become available.** `gelatinous-cube` is where repo-controlled bytes are going to be served sandboxed, and once the origin exists, "Show me the bytes" and "Show me the rendering" become a linked pair.
+One wrinkle on the GitHub path: You can't actually merge it on GitHub. The mirror force-pushes and your next push would just overwrite it. The correct flow is: `gh pr checkout <n>`, push the branch into Càrn, then review and merge there. Their GitHub PR will close on its own when the commits land downstream.
 
 ### Cross-repo PRs
 
@@ -1116,6 +1110,33 @@ Server side, you'd implement the **LFS Batch API**. A single endpoint (e.g. `POS
 
 **Never use LFS for source code.** LFS is designed for binary assets: game art, PSDs, datasets, model weights. Plain text deltas beautifully. The one thing that'd force it is migrating a repo that _already_ contains LFS pointers, which is an interop obligation rather than a feature. Let's just say we'll skip that.
 
+### Inline diff comments
+
+They're useful when you're reviewing a work colleague's unfamiliar code and need to point at line 47. On a personal forge you're reviewing your own changes from an hour ago. A thread is plenty.
+
+Besides, it's not easy. Anchoring a comment to a line means storing the blob SHA plus the line number and then deciding what happens when the branch is force-pushed and that line no longer exists. GitHub's "outdated" state exists because there's really no good answer. The columns sit in `comments` if that changes; leave them empty.
+
+### Internationalization
+
+The catalog is the easy half. Pulling every user-facing string into an `en-US` file is mechanical work: a lookup, a key scheme, and a lint that fails on a bare literal in a template. The expensive half is making the code stop assuming English grammar, and that part earns its keep even if no second locale ever ships, because it's the half that can't be retrofitted cheaply.
+
+Two places assume it already. `refNouns` in `src/repos/refs.ts` is `{ one, many }`, which is English's two plural forms. Polish has three, Arabic has six, Japanese has one, so the locale-agnostic shape is an ICU plural selector, not a record. And `capitalize()` in `src/html/ref-list.ts` calls `toUpperCase()` with no locale, which is right for English and wrong for Turkish, where `i` uppercases to `İ`.
+
+Neither is a bug. They're the first two things that would change, and they're why this sits in YES instead of Maybe: every view added before the catalog exists is another handful of them.
+
+### Labels
+
+Don't need 'em! They mostly encode the _who should look at this?_ and _what kind of work is this?_ questions. The first question doesn't exist here, and epics answer the second one better.
+
+### The blob view only shows one file form
+
+A blob can have more than one honest representation, and the page doesn't offer a way to choose between them.
+
+- **Wrapping.** `.src` is `overflow-x: auto`, so a line that cannot break scrolls sideways. That's correct for source code, but wrong for Markdown-committed prose. It'd be a URL toggle: `?wrap=1`, re-rendered with `white-space: pre-wrap`; which makes it a second cache key on every blob and a second baseline on every story that covers one.
+- **Rendering.** A Markdown file renders on the repo page and shows up as plain text in the blob view. An SVG is more cumbersome. `src/repos/blob-asset.ts` serves rasters only, because an SVG blob is repo-controlled active content whose `<title>` and `<text>` would otherwise enter the host page's a11y tree. It's excluded on purpose.
+
+**Both await the raw origin to become available.** `gelatinous-cube` is where repo-controlled bytes are going to be served sandboxed, and once the origin exists, "Show me the bytes" and "Show me the rendering" become a linked pair.
+
 ### The landing page is a "never list" showcase
 
 **The constraints are the positioning.** Every forge's marketing page is a feature grid; this one is a list of things it refuses to do.
@@ -1126,26 +1147,14 @@ Pair with an FAQ with one job: **tell a would-be contributor what to actually do
 
 Punk lands when it's _specific_. "No private repos, ever" is punk. "No sign-ups, no tokens, no passwords, no tracking, no JavaScript" is punk. No need to say how Microsoft will eventually ruin GitHub. Very not punk.
 
-### Cloning and forking
+### Webhooks
 
-**Anyone can clone, anyone can fork.** Cloning is anonymous over HTTPS. "Forking" in the git sense is just `clone` plus a `push` elsewhere; a GitHub mirror, an external hard drive, etc.
+We don't really need webhooks until CI drops in Phase 2 and we have the status endpoint.
 
-What you don't have, deliberately, is _forking into Càrn_. It's still possible for someone to participate if they're added as a collaborator; an untrusted fork can only come from a PR on the GitHub mirror.
-
-One wrinkle on the GitHub path: You can't actually merge it on GitHub. The mirror force-pushes and your next push would just overwrite it. The correct flow is: `gh pr checkout <n>`, push the branch into Càrn, then review and merge there. Their GitHub PR will close on its own when the commits land downstream.
+But after? They're what triggers it. They function as a general purpose escape hatch for everything we haven't (yet) built: deploy triggers, static-site rebuilds, notifications. It's also cheap to add; a table of URLs, a signed POST, and a retry.
 
 ### Wikis and package registries
 
 **Wikis are cheap.** A wiki is just a git repo of rendered Markdown. And we'd already have bare repo creation, SSH push, markdown rendering, cross-reference autolinking, and a file browser. A wiki is a repo named `<repo>.wiki` and a route that renders its Markdown instead of listing its files. It's also the most first-tenet feature on the list; literally just git, editable with a normal editor and normal commits.
 
 **Package registries are a whole other beast.** To start, there's no such thing as a wholesale "registry." There are npm registries, OCI registries, PyPI registries, Maven registries, etc. Each with its own protocol, auth model, and storage semantics. Forgejo supports 20+ ecosystems and it's a huge chunk of its codebase. Meanwhile npm and GHCR work fine and cost nothing.
-
-### Labels
-
-Don't need 'em! They mostly encode the _who should look at this?_ and _what kind of work is this?_ questions. The first question doesn't exist here, and epics answer the second one better.
-
-### Webhooks
-
-We don't really need webhooks until CI drops in Phase 2 and we have the status endpoint.
-
-But after? They're what triggers it. They function as a general purpose escape hatch for everything we haven't (yet) built: deploy triggers, static-site rebuilds, notifications. It's also cheap to add; a table of URLs, a signed POST, and a retry.

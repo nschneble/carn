@@ -11,7 +11,13 @@ import { indexRoute } from "./routes/index-page.js";
 import { repoPageRoutes } from "./routes/repo-page.js";
 
 export const contentSecurityPolicy =
-  "default-src 'none'; img-src 'self' data:; style-src 'self'; font-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
+  "base-uri 'none'; " +
+  "default-src 'none'; " +
+  "font-src 'self'; " +
+  "form-action 'self'; " +
+  "frame-ancestors 'none'; " +
+  "img-src 'self' data:; " +
+  "style-src 'self';";
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({ logger: true });
@@ -28,7 +34,7 @@ export function buildApp(): FastifyInstance {
   indexRoute(app);
   repoPageRoutes(app);
 
-  // git http's own 404s are matched routes; only unmatched paths reach here
+  // git http's 404s are matched routes; only unmatched paths reach here
   app.setNotFoundHandler((request, reply) =>
     sendStatus(request, reply, 404, errorPage({ failure: noSuchRoute })),
   );

@@ -92,12 +92,14 @@ const faces = css`@font-face {
   font-stretch: 100% 125%;
   font-display: swap;
 }
+
 @font-face {
   font-family: "Carn Mono";
   src: url("/fonts/carn-mono-400.woff2") format("woff2");
   font-weight: 400;
   font-display: swap;
 }
+
 @font-face {
   font-family: "Carn Mono";
   src: url("/fonts/carn-mono-500.woff2") format("woff2");
@@ -395,7 +397,7 @@ export const components = css`body {
 }
 
 .tbl thead .age,
-.tbl thead .cnt {
+.tbl thead .counts {
   padding-right: 0;
   text-align: right;
 }
@@ -424,12 +426,12 @@ export const components = css`body {
 }
 
 /* the name is the only link so the wash stays inside the clickable area */
-.tree tbody .nm:hover,
-.tree tbody .nm:focus-within,
-.repos tbody .nm:hover,
-.repos tbody .nm:focus-within,
-.files tbody .nm:hover,
-.files tbody .nm:focus-within {
+.tree tbody .name:hover,
+.tree tbody .name:focus-within,
+.repos tbody .name:hover,
+.repos tbody .name:focus-within,
+.files tbody .name:hover,
+.files tbody .name:focus-within {
   background: var(--sunk);
 }
 
@@ -452,15 +454,15 @@ export const components = css`body {
 }
 
 /* name is link text + row's a11y name, so it wraps not truncates */
-.tbl .nm > * {
+.tbl .name > * {
   color: var(--ink);
 }
 
-.tbl .nm a:focus-visible {
+.tbl .name a:focus-visible {
   outline-offset: -2px;
 }
 
-.tbl .is-dir .nm > * {
+.tbl .is-dir .name > * {
   color: var(--accent-text);
 }
 
@@ -502,7 +504,7 @@ export const components = css`body {
     display: table-cell;
   }
 
-  .tbl .nm {
+  .tbl .name {
     width: 65%;
   }
 }
@@ -849,8 +851,8 @@ main > h1 {
 
 /* a submodule is pinned here, not browsable, so its name takes no wash: a
    wash with no click target under it is a false affordance */
-.tree .is-sub .nm:hover,
-.tree .is-sub .nm:focus-within {
+.tree .is-sub .name:hover,
+.tree .is-sub .name:focus-within {
   background: none;
 }
 
@@ -869,7 +871,7 @@ main > h1 {
   margin: var(--s2) 0 0;
 }
 
-.cmsg {
+.commit-body {
   font-family: inherit;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -883,15 +885,15 @@ main > h1 {
 
 /* a name and a fixed count, with no subject or age to hold a third
    column, so the name takes the remainder rather than the shared split */
-.files .nm {
+.files .name {
   width: auto;
 }
 
-.files .cnt {
+.files .counts {
   width: 116px;
 }
 
-.files .cnt > * {
+.files .counts > * {
   padding-right: 0;
   font-family: var(--f-mono);
   font-size: 10px;

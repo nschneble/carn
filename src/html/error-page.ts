@@ -16,7 +16,7 @@ export const noSuchRepo = (name: string): Failure => ({
   title: `No repo named ${name} · Càrn`,
   heading: "No repo here",
   said: `There's no repo named ${name} on this server.`,
-  next: "Find it in all repos.",
+  next: "Try looking in all repos.",
   path: "/404",
 });
 
@@ -88,16 +88,16 @@ export const badRepoName: Failure = {
   title: "Not a repo name · Càrn",
   heading: "Not a repo name",
   said: "That URL doesn't carry a repo name this server can look up.",
-  next: "A name is letters, digits, dots, dashes, and underscores, up to 40 characters. Check the URL, or find the repo in all repos.",
+  next: "A name is letters, numbers, dots, dashes, and underscores, up to 40 characters. Check the URL, or find the repo in all repos.",
   path: "/404",
 };
 
 // no route matched, so there is no repo, ref, or path here to name
 export const noSuchRoute: Failure = {
-  title: "Nothing here · Càrn",
-  heading: "Nothing here",
-  said: "That URL doesn't match a route this server has.",
-  next: "Check the URL, or find it in all repos.",
+  title: "Nothing to see here · Càrn",
+  heading: "Nothing to see here",
+  said: "That URL doesn't match a route on this server.",
+  next: "Check the URL.",
   path: "/404",
 };
 

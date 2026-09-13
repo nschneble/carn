@@ -6,6 +6,7 @@ import { type CommitDetail, type DiffFile, hunks } from "../repos/commit.js";
 import { ageMarkup } from "./age.js";
 import { type Crumb, repoTrail } from "./breadcrumb.js";
 import { commitsLabel, shortShaLength } from "./commit-log.js";
+import { emptyState } from "./empty-state.js";
 import { changeHref, commitHref, commitsPath } from "./hrefs.js";
 import { html, type Raw, raw } from "./index.js";
 import { page } from "./page.js";
@@ -73,8 +74,8 @@ function row(
     : changeHref(view.repo, view.commit.sha, file.path);
 
   return html`<tr class="row">
-            <th class="nm" scope="row"><a class="t-mono" href="${href}">${name(file)}${destination(file, inlined)}</a></th>
-            <td class="cnt"><span>${counts(file)}</span></td>
+            <th class="name" scope="row"><a class="t-mono" href="${href}">${name(file)}${destination(file, inlined)}</a></th>
+            <td class="counts"><span>${counts(file)}</span></td>
           </tr>`;
 }
 
@@ -85,19 +86,16 @@ function fileList(
   totalDiffable: number,
 ): Raw {
   const { files } = view.commit;
-
   if (files.length === 0) {
-    return html`<div class="empty">
-        <p class="t-body">This commit changes no files.</p>
-      </div>`;
+    return emptyState("This commit doesn't change any files.");
   }
 
   // no point in rendering an empty table
   if (shape.files === 0) {
-    return html`<div class="empty">
-        <p class="t-body">This commit changes ${files.length} files, more than this page can list.</p>
-        <p><code class="t-mono">git show --stat ${view.commit.sha}</code></p>
-      </div>`;
+    return emptyState(
+      `This commit changes ${files.length} files, more than this page can list.`,
+      `git show --stat ${view.commit.sha}`,
+    );
   }
 
   const cutFiles =
@@ -117,8 +115,8 @@ function fileList(
         <caption class="vh">Changed files</caption>
         <thead>
           <tr>
-            <th class="nm t-label" scope="col">File</th>
-            <th class="cnt t-label" scope="col">Changed</th>
+            <th class="name t-label" scope="col">File</th>
+            <th class="counts t-label" scope="col">Changed</th>
           </tr>
         </thead>
         <tbody>
@@ -201,8 +199,7 @@ function meta(view: CommitPage): Raw {
 
 function message(commit: CommitDetail): Raw {
   if (commit.body === "") return html``;
-
-  return html`<pre class="cmsg t-body">${commit.body}</pre>
+  return html`<pre class="commit-body t-body">${commit.body}</pre>
       `;
 }
 
@@ -351,16 +348,14 @@ function changeDocument(
 
 function noDiff(view: CommitPage, file: DiffFile): string {
   const said = binary(file)
-    ? "This file is binary, so there's no diff to show."
-    : "This commit changes no lines in this file.";
+    ? "This is a binary file, so there's no diff to show."
+    : "This commit doesn't change any lines in this file.";
 
   return shell(
     view,
     html`${head(view, true)}
       <h2 class="t-mono dpath">${file.path}</h2>
-      <div class="empty">
-        <p class="t-body">${said}</p>
-      </div>`,
+      ${emptyState(said)}`,
     file.path,
   );
 }
@@ -372,14 +367,12 @@ export function commitFilePage(view: CommitPage, path: string): string | null {
 
   const file = view.commit.files[index] as DiffFile;
   const text = hunks(file.patch);
-
   if (text === null) return noDiff(view, file);
 
   const whole = changeDocument(view, file, index, text, null);
   if (weight(view, whole) <= budgetBytes) return whole;
 
   const lines = text.split("\n");
-
   const cut = largestFitting(lines.length - 1, (shown) => {
     const rendered = changeDocument(
       view,

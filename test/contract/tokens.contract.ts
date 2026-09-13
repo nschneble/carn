@@ -286,11 +286,11 @@ test("each primitive draws from the token the contrast check measured", () => {
     rule(".chip--current"),
     /border: 2px solid var\(--accent-fill\);/,
   );
-  assert.match(rule(".tbl .is-dir .nm > *"), /color: var\(--accent-text\);/);
+  assert.match(rule(".tbl .is-dir .name > *"), /color: var\(--accent-text\);/);
 
   assert.match(rule(":focus-visible"), /outline: 2px solid var\(--accent\);/);
   assert.match(rule(":focus-visible"), /outline-offset: 2px;/);
-  assert.match(rule(".tbl .nm a:focus-visible"), /outline-offset: -2px;/);
+  assert.match(rule(".tbl .name a:focus-visible"), /outline-offset: -2px;/);
   assert.doesNotMatch(stylesheet, /outline:\s*none/);
 });
 
@@ -431,7 +431,7 @@ test("the wash covers what takes a click, by row or by cell", () => {
   );
   assert.match(
     rule(
-      ".tree tbody .nm:hover,\n.tree tbody .nm:focus-within,\n.repos tbody .nm:hover,\n.repos tbody .nm:focus-within,\n.files tbody .nm:hover,\n.files tbody .nm:focus-within",
+      ".tree tbody .name:hover,\n.tree tbody .name:focus-within,\n.repos tbody .name:hover,\n.repos tbody .name:focus-within,\n.files tbody .name:hover,\n.files tbody .name:focus-within",
     ),
     /background: var\(--sunk\);/,
   );

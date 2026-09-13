@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// the served sheet only; styles.ts stays the source BRAND.md is pinned to.
-// quoted runs are copied through untouched, so a family name keeps its
-// spaces and a url keeps its punctuation
+// generates a compressed stylesheet to take up less page budget; the full
+// stylesheet in `src/html/styles.ts` is still pinned to `docs/BRAND.md`
 
 const tight = new Set(["{", "}", ":", ";", ","]);
 

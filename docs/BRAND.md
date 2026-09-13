@@ -388,7 +388,7 @@ body {
 }
 
 .tbl thead .age,
-.tbl thead .cnt {
+.tbl thead .counts {
   padding-right: 0;
   text-align: right;
 }
@@ -417,12 +417,12 @@ body {
 }
 
 /* the name is the only link so the wash stays inside the clickable area */
-.tree tbody .nm:hover,
-.tree tbody .nm:focus-within,
-.repos tbody .nm:hover,
-.repos tbody .nm:focus-within,
-.files tbody .nm:hover,
-.files tbody .nm:focus-within {
+.tree tbody .name:hover,
+.tree tbody .name:focus-within,
+.repos tbody .name:hover,
+.repos tbody .name:focus-within,
+.files tbody .name:hover,
+.files tbody .name:focus-within {
   background: var(--sunk);
 }
 
@@ -445,15 +445,15 @@ body {
 }
 
 /* name is link text + row's a11y name, so it wraps not truncates */
-.tbl .nm > * {
+.tbl .name > * {
   color: var(--ink);
 }
 
-.tbl .nm a:focus-visible {
+.tbl .name a:focus-visible {
   outline-offset: -2px;
 }
 
-.tbl .is-dir .nm > * {
+.tbl .is-dir .name > * {
   color: var(--accent-text);
 }
 
@@ -495,7 +495,7 @@ body {
     display: table-cell;
   }
 
-  .tbl .nm {
+  .tbl .name {
     width: 65%;
   }
 }
@@ -710,9 +710,9 @@ Carn Sans has no `smcp`, so a row's name column uses compensated synthetic small
 
 Both functions follow the markup rules below.
 
-**The rule is the name column, not the filename.** A tree row's filename, a branch or tag's name, a repo's name in the index, e.g. anything sitting in a row's `.nm` slot, takes `.t-item` and small caps together. Two columns carry a name without carrying small caps:
+**The rule is the name column, not the filename.** A tree row's filename, a branch or tag's name, a repo's name in the index, e.g. anything sitting in a row's `.name` slot, takes `.t-item` and small caps together. Two columns carry a name without carrying small caps:
 
-- **The commit log's `.nm` is a short SHA, in `.t-mono`.** A SHA is a machine identifier.
+- **The commit log's `.name` is a short SHA, in `.t-mono`.** A SHA is a machine identifier.
 - **The commit page's file list is `.t-mono` throughout.** Its rows carry `+N −N` counts that only align in a monospaced face.
 
 ```css
@@ -816,7 +816,7 @@ _Anything that looks like a table is a table._ Use accent tokens and trailing sl
 
 **The trailing slash is real text in the DOM**, never `content: "/"`. Generated content can't be selected, isn't found by Ctrl-F, and vanishes with CSS off.
 
-**The wash covers only what's clickable.** `.tbl tbody th > *, .tbl tbody td > *` takes `display: block` and the row's padding, so a cell's own link fills its own cell. Where a row holds three links, e.g. the commit log and the branch and tag lists, all three pointing at the same commit, the row is covered end to end, so the row is the target and `.log tbody tr:hover, .refs tbody tr:hover` wash the whole `<tr>`. It's also why the subject and age can be links, which a whole-row anchor would forbid. When a row holds one link, e.g. the file tree, the repo index, and the commit page's file list, whose remaining columns are plain text, the target is the name cell, and `.tree tbody .nm:hover`, `.repos tbody .nm:hover`, `.files tbody .nm:hover` wash exactly that cell.
+**The wash covers only what's clickable.** `.tbl tbody th > *, .tbl tbody td > *` takes `display: block` and the row's padding, so a cell's own link fills its own cell. Where a row holds three links, e.g. the commit log and the branch and tag lists, all three pointing at the same commit, the row is covered end to end, so the row is the target and `.log tbody tr:hover, .refs tbody tr:hover` wash the whole `<tr>`. It's also why the subject and age can be links, which a whole-row anchor would forbid. When a row holds one link, e.g. the file tree, the repo index, and the commit page's file list, whose remaining columns are plain text, the target is the name cell, and `.tree tbody .name:hover`, `.repos tbody .name:hover`, `.files tbody .name:hover` wash exactly that cell.
 
 **Why not have the wash cover the entire row?** An `::after` at `inset: 0` on the name's link, absolutely positioned against a `position: relative` `<tr>`, so a single link covers the row, doesn't work at all in Safari. A `<tr>` is not a containing block for an absolutely positioned descendant, so the pseudo-element sizes against the initial containing block; the row stays washed wherever the pointer is, and the hit area becomes the viewport. Fixed in WebKit 240961 on 11 April 2026, but not yet widely propagated, though Playwright's bundled WebKit carries the fix. **No containing-block-forcing trick replaces it either.** `clip-path: inset(0)` works but costs intermittent border loss in Safari, and the design relies on hairline rules between rows. Moving the wash onto the cell is the fix, not a different overlay. The focus ring is drawn with `outline-offset: -2px` so it lands inside the cell rather than bleeding into the next column.
 

@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// two name kinds, two functions. both keep the true characters in the DOM
-// and put nothing between the runs, since a newline there becomes a space
-// in the accessible name, the clipboard, and find-in-page. BRAND.md 03
+// both names keep the true chars in the DOM w/ nothing in between, since a
+// newline is a space in the a11y name, clipboard, and find. BRAND.md 03
 
 import { html, type Raw } from "./index.js";
 

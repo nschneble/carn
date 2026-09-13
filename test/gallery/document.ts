@@ -73,29 +73,29 @@ const rows = html`<section>
     <caption class="vh">Files</caption>
     <thead>
       <tr>
-        <th class="nm t-label" scope="col">Name</th>
+        <th class="name t-label" scope="col">Name</th>
         <th class="msg t-label" scope="col">Commit</th>
         <th class="age t-label" scope="col">Age</th>
       </tr>
     </thead>
     <tbody>
       <tr class="row is-dir">
-        <th class="nm" scope="row"><a class="t-item" lang="en" href="#row-dir"><span class="caps">docs</span>/</a></th>
+        <th class="name" scope="row"><a class="t-item" lang="en" href="#row-dir"><span class="caps">docs</span>/</a></th>
         <td class="msg"><span>Move the brand book out of the artifact</span></td>
         <td class="age"><time datetime="2026-01-07">3d</time></td>
       </tr>
       <tr class="row is-dir is-hover">
-        <th class="nm" scope="row"><a class="t-item" lang="en" href="#row-hover"><span class="caps">src/components</span>/</a></th>
+        <th class="name" scope="row"><a class="t-item" lang="en" href="#row-hover"><span class="caps">src/components</span>/</a></th>
         <td class="msg"><span>Split the button out of the header</span></td>
         <td class="age"><time datetime="2026-01-10">6h</time></td>
       </tr>
       <tr class="row">
-        <th class="nm" scope="row"><a class="t-item" lang="en" href="#row-file"><span class="caps">README<span class="sc">.md</span></span></a></th>
+        <th class="name" scope="row"><a class="t-item" lang="en" href="#row-file"><span class="caps">README<span class="sc">.md</span></span></a></th>
         <td class="msg"><span>Say what it does before saying how to run it</span></td>
         <td class="age"><time datetime="2025-12-27">2w</time></td>
       </tr>
       <tr class="row">
-        <th class="nm" scope="row"><a class="t-item" lang="en" href="#row-long"><span class="caps">Button<span class="sc">.tsx</span></span></a></th>
+        <th class="name" scope="row"><a class="t-item" lang="en" href="#row-long"><span class="caps">Button<span class="sc">.tsx</span></span></a></th>
         <td class="msg"><span>Reject refs beginning with a dash</span></td>
         <td class="age"><time datetime="2025-10-04">14w</time></td>
       </tr>

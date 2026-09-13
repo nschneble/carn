@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { spawnGit } from "./spawn.js";
+import { spawnGit, throwOnOutcome } from "./spawn.js";
 
 export type Capture = {
   code: number | null;
@@ -40,14 +40,7 @@ export async function captureGit(options: CaptureOptions): Promise<Capture> {
 
   const result = await child.done;
   const command = options.args.join(" ");
-
-  if (result.outcome === "timed-out") {
-    throw new Error(`git ${command} timed out after ${options.timeoutMs}ms`);
-  }
-
-  if (result.outcome === "canceled") {
-    throw new Error(`git ${command} was canceled`);
-  }
+  throwOnOutcome(result, command, options.timeoutMs);
 
   return { code: result.code, stdout: Buffer.concat(chunks) };
 }

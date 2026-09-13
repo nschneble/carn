@@ -822,8 +822,8 @@ test("the rendered dom holds the true filename under small caps", async () => {
     await page.goto(`${site.origin}/show-all`);
 
     const read = await page.evaluate(() =>
-      // tbody only: the header row's own .nm cell names the column
-      Array.from(document.querySelectorAll(".tree tbody .nm")).map((cell) => {
+      // tbody only: the header row's own .name cell names the column
+      Array.from(document.querySelectorAll(".tree tbody .name")).map((cell) => {
         const node = cell.firstElementChild as HTMLElement;
         return {
           text: node.textContent ?? "",

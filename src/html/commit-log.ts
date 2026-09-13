@@ -7,6 +7,7 @@ import type { CommitLog } from "../repos/log.js";
 import { sshRemote } from "../repos/remote.js";
 import { age } from "./age.js";
 import { repoTrail } from "./breadcrumb.js";
+import { emptyState } from "./empty-state.js";
 import { commitHref, commitsHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
@@ -37,17 +38,10 @@ function row(
   const href = commitHref(repo, commit.sha);
 
   return html`<tr class="row">
-            <th class="nm" scope="row"><a class="t-mono" href="${href}">${commit.sha.slice(0, shortShaLength)}</a></th>
+            <th class="name short-sha" scope="row"><a class="t-mono" href="${href}">${commit.sha.slice(0, shortShaLength)}</a></th>
             <td class="msg"><a href="${href}">${commit.subject}</a></td>
             <td class="age"><a href="${href}"><time datetime="${commit.at.toISOString()}">${age(commit.at, now)}</time></a></td>
           </tr>`;
-}
-
-function empty(repo: string, ref: string): Raw {
-  return html`<div class="empty">
-        <p class="t-body">No commits yet. The log for ${ref} is shown here once something is pushed to it.</p>
-        <p><code class="t-mono">git push ${sshRemote(repo)} ${ref}</code></p>
-      </div>`;
 }
 
 function older(
@@ -57,7 +51,6 @@ function older(
   back: string[],
 ): Raw {
   if (log.next === null) return html``;
-
   const nextBack = capBack(from === null ? back : [...back, from]);
 
   return html`
@@ -94,12 +87,15 @@ export function commitLogPage(view: {
 
   const body =
     log.commits.length === 0
-      ? empty(repo, log.ref)
+      ? emptyState(
+          `No commits yet. The log for ${log.ref} is shown here once something is pushed to it.`,
+          `git push ${sshRemote(repo)} ${log.ref}`,
+        )
       : html`<table class="tbl log">
         <caption class="vh">Commits</caption>
         <thead>
           <tr>
-            <th class="nm t-label" scope="col">Commit</th>
+            <th class="name short-sha t-label" scope="col">Commit</th>
             <th class="msg t-label" scope="col">Subject</th>
             <th class="age t-label" scope="col">Age</th>
           </tr>

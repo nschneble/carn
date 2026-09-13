@@ -35,7 +35,7 @@ function row(view: TreeListView, entry: TreeEntry): Raw {
 
   if (entry.kind === "gitlink") {
     return html`<tr class="row is-sub">
-            <th class="nm" scope="row"><span class="t-item" lang="en">${pathName(entry.name)}<span class="t-micro"> Pinned</span></span></th>
+            <th class="name" scope="row"><span class="t-item" lang="en">${pathName(entry.name)}<span class="t-micro"> Pinned</span></span></th>
             <td class="pin" colspan="2"><span class="t-mono"><span class="vh">Submodule pinned at </span>${entry.oid.slice(0, shortShaLength)}</span></td>
           </tr>`;
   }
@@ -51,7 +51,7 @@ function row(view: TreeListView, entry: TreeEntry): Raw {
       : pathName(entry.name);
 
   return html`<tr class="row${entry.kind === "directory" ? " is-dir" : ""}">
-            <th class="nm" scope="row"><a class="t-item" lang="en" href="${href}">${name}</a></th>
+            <th class="name" scope="row"><a class="t-item" lang="en" href="${href}">${name}</a></th>
             ${columns(entry, view.now)}
           </tr>`;
 }
@@ -63,7 +63,7 @@ export function treeList(view: TreeListView): Raw {
         <caption class="vh">Files</caption>
         <thead>
           <tr>
-            <th class="nm t-label" scope="col">Name</th>
+            <th class="name t-label" scope="col">Name</th>
             <th class="msg t-label" scope="col">Commit</th>
             <th class="age t-label" scope="col">Age</th>
           </tr>

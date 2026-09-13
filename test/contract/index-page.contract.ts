@@ -114,10 +114,10 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
 
   assert.ok(markup.includes('<table class="tbl repos">'));
   assert.ok(markup.includes('<caption class="vh">Repositories</caption>'));
-  assert.ok(markup.includes('<th class="nm t-label" scope="col">Name</th>'));
+  assert.ok(markup.includes('<th class="name t-label" scope="col">Name</th>'));
   assert.ok(
     markup.includes(
-      `<th class="nm" scope="row"><a class="t-item" lang="en" href="/r/linklater">${plainName("linklater").value}</a></th>`,
+      `<th class="name" scope="row"><a class="t-item" lang="en" href="/r/linklater">${plainName("linklater").value}</a></th>`,
     ),
   );
 
@@ -204,7 +204,9 @@ test("the empty state says what would be here and how to make one", () => {
   const copy = markup.slice(start, markup.indexOf("</div>", start));
 
   assert.ok(copy.includes("No repos yet."));
-  assert.ok(copy.includes("pushing to a name that doesn't exist creates it"));
+  assert.ok(
+    copy.includes("pushing to a name that doesn&#39;t exist creates it"),
+  );
   assert.doesNotMatch(copy, /[!…]|Oops/);
 });
 

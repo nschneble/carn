@@ -2,9 +2,9 @@
 
 // every url the product generates
 
-import type { RefKind } from "../repos/refs.js";
+import { type RefKind, refNouns } from "../repos/refs.js";
 
-// a filename can carry a #, a ?, or a space, and a ref can carry a slash
+// filenames can have #, ?, or whitespace, and refs can have a backslash
 function trail(rev: string, path: string): string {
   const segments = path.split("/").map(encodeURIComponent).join("/");
   return `${encodeURIComponent(rev)}/${segments}`;
@@ -43,12 +43,6 @@ export function changeHref(repo: string, sha: string, path: string): string {
   return `${commitHref(repo, sha)}/${segments}`;
 }
 
-// the plural is both the url segment and the word the headings read with
-export const refPlural: Record<RefKind, string> = {
-  branch: "branches",
-  tag: "tags",
-};
-
 export function refsHref(repo: string, kind: RefKind): string {
-  return `/r/${repo}/${refPlural[kind]}`;
+  return `/r/${repo}/${refNouns[kind].many}`;
 }

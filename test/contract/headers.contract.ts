@@ -10,7 +10,7 @@ import { sendPage } from "../../src/routes/cache.js";
 
 const securityHeaders = {
   "content-security-policy":
-    "default-src 'none'; img-src 'self' data:; style-src 'self'; font-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+    "base-uri 'none'; default-src 'none'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self';",
   "x-content-type-options": "nosniff",
   "referrer-policy": "no-referrer",
 };

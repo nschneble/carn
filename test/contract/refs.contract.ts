@@ -229,7 +229,7 @@ test("both lists are tables with a caption and a header row", () => {
       `${kind} lost the caption that labels the table with the CSS off`,
     );
     assert.ok(
-      markup.includes(`<th class="nm t-label" scope="col">${column}</th>`),
+      markup.includes(`<th class="name t-label" scope="col">${column}</th>`),
       kind,
     );
     assert.strictEqual(
@@ -238,7 +238,7 @@ test("both lists are tables with a caption and a header row", () => {
       `${kind} rendered a different row count than it has refs`,
     );
     assert.strictEqual(
-      [...markup.matchAll(/<th class="nm" scope="row">/g)].length,
+      [...markup.matchAll(/<th class="name" scope="row">/g)].length,
       count,
       `${kind} has a row whose first cell is not its header`,
     );
@@ -292,7 +292,7 @@ test("three links per row, one per cell, all to the ref's own log", () => {
 
   assert.ok(
     markup.includes(
-      `<th class="nm" scope="row"><a class="t-item" lang="en" href="${href}">${plainName(first.name).value}`,
+      `<th class="name" scope="row"><a class="t-item" lang="en" href="${href}">${plainName(first.name).value}`,
     ),
     "the name is not a link to the ref's own log",
   );
@@ -311,7 +311,7 @@ test("three links per row, one per cell, all to the ref's own log", () => {
 
   const sheet = readFileSync(join(root, "src/html/styles.ts"), "utf8");
 
-  // the pattern was .nm::after, which never matched the .nm a::after the
+  // the pattern was .name::after, which never matched the .name a::after the
   // sheet actually shipped; any ::after at all is the honest tripwire
   assert.doesNotMatch(
     sheet,

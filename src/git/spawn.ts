@@ -31,6 +31,19 @@ export type GitChild = {
   done: Promise<GitResult>;
 };
 
+export function throwOnOutcome(
+  result: GitResult,
+  command: string,
+  timeoutMs: number,
+): void {
+  switch (result.outcome) {
+    case "canceled":
+      throw new Error(`git ${command} was canceled`);
+    case "timed-out":
+      throw new Error(`git ${command} timed out after ${timeoutMs}ms`);
+  }
+}
+
 const semaphore = new Semaphore(gitConcurrency);
 
 function childEnv(gitProtocol: string | undefined): NodeJS.ProcessEnv {
@@ -85,9 +98,7 @@ export async function spawnGit(options: GitOptions): Promise<GitChild> {
 
   const done = new Promise<GitResult>((resolve, reject) => {
     function finish(settle: () => void): void {
-      if (settled) {
-        return;
-      }
+      if (settled) return;
 
       settled = true;
       clearTimeout(timer);
@@ -129,14 +140,7 @@ export async function runGit(options: GitOptions): Promise<void> {
   });
 
   const result = await child.done;
-
-  if (result.outcome === "timed-out") {
-    throw new Error(`git ${command} timed out after ${options.timeoutMs}ms`);
-  }
-
-  if (result.outcome === "canceled") {
-    throw new Error(`git ${command} was canceled`);
-  }
+  throwOnOutcome(result, command, options.timeoutMs);
 
   if (result.code !== 0) {
     throw new Error(

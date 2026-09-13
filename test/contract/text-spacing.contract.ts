@@ -156,7 +156,7 @@ function readTable(): Reading {
     cells,
     childless,
     names: cells
-      .filter((cell) => cell.column === "nm")
+      .filter((cell) => cell.column === "name")
       .map((cell) => cell.text),
   };
 }
@@ -371,7 +371,7 @@ test("the spacing overrides cost the name column not one character", (t) => {
     // wrapped, not clipped: the box grew to hold the text rather than
     // cutting it, which is what the criterion asks for
     for (const cell of (spaced[path] as Reading).cells) {
-      if (cell.column !== "nm") continue;
+      if (cell.column !== "name") continue;
 
       assert.ok(
         !cell.ellipsed && !cell.clipped,
@@ -380,7 +380,7 @@ test("the spacing overrides cost the name column not one character", (t) => {
     }
 
     const meta = (spaced[path] as Reading).cells.filter(
-      (cell) => cell.column !== "nm" && cell.ellipsed,
+      (cell) => cell.column !== "name" && cell.ellipsed,
     ).length;
 
     t.diagnostic(

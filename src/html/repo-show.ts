@@ -9,9 +9,11 @@ import { headerAssetPath } from "../repos/header-asset.js";
 import { sshRemote } from "../repos/remote.js";
 import type { RepoView } from "../repos/show.js";
 import { site } from "./breadcrumb.js";
+import { emptyState } from "./empty-state.js";
 import { commitsHref, refsHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
+import { refLabel } from "./ref-list.js";
 import { treeList } from "./tree-list.js";
 
 // the hub every breadcrumb passes through: nothing else reaches these three
@@ -19,17 +21,17 @@ function repoNav(repo: string, branch: string): Raw {
   return html`<nav class="repo-nav" aria-label="Repo views">
       <ul role="list">
         <li><a href="${commitsHref(repo, branch)}">Commits</a></li>
-        <li><a href="${refsHref(repo, "branch")}">Branches</a></li>
-        <li><a href="${refsHref(repo, "tag")}">Tags</a></li>
+        <li><a href="${refsHref(repo, "branch")}">${refLabel("branch")}</a></li>
+        <li><a href="${refsHref(repo, "tag")}">${refLabel("tag")}</a></li>
       </ul>
     </nav>`;
 }
 
 function noCommits(view: RepoView): Raw {
-  return html`<div class="empty">
-        <p class="t-body">No commits yet. The file tree at ${view.branch} is shown here once something is pushed to it.</p>
-        <p><code class="t-mono">git push ${sshRemote(view.name)} ${view.branch}</code></p>
-      </div>`;
+  return emptyState(
+    `No commits yet. The file tree at ${view.branch} is shown here once something is pushed to it.`,
+    `git push ${sshRemote(view.name)} ${view.branch}`,
+  );
 }
 
 function tree(view: RepoView, showAll: boolean, now: Date): Raw {
@@ -48,10 +50,10 @@ function tree(view: RepoView, showAll: boolean, now: Date): Raw {
 }
 
 function noReadme(view: RepoView): Raw {
-  return html`<div class="empty">
-        <p class="t-body">No README yet. A README.md at the root of ${view.branch} is rendered here, under the file tree.</p>
-        <p><code class="t-mono">git add README.md &amp;&amp; git commit -m "add README" &amp;&amp; git push</code></p>
-      </div>`;
+  return emptyState(
+    `No README yet. A README.md at the root of ${view.branch} is rendered here, under the file tree.`,
+    `git add README.md && git commit -m "add README" && git push`,
+  );
 }
 
 function readme(view: RepoView): Raw {
@@ -74,7 +76,6 @@ function metaDescription(view: RepoView): string {
 
 function about(repo: RepoView): Raw {
   if (!repo.description) return html``;
-
   return html`<p class="t-body about">${repo.description}</p>`;
 }
 

@@ -206,14 +206,14 @@ test("a binary file carries the word, never a bogus count", async () => {
     now: logNow,
   });
   const row =
-    /<tr class="row">\s*<th[^>]*><a[^>]*>logo\.png<\/a><\/th>\s*<td class="cnt"><span>([^<]*)/.exec(
+    /<tr class="row">\s*<th[^>]*><a[^>]*>logo\.png<\/a><\/th>\s*<td class="counts"><span>([^<]*)/.exec(
       markup,
     );
 
   assert.strictEqual(row?.[1], "Binary");
   assert.doesNotMatch(
     markup,
-    /logo\.png<\/a><\/th>\s*<td class="cnt"><span>\+NaN/,
+    /logo\.png<\/a><\/th>\s*<td class="counts"><span>\+NaN/,
   );
   assert.ok(
     !markup.includes("NaN"),
@@ -550,7 +550,7 @@ test("a binary file's own page says so rather than showing bytes", () => {
   assert.ok(markup);
   assert.strictEqual(diffBlocks(markup).length, 0);
   assert.ok(
-    markup.includes("This file is binary, so there&#39;s no diff to show."),
+    markup.includes("This is a binary file, so there&#39;s no diff to show."),
   );
 });
 

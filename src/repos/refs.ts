@@ -23,6 +23,11 @@ export type RefList = {
   more: boolean;
 };
 
+export const refNouns: Record<RefKind, { one: string; many: string }> = {
+  branch: { one: "branch", many: "branches" },
+  tag: { one: "tag", many: "tags" },
+};
+
 export const refTimeoutMs = 5_000;
 
 // bounds the read; ref-list.ts settles what renders against the budget

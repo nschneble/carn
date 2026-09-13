@@ -37,7 +37,7 @@ import {
 } from "../repos/header-asset.js";
 import { loadCommitLog } from "../repos/log.js";
 import { listRefs, type RefKind } from "../repos/refs.js";
-import { resolveRepo } from "../repos/resolve.js";
+import { type ResolvedRepo, resolveRepo } from "../repos/resolve.js";
 import { loadRepoView } from "../repos/show.js";
 import { listTree, resolveTip } from "../repos/tree.js";
 import { revalidate, sendPage, sendStatus } from "./cache.js";
@@ -78,6 +78,10 @@ function abortWith(reply: FastifyReply): AbortSignal {
   return abandoned.signal;
 }
 
+function missingAsset(reply: FastifyReply, body: string): FastifyReply {
+  return reply.code(404).type("text/plain; charset=utf-8").send(body);
+}
+
 function fail(
   request: FastifyRequest,
   reply: FastifyReply,
@@ -87,20 +91,30 @@ function fail(
   return sendStatus(request, reply, status, errorPage({ failure }));
 }
 
+async function resolveOrFail(
+  request: FastifyRequest<{ Params: { repo: string } }>,
+  reply: FastifyReply,
+): Promise<ResolvedRepo | null> {
+  const found = await resolveRepo(request.params.repo);
+  if (found.status === "found") return found.repo;
+
+  const failure =
+    found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
+  await fail(request, reply, 404, failure);
+
+  return null;
+}
+
 async function showRepo(
   request: FastifyRequest<PageRoute>,
   reply: FastifyReply,
 ): Promise<FastifyReply> {
   try {
-    const found = await resolveRepo(request.params.repo);
-    if (found.status !== "found") {
-      const failure =
-        found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
-      return fail(request, reply, 404, failure);
-    }
+    const found = await resolveOrFail(request, reply);
+    if (found === null) return reply;
 
     const repo = await loadRepoView({
-      repo: found.repo,
+      repo: found,
       signal: abortWith(reply),
     });
 
@@ -125,15 +139,12 @@ async function serveHeader(
   request: FastifyRequest<AssetRoute>,
   reply: FastifyReply,
 ): Promise<FastifyReply> {
-  const missing = () =>
-    reply.code(404).type("text/plain; charset=utf-8").send(noImage);
-
   try {
     const asset = parseHeaderAsset(request.params.asset);
-    if (asset === null) return missing();
+    if (asset === null) return missingAsset(reply, noImage);
 
     const found = await resolveRepo(request.params.repo);
-    if (found.status !== "found") return missing();
+    if (found.status !== "found") return missingAsset(reply, noImage);
 
     const signal = abortWith(reply);
     const commit = await resolveTip({
@@ -148,7 +159,7 @@ async function serveHeader(
       signal,
     });
 
-    if (!committed(header, asset)) return missing();
+    if (!committed(header, asset)) return missingAsset(reply, noImage);
 
     const body = await readBlob({
       repoPath: found.repo.path,
@@ -172,15 +183,11 @@ async function showBlob(
   if (path === "") return fail(request, reply, 404, noBlobPath);
 
   try {
-    const found = await resolveRepo(request.params.repo);
-    if (found.status !== "found") {
-      const failure =
-        found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
-      return fail(request, reply, 404, failure);
-    }
+    const found = await resolveOrFail(request, reply);
+    if (found === null) return reply;
 
     const blob = await loadBlobView({
-      repoPath: found.repo.path,
+      repoPath: found.path,
       rev: request.params.rev,
       path,
       signal: abortWith(reply),
@@ -192,7 +199,7 @@ async function showBlob(
       request,
       reply,
       blobPage({
-        repo: found.repo.name,
+        repo: found.name,
         blob,
         rawOrigin: config.rawOrigin,
       }),
@@ -212,16 +219,12 @@ async function showTree(
   if (path === "") return fail(request, reply, 404, noTreeRoot);
 
   try {
-    const found = await resolveRepo(request.params.repo);
-    if (found.status !== "found") {
-      const failure =
-        found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
-      return fail(request, reply, 404, failure);
-    }
+    const found = await resolveOrFail(request, reply);
+    if (found === null) return reply;
 
     const { rev } = request.params;
     const tree = await listTree({
-      repoPath: found.repo.path,
+      repoPath: found.path,
       rev,
       path,
       signal: abortWith(reply),
@@ -233,7 +236,7 @@ async function showTree(
       request,
       reply,
       treePage({
-        repo: found.repo.name,
+        repo: found.name,
         rev,
         tree,
         showAll: request.query.all === "1",
@@ -260,16 +263,12 @@ async function showCommits(
   }
 
   try {
-    const found = await resolveRepo(request.params.repo);
-    if (found.status !== "found") {
-      const failure =
-        found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
-      return fail(request, reply, 404, failure);
-    }
+    const found = await resolveOrFail(request, reply);
+    if (found === null) return reply;
 
-    const ref = asked ?? found.repo.defaultBranch;
+    const ref = asked ?? found.defaultBranch;
     const log = await loadCommitLog({
-      repoPath: found.repo.path,
+      repoPath: found.path,
       ref,
       from,
       signal: abortWith(reply),
@@ -283,7 +282,7 @@ async function showCommits(
       request,
       reply,
       commitLogPage({
-        repo: found.repo.name,
+        repo: found.name,
         log: log ?? { ref, commits: [], next: null },
         now: now(),
         from,
@@ -302,15 +301,11 @@ async function showRefs(
   kind: RefKind,
 ): Promise<FastifyReply> {
   try {
-    const found = await resolveRepo(request.params.repo);
-    if (found.status !== "found") {
-      const failure =
-        found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
-      return fail(request, reply, 404, failure);
-    }
+    const found = await resolveOrFail(request, reply);
+    if (found === null) return reply;
 
     const list = await listRefs({
-      repoPath: found.repo.path,
+      repoPath: found.path,
       kind,
       signal: abortWith(reply),
     });
@@ -319,9 +314,9 @@ async function showRefs(
       request,
       reply,
       refListPage({
-        repo: found.repo.name,
+        repo: found.name,
         list,
-        defaultBranch: found.repo.defaultBranch,
+        defaultBranch: found.defaultBranch,
         now: now(),
       }),
     );
@@ -340,22 +335,18 @@ async function showCommit(
   const path = (request.params as ChangeRoute["Params"])["*"] ?? null;
 
   try {
-    const found = await resolveRepo(request.params.repo);
-    if (found.status !== "found") {
-      const failure =
-        found.status === "invalid" ? badRepoName : noSuchRepo(found.name);
-      return fail(request, reply, 404, failure);
-    }
+    const found = await resolveOrFail(request, reply);
+    if (found === null) return reply;
 
     const commit = await loadCommit({
-      repoPath: found.repo.path,
+      repoPath: found.path,
       sha,
       signal: abortWith(reply),
     });
 
     if (commit === null) return fail(request, reply, 404, noSuchCommit(sha));
 
-    const view = { repo: found.repo.name, commit, now: now() };
+    const view = { repo: found.name, commit, now: now() };
     if (path === null) return sendPage(request, reply, commitPage(view));
 
     const one = commitFilePage(view, path);
@@ -373,15 +364,12 @@ async function serveBlobAsset(
   request: FastifyRequest<AssetRoute>,
   reply: FastifyReply,
 ): Promise<FastifyReply> {
-  const missing = () =>
-    reply.code(404).type("text/plain; charset=utf-8").send(noAsset);
-
   try {
     const asset = parseBlobAsset(request.params.asset);
-    if (asset === null) return missing();
+    if (asset === null) return missingAsset(reply, noAsset);
 
     const found = await resolveRepo(request.params.repo);
-    if (found.status !== "found") return missing();
+    if (found.status !== "found") return missingAsset(reply, noAsset);
 
     const body = await readBlob({
       repoPath: found.repo.path,
@@ -390,8 +378,10 @@ async function serveBlobAsset(
       signal: abortWith(reply),
     }).catch(() => null);
 
-    if (body === null || body.length > assetRoomBytes) return missing();
-    if (sniffRaster(body)?.type !== asset.format.type) return missing();
+    if (body === null || body.length > assetRoomBytes)
+      return missingAsset(reply, noAsset);
+    if (sniffRaster(body)?.type !== asset.format.type)
+      return missingAsset(reply, noAsset);
 
     return reply
       .header("Cache-Control", forever)
@@ -408,12 +398,9 @@ async function serveAsset(
   request: FastifyRequest<BlobRoute>,
   reply: FastifyReply,
 ): Promise<FastifyReply> {
-  const missing = () =>
-    reply.code(404).type("text/plain; charset=utf-8").send(noAsset);
-
   try {
     const found = await resolveRepo(request.params.repo);
-    if (found.status !== "found") return missing();
+    if (found.status !== "found") return missingAsset(reply, noAsset);
 
     const signal = abortWith(reply);
     const entry = await findBlobEntry({
@@ -423,7 +410,8 @@ async function serveAsset(
       signal,
     });
 
-    if (entry === null || entry.bytes > assetRoomBytes) return missing();
+    if (entry === null || entry.bytes > assetRoomBytes)
+      return missingAsset(reply, noAsset);
 
     const tag = `"${entry.oid}"`;
     const stamped = () =>
@@ -440,10 +428,10 @@ async function serveAsset(
       signal,
     }).catch(() => null);
 
-    if (body === null) return missing();
+    if (body === null) return missingAsset(reply, noAsset);
 
     const format = sniffRaster(body);
-    if (format === null) return missing();
+    if (format === null) return missingAsset(reply, noAsset);
 
     return stamped().type(format.type).send(body);
   } catch (error) {

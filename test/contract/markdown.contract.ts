@@ -322,7 +322,7 @@ test("a remote image survives the markdown layer for CSP to stop", async () => {
 
   assert.strictEqual(
     response.headers["content-security-policy"],
-    "default-src 'none'; img-src 'self' data:; style-src 'self'; font-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+    "base-uri 'none'; default-src 'none'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self';",
   );
 });
 
