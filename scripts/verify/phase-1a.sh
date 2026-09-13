@@ -26,7 +26,7 @@ cd "$root" || exit 1
 
 readonly EXPECTED_CHECKS=17
 readonly APP_PORT=3000
-readonly CSP="default-src 'none'; img-src 'self' data:; style-src 'self'; font-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+readonly CSP="base-uri 'none'; default-src 'none'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self';"
 readonly TABLES="'users','ssh_keys','repos','repo_grants'"
 
 work=$(mktemp -d) || work=""
@@ -285,7 +285,7 @@ else
   missing=""
   grep -qi '^HTTP/1.1 200' "$work/9" || missing="$missing status is not 200;"
   [ "$(header content-type)" != "application/json; charset=utf-8" ] && missing="$missing content-type is '$(header content-type)';"
-  [ "$(header content-security-policy)" != "$CSP" ] && missing="$missing content-security-policy differs;"
+  [ "$(header content-security-policy)" != "$CSP" ] && missing="$missing content-security-policy is '$(header content-security-policy)';"
   [ "$(header x-content-type-options)" != "nosniff" ] && missing="$missing x-content-type-options is '$(header x-content-type-options)';"
   [ "$(header referrer-policy)" != "no-referrer" ] && missing="$missing referrer-policy is '$(header referrer-policy)';"
   if [ -z "$missing" ]; then

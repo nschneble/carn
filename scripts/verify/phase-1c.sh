@@ -112,6 +112,8 @@ cascade() {
   local title=$3
   local out="$work/$number.$prior"
   local status
+  local stack
+  local last
 
   "./scripts/verify/phase-$prior.sh" > "$out" 2>&1
   status=$?
@@ -121,10 +123,19 @@ cascade() {
     return 0
   fi
 
-  record FAIL "$number" "$title" "$(awk '/^FAIL/ { inside = 1; print; next }
+  stack=$(awk '/^FAIL/ { inside = 1; print; next }
 /^[[:space:]]/ { if (inside) print; next }
 { inside = 0 }' "$out")
-$(tail -1 "$out")"
+  last=$(tail -1 "$out")
+
+  # a predecessor that died early has a tail line but no stack to head it
+  if [ -n "$stack" ]; then
+    record FAIL "$number" "$title" "$stack
+$last"
+  else
+    record FAIL "$number" "$title" "$last"
+  fi
+
   return 1
 }
 

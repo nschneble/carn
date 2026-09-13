@@ -33,7 +33,7 @@ readonly DEFAULT_ROOT=./local/repos
 readonly PAGE_BUDGET=102400
 readonly SPAWN_BUDGET=12
 readonly SSH_FLAGS="-o IdentitiesOnly=yes -o IdentityAgent=none -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o LogLevel=ERROR -o ConnectTimeout=5"
-readonly CSP="default-src 'none'; img-src 'self' data:; style-src 'self'; font-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+readonly CSP="base-uri 'none'; default-src 'none'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self';"
 # as served: error-page.ts writes an apostrophe and the html tag escapes it
 readonly NO_REPO="There&#39;s no repo named $ABSENT_NAME on this server."
 readonly BAD_NAME="That URL doesn&#39;t carry a repo name this server can look up."
@@ -117,6 +117,8 @@ cascade() {
   local title=$3
   local out="$work/$number.$prior"
   local status
+  local stack
+  local last
 
   "./scripts/verify/phase-$prior.sh" > "$out" 2>&1
   status=$?
@@ -126,10 +128,19 @@ cascade() {
     return 0
   fi
 
-  record FAIL "$number" "$title" "$(awk '/^FAIL/ { inside = 1; print; next }
+  stack=$(awk '/^FAIL/ { inside = 1; print; next }
 /^[[:space:]]/ { if (inside) print; next }
 { inside = 0 }' "$out")
-$(tail -1 "$out")"
+  last=$(tail -1 "$out")
+
+  # a predecessor that died early has a tail line but no stack to head it
+  if [ -n "$stack" ]; then
+    record FAIL "$number" "$title" "$stack
+$last"
+  else
+    record FAIL "$number" "$title" "$last"
+  fi
+
   return 1
 }
 

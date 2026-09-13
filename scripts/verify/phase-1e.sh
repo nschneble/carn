@@ -136,6 +136,8 @@ cascade() {
   local title=$3
   local out="$work/$number.$prior"
   local status
+  local stack
+  local last
 
   "./scripts/verify/phase-$prior.sh" > "$out" 2>&1
   status=$?
@@ -145,10 +147,19 @@ cascade() {
     return 0
   fi
 
-  record FAIL "$number" "$title" "$(awk '/^FAIL/ { inside = 1; print; next }
+  stack=$(awk '/^FAIL/ { inside = 1; print; next }
 /^[[:space:]]/ { if (inside) print; next }
 { inside = 0 }' "$out")
-$(tail -1 "$out")"
+  last=$(tail -1 "$out")
+
+  # a predecessor that died early has a tail line but no stack to head it
+  if [ -n "$stack" ]; then
+    record FAIL "$number" "$title" "$stack
+$last"
+  else
+    record FAIL "$number" "$title" "$last"
+  fi
+
   return 1
 }
 
@@ -1664,8 +1675,8 @@ if require_daemon 36 "$TITLE_36"; then
   [ "$miss_status" = "404" ] || wrong="$wrong the unmatched url answered $miss_status;"
   printf '%s' "$miss_type" | grep -qi 'text/html' \
     || wrong="$wrong the unmatched url answered '$miss_type', not text/html;"
-  grep -qF '<h1 class="t-l">Nothing here</h1>' "$work/36miss.body" \
-    || wrong="$wrong the 404 page carries no Nothing here heading;"
+  grep -qF '<h1 class="t-l">Nothing to see here</h1>' "$work/36miss.body" \
+    || wrong="$wrong the 404 page carries no Nothing to see here heading;"
   grep -qF '{"message"' "$work/36miss.body" \
     && wrong="$wrong the unmatched url still answers as fastify's default json 404;"
   [ "$miss_csp" -ge 1 ] || wrong="$wrong the 404 page carries no Content-Security-Policy header;"
