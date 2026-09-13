@@ -24,19 +24,27 @@ export class Semaphore {
       const waiter: Waiter = { resolve };
       this.#waiting.push(waiter);
 
-      signal?.addEventListener(
-        "abort",
-        () => {
-          const index = this.#waiting.indexOf(waiter);
-          if (index === -1) {
-            return;
-          }
+      if (signal === undefined) {
+        return;
+      }
 
-          this.#waiting.splice(index, 1);
-          reject(signal.reason);
-        },
-        { once: true },
-      );
+      const abandon = (): void => {
+        const index = this.#waiting.indexOf(waiter);
+        if (index === -1) {
+          return;
+        }
+
+        this.#waiting.splice(index, 1);
+        reject(signal.reason);
+      };
+
+      // a granted waiter never fires abort, so once: true never collects it
+      waiter.resolve = () => {
+        signal.removeEventListener("abort", abandon);
+        resolve();
+      };
+
+      signal.addEventListener("abort", abandon, { once: true });
     });
   }
 
