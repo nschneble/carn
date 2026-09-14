@@ -265,9 +265,9 @@ poll_count() {
   return 1
 }
 
-# the holder takes a name in a transaction it never commits. READ COMMITTED
-# can't see the row, so the daemon's pre-check passes and its own write then
-# blocks inside the index until release_name commits. that's the race the
+# the holder takes a name in a transaction it never commits. READ
+# COMMITTED hides the row, so the pre-check passes and the write then
+# blocks inside the index until release_name commits - the race the
 # pre-check cannot close, made deterministic
 hold_name() {
   local fifo="$work/holder.fifo"
