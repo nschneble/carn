@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Phase 1f exit checks, from docs/phases/1f-rename.md.
-# Prints PASS or FAIL for each of the 13 checks and exits non-zero if any
+# Prints PASS or FAIL for each of the 14 checks and exits non-zero if any
 # fail. Reads DATABASE_URL from the environment, falling back to ./.env.
-# Check 12 re-runs 1e, which runs its own predecessor and so on down the
+# Check 13 re-runs 1e, which runs its own predecessor and so on down the
 # chain, so a full run takes several minutes.
 
 if [ -z "${BASH_VERSION:-}" ]; then
@@ -26,22 +26,24 @@ set -uo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$root" || exit 1
 
-readonly EXPECTED_CHECKS=13
+readonly EXPECTED_CHECKS=14
 readonly REPO_NAME=verify1f
 readonly MOVED_NAME=verify1f-moved
 readonly ADMIN_NAME=verify1f-admin
 readonly CASED_NAME=VERIFY1F-ADMIN
+readonly SUFFIX_NAME=verify1f-suffix
 readonly OTHER_NAME=verify1f-other
 readonly OTHER_HANDLE=verify1f-collaborator
 readonly DEFAULT_ROOT=./local/repos
 readonly NAME_CAP=40
 readonly SSH_FLAGS="-o IdentitiesOnly=yes -o IdentityAgent=none -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o LogLevel=ERROR -o ConnectTimeout=5"
 
-# the five refusals this phase reads off a real channel, verbatim
+# the six refusals this phase reads off a real channel, verbatim
 readonly BAD_NAME="That's not a valid repo name. Names are up to $NAME_CAP characters, starting with a letter or number, and containing only letters, numbers, dots, dashes, and underscores."
 readonly NO_REPO="There's no repo named $REPO_NAME. Push to create it."
 readonly NO_ADMIN="You don't have admin access to $MOVED_NAME. Ask the owner for an admin grant."
 readonly NAME_TAKEN="There's already a repo named $OTHER_NAME. Pick another name."
+readonly UNAVAILABLE="That request failed on the server. Try again shortly."
 # no closing period: the contract test carries this as a regex body, which
 # stops at "runs", and the loosest form that discriminates is the one to use
 readonly NEW_BAD_COMMAND="That's not a command this server runs"
@@ -359,7 +361,7 @@ build_seed() {
 echo "Phase 1f exit checks"
 echo
 
-# taken before any work, so check 13 can prove the run added nothing
+# taken before any work, so check 14 can prove the run added nothing
 dev_rows=""
 if [ -n "${DATABASE_URL:-}" ]; then
   dev_rows=$(psql_dev -c "select (select count(*) from repos) || ':' || (select count(*) from ssh_keys)" 2>/dev/null)
@@ -701,26 +703,69 @@ else
   fi
 fi
 
+# 12
+# namePattern admits a trailing .git that resolveRepo strips off every
+# lookup, so a name stored with one on it can never be found again
+readonly TITLE_12="a .git suffix is stripped before the name is stored or collision-checked"
+if require_renamed 12 "$TITLE_12"; then
+  rename_as "$admin_key" "$work/12.suffix" "$CASED_NAME" "$SUFFIX_NAME.git"
+  suffix_status=$?
+  after_suffix=$(name_of "$repo_id")
+  as_user "$admin_key" git clone -q "$(ssh_url "$SUFFIX_NAME")" "$work/clone-suffix" \
+    > "$work/12.clone" 2>&1
+  clone_status=$?
+
+  rename_as "$admin_key" "$work/12.taken" "$SUFFIX_NAME" "$OTHER_NAME.git"
+  taken_status=$?
+  after_taken=$(name_of "$repo_id")
+  rows=$(psql_scratch -c "select count(*) from repos")
+
+  wrong=""
+  [ "$suffix_status" -eq 0 ] \
+    || wrong="$wrong the suffixed rename exited $suffix_status: $(tail -2 "$work/12.suffix.err");"
+  # whole line: the unstripped name has the wanted one as a prefix, so a
+  # substring match reports the bug as the fix
+  grep -qFx "Renamed $CASED_NAME to $SUFFIX_NAME." "$work/12.suffix.out" \
+    || wrong="$wrong the channel said '$(tr -d '\n' < "$work/12.suffix.out")', wanted the stripped name;"
+  [ "$after_suffix" = "$SUFFIX_NAME" ] \
+    || wrong="$wrong the row is named '${after_suffix:-gone}', wanted $SUFFIX_NAME;"
+  [ "$clone_status" -eq 0 ] \
+    || wrong="$wrong the clone at $SUFFIX_NAME exited $clone_status: $(tail -3 "$work/12.clone");"
+  [ "$taken_status" -ne 0 ] || wrong="$wrong renaming onto $OTHER_NAME.git succeeded;"
+  grep -qF "$NAME_TAKEN" "$work/12.taken.err" \
+    || wrong="$wrong $OTHER_NAME.git drew '$(tail -1 "$work/12.taken.err")', wanted the nameTaken sentence;"
+  grep -qF "$UNAVAILABLE" "$work/12.taken.err" \
+    && wrong="$wrong $OTHER_NAME.git drew the generic failure sentence;"
+  [ "$after_taken" = "$SUFFIX_NAME" ] \
+    || wrong="$wrong the refused rename moved the name to '${after_taken:-gone}';"
+  [ "$rows" = "2" ] || wrong="$wrong repos holds $rows row(s), wanted 2;"
+  if [ -n "$wrong" ]; then
+    record FAIL 12 "$TITLE_12" "$wrong"
+  else
+    record PASS 12 "$TITLE_12" "stored as $SUFFIX_NAME and cloned there, $OTHER_NAME.git refused by sentence"
+  fi
+fi
+
 stop_daemon
 unset GIT_SSH_COMMAND
 
-# torn down here, not at check 13: phase-1b.sh's own check 23 counts every
+# torn down here, not at check 14: phase-1b.sh's own check 23 counts every
 # carn_verify_% database, and would read this run's as a stray
 drop_scratch
 rm -rf "$repo_root"
 
-# 12
+# 13
 # after the daemon is down and the scratch database is dropped. both reach
 # here down the chain: 1a's check 9 needs port 3000, and 1b's check 23
 # reads a live scratch as a stray
-readonly TITLE_12="phase-1e.sh still passes in full"
-if require_db 12 "$TITLE_12"; then
-  cascade 12 1e "$TITLE_12"
+readonly TITLE_13="phase-1e.sh still passes in full"
+if require_db 13 "$TITLE_13"; then
+  cascade 13 1e "$TITLE_13"
 fi
 
-# 13
-readonly TITLE_13="the run leaves no scratch database, rows, or repos behind"
-if require_db 13 "$TITLE_13"; then
+# 14
+readonly TITLE_14="the run leaves no scratch database, rows, or repos behind"
+if require_db 14 "$TITLE_14"; then
   strays=$(psql_dev -c "select count(*) from pg_database where datname like 'carn_verify_%'")
   dev_now=$(psql_dev -c "select (select count(*) from repos) || ':' || (select count(*) from ssh_keys)" 2>/dev/null)
   root_now=$(find "$DEFAULT_ROOT" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')
@@ -733,9 +778,9 @@ if require_db 13 "$TITLE_13"; then
   [ "$root_now" = "$dev_root_entries" ] || left="$left $DEFAULT_ROOT went $dev_root_entries to $root_now entries;"
   [ -d "$repo_root" ] && left="$left the temporary repo root survives;"
   if [ -z "$left" ]; then
-    record PASS 13 "$TITLE_13" "development database still $dev_rows repos:ssh_keys"
+    record PASS 14 "$TITLE_14" "development database still $dev_rows repos:ssh_keys"
   else
-    record FAIL 13 "$TITLE_13" "$left"
+    record FAIL 14 "$TITLE_14" "$left"
   fi
 fi
 

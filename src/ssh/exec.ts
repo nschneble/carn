@@ -8,6 +8,7 @@ import { createRepo } from "../repos/create.js";
 import { renameRepo } from "../repos/rename.js";
 import {
   namePattern,
+  normalizeRepoName,
   type ResolvedRepo,
   resolveRepo,
 } from "../repos/resolve.js";
@@ -126,7 +127,8 @@ async function renameTarget(
 ): Promise<void> {
   const { channel, userId } = request;
 
-  if (!namePattern.test(parsed.to)) {
+  const to = normalizeRepoName(parsed.to);
+  if (!namePattern.test(to)) {
     refuse(channel, refusals.badName);
     return;
   }
@@ -147,14 +149,14 @@ async function renameTarget(
     return;
   }
 
-  const wanted = await resolveRepo(parsed.to);
+  const wanted = await resolveRepo(to);
   if (wanted.status === "found" && wanted.repo.id !== repo.id) {
     refuse(channel, refusals.nameTaken(wanted.repo.name));
     return;
   }
 
-  await renameRepo(repo.id, parsed.to);
-  report(channel, `Renamed ${repo.name} to ${parsed.to}.`);
+  await renameRepo(repo.id, to);
+  report(channel, `Renamed ${repo.name} to ${to}.`);
 }
 
 // exported for the contract test; server.ts only ever calls handleExec
