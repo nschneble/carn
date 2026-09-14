@@ -100,9 +100,8 @@ three files that must move in the same commit:
 | `test/contract/ssh-transport.contract.ts` | a regex over the same text          |
 
 Miss one and 1e's check 24 fails, because the cascade reaches 1b through
-1d. This
-isn't a test to fix until it goes green. It's a deliberate three-site
-edit, the same shape as the name-cap change in 1e.
+1d. This isn't a test to fix until it goes green. It's a deliberate
+three-site edit, the same shape as the name-cap change in 1e.
 
 The replacement should name what the server does run and still point at the
 common case. Voice rule: say what happened and what to do, in that order.
