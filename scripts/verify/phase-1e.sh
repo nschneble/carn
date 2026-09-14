@@ -1482,7 +1482,7 @@ else
 fi
 
 # 28
-readonly TITLE_28="mayWrite is tested against a fake store, owner case included"
+readonly TITLE_28="both access predicates are tested against a fake store, owner case included"
 never=$(grep -c 'deepStrictEqual(access.asked, \[\]' test/contract/access.contract.ts)
 # the fake answers off the levels it was asked for, so a caller holding
 # neither the admin flag nor a grant is the one that would say no

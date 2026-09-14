@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Phase 1f exit checks, from docs/phases/1f-rename.md.
-# Prints PASS or FAIL for each of the 14 checks and exits non-zero if any
+# Prints PASS or FAIL for each of the 15 checks and exits non-zero if any
 # fail. Reads DATABASE_URL from the environment, falling back to ./.env.
-# Check 13 re-runs 1e, which runs its own predecessor and so on down the
+# Check 14 re-runs 1e, which runs its own predecessor and so on down the
 # chain, so a full run takes several minutes.
 
 if [ -z "${BASH_VERSION:-}" ]; then
@@ -26,7 +26,7 @@ set -uo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$root" || exit 1
 
-readonly EXPECTED_CHECKS=14
+readonly EXPECTED_CHECKS=15
 readonly REPO_NAME=verify1f
 readonly MOVED_NAME=verify1f-moved
 readonly ADMIN_NAME=verify1f-admin
@@ -298,7 +298,7 @@ release_name() {
 
 restore_other() {
   psql_scratch -c "update repos set name = '$OTHER_NAME' where id = '$other_id'" \
-    > "$work/6.restore" 2>&1
+    > "$work/restore.log" 2>&1
 }
 
 ssh_url() {
@@ -625,13 +625,8 @@ fi
 # 6
 # the unique index is on lower(name), so the upper-case spelling of a taken
 # name has to be refused too, and neither refusal may carry driver text.
-# the pre-check answers both of those without a write. the two legs after
-# them are the window it cannot cover, where the index is what finds the
-# collision: a name that goes from free to taken after the check and
-# before the write. a rename names a specific target, so its race still
-# draws nameTaken. a push races into whatever row is already there, so
-# it draws whatever a normal lookup of that row would - noWrite here,
-# since the racer holds no grant on it
+# this is the pre-check alone, which answers without a write; check 13 is
+# the window it cannot cover
 readonly TITLE_6="a taken name is refused with a sentence, not a driver error"
 if require_renamed 6 "$TITLE_6"; then
   rename_as "$admin_key" "$work/6.same" "$ADMIN_NAME" "$OTHER_NAME"
@@ -639,6 +634,7 @@ if require_renamed 6 "$TITLE_6"; then
   rename_as "$admin_key" "$work/6.cased" "$ADMIN_NAME" "VERIFY1F-OTHER"
   cased_status=$?
   after_taken=$(name_of "$repo_id")
+  other_still=$(name_of "$other_id")
 
   wrong=""
   [ "$same_status" -ne 0 ] || wrong="$wrong renaming onto $OTHER_NAME succeeded;"
@@ -646,81 +642,19 @@ if require_renamed 6 "$TITLE_6"; then
   for out in "$work/6.same.err" "$work/6.cased.err"; do
     grep -qF "$NAME_TAKEN" "$out" \
       || wrong="$wrong $(basename "$out") holds '$(tail -1 "$out")', wanted the nameTaken sentence;"
-  done
-  [ "$after_taken" = "$ADMIN_NAME" ] \
-    || wrong="$wrong the refused rename moved the name to '${after_taken:-gone}';"
-
-  # the writers run with fd 9 closed: the holder reads EOF off the last
-  # write end, and an ssh child holding one would hang release_name
-  race_engaged=0
-  race_status=0
-  if ! hold_name "$RACE_NAME"; then
-    wrong="$wrong the holder never took $RACE_NAME: $(tail -2 "$work/holder.log");"
-  else
-    rename_as "$admin_key" "$work/6.race" "$ADMIN_NAME" "$RACE_NAME" 9>&- &
-    race_pid=$!
-    blocked_on_lock && race_engaged=1
-    release_name
-    wait "$race_pid"
-    race_status=$?
-    restore_other
-
-    [ "$race_engaged" = "1" ] \
-      || wrong="$wrong the racing rename never waited on the index, so it refused on the pre-check;"
-    [ "$race_status" -ne 0 ] || wrong="$wrong the racing rename succeeded;"
-    grep -qF "$RACE_TAKEN" "$work/6.race.err" \
-      || wrong="$wrong the racing rename drew '$(tail -1 "$work/6.race.err")', wanted the nameTaken sentence;"
-  fi
-
-  # the racer holds no grant on the row it collides with, so a losing
-  # push should read exactly like a normal push to someone else's repo
-  push_engaged=0
-  push_status=0
-  if ! hold_name "$RACE_NAME"; then
-    wrong="$wrong the holder never re-took $RACE_NAME: $(tail -2 "$work/holder.log");"
-  else
-    as_user "$other_key" git -C "$seed/$REPO_NAME" push "$(ssh_url "$RACE_NAME")" \
-      main:refs/heads/main > "$work/6.push" 2>&1 9>&- &
-    push_pid=$!
-    blocked_on_lock && push_engaged=1
-    release_name
-    wait "$push_pid"
-    push_status=$?
-    restore_other
-
-    [ "$push_engaged" = "1" ] \
-      || wrong="$wrong the racing push never waited on the index, so it refused on the pre-check;"
-    [ "$push_status" -ne 0 ] || wrong="$wrong the racing push wrote to a repo it has no grant on;"
-    grep -qF "$NO_WRITE_RACE" "$work/6.push" \
-      || wrong="$wrong the racing push drew '$(tail -2 "$work/6.push" | head -1)', wanted the noWrite sentence;"
-  fi
-
-  # what the race legs are for: the write's own refusal reads like the
-  # pre-check's, rather than as the driver error or the generic failure
-  for out in "$work/6.same.err" "$work/6.cased.err" "$work/6.race.err" "$work/6.push"; do
-    [ -f "$out" ] || continue
     grep -qiE 'prisma|P2002|23505|duplicate key|constraint|postgres|at async|at Object' "$out" \
       && wrong="$wrong $(basename "$out") leaked driver text: $(tail -1 "$out");"
     grep -qF "$UNAVAILABLE" "$out" \
       && wrong="$wrong $(basename "$out") fell through to the generic failure;"
   done
-
-  after_race=$(name_of "$repo_id")
-  other_still=$(name_of "$other_id")
-  rows=$(psql_scratch -c "select count(*) from repos")
-  paths_now=$(disk_paths)
-  [ "$after_race" = "$ADMIN_NAME" ] \
-    || wrong="$wrong a refused rename moved the name to '${after_race:-gone}';"
+  [ "$after_taken" = "$ADMIN_NAME" ] \
+    || wrong="$wrong the refused rename moved the name to '${after_taken:-gone}';"
   [ "$other_still" = "$OTHER_NAME" ] \
     || wrong="$wrong the repo holding the name is now '${other_still:-gone}';"
-  [ "$rows" = "2" ] || wrong="$wrong repos holds $rows row(s), wanted 2;"
-  [ "$paths_now" = "$paths_before" ] \
-    || wrong="$wrong the losing push left a repo on disk:$(diff <(printf '%s\n' "$paths_before") <(printf '%s\n' "$paths_now") | tr '\n' ' ');"
-
   if [ -n "$wrong" ]; then
     record FAIL 6 "$TITLE_6" "$wrong"
   else
-    record PASS 6 "$TITLE_6" "both spellings refused on the pre-check, a rename and a push refused by the index, all four by sentence"
+    record PASS 6 "$TITLE_6" "both spellings refused by sentence, both rows untouched"
   fi
 fi
 
@@ -906,26 +840,111 @@ if require_renamed 12 "$TITLE_12"; then
   fi
 fi
 
+# 13
+# the window check 6's pre-check cannot cover: a name that goes from free
+# to taken between the check and the write, where the index is what finds
+# the collision. a rename names a specific target, so its race still draws
+# nameTaken. a push races into whatever row is already there, so it draws
+# what a normal lookup of that row would - noWrite here, since the racer
+# holds no grant on it
+readonly TITLE_13="a collision the pre-check can't see is still refused by sentence"
+if require_renamed 13 "$TITLE_13"; then
+  wrong=""
+
+  # the writers run with fd 9 closed: the holder reads EOF off the last
+  # write end, and an ssh child holding one would hang release_name
+  race_engaged=0
+  race_status=0
+  if ! hold_name "$RACE_NAME"; then
+    wrong="$wrong the holder never took $RACE_NAME: $(tail -2 "$work/holder.log");"
+  else
+    rename_as "$admin_key" "$work/13.race" "$SUFFIX_NAME" "$RACE_NAME" 9>&- &
+    race_pid=$!
+    blocked_on_lock && race_engaged=1
+    release_name
+    wait "$race_pid"
+    race_status=$?
+    restore_other
+
+    [ "$race_engaged" = "1" ] \
+      || wrong="$wrong the racing rename never waited on the index, so it refused on the pre-check;"
+    [ "$race_status" -ne 0 ] || wrong="$wrong the racing rename succeeded;"
+    grep -qF "$RACE_TAKEN" "$work/13.race.err" \
+      || wrong="$wrong the racing rename drew '$(tail -1 "$work/13.race.err")', wanted the nameTaken sentence;"
+  fi
+
+  # the racer holds no grant on the row it collides with, so a losing
+  # push should read exactly like a normal push to someone else's repo
+  push_engaged=0
+  push_status=0
+  if ! hold_name "$RACE_NAME"; then
+    wrong="$wrong the holder never re-took $RACE_NAME: $(tail -2 "$work/holder.log");"
+  else
+    as_user "$other_key" git -C "$seed/$REPO_NAME" push "$(ssh_url "$RACE_NAME")" \
+      main:refs/heads/main > "$work/13.push" 2>&1 9>&- &
+    push_pid=$!
+    blocked_on_lock && push_engaged=1
+    release_name
+    wait "$push_pid"
+    push_status=$?
+    restore_other
+
+    [ "$push_engaged" = "1" ] \
+      || wrong="$wrong the racing push never waited on the index, so it refused on the pre-check;"
+    [ "$push_status" -ne 0 ] || wrong="$wrong the racing push wrote to a repo it has no grant on;"
+    grep -qF "$NO_WRITE_RACE" "$work/13.push" \
+      || wrong="$wrong the racing push drew '$(tail -2 "$work/13.push" | head -1)', wanted the noWrite sentence;"
+  fi
+
+  # the point of both legs: the write's own refusal reads like the
+  # pre-check's, rather than as driver text or the generic failure
+  for out in "$work/13.race.err" "$work/13.push"; do
+    [ -f "$out" ] || continue
+    grep -qiE 'prisma|P2002|23505|duplicate key|constraint|postgres|at async|at Object' "$out" \
+      && wrong="$wrong $(basename "$out") leaked driver text: $(tail -1 "$out");"
+    grep -qF "$UNAVAILABLE" "$out" \
+      && wrong="$wrong $(basename "$out") fell through to the generic failure;"
+  done
+
+  after_race=$(name_of "$repo_id")
+  other_still=$(name_of "$other_id")
+  rows=$(psql_scratch -c "select count(*) from repos")
+  paths_now=$(disk_paths)
+  [ "$after_race" = "$SUFFIX_NAME" ] \
+    || wrong="$wrong the refused rename moved the name to '${after_race:-gone}';"
+  [ "$other_still" = "$OTHER_NAME" ] \
+    || wrong="$wrong the repo holding the name is now '${other_still:-gone}';"
+  [ "$rows" = "2" ] || wrong="$wrong repos holds $rows row(s), wanted 2;"
+  [ "$paths_now" = "$paths_before" ] \
+    || wrong="$wrong the losing push left a repo on disk:$(diff <(printf '%s\n' "$paths_before") <(printf '%s\n' "$paths_now") | tr '\n' ' ');"
+
+  if [ -n "$wrong" ]; then
+    record FAIL 13 "$TITLE_13" "$wrong"
+  else
+    record PASS 13 "$TITLE_13" "a rename and a push both refused by the index, each by its own sentence"
+  fi
+fi
+
 stop_daemon
 unset GIT_SSH_COMMAND
 
-# torn down here, not at check 14: phase-1b.sh's own check 23 counts every
+# torn down here, not at check 15: phase-1b.sh's own check 23 counts every
 # carn_verify_% database, and would read this run's as a stray
 drop_scratch
 rm -rf "$repo_root"
 
-# 13
+# 14
 # after the daemon is down and the scratch database is dropped. both reach
 # here down the chain: 1a's check 9 needs port 3000, and 1b's check 23
 # reads a live scratch as a stray
-readonly TITLE_13="phase-1e.sh still passes in full"
-if require_db 13 "$TITLE_13"; then
-  cascade 13 1e "$TITLE_13"
+readonly TITLE_14="phase-1e.sh still passes in full"
+if require_db 14 "$TITLE_14"; then
+  cascade 14 1e "$TITLE_14"
 fi
 
-# 14
-readonly TITLE_14="the run leaves no scratch database, rows, or repos behind"
-if require_db 14 "$TITLE_14"; then
+# 15
+readonly TITLE_15="the run leaves no scratch database, rows, or repos behind"
+if require_db 15 "$TITLE_15"; then
   strays=$(psql_dev -c "select count(*) from pg_database where datname like 'carn_verify_%'")
   dev_now=$(psql_dev -c "select (select count(*) from repos) || ':' || (select count(*) from ssh_keys)" 2>/dev/null)
   root_now=$(find "$DEFAULT_ROOT" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')
@@ -938,9 +957,9 @@ if require_db 14 "$TITLE_14"; then
   [ "$root_now" = "$dev_root_entries" ] || left="$left $DEFAULT_ROOT went $dev_root_entries to $root_now entries;"
   [ -d "$repo_root" ] && left="$left the temporary repo root survives;"
   if [ -z "$left" ]; then
-    record PASS 14 "$TITLE_14" "development database still $dev_rows repos:ssh_keys"
+    record PASS 15 "$TITLE_15" "development database still $dev_rows repos:ssh_keys"
   else
-    record FAIL 14 "$TITLE_14" "$left"
+    record FAIL 15 "$TITLE_15" "$left"
   fi
 fi
 
