@@ -18,8 +18,8 @@ if (scheme !== "dark" && scheme !== "light") {
 export default defineConfig({
   baseUrl: visualOrigin,
   breakpoints: [
-    { name: "desktop", width: 1440, height: 900 },
     { name: "mobile", width: 375, height: 812 },
+    { name: "desktop", width: 1440, height: 900 },
   ],
   // a forge page is mostly below the fold: tree, readme, and footer
   captureMode: "fullPage",
@@ -30,6 +30,7 @@ export default defineConfig({
     healthCheck: [{ url: `${visualOrigin}/health`, timeoutMs: 60_000 }],
   },
   frozenTime: frozenNow,
+  interactiveMode: true,
   paths: {
     actions: "tuffgal/actions",
     baselines: `tuffgal/baselines/${scheme}`,

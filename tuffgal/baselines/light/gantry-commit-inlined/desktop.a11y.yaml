@@ -12,18 +12,18 @@
       - listitem:
         - link "Commits":
           - /url: /r/gantry/commits
-      - listitem: 3898b95
+      - listitem: 11e621f
 - main:
-  - heading "Bump the version and say so" [level=1]
-  - paragraph: 3898b95
+  - heading "Bump version" [level=1]
+  - paragraph: 11e621f
   - term: Author
   - definition:
     - text: Nick Schneble authored
     - time: 2d
   - term: Parents
   - definition:
-    - link "26a8970":
-      - /url: /r/gantry/commits/26a8970e0ade2d485bf30bb12bb32a95a5973ab5
+    - link "1efab6e":
+      - /url: /r/gantry/commits/1efab6e420f0c30bd73161c43fd98f1a69217b36
   - term: Changed
   - definition: 2 files, +3 added −1 removed
   - term: Signed

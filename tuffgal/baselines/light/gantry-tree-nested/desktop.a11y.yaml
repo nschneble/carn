@@ -26,11 +26,11 @@
         - columnheader "Commit"
         - columnheader "Age"
     - rowgroup:
-      - row "deep.ts Reach the deep path 3d":
+      - row "deep.ts Reach deep path 3d":
         - rowheader "deep.ts":
           - link "deep.ts":
             - /url: /r/gantry/blob/main/apps/web/src/deep.ts
-        - cell "Reach the deep path"
+        - cell "Reach deep path"
         - cell "3d":
           - time: 3d
       - row "mod-00.ts Add mod-00.ts 3w":

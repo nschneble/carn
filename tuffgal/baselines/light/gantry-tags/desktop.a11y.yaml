@@ -31,12 +31,12 @@
           - link "1d":
             - /url: /r/gantry/commits?ref=v1.1.0
             - time: 1d
-      - row "v1.0.0 Bring the assets in 3w":
+      - row "v1.0.0 Bring in assets 3w":
         - rowheader "v1.0.0":
           - link "v1.0.0":
             - /url: /r/gantry/commits?ref=v1.0.0
-        - cell "Bring the assets in":
-          - link "Bring the assets in":
+        - cell "Bring in assets":
+          - link "Bring in assets":
             - /url: /r/gantry/commits?ref=v1.0.0
         - cell "3w":
           - link "3w":

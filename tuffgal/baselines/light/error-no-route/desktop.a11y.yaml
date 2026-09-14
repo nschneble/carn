@@ -5,9 +5,9 @@
     - link "Càrn":
       - /url: /
 - main:
-  - heading "Nothing here" [level=1]
-  - paragraph: That URL doesn't match a route this server has.
-  - paragraph: Check the URL, or find it in all repos.
+  - heading "Nothing to see here" [level=1]
+  - paragraph: That URL doesn't match a route on this server.
+  - paragraph: Check the URL.
   - paragraph:
     - link "All repos":
       - /url: /
