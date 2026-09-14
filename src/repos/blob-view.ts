@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// one ls-tree scoped to the path, then one cat-file: two spawns whatever
-// the file's size, because the read is capped and the truncation happens
-// on the source rather than on the rendered markup
+// uses only two spawns to find and render blobs of any size; reads are
+// capped and the page budget truncation is based off the source
 
 import { blobTimeoutMs, readBlob } from "../git/blob.js";
 import { captureGit } from "../git/capture.js";
@@ -18,11 +17,11 @@ export type BlobView = {
   path: string;
   oid: string;
   bytes: number;
-  kind: BlobKind;
+  whole: boolean;
   format: RasterFormat | null;
+  kind: BlobKind;
   source: string | null;
   lines: number;
-  whole: boolean;
 };
 
 // past this a blob reports its size rather than buffering to count lines
@@ -111,29 +110,13 @@ export async function loadBlobView(options: {
     signal,
   });
 
+  const oid = entry.oid;
+  const bytes = entry.bytes;
   const whole = entry.bytes <= maxSourceBytes;
-  const shell = { rev, path, oid: entry.oid, bytes: entry.bytes, whole };
   const format = sniffRaster(body);
+  const kind = format ? "raster" : binary(body) ? "binary" : "text";
+  const source = kind === "text" && whole ? body.toString("utf8") : null;
+  const lines = source ? countLines(source) : 0;
 
-  if (format !== null) {
-    return { ...shell, kind: "raster", format, source: null, lines: 0 };
-  }
-
-  if (binary(body)) {
-    return { ...shell, kind: "binary", format: null, source: null, lines: 0 };
-  }
-
-  if (!whole) {
-    return { ...shell, kind: "text", format: null, source: null, lines: 0 };
-  }
-
-  const source = body.toString("utf8");
-
-  return {
-    ...shell,
-    kind: "text",
-    format: null,
-    source,
-    lines: countLines(source),
-  };
+  return { rev, path, oid, bytes, whole, format, kind, source, lines };
 }

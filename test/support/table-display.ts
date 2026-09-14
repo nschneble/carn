@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// a display value on a table element is what costs the native semantics.
-// css alone cannot say which tag a class sits on, so the markup is read
-// first and the sheet is judged against the classes and ids it puts on a
-// table element — the shape .row was, and a type-only reader misses.
-// none and table-cell are exempt: see BRAND.md 12 for why
+// display values on table elements ruin the native semantics, so the
+// markup is read first and the sheet is judged against the classes and ids
+// it puts on table elements; none + table-cell are exempt (BRAND.md §12)
 
 const tableTag = "table|thead|tbody|tfoot|tr|th|td|caption";
-
 const openingTag = new RegExp(`<(${tableTag})\\b([^>]*)>`, "gi");
 const attribute = /\b(class|id)\s*=\s*"([^"]*)"/gi;
 

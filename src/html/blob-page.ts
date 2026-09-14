@@ -75,10 +75,8 @@ function extensionOf(path: string): string {
 }
 
 function typeName(blob: BlobView): string {
-  if (blob.format !== null) {
+  if (blob.format)
     return `${blob.format.extension === "jpg" ? "JPEG" : blob.format.extension.toUpperCase()} image`;
-  }
-
   if (blob.kind === "text") return "Text file";
 
   return binaryLabels[extensionOf(blob.path)] ?? "Binary file";
@@ -272,7 +270,7 @@ export function blobPage(view: BlobPage): string {
     const sheetWire = view.sheetWire ?? stylesheetWireBytes;
     const room = remainingWireBytes(preview(view, ""), sheetWire);
 
-    if (blob.whole && blob.format !== null && blob.bytes <= room) {
+    if (blob.whole && blob.format && blob.bytes <= room) {
       return preview(
         view,
         blobAssetPath(view.repo, { oid: blob.oid, format: blob.format }),

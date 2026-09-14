@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// one git log per page, from a cursor rather than an offset: --skip walks
-// the whole history from the tip again on every page. a boundary sha cannot
-// restore the walker's queued frontier, so a merge-heavy dag can drop a side
-// branch at the seam; linear history is exact
+// one git log per page
 
 import { captureGit } from "../git/capture.js";
 import { oidPattern } from "../git/oid.js";
@@ -24,7 +21,7 @@ export type CommitLog = {
 export const logRowCap = 16;
 export const logTimeoutMs = 5_000;
 
-// sixteen subjects longer than this would carry the page past its budget
+// sixteen characters longer would carry the page past its budget
 export const maxSubjectChars = 500;
 
 const bytesPerCommit = 8192;
@@ -34,9 +31,9 @@ function parse(listing: string, cap: number): Commit[] {
 
   for (const record of listing.split("\n")) {
     const [sha, seconds, subject] = record.split("\0");
-    if (sha === undefined || seconds === undefined || subject === undefined) {
-      continue;
-    }
+    if (sha === undefined) continue;
+    if (seconds === undefined) continue;
+    if (subject === undefined) continue;
     if (!oidPattern.test(sha)) continue;
 
     commits.push({

@@ -4,10 +4,10 @@
     { "kind": "navigate", "path": "/r/gantry/commits" },
     {
       "kind": "click",
-      "hint": { "role": "link", "text": "Bump the version and say so" }
+      "hint": { "role": "link", "text": "Bump version" }
     }
   ],
   "expect": {
-    "anyOf": [{ "role": "heading", "text": "Bump the version and say so" }]
+    "anyOf": [{ "role": "heading", "text": "Bump version" }]
   }
 }

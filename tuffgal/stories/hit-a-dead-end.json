@@ -1,5 +1,5 @@
 {
-  "story": "A visitor types four URLs that name nothing",
+  "story": "A visitor types five invalid URLs",
   "actions": [
     { "action": "error-no-file" },
     { "action": "error-no-directory" },

@@ -97,6 +97,7 @@ function readTable(): Reading {
   const root = document.documentElement;
   const body = document.querySelector(".tbl tbody") as HTMLElement | null;
   const paragraph = document.querySelector("p") as HTMLElement | null;
+
   // a cell with no child was skipped here once, which is exactly how a
   // childless cell shipped: it holds no min-height, so it shortens its row
   const childless = [...document.querySelectorAll(".tbl tbody tr")].flatMap(
@@ -119,12 +120,14 @@ function readTable(): Reading {
           {
             // the row index keeps two cells reading "1w" apart
             key: `${index}|${column}`,
+
             column,
             text: (child.textContent ?? "").trim(),
             width: box.width,
             height: box.height,
             laidOut: cell.getClientRects().length > 0,
             clipped: child.scrollHeight > child.clientHeight + 1,
+
             // scrollWidth rounds up, so a whole pixel of slack is the floor
             // below which nothing is actually cut
             ellipsed: child.scrollWidth > Math.ceil(box.width) + 1,
@@ -313,10 +316,8 @@ test("no cell in any served table is childless", () => {
 });
 
 // 320px is below the breakpoint, so the two views whose middle column is
-// description text do not render it and owe no target. the three whose
-// middle column is a link render it at every width and owe one. that is
-// asserted rather than skipped: a cell dropping out of layout for any
-// other reason would read as this one does
+// description text do not render it and owe no target; the three whose
+// middle column is a link render it at every width and owe one
 const dropsSubject = new Set(["/tree", "/index"]);
 
 test("every cell's own box holds 24x24 under the spacing overrides", () => {
@@ -344,10 +345,8 @@ test("every cell's own box holds 24x24 under the spacing overrides", () => {
   }
 });
 
-// LAYOUT 02 splits the rule the tension came from: the name is the link
-// text and the row's accessible name, so it wraps and keeps every
-// character. the subject and the description are metadata reachable whole
-// elsewhere, so the overrides ellipse them the same as they do without
+// the name is the link text and the row's accessible name, so it wraps and
+// is kept whole; subject and description are metadata and truncated
 test("the spacing overrides cost the name column not one character", (t) => {
   for (const path of Object.keys(documents)) {
     const wanted = names[path] as string[];
@@ -361,7 +360,6 @@ test("the spacing overrides cost the name column not one character", (t) => {
 
     for (const [index, name] of wanted.entries()) {
       const rendered = read[index] as string;
-
       assert.ok(
         rendered.startsWith(name),
         `${path} row ${index} reads "${rendered}", not the fixture's "${name}"`,
@@ -372,7 +370,6 @@ test("the spacing overrides cost the name column not one character", (t) => {
     // cutting it, which is what the criterion asks for
     for (const cell of (spaced[path] as Reading).cells) {
       if (cell.column !== "name") continue;
-
       assert.ok(
         !cell.ellipsed && !cell.clipped,
         `${path} ${cell.key} clips the name "${cell.text}" at ${reflowWidth}px under the overrides`,

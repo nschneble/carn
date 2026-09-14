@@ -4,7 +4,7 @@
     { "kind": "navigate", "path": "/r/gantry/commits" },
     {
       "kind": "click",
-      "hint": { "role": "link", "text": "Generate the tables" }
+      "hint": { "role": "link", "text": "Generate tables" }
     }
   ],
   "expect": {

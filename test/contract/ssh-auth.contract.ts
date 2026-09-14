@@ -46,7 +46,6 @@ function keygen(
 function parsed(text: string): ParsedKey {
   const key = ssh2.utils.parseKey(text);
   assert.ok(!(key instanceof Error), "ssh-keygen produced an unparseable key");
-
   return key;
 }
 
@@ -69,7 +68,6 @@ function store(
   touched: string[] = [],
 ): KeyStore & { looked: string[]; touched: string[] } {
   const looked: string[] = [];
-
   return {
     looked,
     touched,
@@ -105,13 +103,11 @@ test("the fingerprint matches ssh-keygen -lf byte for byte", () => {
   const line = execFileSync("ssh-keygen", ["-lf", `${mine.path}.pub`], {
     encoding: "utf8",
   });
-
   assert.strictEqual(fingerprint(myKey.getPublicSSH()), line.split(" ")[1]);
 });
 
 test("a method other than publickey is rejected, offering publickey", async () => {
   const outcome = await checkAuth(request({ method: "password" }), store(row));
-
   assert.deepStrictEqual(outcome, {
     status: "reject",
     reason: "bad-method",
@@ -161,7 +157,6 @@ test("a probe for a fingerprint with no row is rejected, not probed", async () =
 
 test("a signature with nothing to verify it against is rejected", async () => {
   const outcome = await checkAuth(signed({ blob: undefined }), store(row));
-
   assert.deepStrictEqual(outcome, {
     status: "reject",
     reason: "unsigned-blob",
@@ -194,7 +189,7 @@ test("a signature over other data is rejected", async () => {
   });
 });
 
-test("a row whose stored key is not the offered key is rejected", async () => {
+test("a row whose stored key isn't the offered key is rejected", async () => {
   const outcome = await checkAuth(
     signed(),
     store({ ...row, publicKey: theirs.publicKey }),

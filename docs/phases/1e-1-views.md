@@ -58,7 +58,7 @@ path slot. Don't reintroduce the problem it solved.
 Plus the decisions carried from the 1d review, and the extractions 1e's
 call sites finally justify.
 
-## What 1e is not
+## What 1e isn't
 
 - Issues, PRs, or anything they need. Phases 3 and 4.
 - `/new`, `/settings`, `/r/:repo/settings`. Admin forms, post-MLP.

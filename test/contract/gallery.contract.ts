@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// the axe suite audits the gallery, so a primitive missing from the
-// gallery is a primitive nothing audits
+// the axe suite audits the gallery
 
 import assert from "node:assert";
 import { test } from "node:test";

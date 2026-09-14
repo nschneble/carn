@@ -65,7 +65,7 @@ export async function spawnGit(options: GitOptions): Promise<GitChild> {
     throw options.signal.reason;
   }
 
-  // spawn() throws on a NULL in args, cwd, or env before a handler exists
+  // spawn() throws on a NUL in args, cwd, or env before a handler exists
   let child: ChildProcessByStdio<Writable, Readable, Readable>;
   try {
     child = spawn("git", options.args, {

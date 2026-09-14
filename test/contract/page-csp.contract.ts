@@ -186,7 +186,7 @@ test("the footer's source link takes the accent and keeps its underline", async 
     assert.strictEqual(
       link.color,
       `rgb(${Number.parseInt(red, 16)}, ${Number.parseInt(green as string, 16)}, ${Number.parseInt(blue as string, 16)})`,
-      `the ${theme} source link is not --accent-text, so prose links sit at the browser's own blue`,
+      `the ${theme} source link isn't --accent-text, so prose links sit at the browser's own blue`,
     );
     assert.strictEqual(
       link.decoration,
@@ -251,17 +251,17 @@ test("the harness bites: the pre-fix document loses all three inline styles", as
 
   assert.ok(
     refused.length >= 1,
-    "a document carrying a <style> block and a style attribute drew no CSP refusal, so the fixture server is not sending the header",
+    "a document carrying a <style> block and a style attribute drew no CSP refusal, so the fixture server isn't sending the header",
   );
   assert.strictEqual(
     dropped.sheets,
     1,
-    "the inline <style> block loaded, so style-src is not what it was measured to be",
+    "the inline <style> block loaded, so style-src isn't what it was measured to be",
   );
   assert.notStrictEqual(
     dropped.heading,
     "rgb(4, 5, 6)",
-    "the style attribute applied, so style-src is not what it was measured to be",
+    "the style attribute applied, so style-src isn't what it was measured to be",
   );
   assert.strictEqual(
     measured.generated,

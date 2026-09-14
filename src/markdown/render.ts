@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// remote http(s) image urls are permitted here and blocked by CSP
-// (img-src 'self' data:, src/app.ts): parse layer and enforcement layer
-// disagree on purpose. degrading to alt text is PLAN.md 04's privacy
-// control, and a proxy would serve first-party under CSP, not replace it
+// remote image urls are permitted here and blocked by CSP, but the parse
+// and enforcement layers disagree intentionally; degrading to alt text is
+// PLAN.md §04's privacy control
 
 import MarkdownIt, { type Env } from "markdown-it";
 import { type Raw, raw } from "../html/index.js";
@@ -37,7 +36,6 @@ function baseOf(env: Env | undefined): RelativeBase | null {
   return { repo, rev };
 }
 
-// no tree lookup: a spawn per link, and a 404 beats a link pointing wrong
 function rewrite(
   url: string | number | null,
   base: RelativeBase | null,
@@ -60,10 +58,10 @@ markdown.renderer.rules.link_open = (tokens, index, options, env, self) => {
   const token = tokens[index];
   const local = rewrite(token.attrGet("href"), baseOf(env), "blob");
 
-  if (local !== null) token.attrSet("href", local);
+  if (local) token.attrSet("href", local);
 
   const href = token.attrGet("href");
-  if (href !== null && external.test(String(href).trim())) {
+  if (href && external.test(String(href).trim())) {
     token.attrSet("rel", "nofollow ugc");
   }
 
@@ -76,7 +74,7 @@ markdown.renderer.rules.image = (tokens, index, options, env, self) => {
   const token = tokens[index];
   const local = rewrite(token.attrGet("src"), baseOf(env), "asset");
 
-  if (local !== null) token.attrSet("src", local);
+  if (local) token.attrSet("src", local);
 
   return defaultImage
     ? defaultImage(tokens, index, options, env, self)

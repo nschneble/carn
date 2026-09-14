@@ -38,7 +38,7 @@ function channel(value: number): number {
 
 function luminance(hex: string): number {
   const match = hex.match(/^#([0-9a-f]{6})$/i);
-  assert.ok(match, `${hex} is not a six-digit hex color`);
+  assert.ok(match, `${hex} isn't a six-digit hex color`);
   const digits = match[1] as string;
   const [red, green, blue] = [0, 2, 4].map((offset) =>
     channel(Number.parseInt(digits.slice(offset, offset + 2), 16)),
@@ -191,7 +191,7 @@ test("a label on a fill clears AA, and the fill's edge clears 3:1", () => {
   }
 });
 
-test("a component's only boundary clears 3:1 and --rule does not", () => {
+test("a component's only boundary clears 3:1 and --rule doesn't", () => {
   for (const [name, palette] of palettes) {
     for (const ground of grounds) {
       const border = contrast(
@@ -282,11 +282,11 @@ test("each primitive draws from the token the contrast check measured", () => {
   }
 
   assert.match(rule(".chip--current"), /background: var\(--accent-fill\);/);
+  assert.match(rule(".tbl .is-dir .name > *"), /color: var\(--accent-text\);/);
   assert.match(
     rule(".chip--current"),
     /border: 2px solid var\(--accent-fill\);/,
   );
-  assert.match(rule(".tbl .is-dir .name > *"), /color: var\(--accent-text\);/);
 
   assert.match(rule(":focus-visible"), /outline: 2px solid var\(--accent\);/);
   assert.match(rule(":focus-visible"), /outline-offset: 2px;/);
@@ -294,7 +294,7 @@ test("each primitive draws from the token the contrast check measured", () => {
   assert.doesNotMatch(stylesheet, /outline:\s*none/);
 });
 
-test("the button's hover brightening does not cost it AA", () => {
+test("the button's hover brightening doesn't cost it AA", () => {
   const factor = rule(".btn:hover").match(/filter: brightness\(([\d.]+)\)/);
   assert.ok(factor, ".btn:hover no longer brightens");
 
@@ -347,10 +347,10 @@ test("a state signal survives the accent being discarded", () => {
   assert.doesNotMatch(stylesheet, /content:\s*"\//);
 });
 
-// authored, not computed: the ban is what keeps the native semantics, but
-// <caption class="vh"> is out of flow and a ua blockifies an absolutely
-// positioned box whatever the sheet asked for. chromium keeps role=caption
-// through it, so what this reads is the ban a stylesheet can break
+// the ban is what keeps the native semantics, but <caption class="vh"> is
+// out of flow and a ua blockifies an absolutely positioned box whatever
+// the sheet asked for. chromium keeps role=caption through it, so what
+// this reads is the ban a stylesheet can break
 test("no table element carries an authored display override", () => {
   const targets = tableTargets(...servedTables);
 
@@ -390,13 +390,14 @@ test("no table element carries an authored display override", () => {
     "the reader flags a class that sits on no table element",
   );
 
-  // the exemption is not a dead branch: the sheet really does hide the
+  // the exemption isn't a dead branch: the sheet really does hide the
   // description column below the breakpoint and hand it back above one
   assert.match(
     stylesheet,
     /\.repos \.msg,\n\.tree \.msg \{\n {2}display: none;\n\}/,
     "nothing in the sheet takes the exemption, so it excuses only a future mistake",
   );
+
   assert.match(
     stylesheet,
     /\.repos \.msg,\n {2}\.tree \.msg \{\n {4}display: table-cell;\n {2}\}/,
@@ -439,7 +440,7 @@ test("the wash covers what takes a click, by row or by cell", () => {
   assert.doesNotMatch(
     stylesheet,
     /tbody tr[^{]*\{[^}]*position: relative/,
-    "a row is positioned again, which is what an overlay needs and Safari does not honor",
+    "a row is positioned again, which is what an overlay needs and Safari doesn't honor",
   );
   assert.deepStrictEqual(
     [...stylesheet.matchAll(/^.*::after/gm)].map(([one]) => one.trim()),

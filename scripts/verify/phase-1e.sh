@@ -121,7 +121,7 @@ psql_scratch() {
 
 require_db() {
   if [ -z "${DATABASE_URL:-}" ]; then
-    record FAIL "$1" "$2" "DATABASE_URL is not set. Copy .env.example to .env, or export it."
+    record FAIL "$1" "$2" "DATABASE_URL isn't set. Copy .env.example to .env, or export it."
     return 1
   fi
   return 0
@@ -181,7 +181,7 @@ require_scratch() {
 
 require_daemon() {
   if [ "$daemon_ok" != 1 ]; then
-    record FAIL "$1" "$2" "the daemon is not running, see check 2"
+    record FAIL "$1" "$2" "the daemon isn't running, see check 2"
     return 1
   fi
   return 0
@@ -722,7 +722,7 @@ if require_db 2 "$TITLE_2" && require_build 2 "$TITLE_2" && require_scratch 2 "$
         else
           contract 2 "$TITLE_2" 3 "200, class-based markup and the theme in $sheet_href" \
             blob-page syntax-palette -- \
-            "a file under the cap renders whole, with no notice and no hatch" \
+            "a file under the cap renders whole, with no notice or hatch" \
             "every hljs class the sheet colors resolves to one of four tokens" \
             "every selector in the block names a real highlight.js class"
         fi
@@ -769,8 +769,8 @@ if require_daemon 3 "$TITLE_3" && require_seed 3 "$TITLE_3"; then
       "$work/blob-cut.body" | head -1)
     contract 3 "$TITLE_3" 6 "3,000 source lines cut to $shown over the wire" \
       blob-page -- \
-      "a file under the cap renders whole, with no notice and no hatch" \
-      "a file over the cap is cut on a line boundary and says so" \
+      "a file under the cap renders whole, with no notice or hatch" \
+      "a file over the cap is cut on a line boundary" \
       "a raster under the cap inlines first-party, eagerly, with no alt" \
       "an oversize raster and a binary decline in the file's own words" \
       "the cap is computed from the budget, so a bigger sheet shrinks it" \
@@ -832,9 +832,9 @@ if require_daemon 5 "$TITLE_5" && require_seed 5 "$TITLE_5"; then
     fetch_url "$(raw_url "/r/$REPO_NAME/blob/main/big.ts")" "$work/raw-cut" > /dev/null
     fetch_url "$(raw_url "/r/$REPO_NAME/blob/main/wide.png")" "$work/raw-wide" > /dev/null
     grep -qF "href=\"$RAW_ORIGIN/$REPO_NAME/main/big.ts\">Show entire file" \
-      "$work/raw-cut.body" || wrong="$wrong the set daemon's text hatch does not point at the origin;"
+      "$work/raw-cut.body" || wrong="$wrong the set daemon's text hatch doesn't point at the origin;"
     grep -qF "href=\"$RAW_ORIGIN/$REPO_NAME/main/wide.png\">Open raw" \
-      "$work/raw-wide.body" || wrong="$wrong the set daemon's object hatch does not point at the origin;"
+      "$work/raw-wide.body" || wrong="$wrong the set daemon's object hatch doesn't point at the origin;"
     if [ -n "$wrong" ]; then
       record FAIL 5 "$TITLE_5" "$wrong"
     else
@@ -870,7 +870,7 @@ if require_daemon 6 "$TITLE_6" && require_seed 6 "$TITLE_6"; then
     [ "$two" -gt 0 ] || wrong="$wrong page two lists nothing;"
     [ "$shared" = "0" ] || wrong="$wrong the two pages share $shared sha(s);"
     grep -qF "$cursor" "$work/log2.shas" \
-      || wrong="$wrong page two does not begin at the cursor it was given;"
+      || wrong="$wrong page two doesn't begin at the cursor it was given;"
     scoped=$(fetch_page "/r/$REPO_NAME/commits?ref=topic" "$work/log-topic")
     [ "$scoped" = "200" ] || wrong="$wrong ?ref=topic answered $scoped;"
   fi
@@ -906,7 +906,7 @@ if require_daemon 7 "$TITLE_7" && require_seed 7 "$TITLE_7"; then
   [ "$inlined" -gt 0 ] || wrong="$wrong the root commit inlined nothing at all;"
   [ "$tail_links" -gt 0 ] || wrong="$wrong the root commit inlined everything, so nothing was linked;"
   grep -qF 'href="#f-0"' "$work/commit-one.body" \
-    || wrong="$wrong the one-file commit's row does not anchor to an inlined diff;"
+    || wrong="$wrong the one-file commit's row doesn't anchor to an inlined diff;"
   grep -qE '\+[0-9]+<span class="vh"> added</span>' "$work/commit-one.body" \
     || wrong="$wrong the one-file commit's row carries no counts;"
   grep -qF '<pre class="src diff"' "$work/commit-one.body" \
@@ -917,9 +917,9 @@ if require_daemon 7 "$TITLE_7" && require_seed 7 "$TITLE_7"; then
     contract 7 "$TITLE_7" 4 "$one_files file whole, $big_files listed with $inlined inlined and $tail_links linked" \
       commit -- \
       "an ordinary commit reports every path it touched, with its counts" \
-      "a one-file commit renders whole, and still shows the file list" \
+      "a one-file commit renders whole and shows the file list" \
       "the diffs stop at the first file that would overrun, and the rest are links" \
-      "the page a cutoff produces is really under the budget, measured"
+      "the page a cutoff produces is really under the budget"
   fi
 fi
 
@@ -973,7 +973,7 @@ if require_daemon 9 "$TITLE_9" && require_seed 9 "$TITLE_9"; then
   [ "$tree_status" = "200" ] || wrong="$wrong the tree answered $tree_status;"
   [ "$tree_spawns" -gt 0 ] || wrong="$wrong the shim recorded no call, so it never reached the daemon's PATH;"
   [ "$walks" = "1" ] || wrong="$wrong the listing cost $walks log --name-status call(s), wanted 1;"
-  [ "$bounded_walk" -ge 1 ] || wrong="$wrong the walk carries no --max-count, so it is not bounded;"
+  [ "$bounded_walk" -ge 1 ] || wrong="$wrong the walk carries no --max-count, so it isn't bounded;"
   [ "$filled" -gt 0 ] || wrong="$wrong no row carries a subject from the walk;"
   grep -qE '<time datetime="2026-01-0[0-9]T' "$work/tree.body" \
     || wrong="$wrong no row carries an age from the walk;"
@@ -1018,7 +1018,7 @@ if require_daemon 10 "$TITLE_10" && require_seed 10 "$TITLE_10"; then
   [ "$sheet_status" = "200" ] || over="$over the stylesheet answered ${sheet_status:-nothing};"
   [ "$served_sheet" = "$sheet_wire" ] \
     || over="$over the served sheet is $served_sheet B on the wire, the budget counted $sheet_wire;"
-  grep -qF '  ' "$work/sheet.body" && over="$over the served sheet is not minified;"
+  grep -qF '  ' "$work/sheet.body" && over="$over the served sheet isn't minified;"
   if [ -n "$over" ]; then
     record FAIL 10 "$TITLE_10" "$over"
   else
@@ -1030,8 +1030,8 @@ if require_daemon 10 "$TITLE_10" && require_seed 10 "$TITLE_10"; then
       "a tree page stays inside the weight budget" \
       "the repo page fits the weight budget as wire bytes, fonts in" \
       "the wire measurement is a compression, not a rename" \
-      "the whole page fits the budget with both families, images, and the sheet" \
-      "minifying is a serve-time transform that changes no rule"
+      "the page fits the budget with fonts, images, and styles" \
+      "minifying is a serve-time non-destructive transformation"
   fi
 fi
 
@@ -1061,7 +1061,7 @@ if require_daemon 11 "$TITLE_11" && require_seed 11 "$TITLE_11"; then
     contract 11 "$TITLE_11" 5 "against a budget of $SPAWN_BUDGET:$counted" \
       repo-page commit commit-log refs tree-page -- \
       "a repo page render stays inside the spawn budget" \
-      "one commit page costs three spawns whatever it touched" \
+      "one commit page costs three spawns" \
       "one render costs one spawn" \
       "one page render costs one spawn" \
       "a listing costs one ls-tree and one log, at every depth"
@@ -1105,13 +1105,13 @@ contract 13 "zero axe violations across both render paths, on every new view" 14
 # PLAN 00 says every index view is a table, and this wave brought the code
 # to it. a ref row carries three links, so it washes whole and is covered
 # end to end; a one-link row washes its name cell and there is no overlay
-# anywhere, because a <tr> is not a containing block for one in Safari
+# anywhere, because a <tr> isn't a containing block for one in Safari
 readonly TITLE_14="both lists are tables with three links per row, and no overlay anywhere"
 if require_daemon 14 "$TITLE_14" && require_seed 14 "$TITLE_14"; then
   wrong=""
   for page in branches tags; do
     grep -qF '<table class="tbl refs">' "$work/$page.body" \
-      || wrong="$wrong /$page is not a table;"
+      || wrong="$wrong /$page isn't a table;"
     grep -qE '<ul class="refs"' "$work/$page.body" \
       && wrong="$wrong /$page still carries Row list markup;"
     [ "$(occurrences "$work/$page.body" '<tr class="row">')" -gt 0 ] \
@@ -1149,9 +1149,9 @@ if require_daemon 15 "$TITLE_15" && require_seed 15 "$TITLE_15"; then
   [ "$ancestors" = "5" ] \
     || wrong="$wrong the trail carries $ancestors ancestor link(s), wanted 5;"
   grep -qF '<span aria-hidden="true"> » </span>' "$work/crumbs" \
-    || wrong="$wrong the separator is not real aria-hidden dom text;"
+    || wrong="$wrong the separator isn't real aria-hidden dom text;"
   grep -qF '<span class="here">deep.ts</span>' "$work/crumbs" \
-    || wrong="$wrong the current segment is not an unlinked here span;"
+    || wrong="$wrong the current segment isn't an unlinked here span;"
   grep -qF '<li class="fold" aria-hidden="true">' "$work/crumbs" \
     || wrong="$wrong a six-segment trail renders no fold;"
   grep -qF '<li class="mid">' "$work/crumbs" \
@@ -1169,7 +1169,7 @@ if require_daemon 15 "$TITLE_15" && require_seed 15 "$TITLE_15"; then
     contract 15 "$TITLE_15" 6 "$followed ancestor link(s) followed, all 200" \
       breadcrumb -- \
       "the separator is real dom text, and every one is aria-hidden" \
-      "ancestors are links, and the current segment is not" \
+      "ancestors are links, and the current segment isn't one" \
       "every path segment carries the tree route at its own depth" \
       "every ancestor link on a blob three levels deep answers 200" \
       "the collapse drops the middle from the layout and the a11y tree" \
@@ -1195,7 +1195,7 @@ if require_daemon 16 "$TITLE_16" && require_scratch 16 "$TITLE_16"; then
   grep -qF "$BAD_NAME" "$work/16b.body" \
     || wrong="$wrong a $((NAME_CAP + 1))-character name drew no bad-name page;"
   grep -qF "$BAD_NAME_NEXT" "$work/16b.body" \
-    || wrong="$wrong the refusal copy does not name $NAME_CAP characters;"
+    || wrong="$wrong the refusal copy doesn't name $NAME_CAP characters;"
 
   took=$(psql_scratch -c \
     "insert into repos (id, owner_id, name, created_at) select gen_random_uuid(), id, '$at_cap', now() from users limit 1" 2>&1)
@@ -1211,10 +1211,10 @@ if require_daemon 16 "$TITLE_16" && require_scratch 16 "$TITLE_16"; then
   # the quantifier is one anchor plus a repeat, so the cap is {0,39}
   for source in src/html/error-page.ts src/ssh/exec.ts; do
     grep -qF "up to $NAME_CAP characters" "$source" \
-      || wrong="$wrong $source's refusal copy does not name $NAME_CAP characters;"
+      || wrong="$wrong $source's refusal copy doesn't name $NAME_CAP characters;"
   done
   grep -qE '\{0,39\}' src/repos/resolve.ts \
-    || wrong="$wrong namePattern is not a {0,39} repeat;"
+    || wrong="$wrong namePattern isn't a {0,39} repeat;"
   find prisma/migrations -name 'migration.sql' -exec cat {} + \
     | tr '\n' ' ' | grep -qE 'repos_name_format[^;]*\{0,39\}' \
     || wrong="$wrong no migration's repos_name_format CHECK is a {0,39} repeat;"
@@ -1275,13 +1275,13 @@ for pair in "captureGit:src/git/capture.ts" "parseLsTree:src/git/ls-tree.ts" \
   [ "$defs" = "1" ] || wrong="$wrong $name is exported from $defs file(s) under src, wanted 1;"
   [ "$any" = "1" ] || wrong="$wrong $name is defined in $any file(s) under src, wanted 1;"
   git grep --untracked -qE "^export (async )?function $name\(" -- "$home" \
-    || wrong="$wrong $name is not defined in $home;"
+    || wrong="$wrong $name isn't defined in $home;"
 done
 # nothing under src re-implements the spawn-and-collect body: the raw
 # spawnGit is for the two streaming transports, and capture.ts wraps it
 spawners=$(git grep --untracked -l 'spawnGit' -- src | sort | tr '\n' ' ')
 [ "$spawners" = "src/git/capture.ts src/git/spawn.ts src/routes/git-http.ts src/ssh/exec.ts " ] \
-  || wrong="$wrong spawnGit reaches '$spawners', which is not capture plus the two transports;"
+  || wrong="$wrong spawnGit reaches '$spawners', which isn't capture plus the two transports;"
 sshdb=$(git grep --untracked -l 'from "\.\./db\.js"' -- src/ssh | sort | tr '\n' ' ')
 [ "$sshdb" = "src/ssh/server.ts " ] \
   || wrong="$wrong db is imported under src/ssh by '$sshdb', wanted server.ts alone;"
@@ -1292,11 +1292,11 @@ else
 fi
 
 # 20
-# spelled as a pattern so this script is not itself a hit
+# spelled as a pattern so this script isn't itself a hit
 spawn_shell='shell:[[:space:]]*true'
 printf 'spawn(cmd, { %s: %s })\n' shell true > "$work/20.control"
 if ! grep -qE "$spawn_shell" "$work/20.control"; then
-  record FAIL 20 "no shell-enabled spawn in source" "the pattern does not match a known violation; it cannot gate"
+  record FAIL 20 "no shell-enabled spawn in source" "the pattern doesn't match a known violation; it cannot gate"
 else
   # source only: docs quote the rule, --untracked sees uncommitted files
   hits=$(git grep --untracked -nE "$spawn_shell" -- src test scripts prisma prisma.config.ts)
@@ -1315,7 +1315,7 @@ spdx_line='// SPDX-License-Identifier: AGPL-3.0-or-later'
 printf '%s\n' "$spdx_line" > "$work/21.good"
 printf 'no header\n' > "$work/21.bad"
 if [ "$(head -1 "$work/21.good")" != "$spdx_line" ] || [ "$(head -1 "$work/21.bad")" = "$spdx_line" ]; then
-  record FAIL 21 "$TITLE_21" "the header comparison does not discriminate; it cannot gate"
+  record FAIL 21 "$TITLE_21" "the header comparison doesn't discriminate; it cannot gate"
 else
   sources=$(git ls-files --cached --others --exclude-standard -- src test scripts \
     | grep '\.ts$' | grep -v '^src/generated/')
@@ -1433,11 +1433,11 @@ fi
 grep -qF 'keyset cursor on lower(name)' src/repos/list.ts \
   || coll_detail="$coll_detail src/repos/list.ts no longer names a keyset cursor on lower(name);"
 # spelled as a pattern, and the control assembled from parts, so this
-# script is not itself the hit it is looking for
+# script isn't itself the hit it is looking for
 counted_walk='rev-list[[:space:]]+--count'
 printf '%s --%s\n' rev-list count > "$work/26.control"
 if ! grep -qE "$counted_walk" "$work/26.control"; then
-  coll_detail="$coll_detail the counted-walk pattern does not match a known hit; it cannot gate;"
+  coll_detail="$coll_detail the counted-walk pattern doesn't match a known hit; it cannot gate;"
 else
   stale=$(git grep --untracked -nE "$counted_walk" -- src test scripts)
   [ -z "$stale" ] || coll_detail="$coll_detail a counted rev-list walk survives at: $stale;"
@@ -1446,18 +1446,18 @@ fi
 
 # 27
 readonly TITLE_27="raw SQL sits at exactly three sites, each naming what it rejects"
-# spelled around the tag name, so this script is not itself a hit, with a
+# spelled around the tag name, so this script isn't itself a hit, with a
 # control that proves the pattern still finds one
 raw_tag='\$(query|execute)Raw'
 printf 'db.%s%s`SELECT 1`\ndb.%s%s`TRUNCATE x`\n' '$' queryRaw '$' executeRaw \
   > "$work/27.control"
 wrong=""
 if [ "$(grep -cE "$raw_tag" "$work/27.control")" != "2" ]; then
-  wrong="$wrong the raw-tag pattern does not match a known call; it cannot gate;"
+  wrong="$wrong the raw-tag pattern doesn't match a known call; it cannot gate;"
 fi
 git grep --untracked -nE "$raw_tag" -- src test scripts \
   ':!src/generated' > "$work/27.all" 2>/dev/null
-# a test that swaps the tag for a stub is not a call site, and the
+# a test that swaps the tag for a stub isn't a call site, and the
 # assignment is what tells the two apart
 grep -vE "$raw_tag[[:space:]]*=" "$work/27.all" > "$work/27.calls"
 call_sites=$(cut -d: -f1 "$work/27.calls" | sort -u | tr '\n' ' ')
@@ -1527,7 +1527,7 @@ if require_daemon 29 "$TITLE_29" && require_seed 29 "$TITLE_29"; then
       tree-page -- \
       "a nested path lists its own entries, not the root's" \
       "the cap and the lift work at a nested depth too" \
-      "a path that is not a tree is nothing, never a redirect" \
+      "a path that isn't a tree is nothing, never a redirect" \
       "no page route redirects"
   fi
 fi
@@ -1538,9 +1538,9 @@ if require_daemon 30 "$TITLE_30" && require_seed 30 "$TITLE_30"; then
   sub_status=$(fetch_page "/r/$REPO_NAME/tree/main/vendor" "$work/tree-sub")
   wrong=""
   grep -qF "<a class=\"t-item\" lang=\"en\" href=\"/r/$REPO_NAME/blob/main/README.md\">" \
-    "$work/show.body" || wrong="$wrong a file row does not link to the blob route;"
+    "$work/show.body" || wrong="$wrong a file row doesn't link to the blob route;"
   grep -qF "<a class=\"t-item\" lang=\"en\" href=\"/r/$REPO_NAME/tree/main/docs\">" \
-    "$work/show.body" || wrong="$wrong a directory row does not link to the tree route;"
+    "$work/show.body" || wrong="$wrong a directory row doesn't link to the tree route;"
   [ "$sub_status" = "200" ] || wrong="$wrong the gitlink's own tree answered $sub_status;"
   grep -qF '<tr class="row is-sub">' "$work/tree-sub.body" \
     || wrong="$wrong the gitlink draws no is-sub row;"
@@ -1602,7 +1602,7 @@ printf '%s' "$markup_only" | grep -qF '<table class="tbl refs">' \
 printf '%s' "$markup_only" | grep -qF '<caption class="vh">' \
   || wrong="$wrong ref-list.ts emits no caption;"
 printf '%s' "$markup_only" | grep -qF '<th class="name" scope="row">' \
-  || wrong="$wrong a ref row's first cell is not its header;"
+  || wrong="$wrong a ref row's first cell isn't its header;"
 printf '%s' "$markup_only" | grep -qE '<li|role="list"' \
   && wrong="$wrong ref-list.ts still emits list markup;"
 if [ -n "$wrong" ]; then
@@ -1615,13 +1615,13 @@ fi
 readonly TITLE_34="--diff-add and --diff-del are in both palettes, and resolve differently"
 wrong=""
 [ "$(grep -c -- '--diff-add:' src/html/styles.ts)" = "2" ] \
-  || wrong="$wrong --diff-add is not declared exactly twice;"
+  || wrong="$wrong --diff-add isn't declared exactly twice;"
 [ "$(grep -c -- '--diff-del:' src/html/styles.ts)" = "2" ] \
-  || wrong="$wrong --diff-del is not declared exactly twice;"
+  || wrong="$wrong --diff-del isn't declared exactly twice;"
 grep -A1 '^\.diff \.a {' src/html/styles.ts | grep -qF 'var(--diff-add)' \
-  || wrong="$wrong .diff .a does not draw from --diff-add;"
+  || wrong="$wrong .diff .a doesn't draw from --diff-add;"
 grep -A1 '^\.diff \.d {' src/html/styles.ts | grep -qF 'var(--diff-del)' \
-  || wrong="$wrong .diff .d does not draw from --diff-del;"
+  || wrong="$wrong .diff .d doesn't draw from --diff-del;"
 dark_add=$(sed -nE 's/.*--diff-add: (#[0-9a-f]{6});.*/\1/p' src/html/styles.ts | sed -n 1p)
 dark_del=$(sed -nE 's/.*--diff-del: (#[0-9a-f]{6});.*/\1/p' src/html/styles.ts | sed -n 1p)
 light_add=$(sed -nE 's/.*--diff-add: (#[0-9a-f]{6});.*/\1/p' src/html/styles.ts | sed -n 2p)
@@ -1683,7 +1683,7 @@ if require_daemon 36 "$TITLE_36"; then
   [ "$git_status" = "404" ] || wrong="$wrong the git transport's own 404 answered $git_status;"
   printf '%s' "$git_type" | grep -qi 'text/plain' \
     || wrong="$wrong the git transport's 404 answered '$git_type', not text/plain;"
-  grep -qF "There's no repo named $ABSENT_NAME. Push to it over SSH to create it." \
+  grep -qF "There's no repo named $ABSENT_NAME. Push over SSH to create it." \
     "$work/36git.body" || wrong="$wrong the git transport's refusal copy changed;"
   if [ -n "$wrong" ]; then
     record FAIL 36 "$TITLE_36" "$wrong"
@@ -1699,11 +1699,11 @@ if require_daemon 37 "$TITLE_37" && require_seed 37 "$TITLE_37"; then
   grep -qF "<nav class=\"repo-nav\" aria-label=\"Repo views\">" "$work/show.body" \
     || wrong="$wrong the repo page carries no repo nav;"
   grep -qF "href=\"/r/$REPO_NAME/commits?ref=main\"" "$work/show.body" \
-    || wrong="$wrong the repo page does not link to the commit log;"
+    || wrong="$wrong the repo page doesn't link to the commit log;"
   grep -qF "href=\"/r/$REPO_NAME/branches\"" "$work/show.body" \
-    || wrong="$wrong the repo page does not link to branches;"
+    || wrong="$wrong the repo page doesn't link to branches;"
   grep -qF "href=\"/r/$REPO_NAME/tags\"" "$work/show.body" \
-    || wrong="$wrong the repo page does not link to tags;"
+    || wrong="$wrong the repo page doesn't link to tags;"
   if [ -n "$wrong" ]; then
     record FAIL 37 "$TITLE_37" "$wrong"
   else
@@ -1714,12 +1714,12 @@ fi
 # 38
 # 22 seeded commits over a 16-row page cap makes exactly two pages, so page
 # two is also the last one: Newer pops straight back to the bare ref
-readonly TITLE_38="page two of the log carries a Newer link, and page one does not"
+readonly TITLE_38="page two of the log carries a Newer link, and page one doesn't"
 if require_daemon 38 "$TITLE_38" && require_seed 38 "$TITLE_38"; then
   wrong=""
   grep -qF 'Newer' "$work/log1.body" && wrong="$wrong page one offers a way back;"
   grep -qF "href=\"/r/$REPO_NAME/commits?ref=main\"><span aria-hidden=\"true\">← </span>Newer" \
-    "$work/log2.body" || wrong="$wrong page two's Newer link does not land on the bare ref;"
+    "$work/log2.body" || wrong="$wrong page two's Newer link doesn't land on the bare ref;"
   if [ -n "$wrong" ]; then
     record FAIL 38 "$TITLE_38" "$wrong"
   else
@@ -1730,7 +1730,7 @@ fi
 # 39
 # the seed carries one lightweight tag (v1.0.0) and one annotated tag
 # (v1.1.0), planted by check 2's build_seed for exactly this
-readonly TITLE_39="an annotated tag row carries the marker, a lightweight one does not"
+readonly TITLE_39="an annotated tag row carries the marker, a lightweight one doesn't"
 if require_daemon 39 "$TITLE_39" && require_seed 39 "$TITLE_39"; then
   wrong=""
   grep -qF '<span class="caps">v1.1.0</span><span class="t-micro"> Annotated</span>' "$work/tags.body" \
@@ -1751,7 +1751,7 @@ readonly TITLE_40=".meta stacks to one column outside any media query, and diff 
 wrong=""
 tr '\n' ' ' < src/html/styles.ts \
   | grep -qE '\.meta \{[[:space:]]+display: grid;[[:space:]]+grid-template-columns: 1fr;' \
-  || wrong="$wrong .meta's bare rule is not a single 1fr column;"
+  || wrong="$wrong .meta's bare rule isn't a single 1fr column;"
 if require_daemon 40 "$TITLE_40" && require_seed 40 "$TITLE_40"; then
   grep -qF '<span class="t-micro">Below<span class="vh"> on this page</span></span>' \
     "$work/commit-big.body" || wrong="$wrong no inlined row on the root commit says Below;"
@@ -1832,7 +1832,7 @@ readonly TITLE_43="every visible page title resolves to --ink-soft, and its rows
 wrong=""
 tr '\n' ' ' < src/html/styles.ts \
   | grep -qE '\.t-item--title \{[[:space:]]+color: var\(--ink-soft\);' \
-  || wrong="$wrong .t-item--title does not resolve to --ink-soft;"
+  || wrong="$wrong .t-item--title doesn't resolve to --ink-soft;"
 if require_daemon 43 "$TITLE_43" && require_seed 43 "$TITLE_43"; then
   for page in index tree branches tags; do
     body="$work/$page.body"
@@ -1870,7 +1870,7 @@ readonly TITLE_45="the repo nav entries resolve to the link color"
 wrong=""
 tr '\n' ' ' < src/html/styles.ts \
   | grep -qE '\.repo-nav a \{[^}]*color: var\(--accent-text\);[^}]*text-decoration: underline;' \
-  || wrong="$wrong .repo-nav a does not resolve to --accent-text, underlined;"
+  || wrong="$wrong .repo-nav a doesn't resolve to --accent-text, underlined;"
 grep -A8 -E '^\.repo-nav a \{' src/html/styles.ts | grep -q -- '--ink-mid' \
   && wrong="$wrong .repo-nav a still carries the old muted color;"
 if [ -n "$wrong" ]; then
@@ -1897,11 +1897,11 @@ fi
 # 47
 # part C3: the hunk header reads as structure, not as the parent-commit
 # link's own pink
-readonly TITLE_47=".diff .h does not resolve to --accent-text"
+readonly TITLE_47=".diff .h doesn't resolve to --accent-text"
 wrong=""
 tr '\n' ' ' < src/html/styles.ts \
   | grep -qE '\.diff \.h \{[[:space:]]+color: var\(--ink-soft\);[[:space:]]+font-weight: 500;' \
-  || wrong="$wrong .diff .h is not --ink-soft at weight 500;"
+  || wrong="$wrong .diff .h isn't --ink-soft at weight 500;"
 if [ -n "$wrong" ]; then
   record FAIL 47 "$TITLE_47" "$wrong"
 else
@@ -1916,15 +1916,15 @@ wrong=""
 grep -qF "### Repo nav" docs/BRAND.md \
   || wrong="$wrong BRAND carries no Repo nav section;"
 grep -qF "take the link treatment" docs/BRAND.md \
-  || wrong="$wrong BRAND does not record the nav's link treatment;"
+  || wrong="$wrong BRAND doesn't record the nav's link treatment;"
 grep -qF "the name column, not the filename" docs/BRAND.md \
   || wrong="$wrong BRAND still scopes small caps to filenames alone;"
 grep -qF "A SHA is a machine identifier" docs/BRAND.md \
-  || wrong="$wrong BRAND does not record the commit log's mono deviation;"
+  || wrong="$wrong BRAND doesn't record the commit log's mono deviation;"
 grep -qF "counts that only align in a monospaced face" docs/BRAND.md \
-  || wrong="$wrong BRAND does not record the file list's mono deviation;"
+  || wrong="$wrong BRAND doesn't record the file list's mono deviation;"
 grep -qF ".t-note" docs/BRAND.md \
-  || wrong="$wrong BRAND does not document .t-note;"
+  || wrong="$wrong BRAND doesn't document .t-note;"
 if [ -n "$wrong" ]; then
   record FAIL 48 "$TITLE_48" "$wrong"
 else
@@ -2136,14 +2136,14 @@ fi
 
 # 55
 # the columns are widths on a fixed layout, not grid tracks. auto cannot
-# size a column under its min-content, so a name that does not wrap makes
+# size a column under its min-content, so a name that doesn't wrap makes
 # the table wider than the viewport instead of ellipsing
 readonly TITLE_55="the row table lays out fixed, and the old row grid is gone"
 wrong=""
 if [ -s "$work/sheet.body" ]; then
   grep -qF 'table-layout:fixed' "$work/sheet.body" \
     || grep -qF 'table-layout: fixed' "$work/sheet.body" \
-    || wrong="$wrong the served sheet does not lay the row table out fixed;"
+    || wrong="$wrong the served sheet doesn't lay the row table out fixed;"
   grep -qE 'grid-template-columns:[^;}]*46px' "$work/sheet.body" \
     && wrong="$wrong the served sheet still carries the row grid's track list;"
 else
@@ -2180,14 +2180,14 @@ readonly TITLE_57="hrefs.ts imports nothing from src/html"
 sibling='^import[^"]*from "\./'
 printf 'import { page } from "./page.js";\n' > "$work/57.control"
 if ! grep -qE "$sibling" "$work/57.control"; then
-  record FAIL 57 "$TITLE_57" "the pattern does not match a known sibling import; it cannot gate"
+  record FAIL 57 "$TITLE_57" "the pattern doesn't match a known sibling import; it cannot gate"
 else
   siblings=$(grep -cE "$sibling" src/html/hrefs.ts)
   importers=$(git grep --untracked -l 'from "\./hrefs\.js"' -- src/html | grep -c .)
   if [ "$siblings" != "0" ]; then
     record FAIL 57 "$TITLE_57" "$(grep -nE "$sibling" src/html/hrefs.ts)"
   elif [ "$importers" -lt 2 ]; then
-    record FAIL 57 "$TITLE_57" "only $importers file(s) under src/html import hrefs.js; the module is not the one source"
+    record FAIL 57 "$TITLE_57" "only $importers file(s) under src/html import hrefs.js; the module isn't the one source"
   else
     record PASS 57 "$TITLE_57" "no sibling imports, and $importers views build their urls from it"
   fi
@@ -2205,7 +2205,7 @@ else
     "a relative link reaches the blob route and a relative image the asset route" \
     "a destination that resolves to nothing is still rewritten" \
     "an absolute destination is left exactly as it was" \
-    "an anchor, a query, or a root-relative path is not treated as a path"
+    "an anchor, a query, or a root-relative path isn't treated as a path"
 fi
 
 # 26, printed in its place

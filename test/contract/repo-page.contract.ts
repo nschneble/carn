@@ -138,7 +138,7 @@ test("a real repo renders its tree and its readme", async () => {
   });
 
   const loaded = await loadRepoView({ repo });
-
+  assert.ok(loaded.readme?.startsWith("# Linklater"));
   assert.notStrictEqual(
     loaded.tip,
     null,
@@ -151,10 +151,8 @@ test("a real repo renders its tree and its readme", async () => {
     ["docs/", "src/", "README.md", "package.json"],
     "directories sort first, then files, each by name",
   );
-  assert.ok(loaded.readme?.startsWith("# Linklater"));
 
   const markup = repoShowPage({ repo: loaded, showAll: false, now: treeNow });
-
   assert.ok(markup.includes('<h1 class="vh">linklater</h1>'));
   assert.ok(markup.includes("<h1>Linklater</h1>"), "the readme did not render");
   assert.strictEqual(rows(markup), 4);
@@ -168,7 +166,6 @@ test("a nested directory contributes one row, not its contents", async () => {
   });
 
   const loaded = await loadRepoView({ repo });
-
   assert.deepStrictEqual(
     loaded.entries.map((entry) => entry.name),
     ["src"],
@@ -178,21 +175,19 @@ test("a nested directory contributes one row, not its contents", async () => {
 test("a repo with no readme renders the tree and says how to make one", async () => {
   const repo = build({ "package.json": "{}\n" });
   const loaded = await loadRepoView({ repo });
-
   assert.strictEqual(loaded.readme, null);
 
   const markup = repoShowPage({ repo: loaded, showAll: false, now: treeNow });
-
+  assert.doesNotMatch(empties(markup), /[!…]|Oops/);
+  assert.doesNotMatch(markup, /<div class="readme">/);
   assert.strictEqual(rows(markup), 1, "the tree vanished with the readme");
   assert.ok(markup.includes('<div class="empty">'));
   assert.ok(markup.includes("No README yet."));
+  assert.ok(markup.includes("git add README.md"), "no command to make one");
   assert.ok(
     markup.includes("README.md"),
     "the empty state never names the file",
   );
-  assert.ok(markup.includes("git add README.md"), "no command to make one");
-  assert.doesNotMatch(empties(markup), /[!…]|Oops/);
-  assert.doesNotMatch(markup, /<div class="readme">/);
 });
 
 test("a repo with no commits says what would be here and how to push it", () => {
@@ -203,12 +198,12 @@ test("a repo with no commits says what would be here and how to push it", () => 
   assert.strictEqual(rows(markup), 0);
   assert.ok(markup.includes("No commits yet."));
   assert.ok(markup.includes("git push "));
+  assert.doesNotMatch(empties(markup), /[!…]|Oops/);
   assert.doesNotMatch(
     markup,
     /<p class="t-body">No README yet/,
     "an empty repo gets one empty state, not two",
   );
-  assert.doesNotMatch(empties(markup), /[!…]|Oops/);
 });
 
 // the raster the route serves, and the svg, the missing file, and the
@@ -407,7 +402,7 @@ test("an invalid repo name is refused before any database query", () => {
   assert.strictEqual(
     asset.status,
     503,
-    "the readme image route is not registered",
+    "the readme image route isn't registered",
   );
 
   // the tree route has no root form, and the url settles that without a
@@ -428,11 +423,11 @@ test("an invalid repo name is refused before any database query", () => {
   assert.ok(invalid.body.includes(badRepoName.heading));
   assert.doesNotMatch(invalid.body, /127\.0\.0\.1|prisma|queryRaw/i);
 
+  assert.match(String(invalid.headers["content-type"]), /^text\/html/);
   assert.strictEqual(
     invalid.headers["content-security-policy"],
     contentSecurityPolicy,
   );
-  assert.match(String(invalid.headers["content-type"]), /^text\/html/);
 });
 
 test("a 404 page says what happened, then what to do", () => {
@@ -448,12 +443,12 @@ test("a 404 page says what happened, then what to do", () => {
     assert.doesNotMatch(markup, /<script/i);
   }
 
+  assert.ok(missing.includes("<title>No repo named linklater · Càrn</title>"));
+  assert.ok(bad.includes(html`${badRepoName.said}`.value));
   assert.ok(
     missing.includes("There&#39;s no repo named linklater on this server."),
     "the copy no longer reaches the page through the escaping tag",
   );
-  assert.ok(missing.includes("<title>No repo named linklater · Càrn</title>"));
-  assert.ok(bad.includes(html`${badRepoName.said}`.value));
 });
 
 test("the tree cap holds, and show-all lifts it", () => {
@@ -463,13 +458,14 @@ test("the tree cap holds, and show-all lifts it", () => {
   assert.strictEqual(rows(capped), treeRowCap);
   assert.strictEqual(rows(all), wide.length);
 
+  assert.doesNotMatch(all, /Show all/);
+  assert.doesNotMatch(capped, /<details|<summary|aria-expanded/);
+
   assert.ok(capped.includes(`Show all ${wide.length}`));
   assert.ok(
     capped.includes(`href="/r/linklater?all=1"`),
-    "show-all is not a real url, so it needs script to work",
+    "show-all isn't a real url, so it needs script to work",
   );
-  assert.doesNotMatch(all, /Show all/);
-  assert.doesNotMatch(capped, /<details|<summary|aria-expanded/);
 });
 
 test("a directory row carries the accent class and a trailing slash", () => {
@@ -518,7 +514,7 @@ test("small caps split at the extension and never insert whitespace", () => {
     assert.strictEqual(pathName(name).value, expected, name);
   }
 
-  // a filename is not a repo name, so it's not held to namePattern
+  // a filename isn't a repo name, so it's not held to namePattern
   const awkward = ["café.md", "日本語.txt", "🎁.png", "Straße.md", "a b.txt"];
 
   for (const name of [...wide.map((entry) => entry.name), ...awkward]) {
@@ -536,7 +532,7 @@ test("small caps split at the extension and never insert whitespace", () => {
     assert.strictEqual(
       markup.replace(/<[^>]*>/g, ""),
       name,
-      `${name} is not what the DOM holds`,
+      `${name} isn't what the DOM holds`,
     );
   }
 });
@@ -576,16 +572,14 @@ test("the repo page carries the repo's own description, and nothing when it has 
   const loaded = await loadRepoView({
     repo: build({ "a.ts": "export {};\n" }, said),
   });
-
   assert.strictEqual(loaded.description, said, "the field never left the row");
 
   const markup = repoShowPage({ repo: loaded, showAll: false, now: treeNow });
-
   assert.ok(
     markup.includes(
       `<h1 class="vh">linklater</h1>\n      <p class="t-body about">${said}</p>\n      <nav class="repo-nav"`,
     ),
-    "the description is not the one thing between the identity heading and the repo nav",
+    "the description isn't the one thing between the identity heading and the repo nav",
   );
 
   // unlike the index, a null description has no row to hold a dash open,
@@ -634,12 +628,12 @@ test("the identity mark is decorative and a visually hidden h1 carries the name"
   );
 
   const bare = showDocument({ repo: view({ readme: null }) });
+  assert.ok(bare.includes('<h1 class="vh">linklater</h1>'));
   assert.strictEqual(
     [...bare.matchAll(/<h1[ >]/g)].length,
     1,
     "a repo with no readme heading must still have exactly one h1, and it must be the name",
   );
-  assert.ok(bare.includes('<h1 class="vh">linklater</h1>'));
 });
 
 test("a committed header points at the repo's own asset route", () => {
@@ -648,6 +642,7 @@ test("a committed header points at the repo's own asset route", () => {
     oid: "a".repeat(40),
     bytes: 4096,
   };
+
   const markup = showDocument({
     repo: view({ header: { light: image, dark: image } }),
   });
@@ -715,7 +710,6 @@ test("external readme links carry the rel and local ones do not", () => {
   for (const anchor of anchors) {
     const href = /href="([^"]*)"/.exec(anchor)?.[1] ?? "";
     const external = href.startsWith("http");
-
     assert.strictEqual(
       anchor.includes('rel="nofollow ugc"'),
       external,
@@ -723,21 +717,20 @@ test("external readme links carry the rel and local ones do not", () => {
     );
   }
 
+  assert.ok(anchors.some((anchor) => anchor.includes('href="/docs/spec"')));
+  assert.ok(anchors.some((anchor) => anchor.includes('href="#type"')));
+  assert.ok(anchors.some((anchor) => anchor.includes("mailto:")));
   assert.ok(
     anchors.some((anchor) =>
       anchor.includes('href="/r/linklater/blob/main/docs/BRAND.md"'),
     ),
     "the page did not hand the markdown layer its own repo and rev",
   );
-  assert.ok(anchors.some((anchor) => anchor.includes('href="/docs/spec"')));
-  assert.ok(anchors.some((anchor) => anchor.includes('href="#type"')));
-  assert.ok(anchors.some((anchor) => anchor.includes("mailto:")));
 });
 
 test("no repo page carries script, an inline style, or a style attribute", () => {
   for (const showAll of [false, true]) {
     const markup = showDocument({ showAll });
-
     assert.doesNotMatch(markup, /<script/i);
     assert.doesNotMatch(markup, /<style[ >]/i);
     assert.doesNotMatch(markup, / style=/i);
@@ -747,7 +740,7 @@ test("no repo page carries script, an inline style, or a style attribute", () =>
 
 // wire bytes at gzip level 5, which is what Caddy's `encode gzip` defaults
 // to, against the minified sheet the route actually serves. fonts count
-// whole because woff2 is brotli inside and does not shrink again
+// whole because woff2 is brotli inside and doesn't shrink again
 test("the repo page fits the weight budget as wire bytes, fonts in", () => {
   for (const [state, markup] of [
     ["capped", showDocument()],
@@ -787,7 +780,7 @@ test("the wire measurement is a compression, not a rename", () => {
 
   assert.ok(
     pageWireBytes(markup) < uncompressed,
-    "the wire figure is not below the raw one, so nothing is being compressed",
+    "the wire figure isn't below the raw one, so nothing is being compressed",
   );
 });
 
@@ -845,7 +838,7 @@ test("the rendered dom holds the true filename under small caps", async () => {
       assert.strictEqual(
         found.text,
         expected,
-        "the dom does not hold the real name",
+        "the dom doesn't hold the real name",
       );
       assert.strictEqual(found.lang, "en", `${entry.name} lost lang="en"`);
     }

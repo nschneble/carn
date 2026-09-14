@@ -3,7 +3,6 @@
   "actions": [
     { "action": "gantry-blob-binary" },
     { "action": "gantry-blob-image" },
-    { "action": "gantry-blob-oversize" },
-    { "action": "gantry-tree-gitlink" }
+    { "action": "gantry-blob-oversize" }
   ]
 }

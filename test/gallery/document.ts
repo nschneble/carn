@@ -165,6 +165,7 @@ const committed: HeaderImage = {
   oid: "0".repeat(40),
   bytes: 4096,
 };
+
 const darkOnly: HeaderImage = {
   path: ".carn/header-dark.svg",
   oid: "1".repeat(40),

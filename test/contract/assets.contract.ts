@@ -34,21 +34,25 @@ test("the stylesheet route serves the sheet at its own hashed path", async () =>
   await app.close();
 
   assert.strictEqual(hit.statusCode, 200);
+  assert.match(String(hit.headers["content-type"]), /^text\/css/);
+
   assert.strictEqual(
     hit.body,
     servedStylesheet,
     "the route serves something other than the minified sheet",
   );
+
   assert.notStrictEqual(
     hit.body,
     stylesheet,
     "the route serves the source sheet, so the budget pays for whitespace",
   );
-  assert.match(String(hit.headers["content-type"]), /^text\/css/);
+
   assert.strictEqual(
     hit.headers["cache-control"],
     "public, max-age=31536000, immutable",
   );
+
   assert.strictEqual(
     stale.statusCode,
     404,
@@ -58,7 +62,7 @@ test("the stylesheet route serves the sheet at its own hashed path", async () =>
 
 // BRAND.md's token block is pinned byte-identical to styles.ts, so the
 // source sheet stays readable and only what goes over the wire is squeezed
-test("minifying is a serve-time transform that changes no rule", () => {
+test("minifying is a serve-time non-destructive transformation", () => {
   const tidy = (css: string) =>
     css
       .replaceAll(/\/\*[\s\S]*?\*\//g, "")
@@ -68,19 +72,22 @@ test("minifying is a serve-time transform that changes no rule", () => {
       .trim();
 
   assert.strictEqual(servedStylesheet, minifyCss(stylesheet));
+  assert.doesNotMatch(servedStylesheet, /\/\*/);
+
   assert.strictEqual(
     tidy(servedStylesheet),
     tidy(stylesheet),
-    "minifying dropped or reordered something that is not whitespace or a comment",
+    "minifying dropped or reordered something that isn't whitespace or comments",
   );
+
   assert.ok(
     servedStylesheet.length < stylesheet.length * 0.9,
     `minifying saved only ${stylesheet.length - servedStylesheet.length} B of ${stylesheet.length}`,
   );
-  assert.doesNotMatch(servedStylesheet, /\/\*/);
+
   assert.ok(
     servedStylesheet.includes('"Helvetica Neue"'),
-    "a quoted family lost the space inside it, so the minifier is not string-aware",
+    "a quoted font family is malformed, implying the minifier isn't string-aware",
   );
 });
 
@@ -121,13 +128,13 @@ test("a browser parses the served sheet to the same rules as the source", async 
   }
 });
 
-test("every face the stylesheet asks for is a route that answers", async () => {
+test("every face the stylesheet asks for is a valid route", async () => {
   const app = buildApp();
 
   for (const face of faces) {
     assert.ok(
       servedStylesheet.includes(`url("/fonts/${face}")`),
-      `the served stylesheet no longer asks for ${face}`,
+      `the served stylesheet no longer references ${face}`,
     );
 
     const response = await app.inject({
@@ -140,14 +147,14 @@ test("every face the stylesheet asks for is a route that answers", async () => {
     assert.deepStrictEqual(
       response.rawPayload,
       readFileSync(join(root, "fonts", face)),
-      `${face} is not served byte-for-byte`,
+      `${face} isn't served byte-for-byte`,
     );
   }
 
   await app.close();
 });
 
-test("a font's ETag is honored, so the header is not decoration", async () => {
+test("a font's ETag is honored", async () => {
   const app = buildApp();
   const first = await app.inject({
     method: "GET",
@@ -175,7 +182,7 @@ test("a font's ETag is honored, so the header is not decoration", async () => {
   assert.strictEqual(changed.rawPayload.length, first.rawPayload.length);
 });
 
-test("a font outside the three refuses without touching the disk", async () => {
+test("an outside font request is automatically refused", async () => {
   const app = buildApp();
 
   for (const name of [
@@ -195,7 +202,7 @@ test("a font outside the three refuses without touching the disk", async () => {
   await app.close();
 });
 
-test("an image's ETag is honored, so the header is not decoration", async () => {
+test("an image's ETag is honored", async () => {
   const app = buildApp();
   const first = await app.inject({
     method: "GET",
@@ -223,7 +230,7 @@ test("an image's ETag is honored, so the header is not decoration", async () => 
   assert.strictEqual(changed.rawPayload.length, first.rawPayload.length);
 });
 
-test("an image outside the five refuses without touching the disk", async () => {
+test("an outside image request is automatically refused", async () => {
   const app = buildApp();
 
   for (const name of ["nope.png", "..%2f..%2fpackage.json", "favicon.gif"]) {
@@ -239,7 +246,7 @@ test("an image outside the five refuses without touching the disk", async () => 
   await app.close();
 });
 
-test("the whole page fits the budget with both families, images, and the sheet", async () => {
+test("the page fits the budget with fonts, images, and styles", async () => {
   const app = buildApp();
   const sheet = await app.inject({ method: "GET", url: styleHref });
   await app.close();
@@ -257,6 +264,6 @@ test("the whole page fits the budget with both families, images, and the sheet",
 
   assert.ok(
     shipped < 100 * 1024,
-    `the stylesheet, images, and both families come to ${shipped} B, which leaves no room for a page under the 100 KB budget`,
+    `the stylesheet, images, and font families come to ${shipped} B, which leaves no room for a page under the 100 KB budget`,
   );
 });

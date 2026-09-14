@@ -102,7 +102,7 @@ for weight in ("Regular", "Medium"):
     n.setName(full, 4, 3, 1, 0x409)
     n.setName(f"CarnMono-{weight}", 6, 3, 1, 0x409)
     n.setName(
-        "Carn Mono is a subset build of IBM Plex Mono 2.3 and is not the "
+        "Carn Mono is a subset build of IBM Plex Mono 2.3 and isn't the "
         "original font.",
         10, 3, 1, 0x409,
     )
@@ -173,7 +173,7 @@ IBM Plex Mono is also OFL 1.1, but it declares a Reserved Font Name: `Copyright 
 
 The RFN is why the face is called Carn Mono. Per the OFL FAQ, subsetting a webfont is modification (2.6), and a Modified Version keeps an RFN only if it preserves Functional Equivalence, whose first requirement is the same full character inventory (2.7, 2.8). This subset goes from 930 mapped codepoints to 209, so it falls short and must pick its own name. The escape hatch in FAQ 2.2.1: WOFF2-compress the original, change nothing else, keep the name, costs 79,328 B for the pair against a 17,696 B subset. With the sans face that's 133,940 B, so it'd blow the 100 KB page budget on fonts alone. Renaming is the only choice.
 
-**Carn Sans is a naming choice.** Archivo's license would let the subset keep the name. It doesn't, because the font pair is only consistent if the two are similarly named, and the mono face has zero latitude on that front. 286 of 834 glyphs (with two clamped axes) is not what Omnibus-Type published. A reader who sees `Carn Sans` and `Carn Mono` in `--f-display` and `--f-mono` gets one true story about what the browser is loading.
+**Carn Sans is a naming choice.** Archivo's license would let the subset keep the name. It doesn't, because the font pair is only consistent if the two are similarly named, and the mono face has zero latitude on that front. 286 of 834 glyphs (with two clamped axes) isn't what Omnibus-Type published. A reader who sees `Carn Sans` and `Carn Mono` in `--f-display` and `--f-mono` gets one true story about what the browser is loading.
 
 Only the names change. Attribution stays loud in both directions: both `OFL.txt` files are verbatim, and both binaries carry their upstream's copyright, trademark, designer, and license records in their own `name` tables.
 

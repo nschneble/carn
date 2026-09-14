@@ -17,29 +17,26 @@ import {
 } from "../repos/resolve.js";
 
 const timeoutMs = 600_000;
-
-// only here so a pathological child cannot grow the heap
 const stderrBudget = 8192;
 
+const serviceHeader = Buffer.from("001e# service=git-upload-pack\n0000");
 const requestTypes = [
   "application/x-git-upload-pack-request",
   "application/x-git-receive-pack-request",
 ];
 
-const serviceHeader = Buffer.from("001e# service=git-upload-pack\n0000");
-
 export const refusals = {
   badName: "That's not a valid repo name. Check the URL and try again.",
   noRepo: (name: string) =>
-    `There's no repo named ${name}. Push to it over SSH to create it.`,
+    `There's no repo named ${name}. Push over SSH to create it.`,
   noHttpPush: (host: string, repo: string | null) =>
     "This server takes pushes over SSH, not HTTP. " +
     (repo === null
       ? `Set your remote to git@${host} and push again.`
       : `Set your remote to git@${host}:${repo} and push again.`),
   smartOnly:
-    "This server speaks the smart HTTP protocol only. " +
-    "Clone with a git client rather than a browser.",
+    "This server only speaks the smart HTTP protocol. " +
+    "Clone with a git client.",
   wrongBody:
     "This request's body isn't a git-upload-pack request. " +
     "Use git fetch or git clone to reach this endpoint.",
@@ -47,7 +44,6 @@ export const refusals = {
 };
 
 type RepoRoute = { Params: { repo: string } };
-
 type RefsRoute = RepoRoute & { Querystring: { service?: string } };
 
 type Job = {
@@ -90,18 +86,16 @@ async function lookup(
   reply: FastifyReply,
 ): Promise<ResolvedRepo | null> {
   const found = await resolveRepo(request.params.repo);
-
-  if (found.status === "invalid") {
-    refuse(reply, 404, refusals.badName);
-    return null;
+  switch (found.status) {
+    case "invalid":
+      refuse(reply, 404, refusals.badName);
+      return null;
+    case "missing":
+      refuse(reply, 404, refusals.noRepo(found.name));
+      return null;
+    default:
+      return found.repo;
   }
-
-  if (found.status === "missing") {
-    refuse(reply, 404, refusals.noRepo(found.name));
-    return null;
-  }
-
-  return found.repo;
 }
 
 async function serve(
@@ -141,7 +135,7 @@ async function serve(
       : [job.stdin, feed];
 
     pipeline(stages, (error) => {
-      if (error !== null && error !== undefined) {
+      if (error && error !== undefined) {
         request.log.warn(
           { err: error },
           "git http: the body never reached git",
@@ -163,6 +157,7 @@ async function serve(
   const errors: Buffer[] = [];
   let keptBytes = 0;
   child.stderr.on("data", (chunk: Buffer) => {
+    // only here so a pathological child cannot grow the heap
     const room = stderrBudget - keptBytes;
     if (room <= 0) {
       return;
@@ -174,9 +169,7 @@ async function serve(
   });
 
   const body = new PassThrough();
-  if (job.prelude !== null) {
-    body.write(job.prelude);
-  }
+  if (job.prelude) body.write(job.prelude);
 
   child.stdout.pipe(body);
   reply.send(body);
@@ -188,10 +181,7 @@ async function serve(
   });
 
   reply.raw.removeListener("close", abort);
-
-  if (result === null) {
-    return;
-  }
+  if (result === null) return;
 
   // the response is already streaming, so this can only be said in the log
   if (result.outcome === "timed-out") {
@@ -237,9 +227,7 @@ async function advertise(
   }
 
   const repo = await lookup(request, reply);
-  if (repo === null) {
-    return;
-  }
+  if (repo === null) return;
 
   noCache(reply, "application/x-git-upload-pack-advertisement");
   await serve(request, reply, {
@@ -288,9 +276,7 @@ function unavailable(
     request.log.error({ err: error }, "git http: the request failed");
   }
 
-  if (!reply.sent) {
-    refuse(reply, 503, refusals.unavailable);
-  }
+  if (!reply.sent) refuse(reply, 503, refusals.unavailable);
 }
 
 export function gitHttpRoutes(app: FastifyInstance): void {

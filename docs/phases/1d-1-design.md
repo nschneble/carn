@@ -75,7 +75,7 @@ self-hosted Carn Sans and Carn Mono (renamed subsets of Archivo and IBM
 Plex Mono; OFL reserves the name "Plex"), both palettes, compensated small
 caps, the generated wordmark, and header-image resolution.
 
-## What 1d is not
+## What 1d isn't
 
 - Blob view, syntax highlighting, commit log, diff, branch and tag lists.
   All 1e. **Don't install `highlight.js`.**

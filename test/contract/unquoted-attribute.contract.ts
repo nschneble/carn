@@ -90,7 +90,7 @@ test("a template nested in a substitution is classified on its own", () => {
   );
 });
 
-test("a tag the html function does not own is left alone", () => {
+test("a tag the html function doesn't own is left alone", () => {
   const backtick = opener.slice(-1);
   const shadowed = `my${opener}<a href=\${x}>t</a>${backtick}`;
   const property = `page.${opener}<a href=\${x}>t</a>${backtick}`;
@@ -164,7 +164,7 @@ test("the html tag is never imported under another name", () => {
   );
 });
 
-test("escaping does not cover what ends an unquoted value", () => {
+test("escaping doesn't cover what ends an unquoted value", () => {
   const payload = "x onmouseover=alert(1)";
   const quoted = html`<a title="${payload}">t</a>`.value;
 

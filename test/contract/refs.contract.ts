@@ -145,13 +145,13 @@ test("a branch list is one for-each-ref, not one call per branch", async () => {
 
   const invocation = argv[0] as string;
 
+  assert.strictEqual(list.refs.length, branchNames.length + 1);
   assert.ok(invocation.startsWith("for-each-ref "), invocation);
   assert.ok(invocation.includes(" refs/heads/"), invocation);
   assert.ok(
     !invocation.includes("rev-parse") && !invocation.includes("log "),
     `the branch list reached for a second plumbing command: ${invocation}`,
   );
-  assert.strictEqual(list.refs.length, branchNames.length + 1);
 });
 
 test("a tag list is one for-each-ref too, over the tag namespace", async () => {
@@ -185,34 +185,33 @@ test("an annotated tag carries its own subject and a real date", async () => {
   assert.deepStrictEqual(
     list.refs.map((ref) => ref.name),
     ["v1.1.0", "v1.0.0", "light-tag"],
-    "the list is not in newest-first order, so --sort names a field one of the two tag shapes leaves empty",
+    "the list isn't in newest-first order, so --sort names a field one of the two tag shapes leaves empty",
   );
 });
 
 test("branches come back newest first, with the tip subject on each", async () => {
   const list = await listRefs({ repoPath, kind: "branch" });
 
+  assert.strictEqual(list.refs.at(-1)?.subject, "main change 0");
+  assert.strictEqual(list.more, false);
   assert.deepStrictEqual(
     list.refs.map((ref) => ref.name),
     [...[...branchNames].reverse(), "main"],
   );
-  assert.strictEqual(list.refs.at(-1)?.subject, "main change 0");
-  assert.strictEqual(list.more, false);
 });
 
 test("one page render costs one spawn", async () => {
   const [, argv] = await record(async () => {
     const list = await listRefs({ repoPath, kind: "branch" });
-
     return refsDocument({ list });
   });
 
+  assert.ok(argv.length < 12, "the render broke CLAUDE.md's spawn budget");
   assert.strictEqual(
     argv.length,
     1,
     `a branch page render spawned git ${argv.length} times:\n${argv.join("\n")}`,
   );
-  assert.ok(argv.length < 12, "the render broke CLAUDE.md's spawn budget");
 });
 
 test("both lists are tables with a caption and a header row", () => {
@@ -240,7 +239,7 @@ test("both lists are tables with a caption and a header row", () => {
     assert.strictEqual(
       [...markup.matchAll(/<th class="name" scope="row">/g)].length,
       count,
-      `${kind} has a row whose first cell is not its header`,
+      `${kind} has a row whose first cell isn't its header`,
     );
     // the header row names both columns now, so a vh label in the cell
     // would be announced a second time
@@ -264,11 +263,10 @@ test("every row is three links to the log scoped to that ref", () => {
 
   for (const ref of branches) {
     const href = commitsHref("linklater", ref.name).replace("&", "&amp;");
-
     assert.strictEqual(
       links.filter((link) => link === href).length,
       3,
-      `${ref.name} does not carry three links to its own scoped log`,
+      `${ref.name} doesn't carry three links to its own scoped log`,
     );
   }
 
@@ -294,19 +292,19 @@ test("three links per row, one per cell, all to the ref's own log", () => {
     markup.includes(
       `<th class="name" scope="row"><a class="t-item" lang="en" href="${href}">${plainName(first.name).value}`,
     ),
-    "the name is not a link to the ref's own log",
+    "the name isn't a link to the ref's own log",
   );
   assert.ok(
     markup.includes(
       `<td class="msg"><a href="${href}">${first.subject}</a></td>`,
     ),
-    "the subject is not a link to the ref's own log",
+    "the subject isn't a link to the ref's own log",
   );
   assert.ok(
     markup.includes(
       `<td class="age"><a href="${href}"><time datetime="${first.at.toISOString()}">`,
     ),
-    "the age is not a link",
+    "the age isn't a link",
   );
 
   const sheet = readFileSync(join(root, "src/html/styles.ts"), "utf8");
@@ -320,7 +318,7 @@ test("three links per row, one per cell, all to the ref's own log", () => {
   );
 });
 
-test("the branch table names the default branch, and the tag table does not", () => {
+test("the branch table names the default branch, and the tag table doesn't", () => {
   const marked = refsDocument();
   const tagged = refsDocument({ kind: "tag" });
 
@@ -328,7 +326,7 @@ test("the branch table names the default branch, and the tag table does not", ()
     marked.includes(
       `${plainName("main").value}<span class="t-micro"> Default</span></a>`,
     ),
-    "the default branch is not named in the branch list",
+    "the default branch isn't named in the branch list",
   );
   assert.strictEqual(
     [...marked.matchAll(/> Default</g)].length,
@@ -338,7 +336,7 @@ test("the branch table names the default branch, and the tag table does not", ()
   assert.doesNotMatch(tagged, /Default</);
 });
 
-test("an annotated tag carries the marker, a lightweight one does not", () => {
+test("an annotated tag carries the marker, a lightweight one doesn't", () => {
   const markup = refsDocument({ kind: "tag" });
 
   const annotated = tags.filter((ref) => ref.annotated);
@@ -353,6 +351,7 @@ test("an annotated tag carries the marker, a lightweight one does not", () => {
       `${ref.name} is annotated but carries no marker`,
     );
   }
+
   for (const ref of lightweight) {
     assert.ok(
       !markup.includes(
@@ -385,12 +384,11 @@ test("a ref name has no extension, so it never splits", () => {
 
   for (const ref of [...branches, ...tags]) {
     const markup = plainName(ref.name).value;
-
     assert.doesNotMatch(markup, /class="sc"/, `${ref.name} split`);
     assert.strictEqual(
       markup.replace(/<[^>]*>/g, ""),
       ref.name,
-      `${ref.name} is not what the DOM holds`,
+      `${ref.name} isn't what the DOM holds`,
     );
   }
 
@@ -434,6 +432,7 @@ test("a list longer than the read cap says it is showing the first of them", () 
   const whole = refsDocument({
     list: refList("branch", { refs: wideRefs(maxRefs) }),
   });
+
   const cut = refsDocument({
     list: refList("branch", { refs: wideRefs(maxRefs), more: true }),
   });
@@ -466,7 +465,6 @@ test("every state fits the budget as gzip-5 wire bytes", () => {
 
   for (const [state, markup] of states) {
     const weight = pageWireBytes(markup);
-
     assert.ok(
       weight <= budgetBytes,
       `the ${state} ref list weighs ${weight} wire bytes against a ${budgetBytes} B budget`,
@@ -482,11 +480,11 @@ test("a page that cannot fit sheds rows and says how many are left", () => {
   const markup = refsDocument({ list: refList("branch", { refs }) });
   const shown = [...markup.matchAll(/<tr class="row">/g)].length;
 
+  assert.ok(shown > 0, "the fit shed every row");
   assert.ok(
     shown < refs.length,
     `${refs.length} incompressible rows rendered whole, so the budget was never measured`,
   );
-  assert.ok(shown > 0, "the fit shed every row");
   assert.ok(
     markup.includes(`Showing the first ${shown} branches.`),
     `the page shed rows down to ${shown} without saying so`,
@@ -535,7 +533,7 @@ test("the widest single row the loader can produce fits on its own", () => {
   assert.strictEqual([...markup.matchAll(/<tr class="row">/g)].length, 1);
 });
 
-test("a subject longer than a subject is bounded before it renders", async () => {
+test("a subject longer than the cap is bounded before it renders", async () => {
   const shouting = mkdtempSync(join(dir, "shout-"));
   execFileSync("git", ["init", "-q", "-b", "main", "--", shouting]);
   writeFileSync(join(shouting, "a"), "a\n");
@@ -543,7 +541,6 @@ test("a subject longer than a subject is bounded before it renders", async () =>
   git(shouting, ["commit", "-qm", "z".repeat(maxSubjectChars * 4)]);
 
   const list = await listRefs({ repoPath: shouting, kind: "branch" });
-
   assert.strictEqual(list.refs[0]?.subject.length, maxSubjectChars);
 });
 
@@ -581,6 +578,7 @@ test("a commit with no message leaves the cell empty, not a nameless link", asyn
     markup.includes('<td class="msg"><span></span></td>'),
     "an empty subject rendered as an anchor, which axe reads as a link with no accessible name",
   );
+
   assert.doesNotMatch(markup, /<a[^>]*><\/a>/);
   assert.strictEqual([...markup.matchAll(/<tr class="row">/g)].length, 1);
 });
@@ -616,7 +614,6 @@ test("a repo with no tags gets an empty list, not a failure", async () => {
 
   for (const kind of ["branch", "tag"] as const) {
     const list = await listRefs({ repoPath: bare, kind });
-
     assert.deepStrictEqual(list.refs, [], kind);
     assert.strictEqual(list.more, false, kind);
   }
@@ -628,13 +625,13 @@ test("the two routes are the two nouns, and the page says which it is", () => {
 
   const markup = refsDocument({ kind: "tag" });
 
+  assert.strictEqual([...markup.matchAll(/<h1[ >]/g)].length, 1);
   assert.ok(markup.includes('<h1 class="t-item t-item--title">Tags</h1>'));
   assert.ok(markup.includes("<title>Tags · linklater · Càrn"));
   assert.ok(
     markup.includes(
       'content="https://carn.fancyenchiladas.net/r/linklater/tags"',
     ),
-    "og:url does not name the page it is on",
+    "og:url doesn't name the page it is on",
   );
-  assert.strictEqual([...markup.matchAll(/<h1[ >]/g)].length, 1);
 });

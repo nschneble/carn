@@ -1,13 +1,4 @@
 {
-  "schemaVersion": 1,
-  "captureSchema": 1,
-  "tuffgalVersion": "0.2.2-alpha.1",
-  "playwrightVersion": "1.62.1",
-  "browser": "chromium",
-  "browserVersion": "151.0.7922.34",
-  "platform": "linux",
-  "captureMode": "fullPage",
-  "colorScheme": "light",
   "breakpoints": [
     {
       "name": "mobile",
@@ -20,6 +11,15 @@
       "height": 900
     }
   ],
+  "browser": "chromium",
+  "browserVersion": "151.0.7922.34",
+  "captureMode": "fullPage",
+  "captureSchema": 1,
+  "colorScheme": "light",
   "deviceScaleFactor": 1,
-  "frozenTime": "2026-02-01T12:00:00.000Z"
+  "frozenTime": "2026-02-01T12:00:00.000Z",
+  "platform": "linux",
+  "playwrightVersion": "1.62.1",
+  "schemaVersion": 1,
+  "tuffgalVersion": "0.2.2-alpha.1"
 }

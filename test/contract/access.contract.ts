@@ -35,12 +35,11 @@ function store(answer: boolean): AccessStore & { asked: Question[] } {
 
 test("the owner may write without the store being consulted", async () => {
   const access = store(false);
-
   assert.strictEqual(await mayWrite(repo, ownerId, access), true);
   assert.deepStrictEqual(access.asked, [], "an owner push cost a query");
 });
 
-test("an admin who is not the owner may write, on one question", async () => {
+test("an admin who isn't the owner may write, on one question", async () => {
   const access = store(true);
 
   assert.strictEqual(await mayWrite(repo, otherId, access), true);
@@ -53,14 +52,12 @@ test("an admin who is not the owner may write, on one question", async () => {
 
 test("a grant is checked against the repo being written to", async () => {
   const access = store(true);
-
   assert.strictEqual(await mayWrite(repo, otherId, access), true);
   assert.deepStrictEqual(access.asked, [{ userId: otherId, repoId }]);
 });
 
-test("a user with neither admin nor a grant is refused, not thrown at", async () => {
+test("a user with neither admin nor a grant is refused", async () => {
   const access = store(false);
-
   assert.strictEqual(await mayWrite(repo, otherId, access), false);
   assert.strictEqual(access.asked.length, 1);
 });

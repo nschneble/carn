@@ -121,7 +121,7 @@ rather than a bug.
 There's no git subprocess in 1a. There's no HTML page in 1a. If you find
 yourself writing either, stop. You've left the scope.
 
-## What 1a is not
+## What 1a isn't
 
 Don't build any of the following. They belong to later sub-phases and
 building them early makes the review harder, not easier:

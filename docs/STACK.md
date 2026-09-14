@@ -11,7 +11,7 @@ Every version-sensitive claim in a phase brief is written against the majors bel
 
 > **Pinned here vs Latest on npm**
 >
-> "Pinned here" is what `package.json` declares. The "Latest on npm" column was last verified on 2026-08-25. Re-verify before writing each phase brief. The two columns are allowed to differ; a gap is not a defect.
+> "Pinned here" is what `package.json` declares. The "Latest on npm" column was last verified on 2026-08-25. Re-verify before writing each phase brief. The two columns are allowed to differ; a gap isn't a defect.
 
 | Package              | Pinned here | Latest on npm | Major  | Risk      | Notes                                                                             |
 | -------------------- | ----------- | ------------- | ------ | --------- | --------------------------------------------------------------------------------- |
@@ -58,7 +58,7 @@ Rule configuration is the default preset. Only add a custom rule when a real bug
 Two learning lessions from early Biome failures:
 
 - `biome migrate --write` translates `rules: { recommended: true }` into `rules: { preset: "none" }`, silently disabling every rule. Migrate deliberately when upgrading. The pre-commit hook has a probe for this.
-- `biome check` errors when it's handed only files it doesn't handle, e.g. a commit touching just `.sh` or `.md`. The hook passes `--no-errors-on-unmatched` to address this. Surprisingly, `--files-ignore-unknown` is not the correct flag here.
+- `biome check` errors when it's handed only files it doesn't handle, e.g. a commit touching just `.sh` or `.md`. The hook passes `--no-errors-on-unmatched` to address this. Surprisingly, `--files-ignore-unknown` isn't the correct flag here.
 
 ## markdown-it 15
 

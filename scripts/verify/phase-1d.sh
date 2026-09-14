@@ -102,7 +102,7 @@ psql_scratch() {
 
 require_db() {
   if [ -z "${DATABASE_URL:-}" ]; then
-    record FAIL "$1" "$2" "DATABASE_URL is not set. Copy .env.example to .env, or export it."
+    record FAIL "$1" "$2" "DATABASE_URL isn't set. Copy .env.example to .env, or export it."
     return 1
   fi
   return 0
@@ -162,7 +162,7 @@ require_scratch() {
 
 require_daemon() {
   if [ "$daemon_ok" != 1 ]; then
-    record FAIL "$1" "$2" "the daemon is not running, see check 2"
+    record FAIL "$1" "$2" "the daemon isn't running, see check 2"
     return 1
   fi
   return 0
@@ -546,7 +546,7 @@ if require_daemon 4 "$TITLE_4" && require_seed 4 "$TITLE_4"; then
   elif [ "$tree_rows" != "1" ]; then
     record FAIL 4 "$TITLE_4" "the tree drew $tree_rows row(s), wanted 1"
   elif grep -qF '<div class="readme">' "$work/4.body"; then
-    record FAIL 4 "$TITLE_4" "the page rendered a readme it does not have"
+    record FAIL 4 "$TITLE_4" "the page rendered a readme it doesn't have"
   elif ! grep -qF "$NO_README" "$work/4.body"; then
     record FAIL 4 "$TITLE_4" "wanted \"$NO_README\", got: $(grep -oF -m1 '<div class="empty">' "$work/4.body")"
   elif ! grep -qF 'git add README.md' "$work/4.body"; then
@@ -632,7 +632,7 @@ if require_daemon 8 "$TITLE_8" && require_seed 8 "$TITLE_8"; then
   for inert in '&lt;script&gt;alert(1)&lt;/script&gt;' \
     '[payload](javascript:alert(1))' \
     '&lt;img src=x onerror=alert(1)&gt;'; do
-    grep -qF "$inert" "$work/3.body" || wrong="$wrong '$inert' is not in the body as inert text;"
+    grep -qF "$inert" "$work/3.body" || wrong="$wrong '$inert' isn't in the body as inert text;"
   done
   # each probe is a shape only a live payload makes: "onerror=" alone is a
   # substring of the escaped text this page is supposed to be showing
@@ -689,7 +689,7 @@ if require_daemon 12 "$TITLE_12" && require_seed 12 "$TITLE_12"; then
   else
     contract 12 "$TITLE_12" 2 "index $index_bytes B, repo page $show_bytes B" \
       assets repo-page -- \
-      "the whole page fits the budget with both families, images, and the sheet" \
+      "the page fits the budget with fonts, images, and styles" \
       "the repo page fits the weight budget as wire bytes, fonts in"
   fi
 fi
@@ -740,9 +740,9 @@ if require_daemon 15 "$TITLE_15" && require_seed 15 "$TITLE_15"; then
   # the row's own header cell is what holds it
   wrong=""
   grep -qF '<a class="t-item" lang="en" href="/r/verify1d/blob/main/README.md"><span class="caps">README<span class="sc">.md</span></span></a>' "$work/3.body" \
-    || wrong="$wrong the README row is not the lang-stamped small-caps shape;"
+    || wrong="$wrong the README row isn't the lang-stamped small-caps shape;"
   grep -qF '<a class="t-item" lang="en" href="/r/verify1d/tree/main/docs"><span class="caps">docs</span>/</a>' "$work/3.body" \
-    || wrong="$wrong the docs row is not the lang-stamped small-caps shape;"
+    || wrong="$wrong the docs row isn't the lang-stamped small-caps shape;"
   if [ -n "$wrong" ]; then
     record FAIL 15 "$TITLE_15" "$wrong"
   else
@@ -807,11 +807,11 @@ if require_db 16 "$TITLE_16"; then
 fi
 
 # 17
-# spelled as a pattern so this script is not itself a hit
+# spelled as a pattern so this script isn't itself a hit
 spawn_shell='shell:[[:space:]]*true'
 printf 'spawn(cmd, { %s: %s })\n' shell true > "$work/17.control"
 if ! grep -qE "$spawn_shell" "$work/17.control"; then
-  record FAIL 17 "no shell-enabled spawn in source" "the pattern does not match a known violation; it cannot gate"
+  record FAIL 17 "no shell-enabled spawn in source" "the pattern doesn't match a known violation; it cannot gate"
 else
   # source only: docs quote the rule, --untracked sees uncommitted files
   hits=$(git grep --untracked -nE "$spawn_shell" -- src test scripts prisma prisma.config.ts)
@@ -830,7 +830,7 @@ spdx_line='// SPDX-License-Identifier: AGPL-3.0-or-later'
 printf '%s\n' "$spdx_line" > "$work/18.good"
 printf 'no header\n' > "$work/18.bad"
 if [ "$(head -1 "$work/18.good")" != "$spdx_line" ] || [ "$(head -1 "$work/18.bad")" = "$spdx_line" ]; then
-  record FAIL 18 "$TITLE_18" "the header comparison does not discriminate; it cannot gate"
+  record FAIL 18 "$TITLE_18" "the header comparison doesn't discriminate; it cannot gate"
 else
   sources=$(git ls-files --cached --others --exclude-standard -- src test scripts \
     | grep '\.ts$' | grep -v '^src/generated/')
@@ -938,7 +938,7 @@ else
   contract 23 "$TITLE_23" 4 "3 served external links carry it and 4 local ones do not" \
     markdown repo-page -- \
     "an external link carries the rel, in all three link forms" \
-    "a link that is not external carries no rel at all" \
+    "a link that isn't external carries no rel at all" \
     "the rel rule renders through a fallback, keeping other attributes" \
     "external readme links carry the rel and local ones do not"
 fi

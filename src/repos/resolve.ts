@@ -40,9 +40,7 @@ export async function resolveRepo(target: string): Promise<RepoLookup> {
   `;
 
   const row = rows[0];
-  if (row === undefined) {
-    return { status: "missing", name };
-  }
+  if (row === undefined) return { status: "missing", name };
 
   return { status: "found", repo: { ...row, path: repoPath(row.id) } };
 }

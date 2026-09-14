@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // header choice waterfalls gracefully, so a repo with only a dark header
-// still looks deliberate in light mode. one ls-tree per page, cached on
-// the tip's oid. BRAND.md 06
+// still looks deliberate in light mode; one ls-tree per page, cached on
+// the tip's oid (BRAND.md §06)
 
 import { captureGit } from "../git/capture.js";
 import { parseLsTree } from "../git/ls-tree.js";
@@ -14,16 +14,14 @@ export type Slot = "light" | "dark";
 export type HeaderImage = { path: string; oid: string; bytes: number };
 export type HeaderSource = HeaderImage | "wordmark";
 export type Header = { light: HeaderSource; dark: HeaderSource };
-
 export type HeaderSrc = (image: HeaderImage) => string;
 
-// 16 KB, with headroom under BRAND.md 06's budget; not assetRoomBytes
+// 16 KB, with headroom under BRAND.md §06's budget
 export const maxHeaderBytes = 16 * 1024;
 
 const listTimeoutMs = 5_000;
 const fileModes: ReadonlySet<string> = new Set(["100644", "100755"]);
 const cacheLimit = 512;
-
 const cache = new Map<string, Header>();
 
 function chain(slot: Slot): string[] {
@@ -36,7 +34,6 @@ function parse(listing: string): Map<string, HeaderImage> {
   for (const { mode, type, oid, size, path } of parseLsTree(listing)) {
     if (type !== "blob" || !fileModes.has(mode)) continue;
     if (size === null || size > maxHeaderBytes) continue;
-
     found.set(path, { path, oid, bytes: size });
   }
 
@@ -85,9 +82,7 @@ export async function resolveHeader(options: {
   commit: string | null;
   signal?: AbortSignal;
 }): Promise<Header> {
-  if (options.commit === null) {
-    return { light: "wordmark", dark: "wordmark" };
-  }
+  if (options.commit === null) return { light: "wordmark", dark: "wordmark" };
 
   if (!oidPattern.test(options.commit)) {
     throw new Error(

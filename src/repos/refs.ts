@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// one for-each-ref per list. creatordate is the only date field populated
-// for both a commit and a tag object, and contents:subject is the subject
-// of whichever of the two the ref names, so neither list needs a second
-// spawn to fill its columns
+// one for-each-ref per list; creator date is the only date field populated
+// for both a commit and tag object, and contents:subject is the subject
+// of whichever of the two the ref names
 
 import { captureGit } from "../git/capture.js";
 import { maxSubjectChars } from "./log.js";
@@ -29,8 +28,6 @@ export const refNouns: Record<RefKind, { one: string; many: string }> = {
 };
 
 export const refTimeoutMs = 5_000;
-
-// bounds the read; ref-list.ts settles what renders against the budget
 export const maxRefs = 250;
 
 const bytesPerRef = 1024;
@@ -45,14 +42,11 @@ function parse(listing: string): Ref[] {
 
   for (const record of listing.split("\n")) {
     const [name, subject, seconds, objecttype] = record.split("\0");
-    if (
-      name === undefined ||
-      subject === undefined ||
-      seconds === undefined ||
-      objecttype === undefined
-    ) {
-      continue;
-    }
+
+    if (name === undefined) continue;
+    if (subject === undefined) continue;
+    if (seconds === undefined) continue;
+    if (objecttype === undefined) continue;
 
     // a tag on a blob or tree has no creatordate, and Number("") is 0
     const at = Number(seconds);

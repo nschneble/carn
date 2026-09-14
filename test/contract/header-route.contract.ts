@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// the route is answered over the real route table, because the status, the
-// content type and the immutable Cache-Control are what a browser reads and
-// none of them is visible in a screenshot. only the repo row lookup is
-// stubbed: the repo on disk, the handler and the git below it are real
+// the route is answered over the real route table, because the status,
+// content type and immutable Cache-Control are what a browser reads; only
+// the repo row lookup is stubbed
 
 import assert from "node:assert";
 import { execFileSync } from "node:child_process";
@@ -23,15 +22,13 @@ const { headerType } = await import("../../src/repos/header-asset.js");
 
 const served = "11111111-1111-4111-8111-111111111111";
 const ghost = "22222222-2222-4222-8222-222222222222";
-
 const forever = "public, max-age=31536000, immutable";
 const noImage = "No such header image.\n";
 const imageFailed = "The header image failed to load. Try again shortly.\n";
 const plain = "text/plain; charset=utf-8";
-
+const readme = "# Linklater\n";
 const svg =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 400"></svg>\n';
-const readme = "# Linklater\n";
 
 after(() => {
   rmSync(dir, { recursive: true, force: true });
@@ -66,7 +63,7 @@ const headerOid = git(repoPath, ["rev-parse", "HEAD:.carn/header.svg"]);
 const readmeOid = git(repoPath, ["rev-parse", "HEAD:README.md"]);
 
 // the one raw read the route makes, answered from the name it was given:
-// linklater is on disk and ghost is a row whose repo is not
+// linklater is on disk and ghost is a row whose repo isn't
 db.$queryRaw = ((_strings: TemplateStringsArray, name: string) =>
   Promise.resolve(
     name === "linklater" || name === "ghost"
@@ -82,7 +79,6 @@ db.$queryRaw = ((_strings: TemplateStringsArray, name: string) =>
   )) as never;
 
 const { buildApp } = await import("../../src/app.js");
-
 const app = buildApp();
 
 after(async () => {
@@ -93,7 +89,7 @@ function get(url: string) {
   return app.inject({ method: "GET", url });
 }
 
-test("an asset that is not an oid and an svg is refused before the repo", async () => {
+test("an asset that isn't an oid and an svg is refused before the repo", async () => {
   for (const asset of [
     "header.svg",
     headerOid,
@@ -118,7 +114,7 @@ test("a committed header serves as svg, cached forever", async () => {
   assert.strictEqual(response.body, svg);
 });
 
-test("an oid the repo holds but no slot claims is not a header", async () => {
+test("an oid the repo holds but no slot claims isn't a header", async () => {
   const response = await get(`/r/linklater/header/${readmeOid}.svg`);
 
   assert.strictEqual(response.statusCode, 404);
@@ -134,7 +130,7 @@ test("an oid of nothing at all is refused without a read", async () => {
   assert.strictEqual(response.body, noImage);
 });
 
-test("a row whose repo is not on disk is unavailable, not missing", async () => {
+test("a row whose repo isn't on disk is unavailable, not missing", async () => {
   const response = await get(`/r/ghost/header/${headerOid}.svg`);
 
   assert.strictEqual(response.statusCode, 503);

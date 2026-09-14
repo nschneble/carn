@@ -46,10 +46,14 @@ type PageRoute = { Params: { repo: string }; Querystring: { all?: string } };
 type RefRoute = { Params: { repo: string } };
 type AssetRoute = { Params: { repo: string; asset: string } };
 type BlobRoute = { Params: { repo: string; rev: string; "*": string } };
+type CommitRoute = { Params: { repo: string; sha: string } };
+type ChangeRoute = { Params: { repo: string; sha: string; "*": string } };
+
 type TreeRoute = {
   Params: { repo: string; rev: string; "*": string };
   Querystring: { all?: string };
 };
+
 type LogRoute = {
   Params: { repo: string };
   Querystring: {
@@ -58,8 +62,6 @@ type LogRoute = {
     back?: string | string[];
   };
 };
-type CommitRoute = { Params: { repo: string; sha: string } };
-type ChangeRoute = { Params: { repo: string; sha: string; "*": string } };
 
 const forever = "public, max-age=31536000, immutable";
 const noImage = "No such header image.\n";
@@ -249,7 +251,7 @@ async function showTree(
   }
 }
 
-// a named ref git cannot resolve is a 404, never a fall back
+// a named ref git cannot resolve is a 404
 async function showCommits(
   request: FastifyRequest<LogRoute>,
   reply: FastifyReply,
@@ -417,9 +419,8 @@ async function serveAsset(
     const stamped = () =>
       reply.header("Cache-Control", revalidate).header("ETag", tag);
 
-    if (request.headers["if-none-match"] === tag) {
+    if (request.headers["if-none-match"] === tag)
       return stamped().code(304).send();
-    }
 
     const body = await readBlob({
       repoPath: found.repo.path,
@@ -446,14 +447,16 @@ export function repoPageRoutes(app: FastifyInstance): void {
   app.get<BlobRoute>("/r/:repo/asset/:rev/*", serveAsset);
   app.get<BlobRoute>("/r/:repo/blob/:rev/*", showBlob);
   app.get<TreeRoute>("/r/:repo/tree/:rev/*", showTree);
-  app.get<RefRoute>("/r/:repo/branches", (request, reply) =>
-    showRefs(request, reply, "branch"),
-  );
-  app.get<RefRoute>("/r/:repo/tags", (request, reply) =>
-    showRefs(request, reply, "tag"),
-  );
   app.get<LogRoute>("/r/:repo/commits", showCommits);
   app.get<ChangeRoute>("/r/:repo/commits/:sha/*", showCommit);
   app.get<CommitRoute>("/r/:repo/commits/:sha", showCommit);
   app.get<PageRoute>("/r/:repo", showRepo);
+
+  app.get<RefRoute>("/r/:repo/branches", (request, reply) =>
+    showRefs(request, reply, "branch"),
+  );
+
+  app.get<RefRoute>("/r/:repo/tags", (request, reply) =>
+    showRefs(request, reply, "tag"),
+  );
 }

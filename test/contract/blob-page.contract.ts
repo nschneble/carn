@@ -58,22 +58,22 @@ function renderedLines(body: string): number {
   return (body.match(/\n/g) ?? []).length;
 }
 
-test("a file under the cap renders whole, with no notice and no hatch", () => {
+test("a file under the cap renders whole, with no notice or hatch", () => {
   const markup = blobPage({ repo: "linklater", blob: smallBlob, rawOrigin });
 
   assert.doesNotMatch(markup, noticePattern);
   assert.doesNotMatch(markup, /aria-describedby/);
   assert.doesNotMatch(markup, /Show entire file/);
 
+  assert.ok(codeBody(markup).includes("readFile"), "the source went missing");
   assert.strictEqual(
     renderedLines(codeBody(markup)),
     smallBlob.lines,
     "the whole-file render lost lines",
   );
-  assert.ok(codeBody(markup).includes("readFile"), "the source went missing");
 });
 
-test("a file over the cap is cut on a line boundary and says so", () => {
+test("a file over the cap is cut on a line boundary", () => {
   const markup = blobPage({ repo: "linklater", blob: hugeBlob, rawOrigin });
   const notice = noticePattern.exec(markup);
 
@@ -83,7 +83,7 @@ test("a file over the cap is cut on a line boundary and says so", () => {
   const total = Number((notice[2] as string).replaceAll(",", ""));
 
   assert.strictEqual(total, hugeBlob.lines);
-  assert.ok(shown > 0 && shown < total, `${shown} of ${total} is not a cut`);
+  assert.ok(shown > 0 && shown < total, `${shown} of ${total} isn't a cut`);
 
   assert.match(markup, /<p class="t-note" id="blob-cut">/);
   assert.match(markup, /aria-describedby="blob-cut"/);
@@ -110,7 +110,7 @@ test("the truncated block's markup is balanced, so nothing is repaired", () => {
 
 // the refinement model predicts from a per-line average, so a file whose
 // first line costs many times what the rest do can still be over when its
-// passes run out; what ships is measured, never predicted
+// passes run out
 test("a front-loaded file never ships over a budget the model missed", () => {
   const markup = blobPage({
     repo: "linklater",
@@ -121,7 +121,7 @@ test("a front-loaded file never ships over a budget the model missed", () => {
 
   assert.ok(
     weight <= budgetBytes,
-    `the front-loaded page weighs ${weight} wire bytes against a ${budgetBytes} B budget, so the loop shipped what its last pass measured rather than something that fits`,
+    `the front-loaded page weighs ${weight} wire bytes against a ${budgetBytes} B budget, so the loop shipped what its last pass measured`,
   );
 
   const notice = noticePattern.exec(markup);
@@ -133,8 +133,8 @@ test("a front-loaded file never ships over a budget the model missed", () => {
 });
 
 // a minified bundle is one line, so the cap falls before the first break
-// and there is no boundary to cut on
-test("a file whose first line outruns the cap says so, and is not blank", () => {
+// and there's no boundary to cut on
+test("a file whose first line outruns the cap says so, and isn't blank", () => {
   const markup = blobPage({
     repo: "linklater",
     blob: textBlob(
@@ -160,7 +160,7 @@ test("a file whose first line outruns the cap says so, and is not blank", () => 
   assert.ok(markup.includes("<dt>Size</dt><dd>136.7 KB</dd>"));
 });
 
-// the decline above comes back from an empty cut. this one's first line is
+// the decline above comes back from an empty cut; this one's first line is
 // well inside the source cap and still outweighs the room the chrome
 // leaves, so the shrink pass and the halving both run out on one line
 test("a file the cap admits and the budget refuses declines the same way", () => {
@@ -187,7 +187,7 @@ test("a file the cap admits and the budget refuses declines the same way", () =>
   );
 });
 
-test("a 0-byte file reports no lines, not the one a split invents", () => {
+test("a 0-byte file reports no lines", () => {
   assert.strictEqual(countLines(""), 0);
   assert.strictEqual(countLines("one\n"), 1);
   assert.strictEqual(countLines("one\ntwo"), 2);
@@ -199,7 +199,7 @@ test("a 0-byte file reports no lines, not the one a split invents", () => {
 
   assert.ok(
     markup.includes("<dt>Lines</dt><dd>0</dd>"),
-    "an empty file claimed a line it does not have",
+    "an empty file claimed a line it doesn't have",
   );
 });
 
@@ -212,7 +212,7 @@ test("a span opening lines before the cut still closes after it", () => {
   assert.match(
     body,
     /<span class="hljs-comment">\/\*/,
-    "the fixture's block comment is not one span, so the cut crosses nothing",
+    "the fixture's block comment isn't one span, so the cut crosses nothing",
   );
   assert.ok(
     !body.includes("*/"),
@@ -227,7 +227,7 @@ test("a span opening lines before the cut still closes after it", () => {
 });
 
 // the truncation notice is the only signal a reader gets at MLP, where no
-// raw origin is configured and the hatch is not rendered at all
+// raw origin is configured and the hatch isn't rendered at all
 test("the notice renders whether or not a raw origin is configured", () => {
   for (const origin of [rawOrigin, undefined]) {
     const markup = blobPage({
@@ -322,7 +322,7 @@ test("a bigger stylesheet renders fewer lines, not just a smaller number", () =>
 
   assert.ok(
     shown(8_000) < shown(200),
-    "the rendered line count did not follow the stylesheet's size",
+    "the rendered line count didn't follow the stylesheet's size",
   );
 });
 
@@ -369,7 +369,6 @@ test("every rendered blob page fits the budget as real gzip-5 wire bytes", () =>
 
   for (const [state, markup] of pages) {
     const weight = pageWireBytes(markup);
-
     assert.ok(
       weight <= budgetBytes,
       `the ${state} blob page weighs ${weight} wire bytes against a ${budgetBytes} B budget`,
@@ -386,21 +385,24 @@ test("a raster under the cap inlines first-party, eagerly, with no alt", () => {
 
   assert.ok(
     markup.includes(`<img class="preview" src="${src}" alt="" />`),
-    "the raster did not inline at its content-addressed first-party path",
+    "the raster didn't inline at its content-addressed first-party path",
   );
+
+  assert.ok(
+    src.startsWith("/r/"),
+    "the inline src left the first-party origin",
+  );
+
   assert.doesNotMatch(
     markup,
     /loading="lazy"/,
     "a lazily loaded image shifts the layout when it lands, and nothing server-side can emit width and height for it",
   );
+
   assert.doesNotMatch(
     markup,
     /<pre class="src"/,
     "a raster reached the highlighter",
-  );
-  assert.ok(
-    src.startsWith("/r/"),
-    "the inline src left the first-party origin",
   );
 });
 
@@ -464,19 +466,20 @@ test("an svg blob renders as source and never as an inline image", () => {
 test("the source block carries the region semantics the audit needs", () => {
   const markup = blobPage({ repo: "linklater", blob: smallBlob });
 
+  assert.strictEqual((markup.match(/<h1/g) ?? []).length, 1);
+  assert.match(markup, /<h1 class="t-item" lang="en" id="blob-h">/);
   assert.match(
     markup,
     /<pre class="src" tabindex="0" role="region" aria-labelledby="blob-h">/,
   );
+
+  assert.doesNotMatch(markup, /<h1[^>]*aria-label/);
+  assert.doesNotMatch(markup, /<h1 class="vh"/);
   assert.doesNotMatch(
     markup,
     /<div[^>]*tabindex="0"/,
     "a div wrapper around the block fails focus-order-semantics",
   );
-  assert.match(markup, /<h1 class="t-item" lang="en" id="blob-h">/);
-  assert.strictEqual((markup.match(/<h1/g) ?? []).length, 1);
-  assert.doesNotMatch(markup, /<h1[^>]*aria-label/);
-  assert.doesNotMatch(markup, /<h1 class="vh"/);
 });
 
 test("nothing but the file's own bytes goes inside the block", () => {

@@ -62,7 +62,7 @@ test("the license note's total is the unsubset pair plus the sans as shipped", (
   assert.strictEqual(total, unsubset + shipped(sans));
 });
 
-test("the fonts alone leave room for a page, the name-preserving route does not", () => {
+test("the fonts alone leave room for a page, the name-preserving route doesn't", () => {
   assert.ok(
     shipped(sans, ...mono) < budget,
     "the shipped fonts no longer leave room for a page",
@@ -72,6 +72,7 @@ test("the fonts alone leave room for a page, the name-preserving route does not"
     "the over-budget total",
     /With the sans face that(?:'s| is) ([\d,]+) B/,
   );
+
   assert.ok(
     total > budget,
     "the rejected route now fits, so the note is wrong",

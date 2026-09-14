@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// the axe run only proves nothing went undecided; this is what proves the
-// block is right. `.src` sets an explicit color, so a class nobody styled
-// inherits --ink rather than a UA default — but a class nobody styled on
-// purpose and a class misspelled in a selector look identical on screen
+// axe run proves nothing went undecided; this proves the block is correct
 
 import assert from "node:assert";
 import { test } from "node:test";
@@ -11,12 +8,6 @@ import { test } from "node:test";
 import { source } from "../../src/html/styles.js";
 import { languages } from "../../src/html/syntax.js";
 
-// the 52 classes every highlight.js grammar can emit, walked out of their
-// definitions. a dotted scope does not split into two hljs- classes:
-// scopeToCSSClass prefixes the head only, so title.function emits
-// `hljs-title function_` and the tail is bare. hljs-class and hljs-function
-// are here because c, bash, cpp, go, javascript, and typescript each carry
-// the undotted scope as well
 const documented = [
   "hljs-addition",
   "hljs-attr",
@@ -72,8 +63,6 @@ const documented = [
   "hljs-variable",
 ];
 
-// deliberately unstyled: each takes .src's own --ink, so a rule for one
-// would cost bytes and say nothing
 const inheritsDefault = [
   "hljs-brace",
   "hljs-class",
@@ -140,7 +129,7 @@ function auditedColors(found: Rule[]): Map<string, string> {
 
       const token = tokenOf(value);
       assert.ok(
-        token !== null && permitted.includes(token),
+        token && permitted.includes(token),
         `.${name} draws ${value}, and the block's palette is ${permitted.join(", ")}`,
       );
       seen.set(name, token);
@@ -164,7 +153,7 @@ test("the source block is parseable and non-trivial", () => {
   assert.ok(parsed.length > 5, "the .src block parsed to almost nothing");
 
   const block = parsed.find((rule) => rule.selectors.includes(".src"));
-  assert.ok(block, ".src is not declared");
+  assert.ok(block, ".src isn't declared");
   assert.strictEqual(
     tokenOf(colorOf(block.body)),
     "--ink",

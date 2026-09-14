@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// every grammar highlight.js ships, so no blob goes unhighlighted. the
-// cost is startup, not the wire: class-based output keeps the theme in
-// the cached stylesheet, and all 194 emit 52 classes between them
+// includes all 193 languages supported by highlight.js, along with a
+// custom grammar for Prisma schemas
 
 import hljs from "highlight.js";
 
@@ -12,12 +11,8 @@ hljs.registerLanguage("prisma", prisma);
 
 export type Language = { id: string; label: string };
 
-// upstream's name, except where it names two languages at once
 const labels: Record<string, string> = {
-  bash: "Shell",
-  ini: "INI",
   prisma: "Prisma",
-  xml: "XML",
 };
 
 export const languages = new Map<string, Language>(

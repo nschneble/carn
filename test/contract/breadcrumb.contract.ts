@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// the ancestor links are followed over real http against the real route
-// table, because an href that merely looks like a url is the defect worth
-// catching. only the repo row lookup is stubbed: the repo on disk, the
-// routes, the handlers and the git below them are all real
+// the ancestor links are followed over http against the route table; only
+// the repo row lookup is stubbed
 
 import assert from "node:assert";
 import { execFileSync } from "node:child_process";
@@ -121,9 +119,8 @@ const fixtures: Record<string, string> = {
 before(async () => {
   await app.listen({ port: 0, host: "127.0.0.1" });
   const address = app.server.address();
-  assert.ok(address !== null && typeof address !== "string");
+  assert.ok(address && typeof address !== "string");
   origin = `http://127.0.0.1:${address.port}`;
-
   site = await serve({ documents: fixtures });
 });
 
@@ -170,25 +167,24 @@ test("the separator is real dom text, and every one is aria-hidden", () => {
   assert.doesNotMatch(
     stylesheet,
     /\.crumbs[^{]*\{[^}]*content:/,
-    "the separator moved into generated content, which cannot be selected and is not found by Ctrl-F",
+    "the separator moved into generated content, which can't be selected and isn't found by page search",
   );
 });
 
-test("ancestors are links, and the current segment is not", () => {
+test("ancestors are links, and the current segment isn't one", () => {
   const nav = crumbList(treeDocument());
   const links = [...nav.matchAll(/<a /g)].length;
   const here = [...nav.matchAll(/<span class="here">/g)].length;
 
-  assert.strictEqual(here, 1, "there is not exactly one current segment");
+  assert.strictEqual(here, 1, "there's not exactly one current segment");
   assert.strictEqual(links, 3, `Càrn, linklater and src should link: ${nav}`);
   assert.ok(
     nav.endsWith('<span class="here">components</span></li></ol></nav>'),
-    `the current segment is not last, or it links: ${nav}`,
+    `the current segment isn't last, or it links: ${nav}`,
   );
 });
 
-// the wordmark on / is the current segment and keeps the treatment it
-// already has, so the index is the one page this wave must not touch
+// wordmark on / is the current segment and keeps treatment it already has
 test("the index page keeps its own masthead, unchanged", () => {
   const markup = indexDocument();
 
@@ -201,7 +197,7 @@ test("the index page keeps its own masthead, unchanged", () => {
   assert.doesNotMatch(markup, /aria-label="Breadcrumb"/);
 });
 
-test("the breadcrumb does not replace the repo page's .vh heading", () => {
+test("the breadcrumb doesn't replace the repo page's .vh heading", () => {
   const markup = showDocument();
 
   assert.ok(markup.includes('<h1 class="vh">linklater</h1>'));
@@ -209,13 +205,13 @@ test("the breadcrumb does not replace the repo page's .vh heading", () => {
   assert.doesNotMatch(
     crumbList(markup),
     /<h[1-6]/,
-    "the breadcrumb grew a heading, which is what lets the mark stay decorative",
+    "the breadcrumb grew a heading",
   );
 });
 
 // four or fewer segments can never collapse, so rendering the fold and the
 // hidden set would be markup no viewport ever shows
-test("a trail with nothing to hide renders no fold and no hidden segments", () => {
+test("a trail with nothing to hide doesn't render a fold or hide segments", () => {
   const short = crumbList(logDocument());
 
   assert.doesNotMatch(short, /class="fold"|class="mid"/);
@@ -292,13 +288,13 @@ test("the current segment is inked and weighted apart from its ancestors", async
       assert.strictEqual(
         read.ancestorColor,
         rgb(read.mid),
-        `${path.name}: an ancestor is not --ink-mid`,
+        `${path.name}: an ancestor isn't --ink-mid`,
       );
       assert.strictEqual(read.ancestorTag, "A");
       assert.strictEqual(
         read.hereColor,
         rgb(read.ink),
-        `${path.name}: the current segment is not --ink`,
+        `${path.name}: the current segment isn't --ink`,
       );
       assert.strictEqual(read.hereWeight, "500");
       assert.notStrictEqual(
@@ -318,8 +314,7 @@ test("the current segment is inked and weighted apart from its ancestors", async
 });
 
 // the collapse is the wave's new invariant, so it is read in both
-// directions off the accessibility tree, which is where display: none is
-// the whole point rather than a side effect
+// directions off the a11y tree; `display: none` is the whole point
 test("the collapse drops the middle from the layout and the a11y tree", async (t) => {
   const page = await (await browser()).newPage();
   const whole = [
@@ -334,8 +329,8 @@ test("the collapse drops the middle from the layout and the a11y tree", async (t
   ];
   const folded = ["Càrn", "linklater", "ThemeEditor", "index.ts"];
 
-  // the two lines BRAND.md prints as the component's own example, read back
-  // off the rendered page: real text, so selection and Ctrl-F get the path
+  // two lines BRAND.md prints as the component's own example, read back
+  // off the rendered page: real text, so selection and search get the path
   const lines: Record<number, string> = {
     1440: "Càrn » linklater » apps » web » src » components » ThemeEditor » index.ts",
     375: "Càrn » linklater » … » ThemeEditor » index.ts",
@@ -394,8 +389,7 @@ test("the collapse drops the middle from the layout and the a11y tree", async (t
   }
 });
 
-// an href that reaches no route is the defect, and only a request can tell
-// one from a plausible string
+// requires an actual request to disambiguate real links
 test("every ancestor link on a blob three levels deep answers 200", async (t) => {
   const url = `${origin}/r/${repoName}/blob/main/${deep}`;
   const response = await fetch(url);
@@ -408,10 +402,8 @@ test("every ancestor link on a blob three levels deep answers 200", async (t) =>
   );
 
   const ancestors = hrefs(markup);
-  assert.strictEqual(ancestors.length, 4, "the trail is not four deep");
+  assert.strictEqual(ancestors.length, 4, "the trail isn't four deep");
 
-  // the request comes first on purpose: a plausible href that reaches no
-  // route is the defect, and only following it can tell the two apart
   for (const href of ancestors) {
     const followed = await fetch(`${origin}${href}`);
     const body = await followed.text();
@@ -419,12 +411,12 @@ test("every ancestor link on a blob three levels deep answers 200", async (t) =>
     assert.strictEqual(
       followed.status,
       200,
-      `${href} answered ${followed.status}, so an ancestor link resolves to no route`,
+      `${href} answered ${followed.status}, so an ancestor link doesn't resolve`,
     );
     assert.match(
       String(followed.headers.get("content-type")),
       /^text\/html/,
-      `${href} did not answer with a page`,
+      `${href} didn't answer with a page`,
     );
     assert.doesNotMatch(
       body,
@@ -443,14 +435,14 @@ test("every ancestor link on a blob three levels deep answers 200", async (t) =>
       `/r/${repoName}/tree/main/a`,
       `/r/${repoName}/tree/main/a/b`,
     ],
-    "the trail on a three-deep blob is not site, repo, a, b",
+    "the trail on a three-deep blob isn't site, repo, a, b",
   );
   assert.ok(
     markup.includes('<span class="here">c.ts</span>'),
-    "the filename is not the current segment",
+    "the filename isn't the current segment",
   );
 
-  // a 200 alone would not catch a tree link that listed the root, so pin
+  // a 200 alone wouldn't catch a tree link that listed the root, so pin
   // that the deepest ancestor really listed its own directory
   const listed = await (
     await fetch(`${origin}/r/${repoName}/tree/main/a/b`)
@@ -465,8 +457,7 @@ test("every ancestor link on a blob three levels deep answers 200", async (t) =>
   assert.ok(listed.includes(`/r/${repoName}/blob/main/a/b/c.ts`));
 });
 
-// following the trail up from a nested tree has to land on the repo page,
-// which is the root tree and the one depth the tree route has no form for
+// following the trail up from a nested tree has to land on the repo page
 test("the trail from a nested tree page climbs to the repo page", async () => {
   const markup = await (
     await fetch(`${origin}/r/${repoName}/tree/main/a/b`)

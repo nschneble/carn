@@ -12,8 +12,7 @@ import {
 
 export const rawOrigin = "https://gelatinous-cube.example";
 
-// long enough to overflow 1440px, or scrollable-region-focusable reports
-// inapplicable and the tabindex it pins goes unproven
+// long enough to overflow 1440px
 const longLine =
   'const banner = "the quick brown fox jumps over the lazy dog, and then keeps going far past the gutter so the block has somewhere to scroll to, which is the whole point of this line";';
 
@@ -52,7 +51,7 @@ export const pngBody = Buffer.from(
 export const svgBody = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 1"><title>injected</title><rect width="4" height="1" /></svg>\n`;
 
 // the highlight cache keys on the oid, so two fixtures sharing one can
-// serve each other's markup; the path is what makes each fixture itself
+// serve each other's markup
 function fixtureOid(path: string): string {
   return createHash("sha1").update(path).digest("hex");
 }

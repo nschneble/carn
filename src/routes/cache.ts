@@ -21,7 +21,6 @@ function stamp(
   body: string,
 ): boolean {
   const tag = etag(body);
-
   reply.header("Cache-Control", revalidate).header("ETag", tag);
 
   return request.headers["if-none-match"] === tag;

@@ -1,9 +1,10 @@
 {
-  "story": "A visitor walks a repo's tree down to a file three levels in",
+  "story": "A visitor walks a repo's tree down to a file three levels in, then a submodule",
   "actions": [
     { "action": "gantry-show" },
     { "action": "gantry-tree-nested" },
     { "action": "gantry-tree-nested-all" },
-    { "action": "gantry-blob-deep" }
+    { "action": "gantry-blob-deep" },
+    { "action": "gantry-tree-gitlink" }
   ]
 }

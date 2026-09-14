@@ -191,7 +191,7 @@ Traps:
 
 a. **Exit code 1 doesn't always mean "conflict."** The man page says it does. It doesn't: an unknown ref also exits 1, with empty stdout. Discriminate on _stdout_: a conflict prints a hex OID on line one, while an error prints nothing. Resolving refs with `rev-parse` first makes the case unreachable.
 b. **It writes objects.** Every "can this merge?" preview leaves orphan blobs and trees. On git ≥ 2.50 use `--quiet` for the mergeability check; it exits early and writes almost nothing. Either way, you need a scheduled `git gc`, which you'll want regardless because `receive.autogc` defaults to _on_ and will otherwise stall an unlucky push for minutes on a shared-CPU box.
-c. **Always pass `-z`.** Without it, filenames are shell-quoted per `core.quotePath` and the conflict section is explicitly documented as non-machine-readable. With it, you get NULL-delimited records where the stable field is the conflict _type_ (`CONFLICT (contents)`); always parse that, never the human readable message.
+c. **Always pass `-z`.** Without it, filenames are shell-quoted per `core.quotePath` and the conflict section is explicitly documented as non-machine-readable. With it, you get NUL-delimited records where the stable field is the conflict _type_ (`CONFLICT (contents)`); always parse that, never the human readable message.
 
 **Squash** is the same call with a single `-p`. Set `GIT_AUTHOR_*` and `GIT_COMMITTER_*` explicitly. A daemon has no gitconfig and `commit-tree` will refuse with "Author identity unknown." Use `-F` for the message, never `-m` with interpolated user text. **Fast-forward** skips the tree entirely: `git merge-base --is-ancestor`, then `update-ref`.
 
@@ -843,7 +843,7 @@ REPO_DIR=$(git rev-parse --absolute-git-dir)  # MUST come before `unset`
 
 1. **The hook blocks the pusher.** A hook that sleeps 5s makes your `git push` take 5s.
 2. **`&` alone doesn't make it async.** Measured: `( sleep 5 ) &` still blocked for the full 5 seconds. The child inherits stdout and stderr, which _are_ the pipe back to your terminal, and git waits for EOF on it. You must redirect **all three** file descriptors.
-3. **`GIT_DIR` is set, and it's relative** (literally `.`). Capture the absolute path first or any `cd` breaks the hook with a baffling "does not appear to be a git repository."
+3. **`GIT_DIR` is set, and it's relative** (literally `.`). Capture the absolute path first or any `cd` breaks the hook with a baffling "doesn't appear to be a git repository."
 4. **Use explicit refspecs, not `--mirror`.** Verified: `--mirror` pushes everything under `refs/`, including `refs/pull/*` and any internal refs your forge keeps. It also force-pushes and deletes. Explicit `+refs/heads/*` and `+refs/tags/*` plus `--prune` gives you the same sync.
 
 **Better still:** have the hook drop a marker in a spool directory and let a `systemd` timer drain it every minute. Idempotent, survives reboots, retries for free, and it's one place to alert from. The spool doubles as the CI trigger below.
@@ -987,7 +987,7 @@ _Three registers, one rule_
 
 > **WHY THE HOSTNAME CAN'T CARRY THE ACCENT**
 >
-> `càrn.fancyenchiladas.net` punycodes to `xn--crn-9ka.fancyenchiladas.net`. Browsers handle that transparently and would display the pretty form. **OpenSSH does not.** It passes your raw UTF-8 bytes straight to `getaddrinfo()` with only `AI_CANONNAME` set; never `AI_IDN`, which is opt-in on glibc and doesn't exist at all on macOS. So `git clone git@càrn.fancyenchiladas.net:linklater` simply fails, and the copy/paste clone URL on every repo page would be broken.
+> `càrn.fancyenchiladas.net` punycodes to `xn--crn-9ka.fancyenchiladas.net`. Browsers handle that transparently and would display the pretty form. **OpenSSH doesn't.** It passes your raw UTF-8 bytes straight to `getaddrinfo()` with only `AI_CANONNAME` set; never `AI_IDN`, which is opt-in on glibc and doesn't exist at all on macOS. So `git clone git@càrn.fancyenchiladas.net:linklater` simply fails, and the copy/paste clone URL on every repo page would be broken.
 >
 > **Caddy doesn't accept Unicode site addresses either.** It fails silently, serving a 200 with an empty body rather than a config error (issues #6404 and #6673). You'd have to write the punycode in the Caddyfile regardless. Let's Encrypt requires the A-label form on the order. Meanwhile macOS hands back NFD-normalized strings, so `à` can arrive as two codepoints and punycode to `xn--carn-rvc`; a completely different label from the NFC form.
 

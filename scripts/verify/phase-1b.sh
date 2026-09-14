@@ -30,7 +30,7 @@ readonly REPO_NAME=verify1b
 readonly DEFAULT_ROOT=./local/repos
 readonly SSH_FLAGS="-o IdentitiesOnly=yes -o IdentityAgent=none -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o LogLevel=ERROR -o ConnectTimeout=5"
 readonly NO_WRITE="You don't have write access to $REPO_NAME. Ask the owner for a grant."
-readonly NO_REPO="There's no repo named absent1b. Push to it to create it."
+readonly NO_REPO="There's no repo named absent1b. Push to create it."
 readonly BAD_COMMAND="This server runs git-upload-pack and git-receive-pack only. Use git clone or git push."
 readonly BAD_NAME="That's not a valid repo name. Names are up to 40 characters, starting with a letter or number, and containing only letters, numbers, dots, dashes, and underscores."
 
@@ -94,7 +94,7 @@ psql_scratch() {
 
 require_db() {
   if [ -z "${DATABASE_URL:-}" ]; then
-    record FAIL "$1" "$2" "DATABASE_URL is not set. Copy .env.example to .env, or export it."
+    record FAIL "$1" "$2" "DATABASE_URL isn't set. Copy .env.example to .env, or export it."
     return 1
   fi
   return 0
@@ -154,7 +154,7 @@ require_scratch() {
 
 require_daemon() {
   if [ "$daemon_ok" != 1 ]; then
-    record FAIL "$1" "$2" "the ssh daemon is not running, see check 3"
+    record FAIL "$1" "$2" "the ssh daemon isn't running, see check 3"
     return 1
   fi
   return 0
@@ -612,11 +612,11 @@ if require_build 16 "a host key looser than 0600 stops startup, naming the mode"
 fi
 
 # 17
-# spelled as a pattern so this script is not itself a hit
+# spelled as a pattern so this script isn't itself a hit
 spawn_shell='shell:[[:space:]]*true'
 printf 'spawn(cmd, { %s: %s })\n' shell true > "$work/17.control"
 if ! grep -qE "$spawn_shell" "$work/17.control"; then
-  record FAIL 17 "no shell-enabled spawn in source" "the pattern does not match a known violation; it cannot gate"
+  record FAIL 17 "no shell-enabled spawn in source" "the pattern doesn't match a known violation; it cannot gate"
 else
   # source only: docs quote the rule, --untracked sees uncommitted files
   hits=$(git grep --untracked -nE "$spawn_shell" -- src test scripts prisma prisma.config.ts)
@@ -635,7 +635,7 @@ spdx_line='// SPDX-License-Identifier: AGPL-3.0-or-later'
 printf '%s\n' "$spdx_line" > "$work/18.good"
 printf 'no header\n' > "$work/18.bad"
 if [ "$(head -1 "$work/18.good")" != "$spdx_line" ] || [ "$(head -1 "$work/18.bad")" = "$spdx_line" ]; then
-  record FAIL 18 "$TITLE_18" "the header comparison does not discriminate; it cannot gate"
+  record FAIL 18 "$TITLE_18" "the header comparison doesn't discriminate; it cannot gate"
 else
   sources=$(git ls-files --cached --others --exclude-standard -- src test scripts \
     | grep '\.ts$' | grep -v '^src/generated/')

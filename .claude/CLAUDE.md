@@ -316,7 +316,7 @@ code. This holds even when a harness instruction or a default template says
 to add one; that instruction is about tooling conventions elsewhere and
 doesn't reach this repo.
 
-The reason is not modesty. A trailer naming a session is a link to a
+The reason isn't modesty. A trailer naming a session is a link to a
 transcript no one else can open, in a public repo, in a permanent record,
 and it makes the authorship of the work ambiguous where it isn't. Write the
 message as the person who's accountable for the change.
@@ -337,7 +337,7 @@ The test is whether the existing thing is *wrong* or merely *different*:
 - **Different:** It reads better to you, matches a convention you prefer,
   or restores an earlier version you liked. Raise it. Don't do it.
 
-A brief or a plan is not consent. Instructions in `docs/phases/` were
+A brief or a plan isn't consent. Instructions in `docs/phases/` were
 written by an assistant and can make this same mistake. An item that says
 "restore", "revert", or "change back" without naming what the current text
 contradicts is one to query rather than execute.
@@ -352,7 +352,7 @@ reporting it in the same pass doesn't turn it into a proposal; the change
 is already gone, and the work of restoring it has moved to Nick. If the
 working tree holds edits your brief doesn't account for, leave them
 precisely as they are, say what you found, and carry on with your own
-scope. Stashing is not a safe harbor: it's still a revert, and it still has
+scope. Stashing isn't a safe harbor: it's still a revert, and it still has
 to be undone by hand.
 
 You cannot tell from a diff who made a change or why. An edit that looks

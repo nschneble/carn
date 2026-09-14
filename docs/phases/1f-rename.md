@@ -123,7 +123,7 @@ policy lives there rather than at the call site; keep that true.
 
 `repos.owner_id` is immutable per §05. Renaming doesn't touch it.
 
-### What the `UPDATE` touches, and what it does not
+### What the `UPDATE` touches, and what it doesn't
 
 Nothing moves on disk. The path is
 `/var/lib/carn/repos/<uuid[0:2]>/<uuid>.git`, derived from the primary key,

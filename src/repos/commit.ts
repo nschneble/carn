@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// three spawns whatever the commit touches: metadata, the numstat file
-// list, and one patch for every file. the message is read on its own call
-// rather than folded into the numstat format, so a NUL a crafted message
-// carries cannot inject a row into the file list
+// uses three spawns to load any commit; one each for the metadata, numstat
+// file list, and file patch
 
 import { captureGit } from "../git/capture.js";
 import { oidPattern } from "../git/oid.js";
@@ -166,6 +164,7 @@ export async function loadCommit(options: {
   const { repoPath, sha, signal } = options;
   if (!oidPattern.test(sha)) return null;
 
+  // its own spawn: a NUL in the message would forge a numstat row
   const meta = await loadMeta({ repoPath, sha, signal });
   if (meta === null) return null;
 
@@ -201,7 +200,7 @@ export async function loadCommit(options: {
 
   const segments = splitPatches(patches.stdout.toString("utf8"));
 
-  // a capture that hit its cap ends mid-hunk, so the last segment is dropped
+  // a capture that hit its cap ends mid-hunk, so last segment is dropped
   const whole =
     patches.stdout.length < maxPatchBytes
       ? segments.length

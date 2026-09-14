@@ -7,7 +7,6 @@ import { join, resolve } from "node:path";
 import { tokens } from "../../src/html/styles.js";
 
 const root = resolve(import.meta.dirname, "../../..");
-
 export const brand = readFileSync(join(root, "docs/BRAND.md"), "utf8");
 
 export function fences(document: string): string[] {
@@ -22,7 +21,7 @@ function declarations(css: string, selector: string): Map<string, string> {
     "gm",
   );
   const openings = [...css.matchAll(opener)];
-  assert.strictEqual(openings.length, 1, `${selector} is not declared once`);
+  assert.strictEqual(openings.length, 1, `${selector} isn't declared once`);
 
   const opening = openings[0] as RegExpExecArray;
   const start = (opening.index as number) + opening[0].length;
@@ -59,7 +58,6 @@ export function resolvePalette(
   overrides: Map<string, string>,
 ): Map<string, string> {
   const merged = new Map([...declarations(darkBlock, ":root"), ...overrides]);
-
   for (const [name, value] of merged) {
     const reference = value.match(/^var\((--[a-z0-9-]+)\)$/);
     if (!reference) continue;
@@ -74,7 +72,6 @@ const [tokenFence] = fences(brand);
 assert.ok(tokenFence, "BRAND.md has no token fence");
 
 export const brandTokens = tokenFence;
-
 export const dark = resolvePalette(new Map());
 export const light = resolvePalette(declarations(lightBlock, ":root"));
 export const palettes = [

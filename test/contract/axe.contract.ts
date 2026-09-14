@@ -181,7 +181,6 @@ const readmeTable = `<!doctype html>
 `;
 
 const buckets = ["violations", "incomplete", "passes", "inapplicable"] as const;
-
 const galleryHref = "/gallery.css";
 
 const fixtures: Record<string, string> = {
@@ -235,48 +234,42 @@ const states = {
   "show-header": showDocument({ repo: view({ header: committedHeader }) }),
   "not-found": errorPage({ failure: noSuchRepo("linklater") }),
   blob: blobDocument(),
-  // the cap is squeezed rather than the file grown: contrast nodes scale
-  // with the rendered spans, and a thousand-line fixture pins nothing
-  // stable while costing the whole audit its runtime
   "blob-cut": blobDocument({ rawOrigin, sheetWire: 29_000 }),
   "blob-image": blobDocument({ blob: imageBlob, rawOrigin }),
+
   "blob-binary": blobDocument({
     blob: binaryBlob("media/clip.mp4", 4_404_019),
     rawOrigin,
   }),
-  // a full page carries the older link; the tail is the state where the
-  // only navigation on the page is the rows themselves
-  commits: logDocument(),
+
   "commits-tail": logDocument({
     log: log({ commits: commits(9), next: null }),
   }),
+
   "commits-none": logDocument({ log: log({ commits: [], next: null }) }),
+  commits: logDocument(),
   commit: commitDocument(),
-  // the room is squeezed rather than the commit grown, for the reason the
-  // blob-cut fixture is: contrast nodes scale with the inlined lines, and
-  // a forty-file diff pins nothing stable while costing the audit a second
+
   "commit-cut": commitDocument({
     commit: detail({ files: noisyFiles(12, 8) }),
     sheetWire: 26_000,
   }),
+
   "commit-binary": commitDocument({ commit: detail({ files: [binaryFile] }) }),
   "commit-file": changeDocument("src/reader.ts"),
   branches: refsDocument(),
-  // the note the shed leaves behind, without the rows it takes to earn one
   "branches-cut": refsDocument({ list: refList("branch", { more: true }) }),
   "branches-none": refsDocument({ list: refList("branch", { refs: [] }) }),
-  // an empty subject wrapped in an anchor is a link with no accessible
-  // name, and link-name is the rule that would have caught it
+
   "branches-quiet": refsDocument({
     list: refList("branch", { refs: [quietBranch, ...branches.slice(0, 2)] }),
   }),
+
   tags: refsDocument({ kind: "tag" }),
   "tags-none": refsDocument({ list: refList("tag", { refs: [] }) }),
   tree: treeDocument(),
-  // the cap and the lift, at a nested depth rather than at the root
   "tree-cut": treeDocument({ tree: wideTree }),
   "tree-all": treeDocument({ tree: wideTree, showAll: true }),
-  // a row that links nowhere, beside rows that do
   "tree-sub": treeDocument({ tree: withSubmodule }),
 };
 
@@ -297,6 +290,7 @@ const reflowCases = [
 fixtures["/blob-long-path"] = blobDocument({
   blob: textBlob(committedPath, sampleSource),
 });
+
 fixtures["/error-long-path"] = errorPage({
   failure: noSuchFile(requestedPath),
 });
@@ -334,10 +328,8 @@ async function fontState(page: Page): Promise<Record<string, string[]>> {
   );
 }
 
-// document.fonts.check() isn't the oracle; it answers true for a family
-// with no face at all, which is exactly what a document that lost its
-// stylesheet looks like, and false for a face the page has not demanded
-// yet, which is legitimate (read the face statuses instead)
+// document.fonts.check() answers true for a family with no face, and false
+// for a face the page has not demanded yet
 async function expectFonts(page: Page, where: string): Promise<void> {
   const state = await fontState(page);
 
@@ -347,7 +339,7 @@ async function expectFonts(page: Page, where: string): Promise<void> {
 
     assert.ok(
       faces.length > 0 && !faces.includes("error"),
-      `${seen}, so the audit measured a fallback face and every font-sensitive rule — target-size above all — sized the wrong glyphs`,
+      `${seen}, so the audit measured a fallback face and every font-sensitive rule (target-size above all) sized the wrong glyphs`,
     );
     assert.ok(
       faces.includes("loaded"),
@@ -356,10 +348,8 @@ async function expectFonts(page: Page, where: string): Promise<void> {
   }
 }
 
-// Playwright's default viewport is 1280 wide, a width the product never
-// ships at and one that sits above the sheet's only breakpoint, so a rule
-// that bites in the stacked layout stays green there however often it
-// runs. Tuffgal captures 375 and 1440, and those bracket the breakpoint
+// Playwright's default viewport is 1280 wide and sits above the sheet's
+// only breakpoint; Tuffgal captures 375+1440, which bracket the breakpoint
 const narrowWidth = 375;
 const wideWidth = 1440;
 const auditWidths = [narrowWidth, wideWidth];
@@ -380,7 +370,7 @@ async function audit(
     await page.emulateMedia({ colorScheme });
     await load(page);
     await page.evaluate(() => document.fonts.ready);
-    if (fonts !== null) await expectFonts(page, fonts);
+    if (fonts) await expectFonts(page, fonts);
 
     return await page.evaluate(async (tags) => {
       const selected = new Set(tags);
@@ -466,7 +456,7 @@ function report(found: Result[]): string {
 }
 
 // hiddenContentEvaluate only ever returns undefined or true, so this rule
-// can never violate; its incomplete is not a deferred verdict
+// can never violate; its incomplete isn't a deferred verdict
 const alwaysIncomplete = new Set(["hidden-content"]);
 
 // axe declines contrast on the decorative arrow's non-text glyph
@@ -546,10 +536,6 @@ const contrastNodes: Record<string, number> = {
   show: 94,
   "show-all": 169,
   "show-bare": 68,
-  // the description line is the one node every other show state gained.
-  // this repo has none, and axe settles no verdict on a lone dash: a node
-  // whose visible text holds no word character is skipped outright, not
-  // deferred, so it never reaches the incomplete list decided() reads
   "show-new": 10,
   "show-header": 94,
   "not-found": 7,
@@ -576,15 +562,9 @@ const contrastNodes: Record<string, number> = {
   "tree-sub": 25,
 };
 
-// two ways a state measures fewer nodes below the breakpoint. the
-// breadcrumb folds its middle segments out of the layout and the a11y
-// tree, which only the trails deep enough to have a middle reach; and the
-// tree and the repo index drop their description column, so each loses one
-// header plus one cell per row that had text to lose. the tree is the
-// arithmetic worth checking: 48 to 38 over ten rows, one of which the
-// bounded walk never attributed. the commit log and the ref lists are
-// absent by design — their subject is the row's link and is rendered at
-// every width, so they measure folded exactly what they measure wide
+// two ways a state measures fewer nodes below the breakpoint: breadcrumb
+// folds its middle segments out of the layout and a11y tree, and the tree
+// and repo index drop their description column
 const foldedContrastNodes: Record<string, number> = {
   blob: 72,
   "blob-cut": 21,
@@ -630,10 +610,8 @@ for (const width of auditWidths) {
   }
 }
 
-// the densest hit area in the product, and a clean violations list would
-// read the same whether target-size settled every link or skipped the lot
-// as inline. the log's subject is the row's link to that commit, so it is
-// rendered at every width and all three targets must settle at every width
+// the densest hit area in the product; the log's subject is the row's link
+// to that commit, so it's rendered at every width
 test("every link in a commit row reaches a target-size verdict", async (t) => {
   for (const width of auditWidths) {
     for (const path of renderPaths) {
@@ -673,8 +651,7 @@ test("every link in a commit row reaches a target-size verdict", async (t) => {
 });
 
 // the three columns hold at every width, so the band holds at every width
-// too — there is no breakpoint at which a row link stops being a target of
-// its own, which is what the grid's stacked column used to be
+// too; no breakpoint at which a row link stops being a target of its own
 test("a commit row link clears 24px at both widths", async (t) => {
   const page = await (await browser()).newPage();
 
@@ -713,8 +690,6 @@ test("a commit row link clears 24px at both widths", async (t) => {
   }
 });
 
-// three links per row here too, and a table cell is where a target quietly
-// stops being 24px tall
 test("every link in a ref row reaches a target-size verdict", async (t) => {
   for (const path of renderPaths) {
     const { results } = await fetched("/branches", path.colorScheme);
@@ -904,7 +879,7 @@ test("the rules above WCAG 2.0 report which of them found anything", async (t) =
 
     assert.ok(
       landed,
-      `${name} is in no bucket, so the rules override stopped forcing it on; axe leaves every experimental rule out of tag selection, and without the override this gate silently shrinks`,
+      `${name} isn't in a bucket, so the rules override stopped forcing it on; axe leaves every experimental rule out of tag selection`,
     );
     assert.notStrictEqual(landed, "violations", `${name} is violated`);
     t.diagnostic(`${name}: ${landed}`);
@@ -919,9 +894,8 @@ test("the rules above WCAG 2.0 report which of them found anything", async (t) =
 });
 
 // the server cannot know a client's viewport or font metrics, so the
-// block carries tabindex unconditionally. that only proves anything while
-// the fixture's longest line really does overflow: with nothing to scroll
-// axe reports the rule inapplicable and the pin measures a bare page
+// block carries tabindex unconditionally; it only proves anything when the
+// fixture's longest line really does overflow
 test("the source block is a focusable scroll region on the widest path", async (t) => {
   for (const path of renderPaths) {
     const { results } = await fetched("/blob", path.colorScheme);
@@ -931,7 +905,7 @@ test("the source block is a focusable scroll region on the widest path", async (
 
     assert.ok(
       focusable && focusable.nodes.length > 0,
-      `scrollable-region-focusable evaluated nothing on the ${path.name} blob page, so the fixture's longest line no longer overflows and the tabindex it pins goes unproven`,
+      `scrollable-region-focusable evaluated nothing on the ${path.name} blob page, so the fixture's longest line no longer overflows`,
     );
     t.diagnostic(`${path.name}: ${focusable.nodes.length} scroll region`);
   }
@@ -968,7 +942,6 @@ test("a long path reflows at 320px rather than scrolling the page", async (t) =>
 
   try {
     await page.setViewportSize({ width: viewport, height: 900 });
-
     const overflowing: string[] = [];
 
     for (const { path, selector } of reflowCases) {
@@ -982,6 +955,7 @@ test("a long path reflows at 320px rather than scrolling the page", async (t) =>
           scroll: node.scrollWidth,
           client: node.clientWidth,
         }));
+
       const sideways = await page
         .locator("html")
         .evaluate((node) => node.scrollWidth);
@@ -991,6 +965,7 @@ test("a long path reflows at 320px rather than scrolling the page", async (t) =>
           `${selector} on ${path} wants ${carrier.scroll}px inside ${carrier.client}px, so the path never breaks`,
         );
       }
+
       if (sideways > viewport) {
         overflowing.push(
           `${path} scrolls to ${sideways}px inside a ${viewport}px viewport`,
@@ -1008,10 +983,10 @@ test("a long path reflows at 320px rather than scrolling the page", async (t) =>
   }
 });
 
-// LAYOUT 02's rule is split by column: a name is the link text and cannot
-// lose characters, a subject is metadata whole elsewhere and can. the
-// header cell carries its own nowrap, so this reads a tbody cell's child
-test("the name wraps and the subject ellipsises", async () => {
+// LAYOUT §02's rule is split by column: a name is the link text and cannot
+// lose characters, a subject is metadata and can; the header cell carries
+// its own nowrap, so this reads a tbody cell's child
+test("the name wraps and the subject ellipses", async () => {
   const page = await (await browser()).newPage();
 
   try {
@@ -1028,7 +1003,7 @@ test("the name wraps and the subject ellipsises", async () => {
       }));
 
     assert.strictEqual(name.wrap, "normal", "the name still refuses to wrap");
-    assert.strictEqual(name.clipped, "clip", "the name still ellipsises");
+    assert.strictEqual(name.clipped, "clip", "the name still ellipses");
     assert.strictEqual(
       name.anywhere,
       "anywhere",
@@ -1063,9 +1038,7 @@ function rgb(token: string): string {
 }
 
 // the name is the tree row's only link, so the wash is on the name cell:
-// hovering the cell washes it and hovering the row's plain text does not.
-// a sheet edit moving the wash back onto the <tr> promises a target the
-// other two columns have never held
+// hovering the cell washes it and hovering the row's plain text doesn't
 test("the tree row's link fills its cell and the wash stops there", async (t) => {
   const page = await (await browser()).newPage();
 
@@ -1086,11 +1059,11 @@ test("the tree row's link fills its cell and the wash stops there", async (t) =>
       };
     });
 
-    assert.strictEqual(filled.tag, "A", "a linking row is not an anchor");
+    assert.strictEqual(filled.tag, "A", "a linking row isn't an anchor");
     assert.strictEqual(
       filled.display,
       "block",
-      "the name link is not a block, so it no longer fills its own cell",
+      "the name link isn't a block, so it no longer fills its own cell",
     );
     assert.ok(
       filled.covers > 0.99,
@@ -1115,12 +1088,12 @@ test("the tree row's link fills its cell and the wash stops there", async (t) =>
     await cell.hover();
     const washed = await read();
 
+    assert.strictEqual(washed, sunk, "the hover wash isn't --sunk");
     assert.notStrictEqual(
       washed,
       rest,
       "hovering the name cell changed nothing, so the wash is switched off",
     );
-    assert.strictEqual(washed, sunk, "the hover wash is not --sunk");
 
     await subject.hover();
     assert.strictEqual(
@@ -1163,22 +1136,15 @@ test("a gitlink row is inert", async () => {
     assert.strictEqual(
       washed,
       rest,
-      "a gitlink name washes on hover, so it offers a target it does not have",
+      "a gitlink name washes on hover, so it offers a target it doesn't have",
     );
   } finally {
     await page.close();
   }
 });
 
-// 320 is below the narrowest width tuffgal captures, and a label cut to
-// COMM… reads as an abbreviation in a screenshot rather than as a defect
 const tableWidths = [320, narrowWidth, wideWidth];
-
 const tablePaths = ["/populated", "/tree", "/commits", "/branches", "/commit"];
-
-// four three-column tables and the commit page's two. below the breakpoint
-// the tree and the index drop their description, so the count is the
-// oracle for the column having gone rather than merely gone to zero width
 const tableColumns: Record<number, number> = { 320: 12, 375: 12, 1440: 14 };
 
 test("every column header is legible at every width", async (t) => {
@@ -1236,11 +1202,6 @@ test("every column header is legible at every width", async (t) => {
 
 const rowSamples = 40;
 
-// what a click lands on is the only oracle there is, so sample across the
-// row and ask. two things the sampling alone cannot tell apart, and both
-// are shapes an overlay produced: a link hit from outside this row, and a
-// point inside a link's own box that something else swallowed. so each hit
-// is checked for containment and the count is compared against the boxes
 async function rowTargets(
   page: Page,
   path: string,
@@ -1267,9 +1228,9 @@ async function rowTargets(
         link.getBoundingClientRect(),
       );
 
-      // a sample landing within a pixel of a link's edge can round either
-      // way, so the boxes are counted twice — once inset, once outset —
-      // and the hits are bracketed rather than pinned to a single number
+      // a sample landing w/in a pixel of a link's edge can round either
+      // way, so the boxes are counted twice (inset + outset) and the hits
+      // are bracketed
       const within = (across: number, slack: number): boolean =>
         boxes.some(
           (one) => across >= one.left - slack && across < one.right + slack,
@@ -1305,10 +1266,6 @@ async function rowTargets(
     }, rowSamples);
 }
 
-// the two shapes the Table component has. three links fill the row between
-// them, so that row is the target and washes whole. one link fills its own
-// cell and stops, so the cell is the target and the wash stops with it —
-// which is the whole reason the overlay that used to stretch it is gone
 test("a row's targets reach exactly as far as its own links do", async (t) => {
   const page = await (await browser()).newPage();
 
@@ -1334,7 +1291,7 @@ test("a row's targets reach exactly as far as its own links do", async (t) => {
         );
         assert.ok(
           read.covered <= read.touching,
-          `${path} at ${width}px leads somewhere at ${read.covered} of ${rowSamples} points, past the ${read.touching} its links occupy — a target is stretched beyond its own box`,
+          `${path} at ${width}px leads somewhere at ${read.covered} of ${rowSamples} points, past the ${read.touching} its links occupy; a target is stretched beyond its own box`,
         );
         assert.strictEqual(
           read.targets,
@@ -1395,9 +1352,6 @@ test("axe reports a planted accessible name mismatch", async () => {
   );
 });
 
-// each plant is only a failure under the scheme that selects its block,
-// so asserting the other scheme stays clean is what pins colorScheme as a
-// live input: hardcode the loop to one value and this half stops holding
 test("axe reads the gallery's own stylesheet, in both palettes", async () => {
   const planted = [
     {
@@ -1436,15 +1390,12 @@ test("axe reads the gallery's own stylesheet, in both palettes", async () => {
     assert.deepStrictEqual(
       clear.results.violations.map((rule) => rule.id),
       [],
-      `the ${palette} plant also failed under colorScheme ${other}, so the two paths are not selecting different blocks and the loop's scheme is doing nothing`,
+      `the ${palette} plant also failed under colorScheme ${other}, so the two paths aren't selecting different blocks`,
     );
   }
 });
 
-// the font assertion above every audit is only worth its runtime if it
-// fails on the document that lost its stylesheet, which is the shape
-// page.setContent produced for every gallery audit before this wave
-test("the font check bites on a document with no stylesheet", async () => {
+test("the font check rejects a document with no stylesheet", async () => {
   fixtures["/no-stylesheet"] = galleryDocument("/absent.css");
 
   await assert.rejects(

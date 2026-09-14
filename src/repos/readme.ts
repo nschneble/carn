@@ -10,7 +10,6 @@ export function findReadme(entries: TreeEntry[]): TreeEntry | null {
   for (const entry of entries) {
     if (entry.kind !== "file") continue;
     if (entry.name.toLowerCase() !== readmeName) continue;
-
     return entry;
   }
 

@@ -43,7 +43,7 @@ POST /r/:repo/git-upload-pack
 That's the entire surface. Both shell out to `git upload-pack` through the
 wrapper 1b already built.
 
-## What 1c is not
+## What 1c isn't
 
 - **`git-receive-pack` over HTTP. Not now, not ever.** Push is SSH.
   CLAUDE.md's `Never` list covers passwords and tokens, and HTTP push

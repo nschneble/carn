@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // the listing and nothing else: /r/:repo is the only page that renders a
-// readme, and the only page that is the root tree
+// readme, and the only page that's the root tree
 
 import type { Tree } from "../repos/tree.js";
 import { pathTrail, repoTrail } from "./breadcrumb.js";

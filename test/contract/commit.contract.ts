@@ -193,7 +193,7 @@ test("a root commit diffs against nothing rather than rendering empty", async ()
   assert.ok(pageWireBytes(markup) <= budgetBytes);
 });
 
-test("a binary file carries the word, never a bogus count", async () => {
+test("a binary file's count cell reads 'Binary', never NaN", async () => {
   const commit = await loadCommit({ repoPath, sha: repo.root as string });
   const image = commit?.files.find((file) => file.path === "logo.png");
 
@@ -211,10 +211,6 @@ test("a binary file carries the word, never a bogus count", async () => {
     );
 
   assert.strictEqual(row?.[1], "Binary");
-  assert.doesNotMatch(
-    markup,
-    /logo\.png<\/a><\/th>\s*<td class="counts"><span>\+NaN/,
-  );
   assert.ok(
     !markup.includes("NaN"),
     "a non-numeric numstat field reached the page as a number",
@@ -237,7 +233,7 @@ test("a merge takes its first parent's diff, and names both parents", async () =
     markup.includes(`href="/r/linklater/commits/${parent}"`),
   );
 
-  assert.strictEqual(links.length, 2, "a parent is not a link to its commit");
+  assert.strictEqual(links.length, 2, "a parent isn't a link to its commit");
 });
 
 test("a pure rename reports both paths and inlines no diff body", async () => {
@@ -260,7 +256,7 @@ test("a pure rename reports both paths and inlines no diff body", async () => {
   assert.ok(markup.includes("renamed to"));
 });
 
-test("one commit page costs three spawns whatever it touched", async () => {
+test("one commit page costs three spawns", async () => {
   for (const [named, sha] of [
     ["root", repo.root],
     ["ordinary", repo.ordinary],
@@ -284,7 +280,7 @@ test("one commit page costs three spawns whatever it touched", async () => {
   }
 });
 
-test("an id git cannot resolve to a commit is refused, never rendered", async () => {
+test("an id git cannot resolve to a commit is refused", async () => {
   const cases = [
     ["a bogus oid", "0".repeat(40)],
     ["a tree oid", repo.tree as string],
@@ -302,18 +298,18 @@ test("an id git cannot resolve to a commit is refused, never rendered", async ()
   }
 });
 
-test("a one-file commit renders whole, and still shows the file list", () => {
+test("a one-file commit renders whole and shows the file list", () => {
   const markup = commitDocument();
 
   assert.strictEqual(
     diffBlocks(markup).length,
     1,
-    "the one diff was not inlined",
+    "the one diff wasn't inlined",
   );
   assert.match(
     markup,
     /<table class="tbl files">/,
-    "a one-file commit skipped the file list, so its +/− counts are nowhere",
+    "a one-file commit skipped the file list, so its +/− counts aren't there",
   );
   assert.deepStrictEqual(rowHrefs(markup), ["#f-0"]);
   assert.ok(markup.includes('+12<span class="vh"> added</span> −4'));
@@ -327,10 +323,7 @@ test("the diffs stop at the first file that would overrun, and the rest are link
   const inlined = diffBlocks(markup).length;
   const hrefs = rowHrefs(markup);
 
-  assert.ok(
-    inlined > 0,
-    "nothing inlined at all, so this fixture proves the cutoff and not the rule above it",
-  );
+  assert.ok(inlined > 0, "nothing inlined at all");
   assert.ok(
     inlined < commit.files.length,
     `all ${commit.files.length} diffs fitted, so the fixture never reaches the cutoff`,
@@ -367,7 +360,7 @@ test("the diffs stop at the first file that would overrun, and the rest are link
   assert.ok(!markup.includes("Showing the first"));
 });
 
-test("row markers say where a diff lives, and binary carries neither", () => {
+test("row markers say where a diff lives", () => {
   const commit = detail({ files: noisyFiles(40) });
   const markup = commitDocument({ commit, now: logNow });
   const inlined = diffBlocks(markup).length;
@@ -380,7 +373,7 @@ test("row markers say where a diff lives, and binary carries neither", () => {
     assert.strictEqual(
       below,
       index < inlined,
-      `row ${index} links to ${href} but the cutoff is at ${inlined}`,
+      `row ${index} links to ${href}, but the cutoff is at ${inlined}`,
     );
 
     const path = (commit.files[index] as { path: string }).path;
@@ -390,7 +383,7 @@ test("row markers say where a diff lives, and binary carries neither", () => {
 
     assert.ok(
       markup.includes(expected),
-      `row for ${path} does not carry the expected marker`,
+      `row for ${path} doesn't carry the expected marker`,
     );
   }
 
@@ -400,12 +393,12 @@ test("row markers say where a diff lives, and binary carries neither", () => {
   });
   assert.ok(
     binaryMarkup.includes(">assets/logo.png</a>"),
-    "a binary file's row carries a marker it should not",
+    "a binary file's row carries an unexpected marker",
   );
   assert.doesNotMatch(binaryMarkup, /Own page|t-micro/);
 });
 
-test("a second sentence says how many diffs are below when the file list is not also cut", () => {
+test("a second sentence says how many diffs are below when the file list isn't also cut", () => {
   const commit = detail({ files: noisyFiles(40) });
   const cut = commitDocument({ commit, now: logNow });
   const inlined = diffBlocks(cut).length;
@@ -413,13 +406,13 @@ test("a second sentence says how many diffs are below when the file list is not 
   assert.doesNotMatch(
     cut,
     /Showing the first \d+ of \d+ files\./,
-    "the file list itself was cut too, so this fixture does not isolate the diff-only case",
+    "the file list itself was cut too, so this fixture doesn't isolate the diff-only case",
   );
   assert.ok(
     cut.includes(
       `<p class="t-note">Diffs for the first ${inlined} files are below. The rest have a page each.</p>`,
     ),
-    "the cut render does not say how many diffs are below",
+    "the cut render doesn't say how many diffs are below",
   );
 
   const whole = commitDocument();
@@ -430,7 +423,7 @@ test("a second sentence says how many diffs are below when the file list is not 
   );
 });
 
-test("the page a cutoff produces is really under the budget, measured", () => {
+test("the page a cutoff produces is really under the budget", () => {
   const states: [string, string][] = [
     ["one file", commitDocument()],
     [
@@ -502,7 +495,7 @@ test("a fatter stylesheet inlines fewer diffs", () => {
 
   assert.ok(
     cramped < roomy,
-    `the cutoff sat at ${roomy} diffs with 20 KB less room, so it is not tracking the budget`,
+    `the cutoff sat at ${roomy} diffs with 20 KB less room, so it's not tracking the budget`,
   );
 });
 
@@ -526,7 +519,7 @@ test("a single file too big for the page is cut on a line boundary", () => {
   );
 });
 
-test("a path the commit does not change is a 404, not a crash", () => {
+test("a path the commit doesn't change is a 404", () => {
   assert.strictEqual(
     commitFilePage(view(), "src/nowhere.ts"),
     null,
@@ -554,7 +547,7 @@ test("a binary file's own page says so rather than showing bytes", () => {
   );
 });
 
-test("the meta block is BRAND.md's four keys, with no heading in it", () => {
+test("the meta block is BRAND.md's four keys, with no heading", () => {
   const markup = commitDocument();
   const block = /<dl class="meta">[\s\S]*?<\/dl>/.exec(markup)?.[0] as string;
 
@@ -600,7 +593,7 @@ test("every signature status renders a sentence rather than a letter", () => {
   }
 });
 
-test("the heading, the title, and the canonical all name the commit", () => {
+test("the heading, title, and canonical all name the commit", () => {
   const markup = commitDocument();
   const commit = detail();
 
@@ -614,7 +607,7 @@ test("the heading, the title, and the canonical all name the commit", () => {
     markup.includes(
       `content="https://carn.fancyenchiladas.net/r/linklater/commits/${commit.sha}"`,
     ),
-    "og:url does not name the page it is on",
+    "og:url doesn't name the page it's on",
   );
   assert.ok(markup.includes("One query answers both."));
 

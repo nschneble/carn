@@ -128,7 +128,7 @@ async function walk(ref = "main"): Promise<CommitLog[]> {
 
     pages.push(page);
     from = page.next;
-  } while (from !== null && pages.length < 10);
+  } while (from && pages.length < 10);
 
   return pages;
 }
@@ -171,7 +171,7 @@ test("page two starts from the cursor rather than skipping to it", async () => {
   assert.strictEqual(
     second.commits[0]?.sha,
     first.next,
-    "the cursor commit is not page two's first row, so a row was dropped or repeated at the seam",
+    "the cursor commit isn't page two's first row, so a row was dropped or repeated at the seam",
   );
 });
 
@@ -306,6 +306,7 @@ test("a ref or cursor git cannot resolve is refused, never defaulted", async () 
     { ref: "-oops" },
     { ref: "../etc/passwd" },
     { ref: "main..side" },
+    { ref: "main", from: "" },
     { ref: "main", from: "not-a-sha" },
     { ref: "main", from: "-oops" },
     { ref: "main", from: "0".repeat(40) },
@@ -374,19 +375,19 @@ test("a row carries three links to the commit, one per cell", () => {
     markup.includes(
       `<th class="name short-sha" scope="row"><a class="t-mono" href="${href}">${first.sha.slice(0, shortShaLength)}</a></th>`,
     ),
-    "the sha cell is not a mono link to the commit",
+    "the sha cell isn't a mono link to the commit",
   );
   assert.ok(
     markup.includes(
       `<td class="msg"><a href="${href}">${first.subject}</a></td>`,
     ),
-    "the subject is not a link to the commit",
+    "the subject isn't a link to the commit",
   );
   assert.ok(
     markup.includes(
       `<td class="age"><a href="${href}"><time datetime="${first.at.toISOString()}">`,
     ),
-    "the age is not a link to the commit",
+    "the age isn't a link to the commit",
   );
   // the Age column header names the cell, so no vh label in it
   assert.doesNotMatch(markup, /<span class="vh">(Age|Committed) <\/span>/);
@@ -405,7 +406,7 @@ test("the sixteen-row cap is the page size the walk uses", async () => {
   assert.strictEqual(rows, logRowCap);
 });
 
-test("a subject longer than a subject is bounded before it renders", async () => {
+test("a subject longer than the cap is bounded before it renders", async () => {
   const shouting = mkdtempSync(join(dir, "shout-"));
   execFileSync("git", ["init", "-q", "-b", "main", "--", shouting]);
   writeFileSync(join(shouting, "a"), "a\n");
@@ -486,7 +487,7 @@ test("Newer renders from page two on, and pops one cursor at a time", () => {
     second.includes(
       `href="${commitsHref("linklater", "main").replace("&", "&amp;")}"><span aria-hidden="true">← </span>Newer`,
     ),
-    "page two's Newer link does not land on the bare ref",
+    "page two's Newer link doesn't land on the bare ref",
   );
 
   const third = logDocument({ from: sha(0xb), back: [sha(0xa)] });
@@ -546,7 +547,7 @@ test("the ref reaches the heading, the title, and the canonical", () => {
     markup.includes(
       'content="https://carn.fancyenchiladas.net/r/linklater/commits?ref=14-conflict-output"',
     ),
-    "og:url does not name the page it is on",
+    "og:url doesn't name the page it is on",
   );
 
   const second = logDocument({

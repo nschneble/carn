@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // the pinned world every visual story renders against: fixed uuids so the
-// tarball layout and the seeded rows agree, fixed dates so the frozen
-// clock always reads the same ages, and an ordered commit run per repo so
-// a branch, a tag, and a second page of log have somewhere to point
+// tarball layout and seeded rows agree, fixed dates so the frozen clock
+// always reads the same ages, and an ordered commit run per repo so
+// branches, tags, and logs have somewhere to point
 
 import { deflateSync } from "node:zlib";
 
 type FixtureFile = {
   path: string;
   body: string | Buffer;
-  // a gitlink names the commit it pins, so its empty body is never hashed
   gitlink?: string;
 };
 
@@ -20,10 +19,10 @@ type FixtureCommit = {
   files: FixtureFile[];
 };
 
-// commit is an ordinal into the repo's commits, unlike a commit's own at
+// commit is an ordinal into the repo's commits
 type FixtureBranch = { name: string; commit: number };
 
-// lightweight inherits the commit's subject and date, annotated its own
+// lightweight inherits the commit's subject and date
 type FixtureTag =
   | { name: string; commit: number; kind: "lightweight" }
   | {
@@ -121,11 +120,9 @@ function buildCrcTable(): Int32Array {
 
   for (let byte = 0; byte < 256; byte += 1) {
     let crc = byte;
-
     for (let bit = 0; bit < 8; bit += 1) {
       crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
     }
-
     table[byte] = crc;
   }
 
@@ -211,7 +208,7 @@ function unbreakableSource(lines: number, width: number): string {
 }
 
 // an ordinary source file, long enough to show line-height, syntax color,
-// and the source block's proportions — the one-line index.ts proves the
+// and the source block's proportions; the one-line index.ts proves the
 // truncation math but shows a reader nothing about the everyday page
 const manifestSource = [
   "// the manifest gantry reads at boot: one rig per slot, six slots on",
@@ -279,10 +276,8 @@ function modules(count: number): FixtureFile[] {
   });
 }
 
-// minutes before frozenNow, oldest commit first — spread across the whole
-// window the repo has to give (createdAt to frozenNow) rather than a
-// uniform step, so the age column reads minutes through weeks instead of
-// one value twenty-six times over
+// minutes before frozenNow, oldest commit first; spread across the whole
+// window the repo has to give (createdAt to frozenNow)
 const gantryOffsetsMinutes = [
   37440, 34560, 31680, 30240, 28800, 27360, 25920, 24480, 23040, 21600, 20160,
   18720, 17280, 15840, 14400, 12960, 11520, 10080, 8640, 7200, 5760, 4320, 2880,
@@ -291,9 +286,8 @@ const gantryOffsetsMinutes = [
 
 function gantryAt(index: number): string {
   const minutes = gantryOffsetsMinutes[index];
-  if (minutes === undefined) {
+  if (minutes === undefined)
     throw new Error(`gantry commit ${index} has no offset`);
-  }
 
   return new Date(Date.parse(frozenNow) - minutes * 60_000).toISOString();
 }
@@ -319,7 +313,7 @@ function gantryCommits(): FixtureCommit[] {
       ],
     },
     {
-      message: "Bring the assets in",
+      message: "Bring in assets",
       at: gantryAt(1),
       files: [
         { path: "assets/large.png", body: png(160) },
@@ -328,7 +322,7 @@ function gantryCommits(): FixtureCommit[] {
       ],
     },
     {
-      message: "Pin the vendored library",
+      message: "Pin vendored library",
       at: gantryAt(2),
       files: [
         {
@@ -340,7 +334,7 @@ function gantryCommits(): FixtureCommit[] {
     },
     ...modular,
     {
-      message: "Reach the deep path",
+      message: "Reach deep path",
       at: gantryAt(21),
       files: [
         {
@@ -350,7 +344,7 @@ function gantryCommits(): FixtureCommit[] {
       ],
     },
     {
-      message: "Bump the version and say so",
+      message: "Bump version",
       at: gantryAt(22),
       files: [
         { path: "src/index.ts", body: "export const version = 2;\n" },
@@ -361,18 +355,18 @@ function gantryCommits(): FixtureCommit[] {
       ],
     },
     {
-      message: "Write the rig manifest",
+      message: "Write rig manifest",
       at: gantryAt(23),
       files: [{ path: "src/manifest.ts", body: manifestSource }],
     },
     {
-      message: "Add a cover image",
+      message: "Add cover image",
       at: gantryAt(24),
       files: [{ path: "assets/cover.png", body: png(400, 200) }],
     },
     // the page inlines a prefix of the diffs, so these two sort first
     {
-      message: "Generate the tables",
+      message: "Generate tables",
       at: gantryAt(25),
       files: [
         { path: "src/api.ts", body: "export const routes = ['/health'];\n" },

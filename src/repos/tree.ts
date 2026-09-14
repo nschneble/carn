@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // a tree listing at the root or below it: one ls-tree for the entries and
-// one bounded log for the subject and age columns. a cat-file or a log per
-// row is pixel-identical and an order of magnitude slower, which is why
-// CLAUDE.md holds a render to fewer than twelve spawns
+// one bounded log for the subject and age columns
 
 import { captureGit } from "../git/capture.js";
 import { parseLsTree } from "../git/ls-tree.js";
@@ -11,9 +9,9 @@ import { oidPattern } from "../git/oid.js";
 import { validPath, validRev } from "./blob-view.js";
 import { maxSubjectChars } from "./log.js";
 
-export type TreeEntryKind = "file" | "directory" | "gitlink";
-
 export type Touch = { subject: string; at: Date };
+export type Tree = { path: string; entries: TreeEntry[] };
+export type TreeEntryKind = "file" | "directory" | "gitlink";
 
 export type TreeEntry = {
   name: string;
@@ -23,25 +21,18 @@ export type TreeEntry = {
   touched: Touch | null;
 };
 
-export type Tree = {
-  path: string;
-  entries: TreeEntry[];
-};
-
 export const treeTimeoutMs = 5_000;
-
-// a bound, not a promise: a path the walk never reaches renders blank
 export const treeWalkCap = 100;
 
 const gitlinkMode = "160000";
-
-// after --end-of-options a bare -- matches nothing; the root's is "."
-const wholeTree = ".";
 const bytesPerCommit = 16 * 1024;
+const logFormat = "%x01%H%x00%at%x00%s";
+
+// after --end-of-options, a bare -- matches nothing; the root's is "."
+const wholeTree = ".";
 
 // SOH marks a commit header; a 40-hex filename would imitate one
 const headerMark = String.fromCharCode(1);
-const logFormat = "%x01%H%x00%at%x00%s";
 
 // refs/heads/ prefixed so a branch name can never arrive as an option
 export async function resolveTip(options: {

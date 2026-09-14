@@ -50,7 +50,7 @@ starting point, not a reference to admire. Four things change:
 At the end, `git clone` and `git push` work against a real repo owned by a
 real row, from a key in the database.
 
-## What 1b is not
+## What 1b isn't
 
 - Smart-HTTP, `info/refs`, or anything Fastify serves. That's 1c.
 - Any HTML page, template, or stylesheet. That's 1d.

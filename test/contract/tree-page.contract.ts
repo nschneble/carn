@@ -301,7 +301,7 @@ test("the bounded walk attributes what it reaches and blanks the rest", async ()
   );
 });
 
-test("a path that is not a tree is nothing, never a redirect", async () => {
+test("a path that isn't a tree is nothing, never a redirect", async () => {
   const rev = await tip();
 
   for (const path of [
@@ -323,7 +323,7 @@ test("a path that is not a tree is nothing, never a redirect", async () => {
   }
 });
 
-test("a ref that is not a ref is nothing", async () => {
+test("a ref that isn't a ref is nothing", async () => {
   for (const rev of ["-x", "nope", "refs/heads/nope", "main..main", ""]) {
     assert.strictEqual(
       await listTree({ repoPath, rev, path: "src" }),
@@ -337,16 +337,16 @@ test("the cap and the lift work at a nested depth too", () => {
   const capped = widePage(20, false);
   const all = widePage(20, true);
 
+  assert.doesNotMatch(all, /Show all/);
+  assert.doesNotMatch(capped, /<details|<summary|aria-expanded/);
   assert.strictEqual(rows(capped), treeRowCap);
   assert.strictEqual(rows(all), 20);
   assert.ok(
     capped.includes(
       'href="/r/linklater/tree/main/src/components?all=1">Show all 20',
     ),
-    "show-all at depth is not a real url on this route",
+    "show-all at depth isn't a real url on this route",
   );
-  assert.doesNotMatch(all, /Show all/);
-  assert.doesNotMatch(capped, /<details|<summary|aria-expanded/);
 });
 
 test("rows link by kind, and a gitlink links nowhere", () => {
@@ -357,7 +357,7 @@ test("rows link by kind, and a gitlink links nowhere", () => {
     markup.includes(
       '<a class="t-item" lang="en" href="/r/linklater/blob/main/src/components/.gitignore">',
     ),
-    "a file row does not link to the blob route at the current rev",
+    "a file row doesn't link to the blob route at the current rev",
   );
   assert.ok(
     submodule.startsWith('class="row is-sub">'),
@@ -367,7 +367,7 @@ test("rows link by kind, and a gitlink links nowhere", () => {
     submodule.includes(
       '<span class="t-item" lang="en"><span class="caps">vendor</span><span class="t-micro"> Pinned</span></span>',
     ),
-    "the gitlink name is not a plain span, or lost its marker",
+    "the gitlink name isn't a plain span, or lost its marker",
   );
   assert.ok(
     submodule.includes(
@@ -402,7 +402,7 @@ test("a directory row links to the tree route, one level down", () => {
     markup.includes(
       '<a class="t-item" lang="en" href="/r/linklater/tree/main/src/components">',
     ),
-    "a directory row does not link to the tree route",
+    "a directory row doesn't link to the tree route",
   );
 });
 
@@ -439,7 +439,7 @@ test("a tree page carries no readme and one h1", () => {
     markup.includes(
       '<h1 class="t-item t-item--title" lang="en"><span class="caps">src/components</span></h1>',
     ),
-    "the heading is not the path",
+    "the heading isn't the path",
   );
   assert.doesNotMatch(
     markup,
@@ -452,18 +452,19 @@ test("a tree page carries no readme and one h1", () => {
 });
 
 // a blob path asked for as a tree comes back as nothing above, and the
-// handler turns nothing into a 404. the way that quietly becomes a 302 is
-// somebody adding a redirect to the page routes, so pin their absence.
-// 304 is the one 3xx that is not one: it answers if-none-match with the
-// body the client already has, which every revalidating route does
+// handler turns nothing into a 404; the way that quietly becomes a 302 is
+// somebody adding a redirect to the page routes
 test("no page route redirects", () => {
   const source = readFileSync(join(root, "src/routes/repo-page.ts"), "utf8");
+
+  // 304 is the one 3xx that isn't one: it answers if-none-match with the
+  // body the client already has, which every revalidating route does
   const redirects = /\.redirect\(|code\(30[0-35-9]\)/;
 
   assert.doesNotMatch(
     source,
     redirects,
-    "a page route grew a redirect; a path that is not a tree is a 404",
+    "a page route grew a redirect; a path that isn't a tree is a 404",
   );
 
   for (const planted of [

@@ -22,9 +22,13 @@ import {
   templateSources,
 } from "../support/html-position.js";
 
-const fixture = "test/fixtures/markdown-raw-position.ts.fixture";
+// the base every render below resolves relative destinations against
+const base = { repo: "carn", rev: "main" };
 
+const fixture = "test/fixtures/markdown-raw-position.ts.fixture";
 const stock = new MarkdownIt("commonmark", { html: false }).enable("table");
+const passedThrough = ["#section", "?ref=main", "/r/carn/tags"];
+const bearsMarkdown = /\braw\(|\brenderMarkdown\(/;
 
 const allowedSchemes = [
   "https://example.com/a",
@@ -35,11 +39,6 @@ const allowedSchemes = [
   "data:image/jpeg;base64,AAA",
   "data:image/webp;base64,AAA",
 ];
-
-// the base every render below resolves relative destinations against
-const base = { repo: "carn", rev: "main" };
-
-const passedThrough = ["#section", "?ref=main", "/r/carn/tags"];
 
 const deniedSchemes = [
   "javascript:alert(1)",
@@ -53,8 +52,6 @@ const deniedSchemes = [
   "about:blank",
   "//example.com/x",
 ];
-
-const bearsMarkdown = /\braw\(|\brenderMarkdown\(/;
 
 function render(source: string): string {
   return renderMarkdown(source, base).value;
@@ -106,7 +103,6 @@ function misplaced(source: string): Interpolation[] {
 
 test("the configuration is commonmark with html off", () => {
   const out = render("<b>bold</b> & <i>italic</i>\n");
-
   assert.strictEqual(
     out,
     "<p>&lt;b&gt;bold&lt;/b&gt; &amp; &lt;i&gt;italic&lt;/i&gt;</p>\n",
@@ -129,22 +125,22 @@ test("the allowlist denies a scheme markdown-it's own default allows", () => {
   const ours = link("ftp://example.com/f");
   const theirs = stock.render("[x](ftp://example.com/f)");
 
+  assert.strictEqual(href(ours), null, ours);
+  assert.strictEqual(ours, "<p>[x](ftp://example.com/f)</p>\n");
   assert.strictEqual(
     href(theirs),
     "ftp://example.com/f",
     "the stock instance stopped allowing ftp:, so it no longer discriminates between the default blocklist and the allowlist — find another scheme the default allows",
   );
-  assert.strictEqual(href(ours), null, ours);
-  assert.strictEqual(ours, "<p>[x](ftp://example.com/f)</p>\n");
 });
 
 test("a javascript: payload alone cannot prove the allowlist", () => {
+  assert.strictEqual(href(link("javascript:alert(1)")), null);
   assert.strictEqual(
     href(stock.render("[x](javascript:alert(1))")),
     null,
     "markdown-it's default validateLink is a four-scheme blocklist and already rejects javascript:, which is why the ftp: comparison above is the test that can fail",
   );
-  assert.strictEqual(href(link("javascript:alert(1)")), null);
 });
 
 test("every allowed destination renders a working link", () => {
@@ -202,7 +198,7 @@ test("an absolute destination is left exactly as it was", () => {
   );
 });
 
-test("an anchor, a query, or a root-relative path is not treated as a path", () => {
+test("an anchor, a query, or a root-relative path isn't treated as a path", () => {
   for (const destination of passedThrough) {
     assert.strictEqual(href(link(destination)), destination, destination);
     assert.strictEqual(src(image(destination)), destination, destination);
@@ -210,11 +206,10 @@ test("an anchor, a query, or a root-relative path is not treated as a path", () 
 });
 
 // validPath refuses a . segment, so leaving the ./ on would 404 a file
-// that is there, which is not the miss the rewrite is allowed to accept
+// that is there, which isn't the miss the rewrite is allowed to accept
 test("a leading ./ goes, because the blob route would refuse it", () => {
   assert.strictEqual(validPath("docs/x.md"), true);
   assert.strictEqual(validPath("./docs/x.md"), false);
-
   assert.strictEqual(href(link("./docs/x.md")), "/r/carn/blob/main/docs/x.md");
   assert.strictEqual(
     src(image("./docs/x.png")),
@@ -233,7 +228,7 @@ test("a rev carrying a slash stays one path segment", () => {
 
 // markdown-it normalizes the destination before validateLink sees it, so
 // re-encoding here would turn %20 into %2520
-test("an already-encoded destination is not encoded twice", () => {
+test("an already-encoded destination isn't encoded twice", () => {
   assert.strictEqual(
     href(link("docs/two%20words.md")),
     "/r/carn/blob/main/docs/two%20words.md",
@@ -269,11 +264,11 @@ test("an image destination is held to the same allowlist", () => {
   const png = image("data:image/png;base64,AAA");
   const svg = image("data:image/svg+xml;base64,AAA");
 
+  assert.strictEqual(svg, "<p>![a](data:image/svg+xml;base64,AAA)</p>\n");
   assert.strictEqual(
     png,
     '<p><img src="data:image/png;base64,AAA" alt="a" /></p>\n',
   );
-  assert.strictEqual(svg, "<p>![a](data:image/svg+xml;base64,AAA)</p>\n");
 });
 
 test("an external link carries the rel, in all three link forms", () => {
@@ -283,7 +278,7 @@ test("an external link carries the rel, in all three link forms", () => {
   }
 });
 
-test("a link that is not external carries no rel at all", () => {
+test("a link that isn't external carries no rel at all", () => {
   for (const [form, source] of localForms) {
     const out = render(source);
 
@@ -301,7 +296,6 @@ test("the rel rule renders through a fallback, keeping other attributes", () => 
   );
 
   const titled = render('[x](https://example.com/a "t")');
-
   assert.strictEqual(
     titled,
     '<p><a href="https://example.com/a" title="t" rel="nofollow ugc">x</a></p>\n',
@@ -310,7 +304,6 @@ test("the rel rule renders through a fallback, keeping other attributes", () => 
 
 test("a remote image survives the markdown layer for CSP to stop", async () => {
   const out = image("https://example.com/x.png");
-
   assert.strictEqual(
     out,
     '<p><img src="https://example.com/x.png" alt="a" /></p>\n',
@@ -336,7 +329,6 @@ test("the data-image branch is anchored to the start of the url", () => {
   for (const destination of evasions) {
     const out = link(destination);
     const shown = image(destination);
-
     assert.strictEqual(href(out), null, out);
     assert.ok(!shown.includes("<img"), shown);
   }
@@ -344,7 +336,6 @@ test("the data-image branch is anchored to the start of the url", () => {
 
 test("an entity-encoded scheme is decoded before the allowlist sees it", () => {
   const encoded = link("java&#115;cript:alert(1)");
-
   assert.strictEqual(href(encoded), null, encoded);
   assert.strictEqual(encoded, "<p>[x](javascript:alert(1))</p>\n");
 });
@@ -362,7 +353,6 @@ test("a readme carrying three payloads renders inert", () => {
   ].join("\n");
 
   const out = render(readme);
-
   assert.strictEqual(
     out,
     [
@@ -383,7 +373,6 @@ test("a readme carrying three payloads renders inert", () => {
 test("the rendered fragment is text, and the html tag leaves it alone", () => {
   const rendered = renderMarkdown("*hi* & <b>x</b>\n", base);
   const page = html`<article>${rendered}</article>`.value;
-
   assert.strictEqual(
     page,
     "<article><p><em>hi</em> &amp; &lt;b&gt;x&lt;/b&gt;</p>\n</article>",
@@ -403,7 +392,6 @@ test("rendered markdown outside text position is a violation", () => {
 
   for (const [markup, position] of planted) {
     const source = template(markup);
-
     assert.deepStrictEqual(
       misplaced(source).map((found) => found.position),
       [position],
@@ -456,7 +444,6 @@ test("the lexical scan sees only the shape written literally", () => {
 
 test("the planted fixture is caught", () => {
   const source = readFileSync(join(root, fixture), "utf8");
-
   assert.deepStrictEqual(
     misplaced(source).map((found) => found.position),
     ["doubleQuoted", "singleQuoted", "beforeAttrValue"],

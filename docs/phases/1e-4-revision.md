@@ -172,7 +172,7 @@ underline. That difference is meaningful and stays.
 `src/html/styles.ts`'s `.meta` is `repeat(auto-fit, minmax(150px, 1fr))`
 with no responsive rule anywhere. Below ~640px it resolves to two columns;
 the blob view's three fields put `Language` alone in column 1 at half
-width. It does not stretch. `auto-fit` collapses a column only when that
+width. It doesn't stretch. `auto-fit` collapses a column only when that
 column receives no items anywhere in the grid, and here both columns are
 occupied. What reads as broken is `.meta > div`'s `border-bottom`, which
 draws across half the page while `.meta`'s own full-width `border-top` sits

@@ -24,11 +24,9 @@ const version2 = "000eversion 2\n";
 
 const dir = mkdtempSync(join(tmpdir(), "carn-git-spawn-"));
 const repo = join(dir, "empty.git");
-
 execFileSync("git", ["init", "--bare", "-q", "--", repo]);
 
 const orphans: GitChild[] = [];
-
 after(() => {
   // a lost kill leaves git alive: give it stdin EOF so a failing run
   // reports and exits instead of idling out its own timeout
@@ -174,7 +172,6 @@ test(
   bounded,
   async () => {
     const running: GitChild[] = [];
-
     for (let i = 0; i < gitConcurrency; i += 1) {
       running.push(await blocker(generous));
     }
@@ -285,7 +282,6 @@ test(
 
 test("a capture under the limit keeps all of it", bounded, async () => {
   const { code, stdout } = await capture(wide.length * 2);
-
   assert.strictEqual(code, 0);
   assert.strictEqual(stdout.length, wide.length);
 });
@@ -295,7 +291,6 @@ test(
   bounded,
   async () => {
     const { code, stdout } = await capture(100);
-
     assert.strictEqual(stdout.length, 100);
     assert.strictEqual(code, 0, "the child deadlocked on a full stdout pipe");
   },
@@ -303,7 +298,6 @@ test(
 
 test("an absent limit keeps all of it", bounded, async () => {
   const { stdout } = await capture();
-
   assert.strictEqual(stdout.length, wide.length);
 });
 

@@ -33,7 +33,7 @@ readonly SSH_FLAGS="-o IdentitiesOnly=yes -o IdentityAgent=none -o StrictHostKey
 readonly UPLOAD_TYPE="application/x-git-upload-pack-request"
 readonly SERVICE_HEADER='001e# service=git-upload-pack'
 readonly NO_HTTP_PUSH="This server takes pushes over SSH, not HTTP."
-readonly NO_REPO="There's no repo named $ABSENT_NAME. Push to it over SSH to create it."
+readonly NO_REPO="There's no repo named $ABSENT_NAME. Push over SSH to create it."
 readonly BAD_NAME="That's not a valid repo name. Check the URL and try again."
 readonly MIGRATIONS="20260824223229_init 20260824223246_seed_admin"
 
@@ -97,7 +97,7 @@ psql_scratch() {
 
 require_db() {
   if [ -z "${DATABASE_URL:-}" ]; then
-    record FAIL "$1" "$2" "DATABASE_URL is not set. Copy .env.example to .env, or export it."
+    record FAIL "$1" "$2" "DATABASE_URL isn't set. Copy .env.example to .env, or export it."
     return 1
   fi
   return 0
@@ -157,7 +157,7 @@ require_scratch() {
 
 require_daemon() {
   if [ "$daemon_ok" != 1 ]; then
-    record FAIL "$1" "$2" "the daemon is not running, see check 2"
+    record FAIL "$1" "$2" "the daemon isn't running, see check 2"
     return 1
   fi
   return 0
@@ -678,7 +678,7 @@ rm -rf "$repo_root"
 
 # 14
 readonly TITLE_14="the concurrency limit has one definition and both transports share it"
-# assembled, so the definition this looks for is not written out here
+# assembled, so the definition this looks for isn't written out here
 concurrency_def=$(printf 'export const %s' gitConcurrency)
 concurrency_hits=$(git grep --untracked -c "$concurrency_def" -- src test scripts prisma)
 concurrency_count=$(printf '%s\n' "$concurrency_hits" | grep -c .)
@@ -696,11 +696,11 @@ else
 fi
 
 # 15
-# spelled as a pattern so this script is not itself a hit
+# spelled as a pattern so this script isn't itself a hit
 spawn_shell='shell:[[:space:]]*true'
 printf 'spawn(cmd, { %s: %s })\n' shell true > "$work/15.control"
 if ! grep -qE "$spawn_shell" "$work/15.control"; then
-  record FAIL 15 "no shell-enabled spawn in source" "the pattern does not match a known violation; it cannot gate"
+  record FAIL 15 "no shell-enabled spawn in source" "the pattern doesn't match a known violation; it cannot gate"
 else
   # source only: docs quote the rule, --untracked sees uncommitted files
   hits=$(git grep --untracked -nE "$spawn_shell" -- src test scripts prisma prisma.config.ts)
@@ -719,7 +719,7 @@ spdx_line='// SPDX-License-Identifier: AGPL-3.0-or-later'
 printf '%s\n' "$spdx_line" > "$work/16.good"
 printf 'no header\n' > "$work/16.bad"
 if [ "$(head -1 "$work/16.good")" != "$spdx_line" ] || [ "$(head -1 "$work/16.bad")" = "$spdx_line" ]; then
-  record FAIL 16 "$TITLE_16" "the header comparison does not discriminate; it cannot gate"
+  record FAIL 16 "$TITLE_16" "the header comparison doesn't discriminate; it cannot gate"
 else
   sources=$(git ls-files --cached --others --exclude-standard -- src test scripts \
     | grep '\.ts$' | grep -v '^src/generated/')

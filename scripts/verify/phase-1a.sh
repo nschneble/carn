@@ -64,7 +64,7 @@ psql_url() {
 
 require_db() {
   if [ -z "${DATABASE_URL:-}" ]; then
-    record FAIL "$1" "$2" "DATABASE_URL is not set. Copy .env.example to .env, or export it."
+    record FAIL "$1" "$2" "DATABASE_URL isn't set. Copy .env.example to .env, or export it."
     return 1
   fi
   return 0
@@ -283,7 +283,7 @@ else
     ' "$work/9"
   }
   missing=""
-  grep -qi '^HTTP/1.1 200' "$work/9" || missing="$missing status is not 200;"
+  grep -qi '^HTTP/1.1 200' "$work/9" || missing="$missing status isn't 200;"
   [ "$(header content-type)" != "application/json; charset=utf-8" ] && missing="$missing content-type is '$(header content-type)';"
   [ "$(header content-security-policy)" != "$CSP" ] && missing="$missing content-security-policy is '$(header content-security-policy)';"
   [ "$(header x-content-type-options)" != "nosniff" ] && missing="$missing x-content-type-options is '$(header x-content-type-options)';"
@@ -351,9 +351,9 @@ if node -e '
   if (over.length) { console.error("outside the budget: " + over.join(", ")); process.exit(1) }
   if (pkg.dependencies?.pg || pkg.devDependencies?.pg) { console.error("pg is a direct dependency"); process.exit(1) }
 ' > "$work/12" 2>&1; then
-  record PASS 12 "dependencies stay inside the budget and pg is not direct"
+  record PASS 12 "dependencies stay inside the budget and pg isn't direct"
 else
-  record FAIL 12 "dependencies stay inside the budget and pg is not direct" "$(cat "$work/12")"
+  record FAIL 12 "dependencies stay inside the budget and pg isn't direct" "$(cat "$work/12")"
 fi
 
 # 13
@@ -367,11 +367,11 @@ else
 fi
 
 # 14
-# spelled as a pattern so this script is not itself a hit
+# spelled as a pattern so this script isn't itself a hit
 spawn_shell='shell:[[:space:]]*true'
 printf 'spawn(cmd, { %s: %s })\n' shell true > "$work/14.control"
 if ! grep -qE "$spawn_shell" "$work/14.control"; then
-  record FAIL 14 "no shell-enabled spawn in source" "the pattern does not match a known violation; it cannot gate"
+  record FAIL 14 "no shell-enabled spawn in source" "the pattern doesn't match a known violation; it cannot gate"
 else
   # source only: docs quote the rule, --untracked sees uncommitted files
   hits=$(git grep --untracked -nE "$spawn_shell" -- src test scripts prisma prisma.config.ts)

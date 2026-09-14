@@ -23,7 +23,6 @@ const tarball = resolve(
 
 function guard(): string {
   const name = new URL(config.databaseUrl).pathname.replace(/^\//, "");
-
   if (name !== visualDatabase) {
     throw new Error(
       `refusing to reset database "${name}"; only "${visualDatabase}" is the harness's own`,
@@ -31,7 +30,6 @@ function guard(): string {
   }
 
   const root = resolve(config.repoRoot);
-
   if (!root.endsWith(`/${visualRepoRoot}`)) {
     throw new Error(
       `refusing to erase repo root "${root}"; only a path ending in "${visualRepoRoot}" is the harness's own`,

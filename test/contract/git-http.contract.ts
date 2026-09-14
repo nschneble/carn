@@ -95,13 +95,14 @@ test("noHttpPush drops a repo name that fails validation rather than reflect it"
     method: "GET",
     url: `/r/${encodeURIComponent(hostile)}/info/refs?service=git-receive-pack`,
   });
+
   assertRefusal(getResponse, 403, refusals.noHttpPush(config.host, null));
+  assert.match(getResponse.body, /SSH/);
   assert.strictEqual(
     getResponse.body.includes("\x1b"),
     false,
     getResponse.body,
   );
-  assert.match(getResponse.body, /SSH/);
 
   const postResponse = await inject({
     method: "POST",
@@ -109,16 +110,17 @@ test("noHttpPush drops a repo name that fails validation rather than reflect it"
     headers: { "content-type": "application/x-git-receive-pack-request" },
     payload: "0000",
   });
+
   assertRefusal(postResponse, 403, refusals.noHttpPush(config.host, null));
+  assert.match(postResponse.body, /SSH/);
   assert.strictEqual(
     postResponse.body.includes("\x1b"),
     false,
     postResponse.body,
   );
-  assert.match(postResponse.body, /SSH/);
 });
 
-test("the advertisement refuses a missing or unknown service", async () => {
+test("the ref advertisement refuses a missing or unknown service", async () => {
   for (const url of [
     "/r/demo/info/refs",
     "/r/demo/info/refs?service=",
@@ -131,7 +133,7 @@ test("the advertisement refuses a missing or unknown service", async () => {
   }
 });
 
-test("upload-pack refuses a body that is not a git request", async () => {
+test("upload-pack refuses a body that isn't a git request", async () => {
   for (const [type, payload] of [
     ["application/json", '{"want":"refs/heads/main"}'],
     ["text/plain", "0000"],
@@ -163,6 +165,7 @@ test("the refusals explain what happened and what to do", () => {
     assert.strictEqual(line.includes("\n"), false, `${line} spans lines`);
   }
 
+  assert.match(refusals.wrongBody, /git-upload-pack/);
   assert.match(refusals.noRepo("demo"), /no repo named demo/);
   assert.match(
     refusals.noHttpPush(config.host, "demo"),
@@ -172,5 +175,4 @@ test("the refusals explain what happened and what to do", () => {
     refusals.noHttpPush(config.host, null),
     new RegExp(`git@${config.host} `),
   );
-  assert.match(refusals.wrongBody, /git-upload-pack/);
 });
