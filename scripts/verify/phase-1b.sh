@@ -31,7 +31,7 @@ readonly DEFAULT_ROOT=./local/repos
 readonly SSH_FLAGS="-o IdentitiesOnly=yes -o IdentityAgent=none -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o LogLevel=ERROR -o ConnectTimeout=5"
 readonly NO_WRITE="You don't have write access to $REPO_NAME. Ask the owner for a grant."
 readonly NO_REPO="There's no repo named absent1b. Push to create it."
-readonly BAD_COMMAND="This server runs git-upload-pack and git-receive-pack only. Use git clone or git push."
+readonly BAD_COMMAND="That's not a command this server runs. It runs git-upload-pack, git-receive-pack, and carn repo rename. Use git clone or git push."
 readonly BAD_NAME="That's not a valid repo name. Names are up to 40 characters, starting with a letter or number, and containing only letters, numbers, dots, dashes, and underscores."
 
 work=$(mktemp -d) || work=""
@@ -536,7 +536,7 @@ if require_daemon 13 "a name failing the format regex is refused before the quer
 fi
 
 # 14
-if require_daemon 14 "a shell request and a non-git command are both refused"; then
+if require_daemon 14 "a shell request and an unknown command are both refused"; then
   # -n: a shell request that blocks on the caller's tty would look refused
   bounded 60 ssh -n $SSH_FLAGS -i "$admin_key" -p "$ssh_port" git@127.0.0.1 \
     > "$work/14.shell.out" 2> "$work/14.shell.err"
@@ -545,13 +545,13 @@ if require_daemon 14 "a shell request and a non-git command are both refused"; t
     > "$work/14.exec.out" 2> "$work/14.exec.err"
   exec_status=$?
   if [ "$shell_status" -eq 0 ] || [ "$shell_status" -eq 124 ] || [ -s "$work/14.shell.out" ]; then
-    record FAIL 14 "a shell request and a non-git command are both refused" "the shell request gave exit $shell_status and $(wc -c < "$work/14.shell.out" | tr -d ' ') byte(s) of output"
+    record FAIL 14 "a shell request and an unknown command are both refused" "the shell request gave exit $shell_status and $(wc -c < "$work/14.shell.out" | tr -d ' ') byte(s) of output"
   elif [ "$exec_status" -eq 0 ] || [ "$exec_status" -eq 124 ]; then
-    record FAIL 14 "a shell request and a non-git command are both refused" "'id' exited $exec_status with: $(head -2 "$work/14.exec.out")"
+    record FAIL 14 "a shell request and an unknown command are both refused" "'id' exited $exec_status with: $(head -2 "$work/14.exec.out")"
   elif ! grep -qF "$BAD_COMMAND" "$work/14.exec.err"; then
-    record FAIL 14 "a shell request and a non-git command are both refused" "wanted \"$BAD_COMMAND\" on stderr, got: $(tail -2 "$work/14.exec.err")"
+    record FAIL 14 "a shell request and an unknown command are both refused" "wanted \"$BAD_COMMAND\" on stderr, got: $(tail -2 "$work/14.exec.err")"
   else
-    record PASS 14 "a shell request and a non-git command are both refused" "shell exit $shell_status, 'id' exit $exec_status with the refusal on stderr"
+    record PASS 14 "a shell request and an unknown command are both refused" "shell exit $shell_status, 'id' exit $exec_status with the refusal on stderr"
   fi
 fi
 

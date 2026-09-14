@@ -410,13 +410,13 @@ describe("ssh transport", {
     );
   });
 
-  it("refuses an exec that isn't one of the two git services", async () => {
+  it("refuses an exec that isn't one of the commands it runs", async () => {
     const other = await ssh([], ["id"]);
 
     assert.notStrictEqual(other.code, 0, "an arbitrary command ran");
     assert.match(
       other.stderr,
-      /This server runs git-upload-pack and git-receive-pack only/,
+      /That's not a command this server runs/,
       other.stderr,
     );
   });

@@ -3,16 +3,27 @@
 import type { ServerChannel } from "ssh2";
 
 import { spawnGit } from "../git/spawn.js";
-import { mayWrite } from "../repos/access.js";
+import { mayAdminister, mayWrite } from "../repos/access.js";
 import { createRepo } from "../repos/create.js";
-import { type ResolvedRepo, resolveRepo } from "../repos/resolve.js";
+import { renameRepo } from "../repos/rename.js";
+import {
+  namePattern,
+  normalizeRepoName,
+  type ResolvedRepo,
+  resolveRepo,
+} from "../repos/resolve.js";
 
 // git sq-quotes the path, escaping ' and ! which names can't hold
 const commandPattern = /^git-(receive|upload)-pack '([^']*)'$/;
+
+// separately anchored: the pattern above is a security boundary
+const renamePattern = /^carn repo rename (\S+) (\S+)$/;
+
 const timeoutMs = 600_000;
 
 export type GitService = "receive-pack" | "upload-pack";
 export type ParsedCommand = { service: GitService; target: string };
+export type ParsedRename = { from: string; to: string };
 
 export type ExecRequest = {
   channel: ServerChannel;
@@ -24,12 +35,16 @@ export type ExecRequest = {
 // raw target isn't echoed in `badName` since it'd carry terminal escapes
 export const refusals = {
   badCommand:
-    "This server runs git-upload-pack and git-receive-pack only. " +
-    "Use git clone or git push.",
+    "That's not a command this server runs. It runs git-upload-pack, " +
+    "git-receive-pack, and carn repo rename. Use git clone or git push.",
   badName:
     "That's not a valid repo name. Names are up to 40 characters, " +
     "starting with a letter or number, and containing only letters, " +
     "numbers, dots, dashes, and underscores.",
+  nameTaken: (name: string) =>
+    `There's already a repo named ${name}. Pick another name.`,
+  noAdmin: (name: string) =>
+    `You don't have admin access to ${name}. Ask the owner for an admin grant.`,
   noRepo: (name: string) => `There's no repo named ${name}. Push to create it.`,
   noWrite: (name: string) =>
     `You don't have write access to ${name}. Ask the owner for a grant.`,
@@ -46,6 +61,22 @@ export function parseCommand(command: string): ParsedCommand | null {
   };
 }
 
+export function parseRename(command: string): ParsedRename | null {
+  const match = renamePattern.exec(command);
+  if (match === null) return null;
+
+  return { from: match[1] ?? "", to: match[2] ?? "" };
+}
+
+// the log label for a failed command, so server.ts needn't dispatch too
+export function commandLabel(command: string): string {
+  const parsed = parseCommand(command);
+  if (parsed !== null) return parsed.service;
+  if (parseRename(command) !== null) return "carn repo rename";
+
+  return "an unparseable command";
+}
+
 // an abandoned channel is already gone; exiting on it throws
 function finish(channel: ServerChannel, code: number): void {
   if (channel.writableEnded || channel.destroyed) return;
@@ -59,6 +90,13 @@ export function refuse(channel: ServerChannel, message: string): void {
     channel.stderr.write(`${message}\n`);
 
   finish(channel, 1);
+}
+
+function report(channel: ServerChannel, message: string): void {
+  if (!channel.writableEnded && !channel.destroyed)
+    channel.write(`${message}\n`);
+
+  finish(channel, 0);
 }
 
 async function resolveTarget(
@@ -89,6 +127,47 @@ async function resolveTarget(
   }
 
   return lookup.repo;
+}
+
+// the unique index is on lower(name), so a case change isn't a collision
+async function renameTarget(
+  request: ExecRequest,
+  parsed: ParsedRename,
+): Promise<void> {
+  const { channel, userId } = request;
+
+  // the stored name has to round-trip a lookup, so refuse, never rewrite
+  const { to } = parsed;
+  if (!namePattern.test(to) || normalizeRepoName(to) !== to) {
+    refuse(channel, refusals.badName);
+    return;
+  }
+
+  const lookup = await resolveRepo(parsed.from);
+  switch (lookup.status) {
+    case "invalid":
+      refuse(channel, refusals.badName);
+      return;
+
+    case "missing":
+      refuse(channel, refusals.noRepo(lookup.name));
+      return;
+  }
+
+  const { repo } = lookup;
+  if (!(await mayAdminister(repo, userId))) {
+    refuse(channel, refusals.noAdmin(repo.name));
+    return;
+  }
+
+  const wanted = await resolveRepo(to);
+  if (wanted.status === "found" && wanted.repo.id !== repo.id) {
+    refuse(channel, refusals.nameTaken(wanted.repo.name));
+    return;
+  }
+
+  await renameRepo(repo.id, to);
+  report(channel, `Renamed ${repo.name} to ${to}.`);
 }
 
 // exported for the contract test; server.ts only ever calls handleExec
@@ -128,13 +207,19 @@ export async function serve(
 
 export async function handleExec(request: ExecRequest): Promise<void> {
   const parsed = parseCommand(request.command);
-  if (parsed === null) {
+  if (parsed !== null) {
+    const repo = await resolveTarget(request, parsed);
+    if (repo === null) return;
+
+    await serve(request, parsed, repo);
+    return;
+  }
+
+  const renaming = parseRename(request.command);
+  if (renaming === null) {
     refuse(request.channel, refusals.badCommand);
     return;
   }
 
-  const repo = await resolveTarget(request, parsed);
-  if (repo === null) return;
-
-  await serve(request, parsed, repo);
+  await renameTarget(request, renaming);
 }

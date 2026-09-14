@@ -13,10 +13,10 @@ Five have shipped. This closes the sixth.
 | 1b        | SSH listener, auth, push-to-create                 | Merged, PR #2 |
 | 1c        | Anonymous smart-HTTP                               | Merged, PR #4 |
 | 1d        | Design system, repo list, repo show                | Merged, PR #5 |
-| 1e        | Blob, tree, commit log, diff, branch and tag lists | PR #7         |
+| 1e        | Blob, tree, commit log, diff, branch and tag lists | Merged, PR #7 |
 | **1f**    | Rename, tree-root redirect                         | This document |
 
-**Read `.claude/CLAUDE.md` first, in full.** Then `docs/PLAN.md` §06 for URL
+**Read `.claude/CLAUDE.md` first in full.** Then `docs/PLAN.md` §06 for URL
 structure and §05 for ownership. This phase ships no new visual surface, so
 `BRAND.md` matters only if you touch an error page, and you will, once.
 
@@ -83,6 +83,23 @@ The new command takes two names and nothing else. Both go through
 `scripts/verify/phase-1b.sh` check 13 and is one of the five sites
 `docs/LAYOUT.md` §03 says move together. Do not write a sixth variant.
 
+### The new name is a name, not a URL
+
+`resolveRepo` strips a leading slash and a trailing `.git` before it looks
+anything up, because what it receives came out of a git URL. The rename
+target didn't. It's the name being assigned, and normalizing it would
+store something other than what was typed.
+
+It can't go in raw either. `namePattern` admits `widget.git`, and a row
+named that is a row no lookup can ever ask for again, because every
+lookup strips the suffix first. A leading slash opens the same hole.
+
+So the target has to satisfy both rules: `namePattern`, and already being
+what a lookup would make of it. Refuse anything else with
+`refusals.badName`. It is one condition, it needs no new sentence, and it
+closes `widget.git.git` for free: a target that survives one pass
+unchanged survives every pass.
+
 ### `refusals.badCommand` becomes false, and it is pinned in three places
 
 Today it reads:
@@ -99,9 +116,9 @@ three files that must move in the same commit:
 | `scripts/verify/phase-1b.sh`              | `BAD_COMMAND`, asserted by check 14 |
 | `test/contract/ssh-transport.contract.ts` | a regex over the same text          |
 
-Miss one and 1e's check 24 fails, because it cascades 1a through 1d. This
-isn't a test to fix until it goes green. It's a deliberate three-site
-edit, the same shape as the name-cap change in 1e.
+Miss one and 1e's check 24 fails, because the cascade reaches 1b through
+1d. This isn't a test to fix until it goes green. It's a deliberate
+three-site edit, the same shape as the name-cap change in 1e.
 
 The replacement should name what the server does run and still point at the
 common case. Voice rule: say what happened and what to do, in that order.
@@ -133,7 +150,7 @@ the on-disk path before and after and assert it's byte-identical, then
 clone from the new name.
 
 The unique index is on `lower(name)`. A rename onto a name already taken
-must fail with a sentence, not a Prisma error reaching the channel. Renaming
+must fail w/ a sentence, not a Prisma error reaching the channel. Renaming
 `gantry` to `GANTRY` is a case change of the same row and must succeed.
 
 There is no `events` row for the rename. That table is Phase 3. The gap is
@@ -195,7 +212,7 @@ keep, and buys a dead end on a URL whose meaning is unambiguous.
 
 ### The trailing slash is two URLs, and only one of them reaches the code
 
-The route is registered as `/r/:repo/tree/:rev/*`, and `ignoreTrailingSlash`
+The route is registered as `/r/:repo/tree/:rev/*` and `ignoreTrailingSlash`
 isn't set on the Fastify instance built in `src/app.ts`, so it defaults to
 false. Measured against a bare Fastify with that one route:
 
@@ -208,7 +225,8 @@ false. Measured against a bare Fastify with that one route:
 So `path === ""`, the branch that returns `noTreeRoot` today and becomes
 the 301, is reachable only with the trailing slash. Without it the request
 never reaches `showTree` at all; it falls to `setNotFoundHandler` in
-`src/app.ts` and gets `noSuchRoute`, the generic "Nothing here" page.
+`src/app.ts` and gets `noSuchRoute`, the generic "Nothing to see here"
+page.
 
 **The no-slash form is the one a person is more likely to type**, and it's
 currently the one the redirect wouldn't cover. Fix both. Register the bare
@@ -221,6 +239,22 @@ every route in the app, it would silently make `/r/:repo/` and
 URL today, and a forge whose pages are cached forever shouldn't grow a
 second spelling for each of them by accident. One extra route registration
 is the smaller change.
+
+### The old 404 is pinned in four places
+
+The same shape as `badCommand` above. Four sites assert what the tree root
+answers, and all four move in the commit that changes it:
+
+| Site                                  | What it is                                |
+| ------------------------------------- | ----------------------------------------- |
+| `scripts/verify/phase-1e.sh` check 29 | fetches the bare ref and reads the status |
+| its contract-title list               | names the tree-page test by its title     |
+| `test/contract/tree-page.contract.ts` | reads `repo-page.ts` for the redirect     |
+| `test/contract/repo-page.contract.ts` | probes the routes against a dead database |
+
+Miss one and 1f's own cascade check fails, because it runs 1e in full.
+Check 29's title goes stale along with them: the tree route stops
+mirroring the blob route at depth zero, which is what that title claims.
 
 **What this does expose is a real gap**: no route in the product renders
 the root tree at an arbitrary rev, and viewing a tag's contents is an
@@ -236,9 +270,13 @@ Once the redirect lands, `noTreeRoot` in `src/html/error-page.ts` is
 unreachable. Remove it and its import in `src/routes/repo-page.ts`.
 
 No Tuffgal story captures it. `error-no-directory` navigates to
-`/r/gantry/tree/main/apps/nope`, which is `noSuchTree`, a different page. So
-nothing orphans a baseline. Confirm that yourself before deleting rather
+`/r/gantry/tree/main/apps/nope`, which is `noSuchTree`, a different page.
+So nothing orphans a baseline. Confirm that yourself before deleting rather
 than taking this brief's word for it.
+
+No contract test or check names `noTreeRoot` either. The four sites in §2
+assert what the URL answers, never which error page it used to answer with,
+so the deletion adds nothing to that list.
 
 ---
 
@@ -251,8 +289,8 @@ than taking this brief's word for it.
 - **Name history or a 301 from a retired name.** See above.
 - **`?ref=` on the repo page.** See above.
 - **The repo-page design pass**: footer padding, folder-slash spacing, the
-  README section border, empty states. That is its own named phase after
-  1e merges, and it's Nick's, not this one's.
+  README section border, empty states. That is its own named phase now that
+  1e has merged, and it's Nick's, not this one's.
 
 ---
 
@@ -260,7 +298,7 @@ than taking this brief's word for it.
 
 `scripts/verify/phase-1f.sh`, following the shape of its five predecessors:
 PASS or FAIL per check, non-zero exit if any fail, and one check that runs
-1a through 1e so the cascade stays whole.
+1e, which runs its own predecessor and so on down the chain.
 
 New checks worth having:
 
@@ -277,6 +315,8 @@ New checks worth having:
 9. `/r/:repo/tree/main`, with no trailing slash, answers the same 301, not
    404.
 10. The old `badCommand` string appears nowhere in the repo.
+11. A target a lookup would rewrite, whether by a leading slash or a
+    trailing `.git`, is refused rather than rewritten.
 
 No new Tuffgal stories. Rename changes no page, and a 301 has nothing to
 capture. Deleting `noTreeRoot` removes a page no story ever reached.

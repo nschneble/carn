@@ -22,7 +22,6 @@ import {
   badRepoName,
   errorPage,
   noSuchRepo,
-  noTreeRoot,
 } from "../../src/html/error-page.js";
 import { pathName } from "../../src/html/filename.js";
 import { html } from "../../src/html/index.js";
@@ -366,14 +365,20 @@ const app = buildApp();
 const invalid = await app.inject({ method: "GET", url: "/r/-nope" });
 const valid = await app.inject({ method: "GET", url: "/r/linklater" });
 const rootTree = await app.inject({ method: "GET", url: "/r/linklater/tree/main/" });
+const bareTree = await app.inject({ method: "GET", url: "/r/linklater/tree/main" });
+const taggedTree = await app.inject({ method: "GET", url: "/r/linklater/tree/v1.2.0/" });
 const nestedTree = await app.inject({ method: "GET", url: "/r/linklater/tree/main/src" });
 const asset = await app.inject({ method: "GET", url: "/r/linklater/asset/main/docs/arch.png" });
 await app.close();
 
+const seeOther = (answer) => ({ status: answer.statusCode, location: answer.headers.location });
+
 console.log("${sentinel}" + JSON.stringify({
   invalid: { status: invalid.statusCode, body: invalid.body, headers: invalid.headers },
   valid: { status: valid.statusCode, body: valid.body },
-  rootTree: { status: rootTree.statusCode, body: rootTree.body },
+  rootTree: seeOther(rootTree),
+  bareTree: seeOther(bareTree),
+  taggedTree: seeOther(taggedTree),
   nestedTree: { status: nestedTree.statusCode },
   asset: { status: asset.statusCode },
 }));
@@ -393,9 +398,8 @@ test("an invalid repo name is refused before any database query", () => {
 
   const line = output.split("\n").find((row) => row.startsWith(sentinel));
   assert.ok(line, `the probe printed no result:\n${output}`);
-  const { invalid, valid, rootTree, nestedTree, asset } = JSON.parse(
-    line.slice(sentinel.length),
-  );
+  const { invalid, valid, rootTree, bareTree, taggedTree, nestedTree, asset } =
+    JSON.parse(line.slice(sentinel.length));
 
   // 503 is the asset route reaching the dead database; 404 here would mean
   // it never routed at all and the image tests above prove nothing served
@@ -405,13 +409,15 @@ test("an invalid repo name is refused before any database query", () => {
     "the readme image route isn't registered",
   );
 
-  // the tree route has no root form, and the url settles that without a
-  // lookup: the nested path reaching the dead database is what proves the
-  // empty one was refused rather than merely unrouted
+  // the root tree is /r/:repo, and the url settles that without a lookup:
+  // the nested path reaching the dead database is what proves the bare ref
+  // was answered rather than merely unrouted. a tag nobody could resolve
+  // redirects the same way, so no ref is special-cased
   assert.strictEqual(nestedTree.status, 503);
-  assert.strictEqual(rootTree.status, 404);
-  assert.ok(rootTree.body.includes(noTreeRoot.heading));
-  assert.doesNotMatch(rootTree.body, /127\.0\.0\.1|prisma|queryRaw/i);
+  for (const answer of [rootTree, bareTree, taggedTree]) {
+    assert.strictEqual(answer.status, 301);
+    assert.strictEqual(answer.location, "/r/linklater");
+  }
 
   assert.strictEqual(
     valid.status,
