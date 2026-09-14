@@ -83,6 +83,23 @@ The new command takes two names and nothing else. Both go through
 `scripts/verify/phase-1b.sh` check 13 and is one of the five sites
 `docs/LAYOUT.md` §03 says move together. Do not write a sixth variant.
 
+### The new name is a name, not a URL
+
+`resolveRepo` strips a leading slash and a trailing `.git` before it looks
+anything up, because what it receives came out of a git URL. The rename
+target didn't. It's the name being assigned, and normalizing it would
+store something other than what was typed.
+
+It can't go in raw either. `namePattern` admits `widget.git`, and a row
+named that is a row no lookup can ever ask for again, because every
+lookup strips the suffix first. A leading slash opens the same hole.
+
+So the target has to satisfy both rules: `namePattern`, and already being
+what a lookup would make of it. Refuse anything else with
+`refusals.badName`. It is one condition, it needs no new sentence, and it
+closes `widget.git.git` for free: a target that survives one pass
+unchanged survives every pass.
+
 ### `refusals.badCommand` becomes false, and it is pinned in three places
 
 Today it reads:
@@ -298,11 +315,12 @@ New checks worth having:
 9. `/r/:repo/tree/main`, with no trailing slash, answers the same 301, not
    404.
 10. The old `badCommand` string appears nowhere in the repo.
+11. A target a lookup would rewrite, whether by a leading slash or a
+    trailing `.git`, is refused rather than rewritten.
 
 No new Tuffgal stories. Rename changes no page, and a 301 has nothing to
 capture. Deleting `noTreeRoot` removes a page no story ever reached.
 
-> **GATE:** rename your dotfiles repo, then clone it at the new name.
-> Shipping this is the last thing standing between here and
-> `docs/PLAN.md` §08 `01 · Core`'s own gate, "Your dotfiles repo lives
-> here and the page looks good."
+> **GATE:** rename your dotfiles repo, then clone it at the new name. That
+> is also `docs/PLAN.md` §08 `01 · Core`'s gate, so this is the phase that
+> closes it.

@@ -588,6 +588,8 @@ if require_renamed 6 "$TITLE_6"; then
       || wrong="$wrong $(basename "$out") holds '$(tail -1 "$out")', wanted the nameTaken sentence;"
     grep -qiE 'prisma|P2002|23505|duplicate key|constraint|postgres|at async|at Object' "$out" \
       && wrong="$wrong $(basename "$out") leaked driver text: $(tail -1 "$out");"
+    grep -qF "$UNAVAILABLE" "$out" \
+      && wrong="$wrong $(basename "$out") fell through to the generic failure;"
   done
   [ "$after_taken" = "$ADMIN_NAME" ] \
     || wrong="$wrong the refused rename moved the name to '${after_taken:-gone}';"
@@ -736,73 +738,49 @@ else
 fi
 
 # 12
-# namePattern admits trailing .git that resolveRepo strips off every lookup,
-# so a name stored with one on it can never be found again. the strip runs
-# to a fixed point, and .git.git is what discriminates that: one pass takes
-# it to a name that still ends in .git, which is the same defect again
-readonly TITLE_12="every trailing .git is stripped before the name is stored or collision-checked"
+# namePattern admits a leading slash and a trailing .git, both of which
+# resolveRepo strips off every lookup, so a name stored with either could
+# never be found again. the target is refused rather than rewritten, and
+# .git.git is what tells a refusal from a single-pass strip
+readonly TITLE_12="a target a lookup would rewrite is refused, not rewritten"
 if require_renamed 12 "$TITLE_12"; then
-  rename_as "$admin_key" "$work/12.suffix" "$CASED_NAME" "$SUFFIX_NAME.git"
-  suffix_status=$?
-  after_suffix=$(name_of "$repo_id")
+  wrong=""
+  for target in "$SUFFIX_NAME.git" "$DOUBLE_NAME.git.git" "/$SUFFIX_NAME"; do
+    rename_as "$admin_key" "$work/12.reject" "$CASED_NAME" "$target"
+    reject_status=$?
+    [ "$reject_status" -ne 0 ] || wrong="$wrong '$target' was accepted;"
+    grep -qF "$BAD_NAME" "$work/12.reject.err" \
+      || wrong="$wrong '$target' drew '$(tail -1 "$work/12.reject.err")', wanted the badName sentence;"
+    [ -s "$work/12.reject.out" ] \
+      && wrong="$wrong '$target' wrote '$(tr -d '\n' < "$work/12.reject.out")' to stdout;"
+  done
+  after_reject=$(name_of "$repo_id")
+
+  # the same name without the suffix, so what the three refusals prove is
+  # the round-trip rule and not some property of the name itself
+  rename_as "$admin_key" "$work/12.plain" "$CASED_NAME" "$SUFFIX_NAME"
+  plain_status=$?
+  after_plain=$(name_of "$repo_id")
   as_user "$admin_key" git clone -q "$(ssh_url "$SUFFIX_NAME")" "$work/clone-suffix" \
     > "$work/12.clone" 2>&1
   clone_status=$?
-
-  rename_as "$admin_key" "$work/12.double" "$SUFFIX_NAME" "$DOUBLE_NAME.git.git"
-  double_status=$?
-  after_double=$(name_of "$repo_id")
-  as_user "$admin_key" git clone -q "$(ssh_url "$DOUBLE_NAME")" "$work/clone-double" \
-    > "$work/12.doubleclone" 2>&1
-  double_clone=$?
-
-  rename_as "$admin_key" "$work/12.taken" "$DOUBLE_NAME" "$OTHER_NAME.git.git"
-  taken_status=$?
-  after_taken=$(name_of "$repo_id")
-
-  # the cap is measured on the name that gets stored, so a target only over
-  # it because of the suffix is a false refusal, not a long name
-  capped_target=$(printf 'b%.0s' $(seq $NAME_CAP))
-  rename_as "$admin_key" "$work/12.capped" "$DOUBLE_NAME" "$capped_target.git"
-  capped_status=$?
-  after_capped=$(name_of "$repo_id")
   rows=$(psql_scratch -c "select count(*) from repos")
 
-  wrong=""
-  [ "$suffix_status" -eq 0 ] \
-    || wrong="$wrong the suffixed rename exited $suffix_status: $(tail -2 "$work/12.suffix.err");"
-  # whole line: the unstripped name has the wanted one as a prefix, so a
-  # substring match reports the bug as the fix
-  grep -qFx "Renamed $CASED_NAME to $SUFFIX_NAME." "$work/12.suffix.out" \
-    || wrong="$wrong the channel said '$(tr -d '\n' < "$work/12.suffix.out")', wanted the stripped name;"
-  [ "$after_suffix" = "$SUFFIX_NAME" ] \
-    || wrong="$wrong the row is named '${after_suffix:-gone}', wanted $SUFFIX_NAME;"
+  [ "$after_reject" = "$CASED_NAME" ] \
+    || wrong="$wrong a refused target moved the name to '${after_reject:-gone}';"
+  [ "$plain_status" -eq 0 ] \
+    || wrong="$wrong the unsuffixed rename exited $plain_status: $(tail -2 "$work/12.plain.err");"
+  grep -qFx "Renamed $CASED_NAME to $SUFFIX_NAME." "$work/12.plain.out" \
+    || wrong="$wrong the channel said '$(tr -d '\n' < "$work/12.plain.out")', wanted the confirmation;"
+  [ "$after_plain" = "$SUFFIX_NAME" ] \
+    || wrong="$wrong the row is named '${after_plain:-gone}', wanted $SUFFIX_NAME;"
   [ "$clone_status" -eq 0 ] \
     || wrong="$wrong the clone at $SUFFIX_NAME exited $clone_status: $(tail -3 "$work/12.clone");"
-  [ "$double_status" -eq 0 ] \
-    || wrong="$wrong the .git.git rename exited $double_status: $(tail -2 "$work/12.double.err");"
-  grep -qFx "Renamed $SUFFIX_NAME to $DOUBLE_NAME." "$work/12.double.out" \
-    || wrong="$wrong the channel said '$(tr -d '\n' < "$work/12.double.out")', wanted $DOUBLE_NAME;"
-  [ "$after_double" = "$DOUBLE_NAME" ] \
-    || wrong="$wrong .git.git stored as '${after_double:-gone}', wanted $DOUBLE_NAME;"
-  [ "$double_clone" -eq 0 ] \
-    || wrong="$wrong the clone at $DOUBLE_NAME exited $double_clone: $(tail -3 "$work/12.doubleclone");"
-  [ "$taken_status" -ne 0 ] || wrong="$wrong renaming onto $OTHER_NAME.git.git succeeded;"
-  grep -qF "$NAME_TAKEN" "$work/12.taken.err" \
-    || wrong="$wrong $OTHER_NAME.git.git drew '$(tail -1 "$work/12.taken.err")', wanted the nameTaken sentence;"
-  grep -qF "$UNAVAILABLE" "$work/12.taken.err" \
-    && wrong="$wrong $OTHER_NAME.git.git drew the generic failure sentence;"
-  [ "$after_taken" = "$DOUBLE_NAME" ] \
-    || wrong="$wrong the refused rename moved the name to '${after_taken:-gone}';"
-  [ "$capped_status" -eq 0 ] \
-    || wrong="$wrong a $NAME_CAP-character name with .git on it was refused: $(tail -1 "$work/12.capped.err");"
-  [ "$after_capped" = "$capped_target" ] \
-    || wrong="$wrong the capped target stored as '${after_capped:-gone}';"
   [ "$rows" = "2" ] || wrong="$wrong repos holds $rows row(s), wanted 2;"
   if [ -n "$wrong" ]; then
     record FAIL 12 "$TITLE_12" "$wrong"
   else
-    record PASS 12 "$TITLE_12" "one and two suffixes both stripped and cloned, $OTHER_NAME.git.git refused, $NAME_CAP characters plus .git accepted"
+    record PASS 12 "$TITLE_12" "3 targets refused with the row untouched, the bare name accepted and cloned"
   fi
 fi
 

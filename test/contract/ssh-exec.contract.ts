@@ -118,8 +118,8 @@ test("neither pattern ever answers for the other's command", () => {
   assert.strictEqual(parseRename("git-upload-pack '/gantry'"), null);
 });
 
-test("the name a rename stores is the same one a lookup asks for", () => {
-  // a single pass stores foo.git, which no lookup can ask for again
+test("the lookup's normalization settles in one pass", () => {
+  // rename refuses what this would change, and resolveRepo never runs twice
   for (const target of [
     "gantry",
     "gantry.git",

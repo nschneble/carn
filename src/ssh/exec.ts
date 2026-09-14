@@ -125,8 +125,9 @@ async function renameTarget(
 ): Promise<void> {
   const { channel, userId } = request;
 
-  const to = normalizeRepoName(parsed.to);
-  if (!namePattern.test(to)) {
+  // the stored name has to round-trip a lookup, so refuse, never rewrite
+  const { to } = parsed;
+  if (!namePattern.test(to) || normalizeRepoName(to) !== to) {
     refuse(channel, refusals.badName);
     return;
   }
