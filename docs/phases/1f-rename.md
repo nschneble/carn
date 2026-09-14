@@ -13,10 +13,10 @@ Five have shipped. This closes the sixth.
 | 1b        | SSH listener, auth, push-to-create                 | Merged, PR #2 |
 | 1c        | Anonymous smart-HTTP                               | Merged, PR #4 |
 | 1d        | Design system, repo list, repo show                | Merged, PR #5 |
-| 1e        | Blob, tree, commit log, diff, branch and tag lists | PR #7         |
+| 1e        | Blob, tree, commit log, diff, branch and tag lists | Merged, PR #7 |
 | **1f**    | Rename, tree-root redirect                         | This document |
 
-**Read `.claude/CLAUDE.md` first, in full.** Then `docs/PLAN.md` §06 for URL
+**Read `.claude/CLAUDE.md` first in full.** Then `docs/PLAN.md` §06 for URL
 structure and §05 for ownership. This phase ships no new visual surface, so
 `BRAND.md` matters only if you touch an error page, and you will, once.
 
@@ -99,7 +99,8 @@ three files that must move in the same commit:
 | `scripts/verify/phase-1b.sh`              | `BAD_COMMAND`, asserted by check 14 |
 | `test/contract/ssh-transport.contract.ts` | a regex over the same text          |
 
-Miss one and 1e's check 24 fails, because it cascades 1a through 1d. This
+Miss one and 1e's check 24 fails, because the cascade reaches 1b through
+1d. This
 isn't a test to fix until it goes green. It's a deliberate three-site
 edit, the same shape as the name-cap change in 1e.
 
@@ -133,7 +134,7 @@ the on-disk path before and after and assert it's byte-identical, then
 clone from the new name.
 
 The unique index is on `lower(name)`. A rename onto a name already taken
-must fail with a sentence, not a Prisma error reaching the channel. Renaming
+must fail w/ a sentence, not a Prisma error reaching the channel. Renaming
 `gantry` to `GANTRY` is a case change of the same row and must succeed.
 
 There is no `events` row for the rename. That table is Phase 3. The gap is
@@ -195,7 +196,7 @@ keep, and buys a dead end on a URL whose meaning is unambiguous.
 
 ### The trailing slash is two URLs, and only one of them reaches the code
 
-The route is registered as `/r/:repo/tree/:rev/*`, and `ignoreTrailingSlash`
+The route is registered as `/r/:repo/tree/:rev/*` and `ignoreTrailingSlash`
 isn't set on the Fastify instance built in `src/app.ts`, so it defaults to
 false. Measured against a bare Fastify with that one route:
 
@@ -208,7 +209,8 @@ false. Measured against a bare Fastify with that one route:
 So `path === ""`, the branch that returns `noTreeRoot` today and becomes
 the 301, is reachable only with the trailing slash. Without it the request
 never reaches `showTree` at all; it falls to `setNotFoundHandler` in
-`src/app.ts` and gets `noSuchRoute`, the generic "Nothing here" page.
+`src/app.ts` and gets `noSuchRoute`, the generic "Nothing to see here"
+page.
 
 **The no-slash form is the one a person is more likely to type**, and it's
 currently the one the redirect wouldn't cover. Fix both. Register the bare
@@ -236,8 +238,8 @@ Once the redirect lands, `noTreeRoot` in `src/html/error-page.ts` is
 unreachable. Remove it and its import in `src/routes/repo-page.ts`.
 
 No Tuffgal story captures it. `error-no-directory` navigates to
-`/r/gantry/tree/main/apps/nope`, which is `noSuchTree`, a different page. So
-nothing orphans a baseline. Confirm that yourself before deleting rather
+`/r/gantry/tree/main/apps/nope`, which is `noSuchTree`, a different page.
+So nothing orphans a baseline. Confirm that yourself before deleting rather
 than taking this brief's word for it.
 
 ---
@@ -251,8 +253,8 @@ than taking this brief's word for it.
 - **Name history or a 301 from a retired name.** See above.
 - **`?ref=` on the repo page.** See above.
 - **The repo-page design pass**: footer padding, folder-slash spacing, the
-  README section border, empty states. That is its own named phase after
-  1e merges, and it's Nick's, not this one's.
+  README section border, empty states. That is its own named phase now that
+  1e has merged, and it's Nick's, not this one's.
 
 ---
 
@@ -260,7 +262,7 @@ than taking this brief's word for it.
 
 `scripts/verify/phase-1f.sh`, following the shape of its five predecessors:
 PASS or FAIL per check, non-zero exit if any fail, and one check that runs
-1a through 1e so the cascade stays whole.
+1e, which runs its own predecessor and so on down the chain.
 
 New checks worth having:
 
