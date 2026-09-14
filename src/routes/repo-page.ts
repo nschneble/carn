@@ -455,7 +455,6 @@ export function repoPageRoutes(app: FastifyInstance): void {
   app.get<BlobRoute>("/r/:repo/asset/:rev/*", serveAsset);
   app.get<BlobRoute>("/r/:repo/blob/:rev/*", showBlob);
   app.get<TreeRoute>("/r/:repo/tree/:rev/*", showTree);
-  // ignoreTrailingSlash would alias every route in the app, not just this
   app.get<TreeRefRoute>("/r/:repo/tree/:rev", toRepoRoot);
   app.get<LogRoute>("/r/:repo/commits", showCommits);
   app.get<ChangeRoute>("/r/:repo/commits/:sha/*", showCommit);

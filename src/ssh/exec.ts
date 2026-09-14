@@ -15,8 +15,10 @@ import {
 
 // git sq-quotes the path, escaping ' and ! which names can't hold
 const commandPattern = /^git-(receive|upload)-pack '([^']*)'$/;
+
 // separately anchored: the pattern above is a security boundary
 const renamePattern = /^carn repo rename (\S+) (\S+)$/;
+
 const timeoutMs = 600_000;
 
 export type GitService = "receive-pack" | "upload-pack";
@@ -64,6 +66,15 @@ export function parseRename(command: string): ParsedRename | null {
   if (match === null) return null;
 
   return { from: match[1] ?? "", to: match[2] ?? "" };
+}
+
+// the log label for a failed command, so server.ts needn't dispatch too
+export function commandLabel(command: string): string {
+  const parsed = parseCommand(command);
+  if (parsed !== null) return parsed.service;
+  if (parseRename(command) !== null) return "carn repo rename";
+
+  return "an unparseable command";
 }
 
 // an abandoned channel is already gone; exiting on it throws
@@ -133,13 +144,14 @@ async function renameTarget(
   }
 
   const lookup = await resolveRepo(parsed.from);
-  if (lookup.status === "invalid") {
-    refuse(channel, refusals.badName);
-    return;
-  }
-  if (lookup.status === "missing") {
-    refuse(channel, refusals.noRepo(lookup.name));
-    return;
+  switch (lookup.status) {
+    case "invalid":
+      refuse(channel, refusals.badName);
+      return;
+
+    case "missing":
+      refuse(channel, refusals.noRepo(lookup.name));
+      return;
   }
 
   const { repo } = lookup;
