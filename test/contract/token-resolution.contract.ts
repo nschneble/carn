@@ -114,6 +114,6 @@ test("a token dropped from the bare :root empties in exactly the dark paths", as
     renderPaths
       .filter((candidate) => candidate.palette === "dark")
       .map(({ name }) => name),
-    "a token left only inside a media query must vanish wherever that query does not match",
+    "a token left only inside a media query must vanish wherever that query doesn't match",
   );
 });

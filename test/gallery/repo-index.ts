@@ -43,7 +43,7 @@ export const populated: RepoSummary[] = [
 ];
 
 export const hoverSimulation = css`
-.row.is-hover {
+.tbl tbody tr.is-hover {
   background: var(--sunk);
 }`;
 
@@ -56,6 +56,6 @@ export function indexDocument(
   });
 
   return options.hover === true
-    ? markup.replace('<li class="row">', '<li class="row is-hover">')
+    ? markup.replace('<tr class="row">', '<tr class="row is-hover">')
     : markup;
 }

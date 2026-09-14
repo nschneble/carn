@@ -9,9 +9,10 @@ Server-rendered HTML, public by default, no passwords.
 
 ## Documentation
 
-- [Build plan](docs/PLAN.md)
-- [Layout study](docs/LAYOUT.md)
 - [Brand book](docs/BRAND.md)
+- [Implementation plan](docs/PLAN.md)
+- [Layout specification](docs/LAYOUT.md)
+- [Stack currency](docs/STACK.md)
 
 ## License
 
@@ -19,9 +20,8 @@ AGPL-3.0. See [LICENSE](LICENSE).
 
 ## Acknowledgements
 
-- The logo is a photo by [Nicolas Solerieu], creatively altered to fit
-  Càrn's brand language
 - Càrn's UI/UX was inspired by [Zentto Design Studio]
+- The logo is a photo by [Nicolas Solerieu], creatively altered to fit Càrn's brand language
 - The theme colors coalesced around [Blushing Schoolgirl]
 
 [Blushing Schoolgirl]: https://www.colourlovers.com/color/E7156C/Blushing_Schoolgirl

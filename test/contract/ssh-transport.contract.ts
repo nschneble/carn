@@ -89,7 +89,6 @@ function fingerprintOf(path: string): string {
   const line = execFileSync("ssh-keygen", ["-lf", `${path}.pub`], {
     encoding: "utf8",
   });
-
   return line.split(" ")[1] ?? "";
 }
 
@@ -183,7 +182,7 @@ describe("ssh transport", {
     });
 
     const address = listener.address();
-    assert.ok(address !== null && typeof address === "object");
+    assert.ok(address && typeof address === "object");
     port = address.port;
 
     await makeActor(owner, `carn-e2e-owner-${run}`);
@@ -226,11 +225,11 @@ describe("ssh transport", {
 
     const row = rows[0];
     assert.ok(row);
-    assert.strictEqual(row.ownerId, owner.id, "the pusher does not own it");
+    assert.strictEqual(row.ownerId, owner.id, "the pusher doesn't own it");
     assert.strictEqual(
       repoPath(row.id),
       join(repoRoot, row.id.slice(0, 2), `${row.id}.git`),
-      "the path is not derived from the row id",
+      "the path isn't derived from the row id",
     );
     assert.strictEqual(existsSync(repoPath(row.id)), true);
     assert.strictEqual(
@@ -337,14 +336,14 @@ describe("ssh transport", {
     const cloned = await git(owner, ["clone", "-q", url(name), into]);
 
     assert.notStrictEqual(cloned.code, 0, "a missing repo cloned");
+    assert.strictEqual(await db.repo.count({ where: { name } }), 0);
+    assert.strictEqual(existsSync(into), false);
     assert.ok(
       cloned.stderr.includes(
-        `There's no repo named ${name}. Push to it to create it.`,
+        `There's no repo named ${name}. Push to create it.`,
       ),
       cloned.stderr,
     );
-    assert.strictEqual(await db.repo.count({ where: { name } }), 0);
-    assert.strictEqual(existsSync(into), false);
   });
 
   it("refuses a name failing the format rule", async () => {
@@ -388,8 +387,8 @@ describe("ssh transport", {
 
     assert.notStrictEqual(key.lastUsedAt, null);
     assert.ok(
-      key.lastUsedAt !== null && key.lastUsedAt >= key.createdAt,
-      "last_used_at is not later than created_at",
+      key.lastUsedAt && key.lastUsedAt >= key.createdAt,
+      "last_used_at isn't later than created_at",
     );
   });
 

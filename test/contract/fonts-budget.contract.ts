@@ -43,7 +43,7 @@ test("the README states the size of every font it ships", () => {
 test("the license note's subset figure is the mono pair as shipped", () => {
   const [, subset] = stated(
     "the subset comparison",
-    /costs ([\d,]+) B for the pair against ([\d,]+) B subset/,
+    /costs ([\d,]+) B for the pair against (?:a )?([\d,]+) B subset/,
   );
 
   assert.strictEqual(subset, shipped(...mono));
@@ -52,17 +52,17 @@ test("the license note's subset figure is the mono pair as shipped", () => {
 test("the license note's total is the unsubset pair plus the sans as shipped", () => {
   const [unsubset] = stated(
     "the subset comparison",
-    /costs ([\d,]+) B for the pair against [\d,]+ B subset/,
+    /costs ([\d,]+) B for the pair against (?:a )?([\d,]+) B subset/,
   );
   const [total] = stated(
     "the over-budget total",
-    /With the sans face that is ([\d,]+) B/,
+    /With the sans face that(?:'s| is) ([\d,]+) B/,
   );
 
   assert.strictEqual(total, unsubset + shipped(sans));
 });
 
-test("the fonts alone leave room for a page, the name-preserving route does not", () => {
+test("the fonts alone leave room for a page, the name-preserving route doesn't", () => {
   assert.ok(
     shipped(sans, ...mono) < budget,
     "the shipped fonts no longer leave room for a page",
@@ -70,8 +70,9 @@ test("the fonts alone leave room for a page, the name-preserving route does not"
 
   const [total] = stated(
     "the over-budget total",
-    /With the sans face that is ([\d,]+) B/,
+    /With the sans face that(?:'s| is) ([\d,]+) B/,
   );
+
   assert.ok(
     total > budget,
     "the rejected route now fits, so the note is wrong",

@@ -5,11 +5,12 @@ import { join } from "node:path";
 import { config } from "../config.js";
 import { db } from "../db.js";
 
-export const namePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+export const namePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$/;
 
 export type ResolvedRepo = {
   id: string;
   name: string;
+  description: string | null;
   ownerId: string;
   defaultBranch: string;
   path: string;
@@ -30,17 +31,16 @@ export async function resolveRepo(target: string): Promise<RepoLookup> {
     return { status: "invalid" };
   }
 
-  // raw: prisma's insensitive equals emits ILIKE, where _ is a wildcard
+  // raw: insensitive equals emits ILIKE, which seq-scans and wildcards _
   const rows = await db.$queryRaw<Omit<ResolvedRepo, "path">[]>`
-    SELECT id, name, owner_id AS "ownerId", default_branch AS "defaultBranch"
+    SELECT id, name, description, owner_id AS "ownerId",
+           default_branch AS "defaultBranch"
     FROM repos
     WHERE lower(name) = lower(${name})
   `;
 
   const row = rows[0];
-  if (row === undefined) {
-    return { status: "missing", name };
-  }
+  if (row === undefined) return { status: "missing", name };
 
   return { status: "found", repo: { ...row, path: repoPath(row.id) } };
 }

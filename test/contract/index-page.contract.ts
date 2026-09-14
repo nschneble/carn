@@ -4,13 +4,14 @@ import assert from "node:assert";
 import { test } from "node:test";
 
 import { age } from "../../src/html/age.js";
+import { plainName } from "../../src/html/filename.js";
 import { repoListPage } from "../../src/html/repo-list.js";
 import { styleHref, stylesheet } from "../../src/html/styles.js";
 import type { RepoSummary } from "../../src/repos/list.js";
 import { sshRemote } from "../../src/repos/remote.js";
 import { frozen, indexDocument, populated } from "../gallery/repo-index.js";
 
-const rowPattern = /<li class="row(?: [a-z-]+)?">/g;
+const rowPattern = /<tr class="row(?: [a-z-]+)?">/g;
 
 function rows(markup: string): number {
   return [...markup.matchAll(rowPattern)].length;
@@ -27,14 +28,14 @@ function stub(count: number): RepoSummary[] {
 test("the shell is one header, one main, and one footer", () => {
   const markup = indexDocument();
 
+  assert.ok(markup.includes("<title>Càrn</title>"));
+  assert.ok(markup.includes(`<link rel="stylesheet" href="${styleHref}" />`));
+  assert.doesNotMatch(markup, /maximum-scale|user-scalable/);
   assert.match(markup, /^<!doctype html>\n<html lang="en">\n/);
   assert.match(
     markup,
     /<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" \/>/,
   );
-  assert.doesNotMatch(markup, /maximum-scale|user-scalable/);
-  assert.ok(markup.includes("<title>Càrn</title>"));
-  assert.ok(markup.includes(`<link rel="stylesheet" href="${styleHref}" />`));
 
   const outside = markup
     .slice(
@@ -43,6 +44,7 @@ test("the shell is one header, one main, and one footer", () => {
     )
     .replace(/<header>[\s\S]*<\/footer>/, "")
     .trim();
+
   assert.strictEqual(
     outside,
     "",
@@ -53,7 +55,7 @@ test("the shell is one header, one main, and one footer", () => {
     assert.strictEqual(
       [...markup.matchAll(new RegExp(`<${landmark}[ >]`, "g"))].length,
       1,
-      `there is not exactly one <${landmark}>`,
+      `there isn't exactly one <${landmark}>`,
     );
   }
 
@@ -75,16 +77,18 @@ test("the skip link is the first focusable thing on the page", () => {
   );
   assert.ok(
     markup.indexOf("<header>") < first && first < markup.indexOf("</header>"),
-    "the skip link is not inside the header",
+    "the skip link isn't inside the header",
   );
 });
 
 test("one h1, the list's own label, and no other heading", () => {
   const markup = indexDocument();
 
-  assert.ok(markup.includes('<h1 class="t-label">Repositories</h1>'));
   assert.strictEqual([...markup.matchAll(/<h[1-6][ >]/g)].length, 1);
   assert.doesNotMatch(markup, /class="[^"]*t-xl/);
+  assert.ok(
+    markup.includes('<h1 class="t-item t-item--title">Repositories</h1>'),
+  );
 });
 
 test("the index lists every repo, with no cap and no show-all", () => {
@@ -109,9 +113,13 @@ test("the index lists every repo, with no cap and no show-all", () => {
 test("a row is an anchored name, a description slot, and a datetime", () => {
   const markup = indexDocument();
 
-  assert.ok(markup.includes('<ul class="repos" role="list">'));
+  assert.ok(markup.includes('<table class="tbl repos">'));
+  assert.ok(markup.includes('<caption class="vh">Repositories</caption>'));
+  assert.ok(markup.includes('<th class="name t-label" scope="col">Name</th>'));
   assert.ok(
-    markup.includes('<a class="nm t-item" href="/r/linklater">linklater</a>'),
+    markup.includes(
+      `<th class="name" scope="row"><a class="t-item" lang="en" href="/r/linklater">${plainName("linklater").value}</a></th>`,
+    ),
   );
 
   const noDescription = populated.find((repo) => repo.description === null);
@@ -119,61 +127,92 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
   assert.match(
     markup,
     new RegExp(
-      `<a class="nm t-item" href="/r/${noDescription.name}">${noDescription.name}</a>\\s*<span class="msg"></span>`,
+      `<a class="t-item" lang="en" href="/r/${noDescription.name}">${plainName(noDescription.name).value}</a></th>\\s*<td class="msg"><span>-</span></td>`,
     ),
-    "a repo with no description dropped its .msg span, so the grid columns no longer line up",
+    "a repo with no description dropped its .msg cell or its dash, so the columns no longer line up",
   );
 
   assert.strictEqual(
-    [...markup.matchAll(/<span class="msg">/g)].length,
+    [...markup.matchAll(/<td class="msg">/g)].length,
     populated.length,
   );
+
+  // the Created column header names this cell, so it carries no vh label
   assert.ok(
     markup.includes(
-      '<span class="vh">Created </span><time datetime="2026-05-11T08:30:00.000Z">15w</time>',
+      '<td class="age"><time datetime="2026-05-11T08:30:00.000Z">15w</time></td>',
     ),
   );
+
+  assert.doesNotMatch(markup, /<span class="vh">Created <\/span>/);
 });
 
-test("a repo name wears the display face without small caps or a tooltip", () => {
+test("a repo name wears the caps wrapper like every other Row, and no tooltip", () => {
   const markup = indexDocument();
 
-  assert.doesNotMatch(markup, /class="sc"/);
-  assert.doesNotMatch(markup, /class="nm t-item"[^>]*title=/);
+  assert.match(markup, /class="caps"/);
+  assert.doesNotMatch(markup, /class="t-item"[^>]*title=/);
   assert.doesNotMatch(markup, /class="[^"]*is-dir/);
+});
+
+test("a dot in a repo name is part of the name, not an extension", () => {
+  const dotted = ["example.com", "carn.dev", "v1.1.0"].map((name) => ({
+    name,
+    description: null,
+    createdAt: frozen,
+  }));
+  const markup = repoListPage({ repos: dotted, now: frozen });
+
+  for (const repo of dotted) {
+    assert.ok(
+      markup.includes(
+        `<a class="t-item" lang="en" href="/r/${repo.name}"><span class="caps">${repo.name}</span></a>`,
+      ),
+      `${repo.name} did not render whole`,
+    );
+  }
+
+  assert.doesNotMatch(markup, /class="sc"/);
+  assert.doesNotMatch(indexDocument(), /class="sc"/);
 });
 
 test("a description is escaped, never interpolated raw", () => {
   const markup = indexDocument();
 
+  assert.doesNotMatch(markup, /<td class="msg"><span>[^<]*<(?!\/span)/);
   assert.ok(
     markup.includes(
-      '<span class="msg">The blob origin. &quot;Say &lt;what&gt; it does&quot; &amp; why.</span>',
+      '<td class="msg"><span>The blob origin. &quot;Say &lt;what&gt; it does&quot; &amp; why.</span></td>',
     ),
   );
-  assert.doesNotMatch(markup, /<span class="msg">[^<]*<(?!\/span)/);
 });
 
 test("the empty state says what would be here and how to make one", () => {
   const markup = indexDocument({ repos: [] });
 
+  assert.doesNotMatch(markup, /<pre[ >]/);
   assert.strictEqual(rows(markup), 0);
-  assert.ok(markup.includes('<h1 class="t-label">Repositories</h1>'));
   assert.ok(markup.includes("<footer>"));
+
+  assert.ok(
+    markup.includes('<h1 class="t-item t-item--title">Repositories</h1>'),
+  );
+
   assert.ok(
     markup.includes(
       `<code class="t-mono">git push ${sshRemote("your-repo")} main</code>`,
     ),
-    "the empty state's command does not come from config",
+    "the empty state's command doesn't come from config",
   );
-  assert.doesNotMatch(markup, /<pre[ >]/);
 
   const start = markup.indexOf('<div class="empty">');
   assert.notStrictEqual(start, -1, "the empty state is missing");
   const copy = markup.slice(start, markup.indexOf("</div>", start));
 
   assert.ok(copy.includes("No repos yet."));
-  assert.ok(copy.includes("pushing to a name that doesn't exist creates it"));
+  assert.ok(
+    copy.includes("pushing to a name that doesn&#39;t exist creates it"),
+  );
   assert.doesNotMatch(copy, /[!…]|Oops/);
 });
 
@@ -186,10 +225,8 @@ test("the root element carries nothing but its language", () => {
       markup.indexOf("<html"),
       markup.indexOf(">", markup.indexOf("<html")) + 1,
     );
-
     assert.strictEqual(root, '<html lang="en">');
   }
-
   assert.doesNotMatch(stylesheet, /data-theme/);
 });
 
@@ -220,6 +257,7 @@ test("an age reads in the largest unit that fits, in both directions", () => {
   assert.strictEqual(ago(364 * 86_400_000), "52w");
   assert.strictEqual(ago(365 * 86_400_000), "1y");
   assert.strictEqual(ago(900 * 86_400_000), "2y");
+
   assert.strictEqual(
     ago(-86_400_000),
     "now",
@@ -229,13 +267,12 @@ test("an age reads in the largest unit that fits, in both directions", () => {
 
 test("the ssh remote drops its port only when git owns 22", () => {
   const remote = sshRemote("linklater");
-
   assert.match(
     remote,
     /^(?:git@[^:]+:linklater|ssh:\/\/git@[^/]+\/linklater)$/,
   );
   assert.ok(
     remote.endsWith("linklater"),
-    "the remote no longer names the repo last, so it is not a push target",
+    "the remote no longer names the repo last, so it isn't a push target",
   );
 });

@@ -1,0 +1,9 @@
+{
+  "action": "gantry-blob-truncated",
+  "steps": [
+    { "kind": "navigate", "path": "/r/gantry" },
+    { "kind": "click", "hint": { "role": "link", "text": "src/" } },
+    { "kind": "click", "hint": { "role": "link", "text": "big.ts" } }
+  ],
+  "expect": { "anyOf": [{ "text": "lines of 240" }] }
+}

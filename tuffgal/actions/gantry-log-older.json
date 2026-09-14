@@ -1,0 +1,5 @@
+{
+  "action": "gantry-log-older",
+  "steps": [{ "kind": "click", "hint": { "role": "link", "text": "Older" } }],
+  "expect": { "anyOf": [{ "role": "link", "text": "Stand the gantry up" }] }
+}

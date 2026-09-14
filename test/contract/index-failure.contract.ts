@@ -14,10 +14,7 @@ function ts(strings: TemplateStringsArray, ...values: unknown[]): string {
 
 const root = resolve(import.meta.dirname, "../../..");
 const nowhere = "postgresql://nobody:nobody@127.0.0.1:1/nothing";
-
-// the app logs to stdout, and pino's writes can land after console.log
 const sentinel = "carn-probe:";
-
 const probe = ts`
 const { buildApp } = await import("./dist/src/app.js");
 const { listRepos } = await import("./dist/src/repos/list.js");
@@ -39,7 +36,7 @@ console.log("${sentinel}" + JSON.stringify({
 process.exit(0);
 `;
 
-test("a dead database does not put the driver's message on a public page", () => {
+test("a dead database doesn't put the driver's message on a public page", () => {
   const output = execFileSync(
     process.execPath,
     ["--input-type=module", "-e", probe],

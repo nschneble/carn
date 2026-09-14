@@ -12,7 +12,6 @@ import { join, resolve } from "node:path";
 import { type Position, step } from "../../src/html/position.js";
 
 export type { Position };
-
 export type Interpolation = { index: number; end: number; position: Position };
 
 export const root = resolve(import.meta.dirname, "../../..");
@@ -26,7 +25,6 @@ function endOfString(source: string, start: number, quote: string): number {
 
   while (index < source.length) {
     const char = source[index];
-
     if (char === "\\") {
       index += 2;
       continue;
@@ -44,7 +42,6 @@ function endOfSubstitution(source: string, start: number): number {
 
   while (index < source.length) {
     const char = source[index];
-
     if (char === "\\") {
       index += 2;
       continue;

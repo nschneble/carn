@@ -1,0 +1,7 @@
+{
+  "action": "gantry-tree-nested-all",
+  "steps": [
+    { "kind": "click", "hint": { "role": "link", "text": "Show all 19" } }
+  ],
+  "expect": { "anyOf": [{ "role": "link", "text": "mod-17.ts" }] }
+}

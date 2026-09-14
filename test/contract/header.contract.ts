@@ -36,7 +36,6 @@ after(() => {
 
 function commit(files: Record<string, string | number>, links: string[] = []) {
   const work = mkdtempSync(join(dir, "work-"));
-
   execFileSync("git", ["init", "-q", "-b", "main", "--", work]);
 
   for (const [path, body] of Object.entries(files)) {
@@ -81,11 +80,13 @@ const markup = (header: Header) =>
   headerMarkup({ name: "linklater", header, src }).value;
 
 const wordmarkOnly: Header = { light: "wordmark", dark: "wordmark" };
+
 const shared: HeaderImage = {
   path: ".carn/header.svg",
   oid: "a".repeat(40),
   bytes: 10,
 };
+
 const dark: HeaderImage = {
   path: ".carn/header-dark.svg",
   oid: "b".repeat(40),
@@ -123,7 +124,7 @@ test("each slot walks its own chain, and its own slot wins", async () => {
   );
 });
 
-test("a png in the slot is not a header, so the mark stands in", async () => {
+test("a png in the slot isn't a header, so the mark stands in", async () => {
   const repo = commit({
     ".carn/header.png": "g",
     ".carn/header-dark.png": "d",
@@ -180,7 +181,7 @@ test("a symlink and a subtree are not headers", async () => {
   assert.deepStrictEqual(await resolveHeader(repo), wordmarkOnly);
 });
 
-test("a ref that is not an object id is refused", async () => {
+test("a ref that isn't an object id is refused", async () => {
   const repo = commit({ ".carn/header.svg": "g" });
 
   for (const bad of ["--upload-pack=x", "-main", "HEAD", "main", ""]) {

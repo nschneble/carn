@@ -50,19 +50,14 @@ async function authenticate(
 
   if (outcome.status === "reject") {
     // every client opens with a none probe
-    if (ctx.method !== "none") {
+    if (ctx.method !== "none")
       console.warn(`ssh: ${ip} rejected, ${outcome.reason}`);
-    }
-
     ctx.reject(outcome.methods);
     return;
   }
 
   // identified before accepting: a session may follow the same tick
-  if (outcome.status === "accept") {
-    identify(outcome.key.userId);
-  }
-
+  if (outcome.status === "accept") identify(outcome.key.userId);
   ctx.accept();
 }
 
@@ -75,24 +70,28 @@ function onSession(session: Session, userId: string, ip: string): void {
   };
 
   session.on("error", onError);
+
   session.on("env", (accept, reject, info) => {
     if (info.key !== "GIT_PROTOCOL") {
       reply(reject);
       return;
     }
-
     gitProtocol = info.val;
     reply(accept);
   });
+
   session.on("pty", (_accept, reject) => {
     reply(reject);
   });
+
   session.on("shell", (_accept, reject) => {
     reply(reject);
   });
+
   session.on("subsystem", (_accept, reject) => {
     reply(reject);
   });
+
   session.on("exec", (accept, reject, info) => {
     if (userId === "") {
       reply(reject);
@@ -100,9 +99,7 @@ function onSession(session: Session, userId: string, ip: string): void {
     }
 
     const channel: ServerChannel | undefined = accept();
-    if (channel === undefined) {
-      return;
-    }
+    if (channel === undefined) return;
 
     channel.on("error", onError);
     channel.stderr.on("error", onError);
@@ -111,7 +108,6 @@ function onSession(session: Session, userId: string, ip: string): void {
       (error: unknown) => {
         const service =
           parseCommand(info.command)?.service ?? "an unparseable command";
-
         console.error(`ssh: ${ip} running ${service} failed, ${error}`);
         refuse(channel, refusals.unavailable);
       },
@@ -125,6 +121,7 @@ function onConnection(client: Connection, ip: string): void {
   client.on("error", (error: unknown) => {
     console.warn(`ssh: ${ip} connection error, ${error}`);
   });
+
   client.on("authentication", (ctx) => {
     authenticate(ctx, ip, (id) => {
       userId = id;
@@ -133,11 +130,10 @@ function onConnection(client: Connection, ip: string): void {
       ctx.reject();
     });
   });
+
   client.on("session", (accept) => {
     const session: Session | undefined = accept();
-    if (session !== undefined) {
-      onSession(session, userId, ip);
-    }
+    if (session !== undefined) onSession(session, userId, ip);
   });
 }
 

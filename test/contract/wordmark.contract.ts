@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import { after, before, test } from "node:test";
 import { type Browser, chromium } from "playwright";
 
-import { wordmark } from "../../src/repos/wordmark.js";
+import { wordmark } from "../../src/html/wordmark.js";
 import { renderPaths } from "../support/render-paths.js";
 
 const root = resolve(import.meta.dirname, "../../..");

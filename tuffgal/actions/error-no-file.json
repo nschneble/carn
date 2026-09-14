@@ -1,0 +1,5 @@
+{
+  "action": "error-no-file",
+  "steps": [{ "kind": "navigate", "path": "/r/gantry/blob/main/src/nope.ts" }],
+  "expect": { "anyOf": [{ "role": "heading", "text": "No file here" }] }
+}

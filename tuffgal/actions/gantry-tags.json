@@ -1,0 +1,5 @@
+{
+  "action": "gantry-tags",
+  "steps": [{ "kind": "navigate", "path": "/r/gantry/tags" }],
+  "expect": { "anyOf": [{ "role": "link", "text": "v1.0.0" }] }
+}

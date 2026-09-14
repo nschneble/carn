@@ -40,7 +40,7 @@ test("raw passes its value through unescaped", () => {
   assert.strictEqual(html`${raw("<b>x</b>")}`.value, "<b>x</b>");
 });
 
-test("a nested html result is not escaped again", () => {
+test("a nested html result isn't escaped again", () => {
   const inner = html`<b>${"x&y"}</b>`;
 
   assert.strictEqual(html`<p>${inner}</p>`.value, "<p><b>x&amp;y</b></p>");
@@ -151,7 +151,7 @@ test("a raw value is refused however it reaches the interpolation", () => {
   }
 });
 
-test("the classification is memoised without changing what it decides", () => {
+test("the classification is memoized without changing what it decides", () => {
   const render = (value: unknown) => html`<a title="${value}">t</a>`.value;
 
   assert.strictEqual(render("a"), '<a title="a">t</a>');

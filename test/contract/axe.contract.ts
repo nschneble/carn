@@ -9,13 +9,47 @@ import { createRequire } from "node:module";
 import { after, before, test } from "node:test";
 import type { AxeResults, NodeResult, Result } from "axe-core";
 import type { Page } from "playwright";
-import { errorPage, noSuchRepo } from "../../src/html/error-page.js";
+import {
+  errorPage,
+  noSuchFile,
+  noSuchRepo,
+} from "../../src/html/error-page.js";
 import { styleHref } from "../../src/html/styles.js";
 import { renderMarkdown } from "../../src/markdown/render.js";
+import {
+  blobAssetPath,
+  type RasterFormat,
+  sniffRaster,
+} from "../../src/repos/blob-asset.js";
 import { headerAssetPath } from "../../src/repos/header-asset.js";
+import { logRowCap } from "../../src/repos/log.js";
+import {
+  binaryBlob,
+  blobDocument,
+  imageBlob,
+  pngBody,
+  rawOrigin,
+  sampleSource,
+  textBlob,
+} from "../gallery/blob.js";
+import {
+  binaryFile,
+  changeDocument,
+  commitDocument,
+  detail,
+  noisyFiles,
+} from "../gallery/commit.js";
+import { commits, log, logDocument } from "../gallery/commit-log.js";
 import { galleryCss, galleryDocument } from "../gallery/document.js";
+import {
+  branches,
+  quietBranch,
+  refList,
+  refsDocument,
+} from "../gallery/refs.js";
 import { hoverSimulation, indexDocument } from "../gallery/repo-index.js";
 import { committedHeader, showDocument, view } from "../gallery/repo-show.js";
+import { treeDocument, wideTree, withSubmodule } from "../gallery/tree.js";
 import {
   type BrowserDocument,
   browser,
@@ -123,7 +157,10 @@ const tableSource = `| Ref                    | Kind   | Note              |
 | \`14-conflict-output\` | branch | ahead by 3        |
 `;
 
-const renderedTable = renderMarkdown(tableSource).value;
+const renderedTable = renderMarkdown(tableSource, {
+  repo: "linklater",
+  rev: "main",
+}).value;
 
 // repoint at the shared page shell once a wave gives markdown one
 const readmeTable = `<!doctype html>
@@ -144,7 +181,6 @@ const readmeTable = `<!doctype html>
 `;
 
 const buckets = ["violations", "incomplete", "passes", "inapplicable"] as const;
-
 const galleryHref = "/gallery.css";
 
 const fixtures: Record<string, string> = {
@@ -159,7 +195,14 @@ const styles: Record<string, string> = {
   "/planted-failures.css": plantedContrastCss,
 };
 
-const emptyRepo = view({ tip: null, entries: [], readme: null });
+// nothing has been said about a repo pushed into existence, so this is
+// also the state the description's dash is audited in
+const emptyRepo = view({
+  description: null,
+  tip: null,
+  entries: [],
+  readme: null,
+});
 
 // the show page's only external subresource; without it the audited
 // header is a broken image and the committed path goes unmeasured
@@ -172,6 +215,10 @@ const headerAssets: Record<string, ServedAsset> = {
     type: "image/svg+xml",
     body: fixtureHeaders.dark,
   },
+  [blobAssetPath("linklater", {
+    oid: imageBlob.oid,
+    format: sniffRaster(pngBody) as RasterFormat,
+  })]: { type: "image/png", body: pngBody },
 };
 
 // one document per state: nothing is stamped, so the two render paths
@@ -186,11 +233,67 @@ const states = {
   "show-new": showDocument({ repo: emptyRepo }),
   "show-header": showDocument({ repo: view({ header: committedHeader }) }),
   "not-found": errorPage({ failure: noSuchRepo("linklater") }),
+  blob: blobDocument(),
+  "blob-cut": blobDocument({ rawOrigin, sheetWire: 29_000 }),
+  "blob-image": blobDocument({ blob: imageBlob, rawOrigin }),
+
+  "blob-binary": blobDocument({
+    blob: binaryBlob("media/clip.mp4", 4_404_019),
+    rawOrigin,
+  }),
+
+  "commits-tail": logDocument({
+    log: log({ commits: commits(9), next: null }),
+  }),
+
+  "commits-none": logDocument({ log: log({ commits: [], next: null }) }),
+  commits: logDocument(),
+  commit: commitDocument(),
+
+  "commit-cut": commitDocument({
+    commit: detail({ files: noisyFiles(12, 8) }),
+    sheetWire: 26_000,
+  }),
+
+  "commit-binary": commitDocument({ commit: detail({ files: [binaryFile] }) }),
+  "commit-file": changeDocument("src/reader.ts"),
+  branches: refsDocument(),
+  "branches-cut": refsDocument({ list: refList("branch", { more: true }) }),
+  "branches-none": refsDocument({ list: refList("branch", { refs: [] }) }),
+
+  "branches-quiet": refsDocument({
+    list: refList("branch", { refs: [quietBranch, ...branches.slice(0, 2)] }),
+  }),
+
+  tags: refsDocument({ kind: "tag" }),
+  "tags-none": refsDocument({ list: refList("tag", { refs: [] }) }),
+  tree: treeDocument(),
+  "tree-cut": treeDocument({ tree: wideTree }),
+  "tree-all": treeDocument({ tree: wideTree, showAll: true }),
+  "tree-sub": treeDocument({ tree: withSubmodule }),
 };
 
 for (const [state, markup] of Object.entries(states)) {
   fixtures[`/${state}`] = markup;
 }
+
+// a path carries no space to break at, so whichever element holds one
+// decides on its own whether the page scrolls sideways
+const committedPath = "prisma/migrations/20260824223229_init/migration.sql";
+const requestedPath = `objects/pack/${"0123456789abcdef".repeat(5)}.pack`;
+
+const reflowCases = [
+  { path: "/error-long-path", selector: ".empty p" },
+  { path: "/blob-long-path", selector: "h1.t-item" },
+];
+
+fixtures["/blob-long-path"] = blobDocument({
+  blob: textBlob(committedPath, sampleSource),
+});
+
+fixtures["/error-long-path"] = errorPage({
+  failure: noSuchFile(requestedPath),
+});
 
 let site: Served;
 
@@ -225,10 +328,8 @@ async function fontState(page: Page): Promise<Record<string, string[]>> {
   );
 }
 
-// document.fonts.check() isn't the oracle; it answers true for a family
-// with no face at all, which is exactly what a document that lost its
-// stylesheet looks like, and false for a face the page has not demanded
-// yet, which is legitimate (read the face statuses instead)
+// document.fonts.check() answers true for a family with no face, and false
+// for a face the page has not demanded yet
 async function expectFonts(page: Page, where: string): Promise<void> {
   const state = await fontState(page);
 
@@ -238,7 +339,7 @@ async function expectFonts(page: Page, where: string): Promise<void> {
 
     assert.ok(
       faces.length > 0 && !faces.includes("error"),
-      `${seen}, so the audit measured a fallback face and every font-sensitive rule — target-size above all — sized the wrong glyphs`,
+      `${seen}, so the audit measured a fallback face and every font-sensitive rule (target-size above all) sized the wrong glyphs`,
     );
     assert.ok(
       faces.includes("loaded"),
@@ -247,18 +348,29 @@ async function expectFonts(page: Page, where: string): Promise<void> {
   }
 }
 
+// Playwright's default viewport is 1280 wide and sits above the sheet's
+// only breakpoint; Tuffgal captures 375+1440, which bracket the breakpoint
+const narrowWidth = 375;
+const wideWidth = 1440;
+const auditWidths = [narrowWidth, wideWidth];
+
+// mirrors the sheet's one @media (min-width: 640px)
+const breakpoint = 640;
+
 async function audit(
   load: (page: Page) => Promise<void>,
   colorScheme: "light" | "dark",
   fonts: string | null,
+  width: number,
 ): Promise<Audit> {
   const page = await (await browser()).newPage();
 
   try {
+    await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme });
     await load(page);
     await page.evaluate(() => document.fonts.ready);
-    if (fonts !== null) await expectFonts(page, fonts);
+    if (fonts) await expectFonts(page, fonts);
 
     return await page.evaluate(async (tags) => {
       const selected = new Set(tags);
@@ -307,6 +419,7 @@ async function fetched(
   path: string,
   colorScheme: "light" | "dark",
   fonts: string | null = path,
+  width: number = wideWidth,
 ): Promise<Audit> {
   return audit(
     async (page) => {
@@ -315,6 +428,7 @@ async function fetched(
     },
     colorScheme,
     fonts,
+    width,
   );
 }
 
@@ -342,7 +456,7 @@ function report(found: Result[]): string {
 }
 
 // hiddenContentEvaluate only ever returns undefined or true, so this rule
-// can never violate; its incomplete is not a deferred verdict
+// can never violate; its incomplete isn't a deferred verdict
 const alwaysIncomplete = new Set(["hidden-content"]);
 
 // axe declines contrast on the decorative arrow's non-text glyph
@@ -415,43 +529,241 @@ function contrastPin(results: AxeResults, where: string, pinned: number): void {
 // measured once per fixture, identical in both schemes: the two paths
 // audit the same bytes and differ only in which token block applies
 const contrastNodes: Record<string, number> = {
-  gallery: 62,
-  populated: 18,
-  hover: 18,
+  gallery: 63,
+  populated: 21,
+  hover: 21,
   empty: 6,
-  show: 58,
-  "show-all": 116,
-  "show-bare": 32,
-  "show-new": 5,
-  "show-header": 58,
+  show: 94,
+  "show-all": 169,
+  "show-bare": 68,
+  "show-new": 10,
+  "show-header": 94,
   "not-found": 7,
+  blob: 73,
+  "blob-cut": 22,
+  "blob-image": 16,
+  "blob-binary": 17,
+  commits: 60,
+  "commits-tail": 38,
+  "commits-none": 10,
+  commit: 45,
+  "commit-cut": 140,
+  "commit-binary": 25,
+  "commit-file": 42,
+  branches: 36,
+  "branches-cut": 37,
+  "branches-none": 10,
+  "branches-quiet": 20,
+  tags: 29,
+  "tags-none": 10,
+  tree: 48,
+  "tree-cut": 66,
+  "tree-all": 141,
+  "tree-sub": 25,
 };
 
-for (const path of renderPaths) {
-  for (const state of ["gallery", ...Object.keys(states)]) {
-    test(`no axe violations on the ${state} page, ${path.name}`, async () => {
-      const { results } = await fetched(`/${state}`, path.colorScheme);
+// two ways a state measures fewer nodes below the breakpoint: breadcrumb
+// folds its middle segments out of the layout and a11y tree, and the tree
+// and repo index drop their description column
+const foldedContrastNodes: Record<string, number> = {
+  blob: 72,
+  "blob-cut": 21,
+  "commit-file": 41,
+  gallery: 58,
+  hover: 16,
+  populated: 16,
+  show: 78,
+  "show-all": 135,
+  "show-bare": 52,
+  "show-header": 78,
+  tree: 38,
+  "tree-all": 107,
+  "tree-cut": 50,
+  "tree-sub": 21,
+};
 
-      assert.deepStrictEqual(
-        results.violations.map((rule) => rule.id),
-        [],
-        report(results.violations),
-      );
-      decided(results);
-      contrastPin(
-        results,
-        `${state} ${path.name}`,
-        contrastNodes[state] as number,
-      );
-    });
+for (const width of auditWidths) {
+  for (const path of renderPaths) {
+    for (const state of ["gallery", ...Object.keys(states)]) {
+      test(`no axe violations on the ${state} page, ${path.name} at ${width}px`, async () => {
+        const { results } = await fetched(
+          `/${state}`,
+          path.colorScheme,
+          `/${state}`,
+          width,
+        );
+
+        assert.deepStrictEqual(
+          results.violations.map((rule) => rule.id),
+          [],
+          report(results.violations),
+        );
+        decided(results);
+        contrastPin(
+          results,
+          `${state} ${path.name} at ${width}px`,
+          (width < breakpoint ? foldedContrastNodes[state] : undefined) ??
+            (contrastNodes[state] as number),
+        );
+      });
+    }
   }
 }
+
+// the densest hit area in the product; the log's subject is the row's link
+// to that commit, so it's rendered at every width
+test("every link in a commit row reaches a target-size verdict", async (t) => {
+  for (const width of auditWidths) {
+    for (const path of renderPaths) {
+      const { results } = await fetched(
+        "/commits",
+        path.colorScheme,
+        "/commits",
+        width,
+      );
+      const columns = 3;
+      const where = `${path.name} at ${width}px`;
+      const settled = (["violations", "passes"] as const).flatMap(
+        (bucket) =>
+          results[bucket].find((rule) => rule.id === "target-size")?.nodes ??
+          [],
+      );
+      // the cell carries the column class, not the link inside it, so the
+      // selector axe reports is what says which column a target sits in
+      const rows = settled.filter((node) =>
+        node.target.some((target) => /\.(name|msg|age)\b/.test(String(target))),
+      );
+
+      assert.strictEqual(
+        results.incomplete.find((rule) => rule.id === "target-size")?.nodes
+          .length ?? 0,
+        0,
+        `${where}: target-size reached no verdict on a commit row link`,
+      );
+      assert.strictEqual(
+        rows.length,
+        logRowCap * columns,
+        `${where}: target-size settled ${rows.length} of the ${logRowCap * columns} links sixteen commit rows carry there`,
+      );
+      t.diagnostic(`${where}: ${rows.length} row targets settled`);
+    }
+  }
+});
+
+// the three columns hold at every width, so the band holds at every width
+// too; no breakpoint at which a row link stops being a target of its own
+test("a commit row link clears 24px at both widths", async (t) => {
+  const page = await (await browser()).newPage();
+
+  try {
+    for (const width of [narrowWidth, wideWidth]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${site.origin}/commits`);
+      await page.evaluate(() => document.fonts.ready);
+
+      const heights = await page
+        .locator(".log tbody .row")
+        .first()
+        .evaluate((row) =>
+          [...row.querySelectorAll("a")]
+            .filter((link) => link.getClientRects().length > 0)
+            .map((link) => link.getBoundingClientRect().height),
+        );
+
+      const columns = 3;
+
+      assert.strictEqual(
+        heights.length,
+        columns,
+        `${width}px: the row lays out ${heights.length} links, not the ${columns} its columns carry there`,
+      );
+      for (const height of heights) {
+        assert.ok(
+          height >= 24,
+          `${width}px: a row link is ${height}px tall, under the 24px floor`,
+        );
+      }
+      t.diagnostic(`${width}px: row links ${heights.join(", ")}px tall`);
+    }
+  } finally {
+    await page.close();
+  }
+});
+
+test("every link in a ref row reaches a target-size verdict", async (t) => {
+  for (const path of renderPaths) {
+    const { results } = await fetched("/branches", path.colorScheme);
+    const settled = (["violations", "passes"] as const).flatMap(
+      (bucket) =>
+        results[bucket].find((rule) => rule.id === "target-size")?.nodes ?? [],
+    );
+    const rows = settled.filter((node) =>
+      /commits\?ref=/.test(node.html),
+    ).length;
+
+    assert.strictEqual(
+      results.incomplete.find((rule) => rule.id === "target-size")?.nodes
+        .length ?? 0,
+      0,
+      `${path.name}: target-size reached no verdict on a ref row link`,
+    );
+    assert.strictEqual(
+      rows,
+      branches.length * 3,
+      `${path.name}: target-size settled ${rows} of the ${branches.length * 3} links ${branches.length} ref rows carry`,
+    );
+    t.diagnostic(`${path.name}: ${rows} ref row targets settled`);
+  }
+});
+
+// the cut is squeezed out of the cap rather than the file's length, so a
+// formula change could quietly leave this fixture rendering whole and the
+// truncated DOM shape would go unaudited with every gate still green
+test("the truncated blob fixture is genuinely truncated", () => {
+  const cut = states["blob-cut"];
+
+  assert.match(cut, /<p class="t-note" id="blob-cut">Showing the first /);
+  assert.match(cut, /aria-describedby="blob-cut"/);
+  assert.ok(cut.includes("Show entire file"));
+  assert.doesNotMatch(
+    states.blob,
+    /id="blob-cut"/,
+    "the whole-file fixture is truncated too, so the pair proves no contrast",
+  );
+});
+
+// the cut is squeezed out of the room rather than the commit's size, so a
+// formula change could leave this fixture rendering whole and the state
+// where an inlined diff sits beside a link would go unaudited
+test("the cut commit fixture really is cut", () => {
+  const cut = states["commit-cut"];
+  const inlined = [...cut.matchAll(/<pre class="src diff"/g)].length;
+  const linked = [
+    ...cut.matchAll(/href="\/r\/linklater\/commits\/[0-9a-f]+\//g),
+  ].length;
+
+  assert.ok(inlined > 0, "nothing inlined, so the page under audit is a list");
+  assert.ok(linked > 0, "nothing linked, so the whole commit fitted");
+  assert.strictEqual(
+    [...states.commit.matchAll(/href="\/r\/linklater\/commits\/[0-9a-f]+\//g)]
+      .length,
+    0,
+    "the whole-commit fixture links a file too, so the pair proves no contrast",
+  );
+});
 
 test("every audited fixture has a pinned contrast count", () => {
   assert.deepStrictEqual(
     Object.keys(contrastNodes).sort(),
     ["gallery", ...Object.keys(states)].sort(),
     "a fixture was added or dropped without its contrast count, so the loop above would pin undefined and settle nothing",
+  );
+  assert.deepStrictEqual(
+    Object.keys(foldedContrastNodes).filter(
+      (state) => !(state in contrastNodes),
+    ),
+    [],
+    "a folded count names a fixture that no longer exists, so it pins nothing at the narrow width",
   );
 });
 
@@ -506,9 +818,9 @@ test("the hover wash is measured under the two columns that sit on it", async (t
       `color-contrast evaluated nothing on the ${path.name} hover fixture, so the stylesheet never reached the page and a clean run proves nothing`,
     );
 
-    for (const column of ['class="msg"', "<time datetime="]) {
+    for (const column of [".msg", ".age"]) {
       const measured: number = contrast.nodes.filter((node) =>
-        node.html.includes(column),
+        node.target.some((target) => String(target).includes(column)),
       ).length;
 
       assert.ok(
@@ -567,7 +879,7 @@ test("the rules above WCAG 2.0 report which of them found anything", async (t) =
 
     assert.ok(
       landed,
-      `${name} is in no bucket, so the rules override stopped forcing it on; axe leaves every experimental rule out of tag selection, and without the override this gate silently shrinks`,
+      `${name} isn't in a bucket, so the rules override stopped forcing it on; axe leaves every experimental rule out of tag selection`,
     );
     assert.notStrictEqual(landed, "violations", `${name} is violated`);
     t.diagnostic(`${name}: ${landed}`);
@@ -579,6 +891,423 @@ test("the rules above WCAG 2.0 report which of them found anything", async (t) =
     "target-size evaluated nothing, so wcag22aa pins no hit area and the repo row rests on the screenshot baseline alone",
   );
   t.diagnostic(`target-size evaluated ${hitAreas.nodes.length} hit areas`);
+});
+
+// the server cannot know a client's viewport or font metrics, so the
+// block carries tabindex unconditionally; it only proves anything when the
+// fixture's longest line really does overflow
+test("the source block is a focusable scroll region on the widest path", async (t) => {
+  for (const path of renderPaths) {
+    const { results } = await fetched("/blob", path.colorScheme);
+    const focusable = results.passes.find(
+      (rule) => rule.id === "scrollable-region-focusable",
+    );
+
+    assert.ok(
+      focusable && focusable.nodes.length > 0,
+      `scrollable-region-focusable evaluated nothing on the ${path.name} blob page, so the fixture's longest line no longer overflows`,
+    );
+    t.diagnostic(`${path.name}: ${focusable.nodes.length} scroll region`);
+  }
+
+  const page = await (await browser()).newPage();
+
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${site.origin}/blob`);
+
+    const overflow = await page.locator("pre.src").evaluate((node) => ({
+      scroll: node.scrollWidth,
+      client: node.clientWidth,
+      tabindex: node.getAttribute("tabindex"),
+      role: node.getAttribute("role"),
+    }));
+
+    assert.ok(
+      overflow.scroll > overflow.client,
+      `the block scrolls to ${overflow.scroll} inside ${overflow.client} at 1440px, so nothing overflows`,
+    );
+    assert.strictEqual(overflow.tabindex, "0");
+    assert.strictEqual(overflow.role, "region");
+  } finally {
+    await page.close();
+  }
+});
+
+// 1.4.10 asks for 320 CSS px with nothing lost and nothing scrolled in two
+// directions, which axe cannot see: it reads the DOM, not the layout
+test("a long path reflows at 320px rather than scrolling the page", async (t) => {
+  const page = await (await browser()).newPage();
+  const viewport = 320;
+
+  try {
+    await page.setViewportSize({ width: viewport, height: 900 });
+    const overflowing: string[] = [];
+
+    for (const { path, selector } of reflowCases) {
+      await page.goto(`${site.origin}${path}`);
+      await page.evaluate(() => document.fonts.ready);
+
+      const carrier = await page
+        .locator(selector)
+        .first()
+        .evaluate((node) => ({
+          scroll: node.scrollWidth,
+          client: node.clientWidth,
+        }));
+
+      const sideways = await page
+        .locator("html")
+        .evaluate((node) => node.scrollWidth);
+
+      if (carrier.scroll > carrier.client) {
+        overflowing.push(
+          `${selector} on ${path} wants ${carrier.scroll}px inside ${carrier.client}px, so the path never breaks`,
+        );
+      }
+
+      if (sideways > viewport) {
+        overflowing.push(
+          `${path} scrolls to ${sideways}px inside a ${viewport}px viewport`,
+        );
+      }
+
+      t.diagnostic(
+        `${path} ${selector}: ${carrier.scroll} in ${carrier.client}`,
+      );
+    }
+
+    assert.deepStrictEqual(overflowing, [], overflowing.join("\n"));
+  } finally {
+    await page.close();
+  }
+});
+
+// LAYOUT §02's rule is split by column: a name is the link text and cannot
+// lose characters, a subject is metadata and can; the header cell carries
+// its own nowrap, so this reads a tbody cell's child
+test("the name wraps and the subject ellipses", async () => {
+  const page = await (await browser()).newPage();
+
+  try {
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto(`${site.origin}/show-all`);
+
+    const name = await page
+      .locator(".tree tbody .row:not(.is-sub) .name > *")
+      .first()
+      .evaluate((node) => ({
+        wrap: getComputedStyle(node).whiteSpace,
+        clipped: getComputedStyle(node).textOverflow,
+        anywhere: getComputedStyle(node).overflowWrap,
+      }));
+
+    assert.strictEqual(name.wrap, "normal", "the name still refuses to wrap");
+    assert.strictEqual(name.clipped, "clip", "the name still ellipses");
+    assert.strictEqual(
+      name.anywhere,
+      "anywhere",
+      "nothing breaks a name with no space in it, so a long one overflows",
+    );
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const subject = await page
+      .locator(".tree tbody .row:not(.is-sub) .msg > *")
+      .first()
+      .evaluate((node) => ({
+        wrap: getComputedStyle(node).whiteSpace,
+        clipped: getComputedStyle(node).textOverflow,
+      }));
+
+    assert.strictEqual(subject.wrap, "nowrap");
+    assert.strictEqual(subject.clipped, "ellipsis");
+  } finally {
+    await page.close();
+  }
+});
+
+// a token reads back as the hex the sheet declares; a background reads
+// back as the rgb the browser resolved it to
+function rgb(token: string): string {
+  const hex = token.trim().replace("#", "");
+  const channels = [0, 2, 4].map((at) =>
+    Number.parseInt(hex.slice(at, at + 2), 16),
+  );
+
+  return `rgb(${channels.join(", ")})`;
+}
+
+// the name is the tree row's only link, so the wash is on the name cell:
+// hovering the cell washes it and hovering the row's plain text doesn't
+test("the tree row's link fills its cell and the wash stops there", async (t) => {
+  const page = await (await browser()).newPage();
+
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${site.origin}/show`);
+
+    const cell = page.locator(".tree tbody .row:not(.is-sub) .name").first();
+    const filled = await cell.evaluate((node) => {
+      const link = node.firstElementChild as HTMLElement;
+      return {
+        tag: link.tagName,
+        display: getComputedStyle(link).display,
+        covers:
+          link.getBoundingClientRect().width /
+          node.getBoundingClientRect().width,
+        cells: node.parentElement?.children.length ?? 0,
+      };
+    });
+
+    assert.strictEqual(filled.tag, "A", "a linking row isn't an anchor");
+    assert.strictEqual(
+      filled.display,
+      "block",
+      "the name link isn't a block, so it no longer fills its own cell",
+    );
+    assert.ok(
+      filled.covers > 0.99,
+      `the name link covers ${filled.covers.toFixed(2)} of its cell`,
+    );
+    assert.strictEqual(
+      filled.cells,
+      3,
+      `the tree row lays out ${filled.cells} cells, so a column collapsed`,
+    );
+
+    const sunk = rgb(
+      await cell.evaluate((node) =>
+        getComputedStyle(node).getPropertyValue("--sunk"),
+      ),
+    );
+    const subject = page.locator(".tree tbody .row:not(.is-sub) .msg").first();
+    const read = () =>
+      cell.evaluate((node) => getComputedStyle(node).backgroundColor);
+
+    const rest = await read();
+    await cell.hover();
+    const washed = await read();
+
+    assert.strictEqual(washed, sunk, "the hover wash isn't --sunk");
+    assert.notStrictEqual(
+      washed,
+      rest,
+      "hovering the name cell changed nothing, so the wash is switched off",
+    );
+
+    await subject.hover();
+    assert.strictEqual(
+      await read(),
+      rest,
+      "hovering the subject washes the name, so the wash outruns the link",
+    );
+    t.diagnostic(`tree row cells: ${filled.cells}, name-cell wash ${washed}`);
+  } finally {
+    await page.close();
+  }
+});
+
+// a submodule offers nothing, so its name takes no wash and no link
+test("a gitlink row is inert", async () => {
+  const page = await (await browser()).newPage();
+
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${site.origin}/tree-sub`);
+
+    const row = page.locator(".tree tbody .is-sub").first();
+    const cell = row.locator(".name");
+    const inert = await row.evaluate((node) => ({
+      tag: (node.querySelector(".name")?.firstElementChild ?? node).tagName,
+      links: node.querySelectorAll("a").length,
+    }));
+
+    assert.strictEqual(inert.tag, "SPAN", "a gitlink row grew a link");
+    assert.strictEqual(inert.links, 0, "a gitlink row links somewhere");
+
+    const rest = await cell.evaluate(
+      (node) => getComputedStyle(node).backgroundColor,
+    );
+    await cell.hover();
+    const washed = await cell.evaluate(
+      (node) => getComputedStyle(node).backgroundColor,
+    );
+
+    assert.strictEqual(
+      washed,
+      rest,
+      "a gitlink name washes on hover, so it offers a target it doesn't have",
+    );
+  } finally {
+    await page.close();
+  }
+});
+
+const tableWidths = [320, narrowWidth, wideWidth];
+const tablePaths = ["/populated", "/tree", "/commits", "/branches", "/commit"];
+const tableColumns: Record<number, number> = { 320: 12, 375: 12, 1440: 14 };
+
+test("every column header is legible at every width", async (t) => {
+  const page = await (await browser()).newPage();
+
+  try {
+    for (const width of tableWidths) {
+      await page.setViewportSize({ width, height: 900 });
+      let counted = 0;
+
+      for (const path of tablePaths) {
+        await page.goto(`${site.origin}${path}`);
+        await page.evaluate(() => document.fonts.ready);
+
+        const columns = await page
+          .locator(".tbl thead")
+          .first()
+          .evaluate((head) =>
+            [...head.querySelectorAll("th")]
+              .filter((cell) => cell.getClientRects().length > 0)
+              .map((cell) => ({
+                label: (cell.textContent ?? "").trim(),
+                scroll: cell.scrollWidth,
+                client: cell.clientWidth,
+              })),
+          );
+
+        for (const column of columns) {
+          assert.ok(
+            column.label.length > 0,
+            `${path} at ${width}px leaves a column unnamed`,
+          );
+          assert.ok(
+            column.scroll <= column.client,
+            `${path} at ${width}px cuts ${column.label} to ${column.client}px of the ${column.scroll}px it needs`,
+          );
+        }
+
+        counted += columns.length;
+      }
+
+      const wanted = tableColumns[width] as number;
+
+      assert.strictEqual(
+        counted,
+        wanted,
+        `${width}px lays out ${counted} column headers, not the ${wanted} the five tables carry there`,
+      );
+      t.diagnostic(`${width}px: ${counted} column headers whole`);
+    }
+  } finally {
+    await page.close();
+  }
+});
+
+const rowSamples = 40;
+
+async function rowTargets(
+  page: Page,
+  path: string,
+  width: number,
+): Promise<{
+  width: number;
+  covered: number;
+  foreign: number;
+  inside: number;
+  touching: number;
+  targets: number;
+}> {
+  await page.setViewportSize({ width, height: 900 });
+  await page.goto(`${site.origin}${path}`);
+  await page.evaluate(() => document.fonts.ready);
+
+  return page
+    .locator(".tbl tbody tr")
+    .first()
+    .evaluate((row, samples) => {
+      const box = row.getBoundingClientRect();
+      const middle = box.top + box.height / 2;
+      const boxes = [...row.querySelectorAll("a")].map((link) =>
+        link.getBoundingClientRect(),
+      );
+
+      // a sample landing w/in a pixel of a link's edge can round either
+      // way, so the boxes are counted twice (inset + outset) and the hits
+      // are bracketed
+      const within = (across: number, slack: number): boolean =>
+        boxes.some(
+          (one) => across >= one.left - slack && across < one.right + slack,
+        );
+
+      const hit: Element[] = [];
+      let foreign = 0;
+      let inside = 0;
+      let touching = 0;
+
+      for (let step = 0; step < samples; step += 1) {
+        const across = box.left + (box.width * (step + 0.5)) / samples;
+        if (within(across, -1)) inside += 1;
+        if (within(across, 1)) touching += 1;
+
+        const link = row.ownerDocument
+          .elementFromPoint(across, middle)
+          ?.closest("a");
+        if (!link) continue;
+
+        hit.push(link);
+        if (!row.contains(link)) foreign += 1;
+      }
+
+      return {
+        width: Math.round(box.width),
+        covered: hit.length,
+        foreign,
+        inside,
+        touching,
+        targets: new Set(hit).size,
+      };
+    }, rowSamples);
+}
+
+test("a row's targets reach exactly as far as its own links do", async (t) => {
+  const page = await (await browser()).newPage();
+
+  try {
+    for (const width of tableWidths) {
+      for (const [path, wanted] of [
+        ["/tree", 1],
+        ["/populated", 1],
+        ["/commit", 1],
+        ["/commits", 3],
+        ["/branches", 3],
+      ] as const) {
+        const read = await rowTargets(page, path, width);
+
+        assert.strictEqual(
+          read.foreign,
+          0,
+          `${path} at ${width}px lands on a link outside its own row at ${read.foreign} of ${rowSamples} points`,
+        );
+        assert.ok(
+          read.covered >= read.inside,
+          `${path} at ${width}px lays out ${read.inside} of ${rowSamples} points inside a link box but only ${read.covered} land on one, so something covers its own link`,
+        );
+        assert.ok(
+          read.covered <= read.touching,
+          `${path} at ${width}px leads somewhere at ${read.covered} of ${rowSamples} points, past the ${read.touching} its links occupy; a target is stretched beyond its own box`,
+        );
+        assert.strictEqual(
+          read.targets,
+          wanted,
+          `${path} at ${width}px covers its row with ${read.targets} target(s), wanted ${wanted}`,
+        );
+
+        const share = ((read.covered / rowSamples) * 100).toFixed(0);
+        t.diagnostic(
+          `${path} at ${width}px: ${read.width}px row, ${read.targets} target(s) over ${share}%`,
+        );
+      }
+    }
+  } finally {
+    await page.close();
+  }
 });
 
 test("a rendered README table exercises the table rules", async (t) => {
@@ -623,9 +1352,6 @@ test("axe reports a planted accessible name mismatch", async () => {
   );
 });
 
-// each plant is only a failure under the scheme that selects its block,
-// so asserting the other scheme stays clean is what pins colorScheme as a
-// live input: hardcode the loop to one value and this half stops holding
 test("axe reads the gallery's own stylesheet, in both palettes", async () => {
   const planted = [
     {
@@ -664,15 +1390,12 @@ test("axe reads the gallery's own stylesheet, in both palettes", async () => {
     assert.deepStrictEqual(
       clear.results.violations.map((rule) => rule.id),
       [],
-      `the ${palette} plant also failed under colorScheme ${other}, so the two paths are not selecting different blocks and the loop's scheme is doing nothing`,
+      `the ${palette} plant also failed under colorScheme ${other}, so the two paths aren't selecting different blocks`,
     );
   }
 });
 
-// the font assertion above every audit is only worth its runtime if it
-// fails on the document that lost its stylesheet, which is the shape
-// page.setContent produced for every gallery audit before this wave
-test("the font check bites on a document with no stylesheet", async () => {
+test("the font check rejects a document with no stylesheet", async () => {
   fixtures["/no-stylesheet"] = galleryDocument("/absent.css");
 
   await assert.rejects(

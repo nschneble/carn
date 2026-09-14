@@ -1,0 +1,8 @@
+{
+  "action": "gantry-tree-gitlink",
+  "steps": [
+    { "kind": "navigate", "path": "/r/gantry" },
+    { "kind": "click", "hint": { "role": "link", "text": "vendor/" } }
+  ],
+  "expect": { "anyOf": [{ "text": "Submodule pinned at" }] }
+}

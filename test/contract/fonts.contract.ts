@@ -152,7 +152,7 @@ test("each face names its source family and version in the description", () => {
   }
 });
 
-test("the display face keeps its six clamped instances, the mono faces none", () => {
+test("the display face keeps its six clamped instances", () => {
   for (const entry of shipped) {
     const parsed = face(entry.file);
     if (!entry.variable) {

@@ -1,0 +1,9 @@
+{
+  "action": "gantry-blob-binary",
+  "steps": [
+    { "kind": "navigate", "path": "/r/gantry" },
+    { "kind": "click", "hint": { "role": "link", "text": "assets/" } },
+    { "kind": "click", "hint": { "role": "link", "text": "small.bin" } }
+  ],
+  "expect": { "anyOf": [{ "text": "Binary file, 512 B. Not shown here." }] }
+}

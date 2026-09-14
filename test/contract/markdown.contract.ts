@@ -10,6 +10,7 @@ import MarkdownIt from "markdown-it";
 import { buildApp } from "../../src/app.js";
 import { html, type Raw } from "../../src/html/index.js";
 import { renderMarkdown } from "../../src/markdown/render.js";
+import { validPath } from "../../src/repos/blob-view.js";
 import {
   type Interpolation,
   lineOf,
@@ -21,9 +22,13 @@ import {
   templateSources,
 } from "../support/html-position.js";
 
-const fixture = "test/fixtures/markdown-raw-position.ts.fixture";
+// the base every render below resolves relative destinations against
+const base = { repo: "carn", rev: "main" };
 
+const fixture = "test/fixtures/markdown-raw-position.ts.fixture";
 const stock = new MarkdownIt("commonmark", { html: false }).enable("table");
+const passedThrough = ["#section", "?ref=main", "/r/carn/tags"];
+const bearsMarkdown = /\braw\(|\brenderMarkdown\(/;
 
 const allowedSchemes = [
   "https://example.com/a",
@@ -34,8 +39,6 @@ const allowedSchemes = [
   "data:image/jpeg;base64,AAA",
   "data:image/webp;base64,AAA",
 ];
-
-const allowedWithoutScheme = ["docs/BRAND.md", "#section", "?ref=main"];
 
 const deniedSchemes = [
   "javascript:alert(1)",
@@ -50,14 +53,24 @@ const deniedSchemes = [
   "//example.com/x",
 ];
 
-const bearsMarkdown = /\braw\(|\brenderMarkdown\(/;
+function render(source: string): string {
+  return renderMarkdown(source, base).value;
+}
 
 function link(destination: string): string {
-  return renderMarkdown(`[x](${destination})`).value;
+  return render(`[x](${destination})`);
+}
+
+function image(destination: string): string {
+  return render(`![a](${destination})`);
 }
 
 function href(markup: string): string | null {
   return /<a href="([^"]*)"/.exec(markup)?.[1] ?? null;
+}
+
+function src(markup: string): string | null {
+  return /<img src="([^"]*)"/.exec(markup)?.[1] ?? null;
 }
 
 function rel(markup: string): string | null {
@@ -89,8 +102,7 @@ function misplaced(source: string): Interpolation[] {
 }
 
 test("the configuration is commonmark with html off", () => {
-  const out = renderMarkdown("<b>bold</b> & <i>italic</i>\n").value;
-
+  const out = render("<b>bold</b> & <i>italic</i>\n");
   assert.strictEqual(
     out,
     "<p>&lt;b&gt;bold&lt;/b&gt; &amp; &lt;i&gt;italic&lt;/i&gt;</p>\n",
@@ -98,14 +110,14 @@ test("the configuration is commonmark with html off", () => {
 });
 
 test("table is enabled and nothing else beyond commonmark is", () => {
-  const table = renderMarkdown("| a | b |\n| --- | --- |\n| 1 | 2 |\n").value;
+  const table = render("| a | b |\n| --- | --- |\n| 1 | 2 |\n");
   assert.ok(table.startsWith("<table>"), table);
   assert.ok(table.includes("<th>a</th>"), table);
 
-  const off = renderMarkdown("~~struck~~ and http://bare.example/x\n").value;
+  const off = render("~~struck~~ and http://bare.example/x\n");
   assert.strictEqual(off, "<p>~~struck~~ and http://bare.example/x</p>\n");
 
-  const fenced = renderMarkdown("```js\nconst a = 1;\n```\n").value;
+  const fenced = render("```js\nconst a = 1;\n```\n");
   assert.ok(fenced.includes('<code class="language-js">'), fenced);
 });
 
@@ -113,28 +125,131 @@ test("the allowlist denies a scheme markdown-it's own default allows", () => {
   const ours = link("ftp://example.com/f");
   const theirs = stock.render("[x](ftp://example.com/f)");
 
+  assert.strictEqual(href(ours), null, ours);
+  assert.strictEqual(ours, "<p>[x](ftp://example.com/f)</p>\n");
   assert.strictEqual(
     href(theirs),
     "ftp://example.com/f",
     "the stock instance stopped allowing ftp:, so it no longer discriminates between the default blocklist and the allowlist — find another scheme the default allows",
   );
-  assert.strictEqual(href(ours), null, ours);
-  assert.strictEqual(ours, "<p>[x](ftp://example.com/f)</p>\n");
 });
 
 test("a javascript: payload alone cannot prove the allowlist", () => {
+  assert.strictEqual(href(link("javascript:alert(1)")), null);
   assert.strictEqual(
     href(stock.render("[x](javascript:alert(1))")),
     null,
     "markdown-it's default validateLink is a four-scheme blocklist and already rejects javascript:, which is why the ftp: comparison above is the test that can fail",
   );
-  assert.strictEqual(href(link("javascript:alert(1)")), null);
 });
 
 test("every allowed destination renders a working link", () => {
-  for (const destination of [...allowedSchemes, ...allowedWithoutScheme]) {
+  for (const destination of [...allowedSchemes, ...passedThrough]) {
     assert.strictEqual(href(link(destination)), destination, destination);
   }
+});
+
+test("a relative link reaches the blob route and a relative image the asset route", () => {
+  assert.strictEqual(
+    href(link("docs/BRAND.md")),
+    "/r/carn/blob/main/docs/BRAND.md",
+  );
+  assert.strictEqual(
+    src(image("docs/arch.png")),
+    "/r/carn/asset/main/docs/arch.png",
+  );
+  assert.strictEqual(
+    href(link("docs/BRAND.md#tokens")),
+    "/r/carn/blob/main/docs/BRAND.md#tokens",
+  );
+});
+
+// the rewrite asks git nothing, so a base naming a repo and a rev that do
+// not exist rewrites exactly as one naming a repo and a rev that do
+test("a destination that resolves to nothing is still rewritten", () => {
+  const nowhere = { repo: "no-such-repo", rev: "no-such-ref" };
+  const out = renderMarkdown(
+    "[x](docs/gone.md) ![a](docs/gone.png)",
+    nowhere,
+  ).value;
+
+  assert.strictEqual(
+    href(out),
+    "/r/no-such-repo/blob/no-such-ref/docs/gone.md",
+  );
+  assert.strictEqual(
+    src(out),
+    "/r/no-such-repo/asset/no-such-ref/docs/gone.png",
+  );
+});
+
+test("an absolute destination is left exactly as it was", () => {
+  for (const destination of allowedSchemes) {
+    assert.strictEqual(href(link(destination)), destination, destination);
+  }
+
+  assert.strictEqual(
+    image("https://example.com/x.png"),
+    '<p><img src="https://example.com/x.png" alt="a" /></p>\n',
+  );
+  assert.strictEqual(
+    image("data:image/gif;base64,AAA"),
+    '<p><img src="data:image/gif;base64,AAA" alt="a" /></p>\n',
+  );
+});
+
+test("an anchor, a query, or a root-relative path isn't treated as a path", () => {
+  for (const destination of passedThrough) {
+    assert.strictEqual(href(link(destination)), destination, destination);
+    assert.strictEqual(src(image(destination)), destination, destination);
+  }
+});
+
+// validPath refuses a . segment, so leaving the ./ on would 404 a file
+// that is there, which isn't the miss the rewrite is allowed to accept
+test("a leading ./ goes, because the blob route would refuse it", () => {
+  assert.strictEqual(validPath("docs/x.md"), true);
+  assert.strictEqual(validPath("./docs/x.md"), false);
+  assert.strictEqual(href(link("./docs/x.md")), "/r/carn/blob/main/docs/x.md");
+  assert.strictEqual(
+    src(image("./docs/x.png")),
+    "/r/carn/asset/main/docs/x.png",
+  );
+});
+
+test("a rev carrying a slash stays one path segment", () => {
+  const out = renderMarkdown("[x](docs/x.md)", {
+    repo: "carn",
+    rev: "feature/x",
+  }).value;
+
+  assert.strictEqual(href(out), "/r/carn/blob/feature%2Fx/docs/x.md");
+});
+
+// markdown-it normalizes the destination before validateLink sees it, so
+// re-encoding here would turn %20 into %2520
+test("an already-encoded destination isn't encoded twice", () => {
+  assert.strictEqual(
+    href(link("docs/two%20words.md")),
+    "/r/carn/blob/main/docs/two%20words.md",
+  );
+  assert.strictEqual(
+    href(link("<docs/two words.md>")),
+    "/r/carn/blob/main/docs/two%20words.md",
+  );
+});
+
+test("the image rewrite renders through markdown-it's own image rule", () => {
+  assert.notStrictEqual(
+    stock.renderer.rules.image,
+    undefined,
+    "markdown-it dropped its default image rule, so the renderToken fallback is now the branch that runs — re-derive which one does before trusting the alt text below",
+  );
+
+  assert.strictEqual(
+    image("docs/arch.png"),
+    '<p><img src="/r/carn/asset/main/docs/arch.png" alt="a" /></p>\n',
+  );
 });
 
 test("every denied destination renders no link at all", () => {
@@ -146,26 +261,26 @@ test("every denied destination renders no link at all", () => {
 });
 
 test("an image destination is held to the same allowlist", () => {
-  const png = renderMarkdown("![a](data:image/png;base64,AAA)").value;
-  const svg = renderMarkdown("![a](data:image/svg+xml;base64,AAA)").value;
+  const png = image("data:image/png;base64,AAA");
+  const svg = image("data:image/svg+xml;base64,AAA");
 
+  assert.strictEqual(svg, "<p>![a](data:image/svg+xml;base64,AAA)</p>\n");
   assert.strictEqual(
     png,
     '<p><img src="data:image/png;base64,AAA" alt="a" /></p>\n',
   );
-  assert.strictEqual(svg, "<p>![a](data:image/svg+xml;base64,AAA)</p>\n");
 });
 
 test("an external link carries the rel, in all three link forms", () => {
   for (const [form, source] of externalForms) {
-    const out = renderMarkdown(source).value;
+    const out = render(source);
     assert.strictEqual(rel(out), "nofollow ugc", `${form}: ${out}`);
   }
 });
 
-test("a link that is not external carries no rel at all", () => {
+test("a link that isn't external carries no rel at all", () => {
   for (const [form, source] of localForms) {
-    const out = renderMarkdown(source).value;
+    const out = render(source);
 
     assert.ok(out.includes("<a href="), `${form} rendered no link: ${out}`);
     assert.strictEqual(rel(out), null, `${form}: ${out}`);
@@ -180,8 +295,7 @@ test("the rel rule renders through a fallback, keeping other attributes", () => 
     "link_open gained a default rule, so the renderToken fallback is no longer the branch that runs — re-derive which one does before trusting the rel rule",
   );
 
-  const titled = renderMarkdown('[x](https://example.com/a "t")').value;
-
+  const titled = render('[x](https://example.com/a "t")');
   assert.strictEqual(
     titled,
     '<p><a href="https://example.com/a" title="t" rel="nofollow ugc">x</a></p>\n',
@@ -189,8 +303,7 @@ test("the rel rule renders through a fallback, keeping other attributes", () => 
 });
 
 test("a remote image survives the markdown layer for CSP to stop", async () => {
-  const out = renderMarkdown("![a](https://example.com/x.png)").value;
-
+  const out = image("https://example.com/x.png");
   assert.strictEqual(
     out,
     '<p><img src="https://example.com/x.png" alt="a" /></p>\n',
@@ -202,7 +315,7 @@ test("a remote image survives the markdown layer for CSP to stop", async () => {
 
   assert.strictEqual(
     response.headers["content-security-policy"],
-    "default-src 'none'; img-src 'self' data:; style-src 'self'; font-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+    "base-uri 'none'; default-src 'none'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self';",
   );
 });
 
@@ -215,16 +328,14 @@ test("the data-image branch is anchored to the start of the url", () => {
 
   for (const destination of evasions) {
     const out = link(destination);
-    const image = renderMarkdown(`![a](${destination})`).value;
-
+    const shown = image(destination);
     assert.strictEqual(href(out), null, out);
-    assert.ok(!image.includes("<img"), image);
+    assert.ok(!shown.includes("<img"), shown);
   }
 });
 
 test("an entity-encoded scheme is decoded before the allowlist sees it", () => {
   const encoded = link("java&#115;cript:alert(1)");
-
   assert.strictEqual(href(encoded), null, encoded);
   assert.strictEqual(encoded, "<p>[x](javascript:alert(1))</p>\n");
 });
@@ -241,8 +352,7 @@ test("a readme carrying three payloads renders inert", () => {
     "",
   ].join("\n");
 
-  const out = renderMarkdown(readme).value;
-
+  const out = render(readme);
   assert.strictEqual(
     out,
     [
@@ -261,9 +371,8 @@ test("a readme carrying three payloads renders inert", () => {
 });
 
 test("the rendered fragment is text, and the html tag leaves it alone", () => {
-  const rendered = renderMarkdown("*hi* & <b>x</b>\n");
+  const rendered = renderMarkdown("*hi* & <b>x</b>\n", base);
   const page = html`<article>${rendered}</article>`.value;
-
   assert.strictEqual(
     page,
     "<article><p><em>hi</em> &amp; &lt;b&gt;x&lt;/b&gt;</p>\n</article>",
@@ -283,7 +392,6 @@ test("rendered markdown outside text position is a violation", () => {
 
   for (const [markup, position] of planted) {
     const source = template(markup);
-
     assert.deepStrictEqual(
       misplaced(source).map((found) => found.position),
       [position],
@@ -294,18 +402,18 @@ test("rendered markdown outside text position is a violation", () => {
 
 test("rendered markdown in an attribute is refused at render time", () => {
   const readme = "# hi\n";
-  const value = renderMarkdown(readme);
+  const value = renderMarkdown(readme, base);
   const aliased = renderMarkdown;
 
   function readmeBody(source: string): Raw {
-    return renderMarkdown(source);
+    return renderMarkdown(source, base);
   }
 
   const shapes: [string, unknown][] = [
-    ["direct", renderMarkdown(readme)],
+    ["direct", renderMarkdown(readme, base)],
     ["intermediate const", value],
-    ["aliased function", aliased(readme)],
-    ["point-free map", [readme].map(aliased)],
+    ["aliased function", aliased(readme, base)],
+    ["mapped", [readme].map((source) => aliased(source, base))],
     ["wrapper component", readmeBody(readme)],
   ];
 
@@ -336,7 +444,6 @@ test("the lexical scan sees only the shape written literally", () => {
 
 test("the planted fixture is caught", () => {
   const source = readFileSync(join(root, fixture), "utf8");
-
   assert.deepStrictEqual(
     misplaced(source).map((found) => found.position),
     ["doubleQuoted", "singleQuoted", "beforeAttrValue"],

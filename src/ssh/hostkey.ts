@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// ssh2 parses OpenSSH, PEM, and PuTTY private keys, but not PKCS#8
-// node:crypto emits for ed25519, so the OpenSSH container below is built
-// by hand from the raw seed and public key
+// ssh2 parses OpenSSH, PEM, and PuTTY private keys, but not PKCS#8;
+// node:crypto emits for ed25519, so the OpenSSH container is built by hand
+// from the raw seed and public key
 
 import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -30,7 +30,7 @@ function generateKey(): string {
   const publicKey = Buffer.from(jwk.x ?? "", "base64url");
 
   if (seed.length !== 32 || publicKey.length !== 32) {
-    throw new Error("The generated ed25519 key is not two 32-byte halves.");
+    throw new Error("The generated ed25519 key isn't two 32-byte halves.");
   }
 
   const check = randomBytes(4);

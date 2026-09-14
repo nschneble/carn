@@ -12,7 +12,7 @@ import { type Browser, chromium } from "playwright";
 import { html } from "../../src/html/index.js";
 import { page } from "../../src/html/page.js";
 import { styleHref, stylesheet } from "../../src/html/styles.js";
-import { wordmark } from "../../src/repos/wordmark.js";
+import { wordmark } from "../../src/html/wordmark.js";
 import { indexDocument } from "../gallery/repo-index.js";
 import { type Served, serve } from "../support/serve.js";
 
@@ -150,8 +150,13 @@ test("the stylesheet arrives as a route and applies under the real CSP", async (
     String(state.sheets[0]).endsWith(styleHref),
     `the only stylesheet is ${state.sheets[0]}, not the served route`,
   );
-  assert.match(state.fontFamily, /^"Carn Mono"/);
-  assert.strictEqual(state.fontSize, "11px");
+  assert.match(state.fontFamily, /^"Carn Sans"/);
+  const size = Number.parseFloat(state.fontSize);
+  assert.ok(
+    size >= 16.8 && size <= 22.72,
+    // .t-item's clamp(1.05rem, 2.5vw, 1.42rem) at a 16px root
+    `h1 font-size ${state.fontSize} is outside .t-item's clamp range`,
+  );
 });
 
 // axe misses it: the UA blue differs from the ink, so the rule passes
@@ -181,7 +186,7 @@ test("the footer's source link takes the accent and keeps its underline", async 
     assert.strictEqual(
       link.color,
       `rgb(${Number.parseInt(red, 16)}, ${Number.parseInt(green as string, 16)}, ${Number.parseInt(blue as string, 16)})`,
-      `the ${theme} source link is not --accent-text, so prose links sit at the browser's own blue`,
+      `the ${theme} source link isn't --accent-text, so prose links sit at the browser's own blue`,
     );
     assert.strictEqual(
       link.decoration,
@@ -246,17 +251,17 @@ test("the harness bites: the pre-fix document loses all three inline styles", as
 
   assert.ok(
     refused.length >= 1,
-    "a document carrying a <style> block and a style attribute drew no CSP refusal, so the fixture server is not sending the header",
+    "a document carrying a <style> block and a style attribute drew no CSP refusal, so the fixture server isn't sending the header",
   );
   assert.strictEqual(
     dropped.sheets,
     1,
-    "the inline <style> block loaded, so style-src is not what it was measured to be",
+    "the inline <style> block loaded, so style-src isn't what it was measured to be",
   );
   assert.notStrictEqual(
     dropped.heading,
     "rgb(4, 5, 6)",
-    "the style attribute applied, so style-src is not what it was measured to be",
+    "the style attribute applied, so style-src isn't what it was measured to be",
   );
   assert.strictEqual(
     measured.generated,

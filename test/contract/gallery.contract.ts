@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// the axe suite audits the gallery, so a primitive missing from the
-// gallery is a primitive nothing audits
+// the axe suite audits the gallery
 
 import assert from "node:assert";
 import { test } from "node:test";
@@ -19,9 +18,12 @@ test("the gallery exercises every primitive and every state", () => {
     'aria-describedby="merge-reason"',
     'class="chip"',
     'class="chip chip--current"',
+    'class="tbl tree"',
+    '<caption class="vh">Files</caption>',
     'class="row is-dir"',
     'class="row is-dir is-hover"',
-    'class="nm t-item" lang="en"',
+    'class="name" scope="row"',
+    'class="t-item" lang="en"',
     'class="msg"',
     'class="age"',
     'class="box"',
@@ -35,6 +37,7 @@ test("the gallery exercises every primitive and every state", () => {
     'class="skip"',
     'class="vh"',
     'id="main" tabindex="-1"',
+    'class="caps"',
     'class="sc"',
     'aria-hidden="true"',
   ]) {
@@ -65,9 +68,9 @@ test("the gallery exercises every primitive and every state", () => {
 test("a directory's trailing slash is real text, and small caps are unspaced", () => {
   const document = galleryDocument();
 
-  assert.ok(document.includes('<span class="sc">docs</span>/</a>'));
+  assert.ok(document.includes('<span class="caps">docs</span>/</a>'));
   assert.doesNotMatch(document, /content:\s*"\//);
-  assert.doesNotMatch(document, /<\/span>\s*\n\s*<span class="sc">/);
+  assert.doesNotMatch(document, /\s<span class="sc">/);
   assert.doesNotMatch(document, /<span class="sc"[^>]*aria-label/);
 });
 

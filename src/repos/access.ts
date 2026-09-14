@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// who may write to a repo. three ways in, checked cheapest first: the owner
-// needs no query at all, and admin and grant are one round trip together.
-// the policy lives here rather than at the call site so the ssh path and
-// whatever asks next give the same answer
+// determines who has repo write access, starting with owners and then
+// onto admins and grants
 
 import { db } from "../db.js";
 import type { ResolvedRepo } from "./resolve.js";
 
-// the levels that carry write. `read` exists in the enum's future, not here
 const writeLevels = ["admin", "write"] as const;
 
 export type AccessStore = {
@@ -29,8 +26,7 @@ export const accessStore: AccessStore = {
       },
     });
 
-    // a userId with no row is an authenticated session whose user was
-    // deleted mid-connection; absence is a refusal, not an error
+    // no row means the user was deleted mid-connection: always refuse
     return user?.isAdmin === true || (user?.grants.length ?? 0) > 0;
   },
 };
@@ -40,9 +36,6 @@ export async function mayWrite(
   userId: string,
   store: AccessStore = accessStore,
 ): Promise<boolean> {
-  if (repo.ownerId === userId) {
-    return true;
-  }
-
+  if (repo.ownerId === userId) return true;
   return store.isAdminOrGranted(userId, repo.id);
 }
