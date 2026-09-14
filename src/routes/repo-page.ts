@@ -43,6 +43,7 @@ import { revalidate, sendPage, sendStatus } from "./cache.js";
 
 type PageRoute = { Params: { repo: string }; Querystring: { all?: string } };
 type RefRoute = { Params: { repo: string } };
+type TreeRefRoute = { Params: { repo: string; rev: string } };
 type AssetRoute = { Params: { repo: string; asset: string } };
 type BlobRoute = { Params: { repo: string; rev: string; "*": string } };
 type CommitRoute = { Params: { repo: string; sha: string } };
@@ -211,8 +212,7 @@ async function showBlob(
   }
 }
 
-// /r/:repo is the root tree, so a bare ref names nothing below it and
-// settles on the url alone, for every ref, before any lookup
+// /r/:repo is the root tree: a bare ref names nothing, so no lookup
 function toRepoRoot(
   request: FastifyRequest<{ Params: { repo: string } }>,
   reply: FastifyReply,
@@ -455,9 +455,8 @@ export function repoPageRoutes(app: FastifyInstance): void {
   app.get<BlobRoute>("/r/:repo/asset/:rev/*", serveAsset);
   app.get<BlobRoute>("/r/:repo/blob/:rev/*", showBlob);
   app.get<TreeRoute>("/r/:repo/tree/:rev/*", showTree);
-  // the wildcard route misses the no-slash spelling, which is the one a
-  // person types; ignoreTrailingSlash would alias every route in the app
-  app.get<RefRoute>("/r/:repo/tree/:rev", toRepoRoot);
+  // ignoreTrailingSlash would alias every route in the app, not just this
+  app.get<TreeRefRoute>("/r/:repo/tree/:rev", toRepoRoot);
   app.get<LogRoute>("/r/:repo/commits", showCommits);
   app.get<ChangeRoute>("/r/:repo/commits/:sha/*", showCommit);
   app.get<CommitRoute>("/r/:repo/commits/:sha", showCommit);

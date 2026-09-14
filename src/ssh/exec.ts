@@ -15,8 +15,7 @@ import {
 
 // git sq-quotes the path, escaping ' and ! which names can't hold
 const commandPattern = /^git-(receive|upload)-pack '([^']*)'$/;
-// its own anchors, never an alternation inside the pattern above: that one
-// is what stops an authenticated key running arbitrary commands
+// separately anchored: the pattern above is a security boundary
 const renamePattern = /^carn repo rename (\S+) (\S+)$/;
 const timeoutMs = 600_000;
 
@@ -119,8 +118,7 @@ async function resolveTarget(
   return lookup.repo;
 }
 
-// both names clear namePattern before anything queries, and the unique
-// index is on lower(name), so a case change of one row isn't a collision
+// the unique index is on lower(name), so a case change isn't a collision
 async function renameTarget(
   request: ExecRequest,
   parsed: ParsedRename,
@@ -194,7 +192,6 @@ export async function serve(
   finish(channel, result.code ?? 1);
 }
 
-// two anchored patterns, dispatched on whichever one matched
 export async function handleExec(request: ExecRequest): Promise<void> {
   const parsed = parseCommand(request.command);
   if (parsed !== null) {

@@ -7,9 +7,9 @@ import { db } from "../db.js";
 
 export const namePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$/;
 
-// git urls carry a leading slash and a .git suffix; names don't
+// git urls carry a leading slash and .git suffixes; names carry none
 export function normalizeRepoName(target: string): string {
-  return target.replace(/^\//, "").replace(/\.git$/, "");
+  return target.replace(/^\//, "").replace(/(\.git)+$/, "");
 }
 
 export type ResolvedRepo = {

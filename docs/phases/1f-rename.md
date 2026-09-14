@@ -223,6 +223,22 @@ URL today, and a forge whose pages are cached forever shouldn't grow a
 second spelling for each of them by accident. One extra route registration
 is the smaller change.
 
+### The old 404 is pinned in four places
+
+The same shape as `badCommand` above. Four sites assert what the tree root
+answers, and all four move in the commit that changes it:
+
+| Site                                  | What it is                                |
+| ------------------------------------- | ----------------------------------------- |
+| `scripts/verify/phase-1e.sh` check 29 | fetches the bare ref and reads the status |
+| its contract-title list               | names the tree-page test by its title     |
+| `test/contract/tree-page.contract.ts` | reads `repo-page.ts` for the redirect     |
+| `test/contract/repo-page.contract.ts` | probes the routes against a dead database |
+
+Miss one and 1f's own cascade check fails, because it runs 1e in full.
+Check 29's title goes stale along with them: the tree route stops
+mirroring the blob route at depth zero, which is what that title claims.
+
 **What this does expose is a real gap**: no route in the product renders
 the root tree at an arbitrary rev, and viewing a tag's contents is an
 ordinary thing to want from a forge. The fix is `?ref=` on the repo page,
@@ -240,6 +256,10 @@ No Tuffgal story captures it. `error-no-directory` navigates to
 `/r/gantry/tree/main/apps/nope`, which is `noSuchTree`, a different page.
 So nothing orphans a baseline. Confirm that yourself before deleting rather
 than taking this brief's word for it.
+
+No contract test or check names `noTreeRoot` either. The four sites in §2
+assert what the URL answers, never which error page it used to answer with,
+so the deletion adds nothing to that list.
 
 ---
 
@@ -282,6 +302,7 @@ New checks worth having:
 No new Tuffgal stories. Rename changes no page, and a 301 has nothing to
 capture. Deleting `noTreeRoot` removes a page no story ever reached.
 
-> **GATE:** rename your dotfiles repo, then clone it at the new name. That
-> is also `docs/PLAN.md` §08 `01 · Core`'s gate, so this is the phase that
-> closes it.
+> **GATE:** rename your dotfiles repo, then clone it at the new name.
+> Shipping this is the last thing standing between here and
+> `docs/PLAN.md` §08 `01 · Core`'s own gate, "Your dotfiles repo lives
+> here and the page looks good."

@@ -32,6 +32,7 @@ readonly MOVED_NAME=verify1f-moved
 readonly ADMIN_NAME=verify1f-admin
 readonly CASED_NAME=VERIFY1F-ADMIN
 readonly SUFFIX_NAME=verify1f-suffix
+readonly DOUBLE_NAME=verify1f-double
 readonly OTHER_NAME=verify1f-other
 readonly OTHER_HANDLE=verify1f-collaborator
 readonly DEFAULT_ROOT=./local/repos
@@ -504,7 +505,7 @@ fi
 # 5
 # a collaborator who can push shouldn't be able to change the public url
 # out from under every link to it, so write is refused and admin isn't
-readonly TITLE_5="a write grant cannot rename and an admin grant can"
+readonly TITLE_5="a write grant pushes but cannot rename, and an admin grant can"
 if require_renamed 5 "$TITLE_5"; then
   other_fp=$(ssh-keygen -lf "$other_key.pub" | awk '{print $2}')
   other_pub=$(awk '{print $1 " " $2}' "$other_key.pub")
@@ -525,6 +526,16 @@ if require_renamed 5 "$TITLE_5"; then
   write_status=$?
   after_write=$(name_of "$repo_id")
 
+  # the same grant that cannot rename still has to push, or writeLevels
+  # could be adminLevels and nothing here would notice
+  printf 'Pushed by the write grant.\n' >> "$seed/$REPO_NAME/README.md"
+  git -C "$seed/$REPO_NAME" commit -q -am "Write from the collaborator" \
+    > "$work/5.commit" 2>&1
+  commit_status=$?
+  as_user "$other_key" git -C "$seed/$REPO_NAME" push "$(ssh_url "$MOVED_NAME")" \
+    main:refs/heads/main > "$work/5.push" 2>&1
+  push_status=$?
+
   psql_scratch -c "update repo_grants set level = 'admin' where repo_id = '$repo_id' and user_id = '$other_user_id'" \
     > "$work/5.grant" 2>&1
   grant_status=$?
@@ -540,6 +551,10 @@ if require_renamed 5 "$TITLE_5"; then
   [ "$write_status" -ne 0 ] || wrong="$wrong the write grant renamed the repo;"
   grep -qF "$NO_ADMIN" "$work/5.write.err" \
     || wrong="$wrong the write grant drew '$(tail -1 "$work/5.write.err")', wanted the noAdmin sentence;"
+  [ "$commit_status" -eq 0 ] \
+    || wrong="$wrong the collaborator's commit failed: $(tail -2 "$work/5.commit");"
+  [ "$push_status" -eq 0 ] \
+    || wrong="$wrong the write grant could not push: $(tail -3 "$work/5.push");"
   [ "$after_write" = "$MOVED_NAME" ] \
     || wrong="$wrong the refused rename moved the name to '${after_write:-gone}';"
   [ "$admin_status" -eq 0 ] \
@@ -549,7 +564,7 @@ if require_renamed 5 "$TITLE_5"; then
   if [ -n "$wrong" ]; then
     record FAIL 5 "$TITLE_5" "$wrong"
   else
-    record PASS 5 "$TITLE_5" "write refused by sentence, admin renamed to $ADMIN_NAME"
+    record PASS 5 "$TITLE_5" "write pushed and was refused by sentence, admin renamed to $ADMIN_NAME"
   fi
 fi
 
@@ -611,7 +626,7 @@ if require_renamed 7 "$TITLE_7"; then
 fi
 
 # 8
-readonly TITLE_8="an invalid new name draws the badName refusal verbatim"
+readonly TITLE_8="an invalid new name draws the badName refusal verbatim, and a name at the cap is accepted"
 if require_renamed 8 "$TITLE_8"; then
   long_name=$(printf 'a%.0s' $(seq $((NAME_CAP + 1))))
   bad=""
@@ -624,6 +639,23 @@ if require_renamed 8 "$TITLE_8"; then
       bad="$bad '$name' drew '$(tail -1 "$work/8.err")';"
     fi
   done
+
+  # one under the refused length: a cap only ever tested from above could
+  # be off by one in the accepting direction and nothing would say so
+  cap_name=$(printf 'a%.0s' $(seq $NAME_CAP))
+  rename_as "$admin_key" "$work/8.cap" "$CASED_NAME" "$cap_name"
+  cap_status=$?
+  at_cap=$(name_of "$repo_id")
+  rename_as "$admin_key" "$work/8.back" "$cap_name" "$CASED_NAME"
+  back_status=$?
+
+  [ "$cap_status" -eq 0 ] \
+    || bad="$bad a $NAME_CAP-character name was refused: $(tail -1 "$work/8.cap.err");"
+  [ "$at_cap" = "$cap_name" ] \
+    || bad="$bad the $NAME_CAP-character name stored as '${at_cap:-gone}';"
+  [ "$back_status" -eq 0 ] \
+    || bad="$bad the row would not go back to $CASED_NAME: $(tail -1 "$work/8.back.err");"
+
   after_bad=$(name_of "$repo_id")
   rows=$(psql_scratch -c "select count(*) from repos")
   if [ -n "$bad" ]; then
@@ -631,7 +663,7 @@ if require_renamed 8 "$TITLE_8"; then
   elif [ "$after_bad" != "$CASED_NAME" ] || [ "$rows" != "2" ]; then
     record FAIL 8 "$TITLE_8" "the row is named '${after_bad:-gone}' and repos holds $rows row(s)"
   else
-    record PASS 8 "$TITLE_8" "4 names refused verbatim, the row still $CASED_NAME"
+    record PASS 8 "$TITLE_8" "4 names refused verbatim, $NAME_CAP characters accepted, the row still $CASED_NAME"
   fi
 fi
 
@@ -704,9 +736,11 @@ else
 fi
 
 # 12
-# namePattern admits a trailing .git that resolveRepo strips off every
-# lookup, so a name stored with one on it can never be found again
-readonly TITLE_12="a .git suffix is stripped before the name is stored or collision-checked"
+# namePattern admits trailing .git that resolveRepo strips off every lookup,
+# so a name stored with one on it can never be found again. the strip runs
+# to a fixed point, and .git.git is what discriminates that: one pass takes
+# it to a name that still ends in .git, which is the same defect again
+readonly TITLE_12="every trailing .git is stripped before the name is stored or collision-checked"
 if require_renamed 12 "$TITLE_12"; then
   rename_as "$admin_key" "$work/12.suffix" "$CASED_NAME" "$SUFFIX_NAME.git"
   suffix_status=$?
@@ -715,9 +749,23 @@ if require_renamed 12 "$TITLE_12"; then
     > "$work/12.clone" 2>&1
   clone_status=$?
 
-  rename_as "$admin_key" "$work/12.taken" "$SUFFIX_NAME" "$OTHER_NAME.git"
+  rename_as "$admin_key" "$work/12.double" "$SUFFIX_NAME" "$DOUBLE_NAME.git.git"
+  double_status=$?
+  after_double=$(name_of "$repo_id")
+  as_user "$admin_key" git clone -q "$(ssh_url "$DOUBLE_NAME")" "$work/clone-double" \
+    > "$work/12.doubleclone" 2>&1
+  double_clone=$?
+
+  rename_as "$admin_key" "$work/12.taken" "$DOUBLE_NAME" "$OTHER_NAME.git.git"
   taken_status=$?
   after_taken=$(name_of "$repo_id")
+
+  # the cap is measured on the name that gets stored, so a target only over
+  # it because of the suffix is a false refusal, not a long name
+  capped_target=$(printf 'b%.0s' $(seq $NAME_CAP))
+  rename_as "$admin_key" "$work/12.capped" "$DOUBLE_NAME" "$capped_target.git"
+  capped_status=$?
+  after_capped=$(name_of "$repo_id")
   rows=$(psql_scratch -c "select count(*) from repos")
 
   wrong=""
@@ -731,18 +779,30 @@ if require_renamed 12 "$TITLE_12"; then
     || wrong="$wrong the row is named '${after_suffix:-gone}', wanted $SUFFIX_NAME;"
   [ "$clone_status" -eq 0 ] \
     || wrong="$wrong the clone at $SUFFIX_NAME exited $clone_status: $(tail -3 "$work/12.clone");"
-  [ "$taken_status" -ne 0 ] || wrong="$wrong renaming onto $OTHER_NAME.git succeeded;"
+  [ "$double_status" -eq 0 ] \
+    || wrong="$wrong the .git.git rename exited $double_status: $(tail -2 "$work/12.double.err");"
+  grep -qFx "Renamed $SUFFIX_NAME to $DOUBLE_NAME." "$work/12.double.out" \
+    || wrong="$wrong the channel said '$(tr -d '\n' < "$work/12.double.out")', wanted $DOUBLE_NAME;"
+  [ "$after_double" = "$DOUBLE_NAME" ] \
+    || wrong="$wrong .git.git stored as '${after_double:-gone}', wanted $DOUBLE_NAME;"
+  [ "$double_clone" -eq 0 ] \
+    || wrong="$wrong the clone at $DOUBLE_NAME exited $double_clone: $(tail -3 "$work/12.doubleclone");"
+  [ "$taken_status" -ne 0 ] || wrong="$wrong renaming onto $OTHER_NAME.git.git succeeded;"
   grep -qF "$NAME_TAKEN" "$work/12.taken.err" \
-    || wrong="$wrong $OTHER_NAME.git drew '$(tail -1 "$work/12.taken.err")', wanted the nameTaken sentence;"
+    || wrong="$wrong $OTHER_NAME.git.git drew '$(tail -1 "$work/12.taken.err")', wanted the nameTaken sentence;"
   grep -qF "$UNAVAILABLE" "$work/12.taken.err" \
-    && wrong="$wrong $OTHER_NAME.git drew the generic failure sentence;"
-  [ "$after_taken" = "$SUFFIX_NAME" ] \
+    && wrong="$wrong $OTHER_NAME.git.git drew the generic failure sentence;"
+  [ "$after_taken" = "$DOUBLE_NAME" ] \
     || wrong="$wrong the refused rename moved the name to '${after_taken:-gone}';"
+  [ "$capped_status" -eq 0 ] \
+    || wrong="$wrong a $NAME_CAP-character name with .git on it was refused: $(tail -1 "$work/12.capped.err");"
+  [ "$after_capped" = "$capped_target" ] \
+    || wrong="$wrong the capped target stored as '${after_capped:-gone}';"
   [ "$rows" = "2" ] || wrong="$wrong repos holds $rows row(s), wanted 2;"
   if [ -n "$wrong" ]; then
     record FAIL 12 "$TITLE_12" "$wrong"
   else
-    record PASS 12 "$TITLE_12" "stored as $SUFFIX_NAME and cloned there, $OTHER_NAME.git refused by sentence"
+    record PASS 12 "$TITLE_12" "one and two suffixes both stripped and cloned, $OTHER_NAME.git.git refused, $NAME_CAP characters plus .git accepted"
   fi
 fi
 

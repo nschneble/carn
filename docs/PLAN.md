@@ -528,12 +528,15 @@ Show at most sixteen rows, then a link to `Show all [N]`.
 
 **`/r/:repo/commits` for the log, `?ref=main` to scope it, and `/r/:repo/commits/:sha` for a single commit.** Keeping the ref in a query parameter avoids the collision between a branch name and a SHA occupying the same path slot.
 
-**`/r/:repo/tree/:rev/` redirects 301 to `/r/:repo`.** The repo page is the
-root tree, so a tree URL names something below it and a bare ref names
-nothing. The redirect drops the ref, which is what the breadcrumb has always
-done: `repoTrail` links the repo segment at `/r/:repo` with no ref on every
-page, so climbing out of a tree has never preserved one. Nothing in the product
-links to the bare form. §13 carries the real fix, `/r/:repo?ref=`.
+**`/r/:repo/tree/:rev/` and `/r/:repo/tree/:rev` both redirect 301 to
+`/r/:repo`.** The repo page is the root tree, so a tree URL names something
+below it and a bare ref names nothing. Both spellings are registered on their
+own, because the wildcard route matches only the trailing-slash one and
+`ignoreTrailingSlash` would alias every other route in the app. The redirect
+drops the ref, which is what the breadcrumb has always done: `repoTrail` links
+the repo segment at `/r/:repo` with no ref on every page, so climbing out of a
+tree has never preserved one. Nothing in the product links to either form.
+§13 carries the real fix, `/r/:repo?ref=`.
 
 #### The views
 
@@ -544,6 +547,7 @@ links to the bare form. §13 carries the real fix, `/r/:repo?ref=`.
 | `/r/:repo/blob/:rev/*`  | Blob       | Highlighted source. Raw link points at the blob origin.  |
 | `/r/:repo/tree/:rev/*`  | Tree       | The tree below the root. `/r/:repo` is the root itself.  |
 | `/r/:repo/tree/:rev/`   | Tree       | Redirects 301 to `/r/:repo`.                             |
+| `/r/:repo/tree/:rev`    | Tree       | The same 301. The wildcard route never matches it.       |
 | `/r/:repo/commits`      | Log        | `?ref=` to scope. Paginated by SHA cursor, not `--skip`. |
 | `/r/:repo/commits/:sha` | Commit     | Diff + cross-refs resolved. Immutable, cache forever.    |
 | `/r/:repo/branches`     | Branches   | Each row links to the log scoped to that ref.            |
@@ -618,7 +622,7 @@ But what about `curl`? I love `curl`, I want `curl`!
 
 ### The answer: have the CLI speak SSH
 
-The SSH listener already authenticates a public key, resolves it to a user, and receives an arbitrary command string in the `exec` request. Today it dispatches two commands: `git-upload-pack` and `git-receive-pack`. There's no reason it can't dispatch more.
+The SSH listener already authenticates a public key, resolves it to a user, and receives an arbitrary command string in the `exec` request. Today it dispatches three commands: `git-upload-pack`, `git-receive-pack`, and `carn repo rename`. There's no reason it can't dispatch more.
 
 ```bash
 $ ssh git@carn.fyi issue create linklater "Merge button eats conflicts"

@@ -1496,7 +1496,7 @@ else
 fi
 
 # 29
-readonly TITLE_29="the tree route mirrors the blob route at every depth"
+readonly TITLE_29="the tree route mirrors the blob route below the root, and redirects at it"
 if require_daemon 29 "$TITLE_29" && require_seed 29 "$TITLE_29"; then
   : > "$spawn_log"
   capped_status=$(fetch_page "/r/$REPO_NAME/tree/main/$NESTED_DIR" "$work/tree-capped")
@@ -1504,7 +1504,7 @@ if require_daemon 29 "$TITLE_29" && require_seed 29 "$TITLE_29"; then
   capped_rows=$(occurrences "$work/tree-capped.body" '<tr class="row')
   all_rows=$(occurrences "$work/tree.body" '<tr class="row')
   not_tree=$(fetch_page "/r/$REPO_NAME/tree/main/README.md" "$work/tree-blob")
-  # 1f: a bare ref names nothing below the root, so it goes to the root
+  # a bare ref names nothing below the root, so it goes to the root
   root_ref=$(fetch_page "/r/$REPO_NAME/tree/main/" "$work/tree-root")
   bad_ref=$(fetch_page "/r/$REPO_NAME/tree/nope/$NESTED_DIR" "$work/tree-ref")
   wrong=""

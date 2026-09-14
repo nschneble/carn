@@ -13,6 +13,7 @@ process.env.DATABASE_URL ??= "postgresql://unused/unused";
 const { parseCommand, parseRename, refusals } = await import(
   "../../src/ssh/exec.js"
 );
+const { normalizeRepoName } = await import("../../src/repos/resolve.js");
 
 const captured: [string, string, string][] = [
   ["ssh://git@h:2222/myrepo", "git-upload-pack '/myrepo'", "/myrepo"],
@@ -117,16 +118,34 @@ test("neither pattern ever answers for the other's command", () => {
   assert.strictEqual(parseRename("git-upload-pack '/gantry'"), null);
 });
 
+test("the name a rename stores is the same one a lookup asks for", () => {
+  // a single pass stores foo.git, which no lookup can ask for again
+  for (const target of [
+    "gantry",
+    "gantry.git",
+    "/gantry.git.git",
+    "gantry.git.git.git",
+    "gantry.gitgit",
+  ]) {
+    const once = normalizeRepoName(target);
+    assert.strictEqual(
+      normalizeRepoName(once),
+      once,
+      `${target} settles at ${once}, which normalizes again`,
+    );
+  }
+
+  assert.strictEqual(normalizeRepoName("/gantry.git.git"), "gantry");
+  assert.strictEqual(normalizeRepoName("gantry.gitgit"), "gantry.gitgit");
+});
+
+// read off the object, so a refusal added later is covered without an edit
 test("the refusals explain what happened and what to do", () => {
-  const lines = [
-    refusals.badCommand,
-    refusals.badName,
-    refusals.nameTaken("demo"),
-    refusals.noAdmin("demo"),
-    refusals.noRepo("demo"),
-    refusals.noWrite("demo"),
-    refusals.unavailable,
-  ];
+  const lines = Object.values(refusals).map((refusal) =>
+    typeof refusal === "function" ? refusal("demo") : refusal,
+  );
+
+  assert.ok(lines.length > 0, "refusals is empty, so this test gates nothing");
 
   for (const line of lines) {
     assert.doesNotMatch(line, /[!]|\.\.\.|sorry|oops|apolog/i, line);

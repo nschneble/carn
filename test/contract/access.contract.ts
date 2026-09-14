@@ -26,7 +26,7 @@ function store(answer: boolean): AccessStore & { asked: Question[] } {
 
   return {
     asked,
-    isAdminOrGranted: (userId: string, id: string) => {
+    isSiteAdminOrGranted: (userId: string, id: string) => {
       asked.push({ userId, repoId: id });
       return Promise.resolve(answer);
     },

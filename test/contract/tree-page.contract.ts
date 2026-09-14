@@ -462,7 +462,7 @@ test("the tree root is the only redirect a page route makes", () => {
   const redirects = /\.redirect\(|code\(30[0-35-9]\)/;
 
   assert.deepStrictEqual(
-    source.match(/\.redirect\(|code\(30[0-35-9]\)/g) ?? [],
+    source.match(new RegExp(redirects.source, "g")) ?? [],
     [".redirect("],
     "a page route grew a second redirect; only the bare tree ref has one",
   );

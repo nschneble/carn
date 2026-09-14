@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// determines who has repo write access, starting with owners and then
-// onto admins and grants
+// determines who may write to a repo and who may administer it, starting
+// with owners and then onto site admins and grants
 
 import { db } from "../db.js";
 import type { GrantLevel } from "../generated/prisma/client.js";
 import type { ResolvedRepo } from "./resolve.js";
 
-// which levels answer which question is the policy, and it lives here
 const writeLevels: readonly GrantLevel[] = ["admin", "write"];
 const adminLevels: readonly GrantLevel[] = ["admin"];
 
 export type AccessStore = {
-  isAdminOrGranted(
+  isSiteAdminOrGranted(
     userId: string,
     repoId: string,
     levels: readonly GrantLevel[],
@@ -20,7 +19,7 @@ export type AccessStore = {
 };
 
 export const accessStore: AccessStore = {
-  isAdminOrGranted: async (userId, repoId, levels) => {
+  isSiteAdminOrGranted: async (userId, repoId, levels) => {
     const user = await db.user.findUnique({
       where: { id: userId },
       select: {
@@ -44,7 +43,7 @@ export async function mayWrite(
   store: AccessStore = accessStore,
 ): Promise<boolean> {
   if (repo.ownerId === userId) return true;
-  return store.isAdminOrGranted(userId, repo.id, writeLevels);
+  return store.isSiteAdminOrGranted(userId, repo.id, writeLevels);
 }
 
 // a write grant can push; changing the public url takes an admin grant
@@ -54,5 +53,5 @@ export async function mayAdminister(
   store: AccessStore = accessStore,
 ): Promise<boolean> {
   if (repo.ownerId === userId) return true;
-  return store.isAdminOrGranted(userId, repo.id, adminLevels);
+  return store.isSiteAdminOrGranted(userId, repo.id, adminLevels);
 }
