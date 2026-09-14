@@ -110,12 +110,20 @@ async function resolveTarget(
     case "invalid":
       refuse(channel, refusals.badName);
       return null;
-    case "missing":
+    case "missing": {
       if (parsed.service === "upload-pack") {
         refuse(channel, refusals.noRepo(lookup.name));
         return null;
       }
-      return createRepo(lookup.name, userId);
+
+      const created = await createRepo(lookup.name, userId);
+      if (created.status === "taken") {
+        refuse(channel, refusals.nameTaken(lookup.name));
+        return null;
+      }
+
+      return created.repo;
+    }
   }
 
   if (
@@ -166,7 +174,12 @@ async function renameTarget(
     return;
   }
 
-  await renameRepo(repo.id, to);
+  const renamed = await renameRepo(repo.id, to);
+  if (renamed.status === "taken") {
+    refuse(channel, refusals.nameTaken(to));
+    return;
+  }
+
   report(channel, `Renamed ${repo.name} to ${to}.`);
 }
 

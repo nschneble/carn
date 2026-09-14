@@ -34,16 +34,18 @@ readonly CASED_NAME=VERIFY1F-ADMIN
 readonly SUFFIX_NAME=verify1f-suffix
 readonly DOUBLE_NAME=verify1f-double
 readonly OTHER_NAME=verify1f-other
+readonly RACE_NAME=verify1f-race
 readonly OTHER_HANDLE=verify1f-collaborator
 readonly DEFAULT_ROOT=./local/repos
 readonly NAME_CAP=40
 readonly SSH_FLAGS="-o IdentitiesOnly=yes -o IdentityAgent=none -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o LogLevel=ERROR -o ConnectTimeout=5"
 
-# the six refusals this phase reads off a real channel, verbatim
+# the seven refusals this phase reads off a real channel, verbatim
 readonly BAD_NAME="That's not a valid repo name. Names are up to $NAME_CAP characters, starting with a letter or number, and containing only letters, numbers, dots, dashes, and underscores."
 readonly NO_REPO="There's no repo named $REPO_NAME. Push to create it."
 readonly NO_ADMIN="You don't have admin access to $MOVED_NAME. Ask the owner for an admin grant."
 readonly NAME_TAKEN="There's already a repo named $OTHER_NAME. Pick another name."
+readonly RACE_TAKEN="There's already a repo named $RACE_NAME. Pick another name."
 readonly UNAVAILABLE="That request failed on the server. Try again shortly."
 # no closing period: the contract test carries this as a regex body, which
 # stops at "runs", and the loosest form that discriminates is the one to use
@@ -76,6 +78,7 @@ printf '[user]\n\tname = Carn Verify\n\temail = verify@carn.invalid\n[commit]\n\
   > "$GIT_CONFIG_GLOBAL"
 
 daemon_pid=""
+holder_pid=""
 ssh_port=""
 http_port=""
 
@@ -245,6 +248,56 @@ rename_as() {
 
 name_of() {
   psql_scratch -c "select name from repos where id = '$1'"
+}
+
+# a count off the scratch database, polled until it reads anything but 0
+poll_count() {
+  local sql=$1
+  local waited=0
+  while [ "$waited" -lt 60 ]; do
+    case "$(psql_scratch -c "$sql")" in
+      "" | 0) ;;
+      *) return 0 ;;
+    esac
+    sleep 0.25
+    waited=$((waited + 1))
+  done
+  return 1
+}
+
+# the holder takes a name in a transaction it never commits. READ COMMITTED
+# can't see the row, so the daemon's pre-check passes and its own write then
+# blocks inside the index until release_name commits. that's the race the
+# pre-check cannot close, made deterministic
+hold_name() {
+  local fifo="$work/holder.fifo"
+  rm -f "$fifo"
+  mkfifo "$fifo" || return 1
+  psql "$scratch_url" --no-psqlrc -q < "$fifo" > "$work/holder.log" 2>&1 &
+  holder_pid=$!
+  # read-write so the open can't block on a psql that never started
+  exec 9<> "$fifo"
+  printf "BEGIN;\nUPDATE repos SET name = '%s' WHERE id = '%s';\n" \
+    "$1" "$other_id" >&9
+  poll_count "select count(*) from pg_stat_activity where datname = '$scratch_db' and state = 'idle in transaction'"
+}
+
+# the daemon is in the index waiting on the holder's transaction id, which
+# is what says it got past the pre-check rather than refusing on it
+blocked_on_lock() {
+  poll_count "select count(*) from pg_stat_activity where datname = '$scratch_db' and wait_event_type = 'Lock' and query ilike '%repos%'"
+}
+
+release_name() {
+  printf 'COMMIT;\n' >&9
+  exec 9>&-
+  wait "$holder_pid" 2>/dev/null
+  holder_pid=""
+}
+
+restore_other() {
+  psql_scratch -c "update repos set name = '$OTHER_NAME' where id = '$other_id'" \
+    > "$work/6.restore" 2>&1
 }
 
 ssh_url() {
@@ -570,7 +623,11 @@ fi
 
 # 6
 # the unique index is on lower(name), so the upper-case spelling of a taken
-# name has to be refused too, and neither refusal may carry driver text
+# name has to be refused too, and neither refusal may carry driver text.
+# the pre-check answers both of those without a write. the two legs after
+# them are the window it cannot cover, where the index is what finds the
+# collision: a name that goes from free to taken after the check and before
+# the write, once on a rename's UPDATE and once on a create's INSERT
 readonly TITLE_6="a taken name is refused with a sentence, not a driver error"
 if require_renamed 6 "$TITLE_6"; then
   rename_as "$admin_key" "$work/6.same" "$ADMIN_NAME" "$OTHER_NAME"
@@ -578,7 +635,6 @@ if require_renamed 6 "$TITLE_6"; then
   rename_as "$admin_key" "$work/6.cased" "$ADMIN_NAME" "VERIFY1F-OTHER"
   cased_status=$?
   after_taken=$(name_of "$repo_id")
-  other_still=$(name_of "$other_id")
 
   wrong=""
   [ "$same_status" -ne 0 ] || wrong="$wrong renaming onto $OTHER_NAME succeeded;"
@@ -586,19 +642,79 @@ if require_renamed 6 "$TITLE_6"; then
   for out in "$work/6.same.err" "$work/6.cased.err"; do
     grep -qF "$NAME_TAKEN" "$out" \
       || wrong="$wrong $(basename "$out") holds '$(tail -1 "$out")', wanted the nameTaken sentence;"
+  done
+  [ "$after_taken" = "$ADMIN_NAME" ] \
+    || wrong="$wrong the refused rename moved the name to '${after_taken:-gone}';"
+
+  # the writers run with fd 9 closed: the holder reads EOF off the last
+  # write end, and an ssh child holding one would hang release_name
+  race_engaged=0
+  race_status=0
+  if ! hold_name "$RACE_NAME"; then
+    wrong="$wrong the holder never took $RACE_NAME: $(tail -2 "$work/holder.log");"
+  else
+    rename_as "$admin_key" "$work/6.race" "$ADMIN_NAME" "$RACE_NAME" 9>&- &
+    race_pid=$!
+    blocked_on_lock && race_engaged=1
+    release_name
+    wait "$race_pid"
+    race_status=$?
+    restore_other
+
+    [ "$race_engaged" = "1" ] \
+      || wrong="$wrong the racing rename never waited on the index, so it refused on the pre-check;"
+    [ "$race_status" -ne 0 ] || wrong="$wrong the racing rename succeeded;"
+    grep -qF "$RACE_TAKEN" "$work/6.race.err" \
+      || wrong="$wrong the racing rename drew '$(tail -1 "$work/6.race.err")', wanted the nameTaken sentence;"
+  fi
+
+  push_engaged=0
+  push_status=0
+  if ! hold_name "$RACE_NAME"; then
+    wrong="$wrong the holder never re-took $RACE_NAME: $(tail -2 "$work/holder.log");"
+  else
+    as_user "$admin_key" git -C "$seed/$REPO_NAME" push "$(ssh_url "$RACE_NAME")" \
+      main:refs/heads/main > "$work/6.push" 2>&1 9>&- &
+    push_pid=$!
+    blocked_on_lock && push_engaged=1
+    release_name
+    wait "$push_pid"
+    push_status=$?
+    restore_other
+
+    [ "$push_engaged" = "1" ] \
+      || wrong="$wrong the racing push never waited on the index, so it refused on the pre-check;"
+    [ "$push_status" -ne 0 ] || wrong="$wrong the racing push created the repo;"
+    grep -qF "$RACE_TAKEN" "$work/6.push" \
+      || wrong="$wrong the racing push drew '$(tail -2 "$work/6.push" | head -1)', wanted the nameTaken sentence;"
+  fi
+
+  # what the race legs are for: the write's own refusal reads like the
+  # pre-check's, rather than as the driver error or the generic failure
+  for out in "$work/6.same.err" "$work/6.cased.err" "$work/6.race.err" "$work/6.push"; do
+    [ -f "$out" ] || continue
     grep -qiE 'prisma|P2002|23505|duplicate key|constraint|postgres|at async|at Object' "$out" \
       && wrong="$wrong $(basename "$out") leaked driver text: $(tail -1 "$out");"
     grep -qF "$UNAVAILABLE" "$out" \
       && wrong="$wrong $(basename "$out") fell through to the generic failure;"
   done
-  [ "$after_taken" = "$ADMIN_NAME" ] \
-    || wrong="$wrong the refused rename moved the name to '${after_taken:-gone}';"
+
+  after_race=$(name_of "$repo_id")
+  other_still=$(name_of "$other_id")
+  rows=$(psql_scratch -c "select count(*) from repos")
+  paths_now=$(disk_paths)
+  [ "$after_race" = "$ADMIN_NAME" ] \
+    || wrong="$wrong a refused rename moved the name to '${after_race:-gone}';"
   [ "$other_still" = "$OTHER_NAME" ] \
     || wrong="$wrong the repo holding the name is now '${other_still:-gone}';"
+  [ "$rows" = "2" ] || wrong="$wrong repos holds $rows row(s), wanted 2;"
+  [ "$paths_now" = "$paths_before" ] \
+    || wrong="$wrong the losing push left a repo on disk:$(diff <(printf '%s\n' "$paths_before") <(printf '%s\n' "$paths_now") | tr '\n' ' ');"
+
   if [ -n "$wrong" ]; then
     record FAIL 6 "$TITLE_6" "$wrong"
   else
-    record PASS 6 "$TITLE_6" "both spellings refused by sentence, both rows untouched"
+    record PASS 6 "$TITLE_6" "both spellings refused on the pre-check, a rename and a push refused by the index, all four by sentence"
   fi
 fi
 
