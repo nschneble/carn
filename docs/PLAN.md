@@ -414,7 +414,7 @@ ssh_keys       id, user_id, name, public_key, fingerprint, created_at, last_used
                -- unique on fingerprint; This is the entire auth system
 
 repos          id (uuid), owner_id, name, description, default_branch, next_number, created_at
-               -- unique (owner_id, lower(name)); id drives the disk path, rename is one UPDATE, everything is public
+               -- unique on lower(name); id drives the disk path, rename is one UPDATE, everything is public
 
 repo_grants    repo_id, user_id, level
                -- level enum = write | admin; read is implicit for everyone

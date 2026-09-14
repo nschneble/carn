@@ -963,7 +963,7 @@ Every repo has an identity. The repo name (always unique) is hashed to a seed; t
 - **Palette:** Two colors and the ground token.
 - **Forbidden:** Gradients, drop shadows, bubble outlines, texture, and skew.
 - **Long names:** The SVG `viewBox` is fitted to the rendered text, so a mark never overflows, it scales. Above 18 characters, break onto a second line. `wordmark.ts` treats `-`, `_`, and `.` as separators and breaks at whichever one sits nearest the middle of the name.
-- **Name cap** 40 characters, as of Phase 1e. It's a typographic bound. It's what the generated mark can still draw legibly. `namePattern` permits 64 today. `docs/LAYOUT.md` §03 owns the enforcement sites.
+- **Name cap** 40 characters, as of Phase 1e. It's a typographic bound. It's what the generated mark can still draw legibly, and `namePattern` was cut to match it rather than to a grammar of its own. `docs/LAYOUT.md` §03 owns the enforcement sites.
 
 The mark is theme-aware by construction. It draws from `--accent` and `--ink`, so it inverts automatically.
 
