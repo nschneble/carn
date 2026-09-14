@@ -99,6 +99,23 @@ function report(channel: ServerChannel, message: string): void {
   finish(channel, 0);
 }
 
+// shared by the direct lookup and a losing create-race: once a name
+// resolves to a row, write access is the only question left to ask
+async function resolveFound(
+  request: ExecRequest,
+  parsed: ParsedCommand,
+  repo: ResolvedRepo,
+): Promise<ResolvedRepo | null> {
+  const { channel, userId } = request;
+
+  if (parsed.service === "receive-pack" && !(await mayWrite(repo, userId))) {
+    refuse(channel, refusals.noWrite(repo.name));
+    return null;
+  }
+
+  return repo;
+}
+
 async function resolveTarget(
   request: ExecRequest,
   parsed: ParsedCommand,
@@ -118,23 +135,22 @@ async function resolveTarget(
 
       const created = await createRepo(lookup.name, userId);
       if (created.status === "taken") {
-        refuse(channel, refusals.nameTaken(lookup.name));
-        return null;
+        // a losing race means the repo now exists: resolve it and run
+        // the same write check a normal found lookup would, so the
+        // outcome reads like losing the name slowly, not like a refusal
+        const raced = await resolveRepo(lookup.name);
+        if (raced.status !== "found") {
+          refuse(channel, refusals.unavailable);
+          return null;
+        }
+        return resolveFound(request, parsed, raced.repo);
       }
 
       return created.repo;
     }
   }
 
-  if (
-    parsed.service === "receive-pack" &&
-    !(await mayWrite(lookup.repo, userId))
-  ) {
-    refuse(channel, refusals.noWrite(lookup.repo.name));
-    return null;
-  }
-
-  return lookup.repo;
+  return resolveFound(request, parsed, lookup.repo);
 }
 
 // the unique index is on lower(name), so a case change isn't a collision

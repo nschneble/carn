@@ -46,6 +46,7 @@ readonly NO_REPO="There's no repo named $REPO_NAME. Push to create it."
 readonly NO_ADMIN="You don't have admin access to $MOVED_NAME. Ask the owner for an admin grant."
 readonly NAME_TAKEN="There's already a repo named $OTHER_NAME. Pick another name."
 readonly RACE_TAKEN="There's already a repo named $RACE_NAME. Pick another name."
+readonly NO_WRITE_RACE="You don't have write access to $RACE_NAME. Ask the owner for a grant."
 readonly UNAVAILABLE="That request failed on the server. Try again shortly."
 # no closing period: the contract test carries this as a regex body, which
 # stops at "runs", and the loosest form that discriminates is the one to use
@@ -626,8 +627,11 @@ fi
 # name has to be refused too, and neither refusal may carry driver text.
 # the pre-check answers both of those without a write. the two legs after
 # them are the window it cannot cover, where the index is what finds the
-# collision: a name that goes from free to taken after the check and before
-# the write, once on a rename's UPDATE and once on a create's INSERT
+# collision: a name that goes from free to taken after the check and
+# before the write. a rename names a specific target, so its race still
+# draws nameTaken. a push races into whatever row is already there, so
+# it draws whatever a normal lookup of that row would - noWrite here,
+# since the racer holds no grant on it
 readonly TITLE_6="a taken name is refused with a sentence, not a driver error"
 if require_renamed 6 "$TITLE_6"; then
   rename_as "$admin_key" "$work/6.same" "$ADMIN_NAME" "$OTHER_NAME"
@@ -668,12 +672,14 @@ if require_renamed 6 "$TITLE_6"; then
       || wrong="$wrong the racing rename drew '$(tail -1 "$work/6.race.err")', wanted the nameTaken sentence;"
   fi
 
+  # the racer holds no grant on the row it collides with, so a losing
+  # push should read exactly like a normal push to someone else's repo
   push_engaged=0
   push_status=0
   if ! hold_name "$RACE_NAME"; then
     wrong="$wrong the holder never re-took $RACE_NAME: $(tail -2 "$work/holder.log");"
   else
-    as_user "$admin_key" git -C "$seed/$REPO_NAME" push "$(ssh_url "$RACE_NAME")" \
+    as_user "$other_key" git -C "$seed/$REPO_NAME" push "$(ssh_url "$RACE_NAME")" \
       main:refs/heads/main > "$work/6.push" 2>&1 9>&- &
     push_pid=$!
     blocked_on_lock && push_engaged=1
@@ -684,9 +690,9 @@ if require_renamed 6 "$TITLE_6"; then
 
     [ "$push_engaged" = "1" ] \
       || wrong="$wrong the racing push never waited on the index, so it refused on the pre-check;"
-    [ "$push_status" -ne 0 ] || wrong="$wrong the racing push created the repo;"
-    grep -qF "$RACE_TAKEN" "$work/6.push" \
-      || wrong="$wrong the racing push drew '$(tail -2 "$work/6.push" | head -1)', wanted the nameTaken sentence;"
+    [ "$push_status" -ne 0 ] || wrong="$wrong the racing push wrote to a repo it has no grant on;"
+    grep -qF "$NO_WRITE_RACE" "$work/6.push" \
+      || wrong="$wrong the racing push drew '$(tail -2 "$work/6.push" | head -1)', wanted the noWrite sentence;"
   fi
 
   # what the race legs are for: the write's own refusal reads like the
