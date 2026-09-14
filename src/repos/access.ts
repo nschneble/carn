@@ -4,22 +4,29 @@
 // onto admins and grants
 
 import { db } from "../db.js";
+import type { GrantLevel } from "../generated/prisma/client.js";
 import type { ResolvedRepo } from "./resolve.js";
 
-const writeLevels = ["admin", "write"] as const;
+// which levels answer which question is the policy, and it lives here
+const writeLevels: readonly GrantLevel[] = ["admin", "write"];
+const adminLevels: readonly GrantLevel[] = ["admin"];
 
 export type AccessStore = {
-  isAdminOrGranted(userId: string, repoId: string): Promise<boolean>;
+  isAdminOrGranted(
+    userId: string,
+    repoId: string,
+    levels: readonly GrantLevel[],
+  ): Promise<boolean>;
 };
 
 export const accessStore: AccessStore = {
-  isAdminOrGranted: async (userId, repoId) => {
+  isAdminOrGranted: async (userId, repoId, levels) => {
     const user = await db.user.findUnique({
       where: { id: userId },
       select: {
         isAdmin: true,
         grants: {
-          where: { repoId, level: { in: [...writeLevels] } },
+          where: { repoId, level: { in: [...levels] } },
           select: { repoId: true },
           take: 1,
         },
@@ -37,5 +44,15 @@ export async function mayWrite(
   store: AccessStore = accessStore,
 ): Promise<boolean> {
   if (repo.ownerId === userId) return true;
-  return store.isAdminOrGranted(userId, repo.id);
+  return store.isAdminOrGranted(userId, repo.id, writeLevels);
+}
+
+// a write grant can push; changing the public url takes an admin grant
+export async function mayAdminister(
+  repo: ResolvedRepo,
+  userId: string,
+  store: AccessStore = accessStore,
+): Promise<boolean> {
+  if (repo.ownerId === userId) return true;
+  return store.isAdminOrGranted(userId, repo.id, adminLevels);
 }

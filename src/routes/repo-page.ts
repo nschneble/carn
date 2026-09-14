@@ -19,7 +19,6 @@ import {
   noSuchRef,
   noSuchRepo,
   noSuchTree,
-  noTreeRoot,
   unavailable,
 } from "../html/error-page.js";
 import { refListPage } from "../html/ref-list.js";
@@ -212,13 +211,22 @@ async function showBlob(
   }
 }
 
-// no root form: /r/:repo is the root tree, and a non-tree path is a 404
+// /r/:repo is the root tree, so a bare ref names nothing below it and
+// settles on the url alone, for every ref, before any lookup
+function toRepoRoot(
+  request: FastifyRequest<{ Params: { repo: string } }>,
+  reply: FastifyReply,
+): FastifyReply {
+  return reply.redirect(`/r/${encodeURIComponent(request.params.repo)}`, 301);
+}
+
+// a path that isn't a tree is still a 404
 async function showTree(
   request: FastifyRequest<TreeRoute>,
   reply: FastifyReply,
 ): Promise<FastifyReply> {
   const path = request.params["*"];
-  if (path === "") return fail(request, reply, 404, noTreeRoot);
+  if (path === "") return toRepoRoot(request, reply);
 
   try {
     const found = await resolveOrFail(request, reply);
@@ -447,6 +455,9 @@ export function repoPageRoutes(app: FastifyInstance): void {
   app.get<BlobRoute>("/r/:repo/asset/:rev/*", serveAsset);
   app.get<BlobRoute>("/r/:repo/blob/:rev/*", showBlob);
   app.get<TreeRoute>("/r/:repo/tree/:rev/*", showTree);
+  // the wildcard route misses the no-slash spelling, which is the one a
+  // person types; ignoreTrailingSlash would alias every route in the app
+  app.get<RefRoute>("/r/:repo/tree/:rev", toRepoRoot);
   app.get<LogRoute>("/r/:repo/commits", showCommits);
   app.get<ChangeRoute>("/r/:repo/commits/:sha/*", showCommit);
   app.get<CommitRoute>("/r/:repo/commits/:sha", showCommit);

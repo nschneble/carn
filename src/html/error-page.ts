@@ -44,14 +44,6 @@ export const noSuchTree = (path: string): Failure => ({
   path: "/404",
 });
 
-export const noTreeRoot: Failure = {
-  title: "No path here · Càrn",
-  heading: "No path here",
-  said: "That URL names a ref but no path inside it.",
-  next: "The repo page is the root tree. A tree URL names something below it.",
-  path: "/404",
-};
-
 export const noSuchRef = (ref: string): Failure => ({
   title: `No ref named ${ref} · Càrn`,
   heading: "No ref here",

@@ -1504,7 +1504,8 @@ if require_daemon 29 "$TITLE_29" && require_seed 29 "$TITLE_29"; then
   capped_rows=$(occurrences "$work/tree-capped.body" '<tr class="row')
   all_rows=$(occurrences "$work/tree.body" '<tr class="row')
   not_tree=$(fetch_page "/r/$REPO_NAME/tree/main/README.md" "$work/tree-blob")
-  no_root=$(fetch_page "/r/$REPO_NAME/tree/main/" "$work/tree-root")
+  # 1f: a bare ref names nothing below the root, so it goes to the root
+  root_ref=$(fetch_page "/r/$REPO_NAME/tree/main/" "$work/tree-root")
   bad_ref=$(fetch_page "/r/$REPO_NAME/tree/nope/$NESTED_DIR" "$work/tree-ref")
   wrong=""
   [ "$capped_status" = "200" ] || wrong="$wrong the nested tree answered $capped_status;"
@@ -1514,21 +1515,24 @@ if require_daemon 29 "$TITLE_29" && require_seed 29 "$TITLE_29"; then
   grep -qF "Show all $NESTED_ROWS" "$work/tree-capped.body" \
     || wrong="$wrong the capped tree offers no show-all;"
   [ "$not_tree" = "404" ] || wrong="$wrong a blob path answered $not_tree, wanted 404;"
-  [ "$no_root" = "404" ] || wrong="$wrong an empty tree path answered $no_root, wanted 404;"
+  [ "$root_ref" = "301" ] || wrong="$wrong an empty tree path answered $root_ref, wanted 301;"
   [ "$bad_ref" = "404" ] || wrong="$wrong an unknown ref answered $bad_ref, wanted 404;"
-  for page in tree-blob tree-root tree-ref; do
+  root_to=$(grep -i '^location:' "$work/tree-root.head" | sed 's/^[^:]*: *//' | tr -d '\r')
+  [ "$root_to" = "/r/$REPO_NAME" ] \
+    || wrong="$wrong the empty tree path points at '${root_to:-nothing}', wanted /r/$REPO_NAME;"
+  for page in tree-blob tree-ref; do
     location=$(grep -i '^location:' "$work/$page.head" | tr -d '\r')
     [ -z "$location" ] || wrong="$wrong $page redirected: $location;"
   done
   if [ -n "$wrong" ]; then
     record FAIL 29 "$TITLE_29" "$wrong"
   else
-    contract 29 "$TITLE_29" 4 "$capped_rows of $all_rows rows, one ls-tree, and three 404s that do not redirect" \
+    contract 29 "$TITLE_29" 4 "$capped_rows of $all_rows rows, one ls-tree, two 404s that do not redirect and one 301 that does" \
       tree-page -- \
       "a nested path lists its own entries, not the root's" \
       "the cap and the lift work at a nested depth too" \
       "a path that isn't a tree is nothing, never a redirect" \
-      "no page route redirects"
+      "the tree root is the only redirect a page route makes"
   fi
 fi
 

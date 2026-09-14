@@ -453,19 +453,25 @@ test("a tree page carries no readme and one h1", () => {
 
 // a blob path asked for as a tree comes back as nothing above, and the
 // handler turns nothing into a 404; the way that quietly becomes a 302 is
-// somebody adding a redirect to the page routes
-test("no page route redirects", () => {
+// somebody adding a second redirect to the page routes
+test("the tree root is the only redirect a page route makes", () => {
   const source = readFileSync(join(root, "src/routes/repo-page.ts"), "utf8");
 
   // 304 is the one 3xx that isn't one: it answers if-none-match with the
   // body the client already has, which every revalidating route does
   const redirects = /\.redirect\(|code\(30[0-35-9]\)/;
 
-  assert.doesNotMatch(
-    source,
-    redirects,
-    "a page route grew a redirect; a path that isn't a tree is a 404",
+  assert.deepStrictEqual(
+    source.match(/\.redirect\(|code\(30[0-35-9]\)/g) ?? [],
+    [".redirect("],
+    "a page route grew a second redirect; only the bare tree ref has one",
   );
+
+  assert.ok(
+    source.includes("reply.redirect(`/r/${encodeURIComponent("),
+    "the one redirect no longer encodes the repo segment it was given",
+  );
+  assert.ok(source.includes("`, 301)"), "the tree-root redirect isn't a 301");
 
   for (const planted of [
     "reply.redirect(target)",

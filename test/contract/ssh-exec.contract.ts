@@ -10,7 +10,9 @@ import { test } from "node:test";
 // nothing below queries; exec.ts only has to clear config.ts's fail-fast
 process.env.DATABASE_URL ??= "postgresql://unused/unused";
 
-const { parseCommand, refusals } = await import("../../src/ssh/exec.js");
+const { parseCommand, parseRename, refusals } = await import(
+  "../../src/ssh/exec.js"
+);
 
 const captured: [string, string, string][] = [
   ["ssh://git@h:2222/myrepo", "git-upload-pack '/myrepo'", "/myrepo"],
@@ -83,10 +85,44 @@ test("a traversal attempt parses, then fails the name format", () => {
   });
 });
 
+test("the rename command takes two names and nothing else", () => {
+  assert.deepStrictEqual(parseRename("carn repo rename gantry widget"), {
+    from: "gantry",
+    to: "widget",
+  });
+
+  for (const command of [
+    "carn repo rename gantry",
+    "carn repo rename gantry widget extra",
+    "carn repo rename gantry widget; rm -rf /",
+    "carn repo rename  gantry widget",
+    "carn  repo rename gantry widget",
+    "CARN repo rename gantry widget",
+    "carn repo rename gantry widget\n",
+    "\ncarn repo rename gantry widget",
+    "carn repo remove gantry widget",
+    "id",
+    "",
+  ]) {
+    assert.strictEqual(
+      parseRename(command),
+      null,
+      `${JSON.stringify(command)} parsed`,
+    );
+  }
+});
+
+test("neither pattern ever answers for the other's command", () => {
+  assert.strictEqual(parseCommand("carn repo rename gantry widget"), null);
+  assert.strictEqual(parseRename("git-upload-pack '/gantry'"), null);
+});
+
 test("the refusals explain what happened and what to do", () => {
   const lines = [
     refusals.badCommand,
     refusals.badName,
+    refusals.nameTaken("demo"),
+    refusals.noAdmin("demo"),
     refusals.noRepo("demo"),
     refusals.noWrite("demo"),
     refusals.unavailable,
@@ -99,4 +135,6 @@ test("the refusals explain what happened and what to do", () => {
 
   assert.match(refusals.noWrite("demo"), /write access to demo/);
   assert.match(refusals.noRepo("demo"), /no repo named demo/);
+  assert.match(refusals.noAdmin("demo"), /admin access to demo/);
+  assert.match(refusals.nameTaken("demo"), /already a repo named demo/);
 });
