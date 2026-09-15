@@ -32,7 +32,12 @@ import {
   textBlob,
 } from "../gallery/blob.js";
 
-const noticePattern = /Showing the first ([\d,]+) lines of ([\d,]+)\./;
+const noticePattern = /Showing the first (?:([\d,]+) lines|line) of ([\d,]+)\./;
+
+// the singular carries no number, so an absent capture means exactly one
+function shownIn(notice: RegExpExecArray): number {
+  return notice[1] === undefined ? 1 : Number(notice[1].replaceAll(",", ""));
+}
 
 function codeBody(markup: string): string {
   const open = markup.indexOf("<code ");
@@ -79,7 +84,7 @@ test("a file over the cap is cut on a line boundary", () => {
 
   assert.ok(notice, "a truncated file rendered no notice");
 
-  const shown = Number((notice[1] as string).replaceAll(",", ""));
+  const shown = shownIn(notice);
   const total = Number((notice[2] as string).replaceAll(",", ""));
 
   assert.strictEqual(total, hugeBlob.lines);
@@ -127,7 +132,7 @@ test("a front-loaded file never ships over a budget the model missed", () => {
   const notice = noticePattern.exec(markup);
   assert.ok(notice, "the front-loaded file rendered no notice");
   assert.ok(
-    Number((notice[1] as string).replaceAll(",", "")) > 0,
+    shownIn(notice) > 0,
     "the page fits only by showing nothing, which the empty state says better",
   );
 });
@@ -317,7 +322,7 @@ test("a bigger stylesheet renders fewer lines, not just a smaller number", () =>
     const notice = noticePattern.exec(markup);
     assert.ok(notice, `no notice at sheetWire ${sheetWire}`);
 
-    return Number((notice[1] as string).replaceAll(",", ""));
+    return shownIn(notice);
   };
 
   assert.ok(

@@ -409,6 +409,10 @@ test("a second sentence says how many diffs are below when the file list isn't a
     "the file list itself was cut too, so this fixture doesn't isolate the diff-only case",
   );
   assert.ok(
+    inlined > 1,
+    "the fixture inlined a single diff, so the sentence below is singular",
+  );
+  assert.ok(
     cut.includes(
       `<p class="t-note">Diffs for the first ${inlined} files are below. The rest have a page each.</p>`,
     ),
@@ -420,6 +424,28 @@ test("a second sentence says how many diffs are below when the file list isn't a
     whole,
     /Diffs for the first/,
     "a commit whose diffs all fit still claims some are cut",
+  );
+});
+
+// sheetWire sits mid-band: one diff inlines from about 25,200 to 26,680,
+// so the fixture has room on both sides before a chrome change moves it
+test("a lone inlined diff is a sentence about that file, not a count", () => {
+  const cut = commitDocument({
+    commit: detail({ files: noisyFiles(40) }),
+    now: logNow,
+    sheetWire: 25_940,
+  });
+
+  assert.strictEqual(
+    diffBlocks(cut).length,
+    1,
+    "the fixture stopped inlining exactly one diff, so it proves nothing",
+  );
+  assert.ok(
+    cut.includes(
+      `<p class="t-note">The first file's diff is below. The rest have a page each.</p>`,
+    ),
+    "one diff below still reads as a count",
   );
 });
 

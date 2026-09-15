@@ -446,6 +446,22 @@ test("a list longer than the read cap says it is showing the first of them", () 
   );
 });
 
+test("a list cut down to one drops the count and says branch", () => {
+  const one = refsDocument({
+    list: refList("branch", { refs: wideRefs(1), more: true }),
+  });
+
+  assert.ok(
+    one.includes("Showing the first branch."),
+    "the notice still counts where the noun alone says it",
+  );
+  assert.ok(
+    refsDocument({
+      list: refList("tag", { refs: wideRefs(1), more: true }),
+    }).includes("Showing the first tag."),
+  );
+});
+
 test("every state fits the budget as gzip-5 wire bytes", () => {
   const states: [string, string][] = [
     ["branches", refsDocument()],
@@ -481,6 +497,10 @@ test("a page that cannot fit sheds rows and says how many are left", () => {
   const shown = [...markup.matchAll(/<tr class="row">/g)].length;
 
   assert.ok(shown > 0, "the fit shed every row");
+  assert.ok(
+    shown > 1,
+    "the fit shed down to one row, so the notice below is singular",
+  );
   assert.ok(
     shown < refs.length,
     `${refs.length} incompressible rows rendered whole, so the budget was never measured`,

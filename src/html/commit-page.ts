@@ -93,7 +93,7 @@ function fileList(
   // no point in rendering an empty table
   if (shape.files === 0) {
     return emptyState(
-      `This commit changes ${files.length} files, more than this page can list.`,
+      `This commit changes ${files.length} ${files.length === 1 ? "file" : "files"}, more than this page can list.`,
       `git show --stat ${view.commit.sha}`,
     );
   }
@@ -104,11 +104,17 @@ function fileList(
       : html`<p class="t-note">Showing the first ${shape.files} of ${files.length} files.</p>
       `;
 
+  // one inlined diff is a sentence about that file, not a count
+  const diffsBelow =
+    inlined.size === 1
+      ? html`The first file's diff is below.`
+      : html`Diffs for the first ${inlined.size} files are below.`;
+
   // the file list can stay whole while the diffs under it are still cut
   const cutDiffs =
     inlined.size === totalDiffable
       ? html``
-      : html`<p class="t-note">Diffs for the first ${inlined.size} files are below. The rest have a page each.</p>
+      : html`<p class="t-note">${diffsBelow} The rest have a page each.</p>
       `;
 
   return html`${cutFiles}${cutDiffs}<table class="tbl files">
@@ -155,7 +161,7 @@ function cutBlock(
   const label = `f-${index}`;
 
   return html`<h2 class="t-mono dpath" id="${label}">${file.path}</h2>
-      <p class="t-note" id="${label}-cut">Showing the first ${cut} lines of this diff.</p>
+      <p class="t-note" id="${label}-cut">Showing the first ${cut === 1 ? "line" : `${cut} lines`} of this diff.</p>
       <pre class="src diff" tabindex="0" role="region" aria-labelledby="${label}" aria-describedby="${label}-cut"><code>${diffBody(text)}</code></pre>`;
 }
 
