@@ -16,7 +16,7 @@ export const noSuchRepo = (name: string): Failure => ({
   title: `No repo named ${name} · Càrn`,
   heading: "No repo here",
   said: `There's no repo named ${name} on this server.`,
-  next: "Try looking in all repos.",
+  next: "Check the spelling, or push to this name to create it.",
   path: "/404",
 });
 
