@@ -108,7 +108,10 @@ export function commitLogPage(view: {
   return page({
     title: `Commits on ${log.ref} · ${repo} · Càrn`,
     description: `The commit log for ${log.ref} in ${repo}.`,
-    path: commitsHref(repo, log.ref, from, back),
+
+    // back is a cursor trail, not identity: two routes, one page
+    path: commitsHref(repo, log.ref, from),
+
     crumbs: [...repoTrail(repo), { label: commitsLabel, href: null }],
     main: html`<h1 class="t-item">Commits on ${log.ref}</h1>
       ${body}`,
