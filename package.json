@@ -21,7 +21,7 @@
     "test": "node --env-file-if-exists=.env --enable-source-maps --test \"dist/test/**/*.js\"",
     "visual": "npm run build && sh scripts/visual.sh",
     "visual:approve": "npm run build && sh scripts/approve.sh",
-  "visual:seed": "npm run build && sh scripts/visual.sh --seed-only"
+    "visual:seed": "npm run build && sh scripts/visual.sh --seed-only"
   },
   "allowScripts": {
     "@prisma/engines@7.9.1": true,
