@@ -1482,16 +1482,18 @@ else
 fi
 
 # 28
-readonly TITLE_28="mayWrite is tested against a fake store, owner case included"
+readonly TITLE_28="both access predicates are tested against a fake store, owner case included"
 never=$(grep -c 'deepStrictEqual(access.asked, \[\]' test/contract/access.contract.ts)
+# the fake answers off the levels it was asked for, so a caller holding
+# neither the admin flag nor a grant is the one that would say no
 answers_false=$(sed -n '/the owner may write without the store being consulted/,/^});/p' \
-  test/contract/access.contract.ts | grep -c 'store(false)')
+  test/contract/access.contract.ts | grep -cF 'store({})')
 if [ "$never" -lt 1 ]; then
   record FAIL 28 "$TITLE_28" "no test asserts the fake store recorded nothing"
 elif [ "$answers_false" -lt 1 ]; then
   record FAIL 28 "$TITLE_28" "the owner case's fake answers true, so a consulted store would pass it anyway"
 else
-  contract 28 "$TITLE_28" 4 "the owner case asks a store that would say no, and never asks it" \
+  contract 28 "$TITLE_28" 9 "the owner case asks a store that would say no, and never asks it" \
     access
 fi
 

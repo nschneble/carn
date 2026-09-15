@@ -3,8 +3,20 @@
 // the disk path derives from the primary key, so a rename is one UPDATE
 // and nothing on disk moves
 
-import { db } from "../db.js";
+import { db, isUniqueViolation } from "../db.js";
 
-export async function renameRepo(id: string, name: string): Promise<void> {
-  await db.repo.update({ where: { id }, data: { name } });
+export type RepoRename = { status: "renamed" } | { status: "taken" };
+
+export async function renameRepo(
+  id: string,
+  name: string,
+): Promise<RepoRename> {
+  try {
+    await db.repo.update({ where: { id }, data: { name } });
+    return { status: "renamed" };
+  } catch (error) {
+    // a concurrent rename can take the name after the caller's check
+    if (isUniqueViolation(error)) return { status: "taken" };
+    throw error;
+  }
 }

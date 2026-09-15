@@ -2,9 +2,13 @@
 
 import { mkdirSync } from "node:fs";
 
-import { db } from "../db.js";
+import { db, isUniqueViolation } from "../db.js";
 import { runGit } from "../git/spawn.js";
 import { type ResolvedRepo, repoPath } from "./resolve.js";
+
+export type RepoCreation =
+  | { status: "created"; repo: ResolvedRepo }
+  | { status: "taken" };
 
 // git init queues on the semaphore; prisma's 5s default rolls it back
 const transactionMs = 60_000;
@@ -21,34 +25,42 @@ const gitConfig: [string, string][] = [
 export async function createRepo(
   name: string,
   ownerId: string,
-): Promise<ResolvedRepo> {
-  return db.$transaction(
-    async (tx) => {
-      const row = await tx.repo.create({
-        data: { name, ownerId },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          ownerId: true,
-          defaultBranch: true,
-        },
-      });
-      const path = repoPath(row.id);
+): Promise<RepoCreation> {
+  try {
+    const repo = await db.$transaction(
+      async (tx) => {
+        const row = await tx.repo.create({
+          data: { name, ownerId },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            ownerId: true,
+            defaultBranch: true,
+          },
+        });
+        const path = repoPath(row.id);
 
-      mkdirSync(path, { recursive: true });
-      await runGit({
-        args: ["init", "--bare", `--initial-branch=${row.defaultBranch}`],
-        cwd: path,
-        timeoutMs,
-      });
+        mkdirSync(path, { recursive: true });
+        await runGit({
+          args: ["init", "--bare", `--initial-branch=${row.defaultBranch}`],
+          cwd: path,
+          timeoutMs,
+        });
 
-      for (const [key, value] of gitConfig) {
-        await runGit({ args: ["config", key, value], cwd: path, timeoutMs });
-      }
+        for (const [key, value] of gitConfig) {
+          await runGit({ args: ["config", key, value], cwd: path, timeoutMs });
+        }
 
-      return { ...row, path };
-    },
-    { timeout: transactionMs },
-  );
+        return { ...row, path };
+      },
+      { timeout: transactionMs },
+    );
+
+    return { status: "created", repo };
+  } catch (error) {
+    // a losing race blocks on the insert, so nothing reached the disk
+    if (isUniqueViolation(error)) return { status: "taken" };
+    throw error;
+  }
 }
