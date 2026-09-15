@@ -33,7 +33,7 @@ The page budget is a promise that governs how everything is architected:
 
 ### 3 · Secure and accessible makes pages impressible
 
-Security is covered throughout: UUID paths, no HTML in Markdown rendering, blob origin isolation, the semaphore, and rate limiting (§04), to name just a few. Everything is WCAG 2.2 AA compliant across the board.
+Security is covered throughout: UUID paths, no HTML in Markdown rendering, blob origin isolation, the semaphore, and rate limiting (§04), to name just a few. Accessibility is held to WCAG 2.2 AA, and the suite audits thirty page states against the `wcag22aa` ruleset, at both color schemes and both breakpoints, with axe's experimental rules forced on.
 
 Accessibility conformance requires a thoroughly brutal color palette:
 
