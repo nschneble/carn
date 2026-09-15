@@ -34,6 +34,7 @@ const head = (title: string, description: string, path: string) => html`<head>
     <meta property="og:url" content="${config.origin}${path}" />
 
     <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png" />
+    <link rel="canonical" href="${config.origin}${path}" />
     <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon.png" />
     <link rel="shortcut icon" href="/images/favicon.ico" />
     <link rel="stylesheet" href="${styleHref}" />
