@@ -24,6 +24,10 @@ const head = (title: string, description: string, path: string) => html`<head>
 
     <meta property="og:description" content="${description}" />
     <meta property="og:image" content="${config.origin}/images/preview.jpg" />
+    <meta property="og:image:alt" content="A cairn of stacked stones, posterized in pink and lime" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
     <meta property="og:site_name" content="Càrn" />
     <meta property="og:title" content="${title}" />
     <meta property="og:type" content="website" />
