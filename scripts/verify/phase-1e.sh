@@ -1681,8 +1681,8 @@ if require_daemon 36 "$TITLE_36"; then
   [ "$miss_status" = "404" ] || wrong="$wrong the unmatched url answered $miss_status;"
   printf '%s' "$miss_type" | grep -qi 'text/html' \
     || wrong="$wrong the unmatched url answered '$miss_type', not text/html;"
-  grep -qF '<h1 class="t-l">Nothing to see here</h1>' "$work/36miss.body" \
-    || wrong="$wrong the 404 page carries no Nothing to see here heading;"
+  grep -qF '<h1 class="t-l">Nothing here</h1>' "$work/36miss.body" \
+    || wrong="$wrong the 404 page carries no Nothing here heading;"
   grep -qF '{"message"' "$work/36miss.body" \
     && wrong="$wrong the unmatched url still answers as fastify's default json 404;"
   [ "$miss_csp" -ge 1 ] || wrong="$wrong the 404 page carries no Content-Security-Policy header;"
