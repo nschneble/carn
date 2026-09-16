@@ -296,7 +296,7 @@ fixtures["/blob-long-path"] = blobDocument({
 });
 
 fixtures["/error-long-path"] = errorPage({
-  failure: noSuchFile(requestedPath),
+  failure: noSuchFile("linklater", requestedPath),
 });
 
 let site: Served;

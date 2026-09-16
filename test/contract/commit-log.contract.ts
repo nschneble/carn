@@ -585,7 +585,7 @@ test("the ref reaches the heading, the title, and the canonical", () => {
 });
 
 test("a refused ref says what happened, then what to do", () => {
-  const failure = noSuchRef("release/9.9");
+  const failure = noSuchRef("linklater", "release/9.9");
 
   assert.strictEqual(failure.path, "/404");
   assert.ok(failure.said.startsWith("There's no branch, tag, or commit named"));

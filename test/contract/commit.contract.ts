@@ -552,10 +552,10 @@ test("a path the commit doesn't change is a 404", () => {
     "a path outside the commit's diff rendered a page",
   );
 
-  assert.strictEqual(noSuchChange("src/nowhere.ts").path, "/404");
-  assert.strictEqual(noSuchCommit("0".repeat(40)).path, "/404");
+  assert.strictEqual(noSuchChange("linklater", "src/nowhere.ts").path, "/404");
+  assert.strictEqual(noSuchCommit("linklater", "0".repeat(40)).path, "/404");
   assert.doesNotMatch(
-    `${noSuchCommit("abc").said} ${noSuchChange("a/b").next}`,
+    `${noSuchCommit("linklater", "abc").said} ${noSuchChange("linklater", "a/b").next}`,
     /Oops|sorry|[!…]/i,
   );
 });

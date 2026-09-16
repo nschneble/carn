@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { repoTrail } from "./breadcrumb.js";
 import { html } from "./index.js";
 import { page } from "./page.js";
 
-// path is each failure's own og:url, /404 or /503, never the request's
+// path is each failure's own og:url, /404 or /503, never the request's.
+// repo is the resolved repo the failure was reached inside, or null when
+// none is known, which decides the masthead and the closing link below
 export type Failure = {
   title: string;
   heading: string;
   said: string;
   next: string;
   path: string;
+  repo: string | null;
 };
 
 export const noSuchRepo = (name: string): Failure => ({
@@ -18,54 +22,61 @@ export const noSuchRepo = (name: string): Failure => ({
   said: `There's no repo named ${name} on this server.`,
   next: "Check the spelling, or push to this name to create it.",
   path: "/404",
+  repo: null,
 });
 
-export const noSuchFile = (path: string): Failure => ({
+export const noSuchFile = (repo: string, path: string): Failure => ({
   title: `No file at ${path} · Càrn`,
   heading: "No file here",
   said: `There's no file at ${path} on that ref.`,
   next: "Check the path and the ref, or browse the repo.",
   path: "/404",
+  repo,
 });
 
-export const noBlobPath: Failure = {
+export const noBlobPath = (repo: string): Failure => ({
   title: "No path here · Càrn",
   heading: "No path here",
   said: "That URL names a ref but no file inside it.",
   next: "A file URL ends with the path to a file. The repo page lists what's there.",
   path: "/404",
-};
+  repo,
+});
 
-export const noSuchTree = (path: string): Failure => ({
+export const noSuchTree = (repo: string, path: string): Failure => ({
   title: `No directory at ${path} · Càrn`,
   heading: "No directory here",
   said: `There's no directory at ${path} on that ref.`,
   next: "Check the path and the ref, or browse the repo.",
   path: "/404",
+  repo,
 });
 
-export const noSuchRef = (ref: string): Failure => ({
+export const noSuchRef = (repo: string, ref: string): Failure => ({
   title: `No ref named ${ref} · Càrn`,
   heading: "No ref here",
   said: `There's no branch, tag, or commit named ${ref} in this repo.`,
   next: "Check the ref, or browse the repo.",
   path: "/404",
+  repo,
 });
 
-export const noSuchCommit = (sha: string): Failure => ({
+export const noSuchCommit = (repo: string, sha: string): Failure => ({
   title: `No commit ${sha} · Càrn`,
   heading: "No commit here",
   said: `There's no commit ${sha} in this repo.`,
   next: "Check the id, or find it in the log.",
   path: "/404",
+  repo,
 });
 
-export const noSuchChange = (path: string): Failure => ({
+export const noSuchChange = (repo: string, path: string): Failure => ({
   title: `No change to ${path} · Càrn`,
   heading: "No change here",
   said: `That commit doesn't change ${path}.`,
   next: "Check the path, or read the whole commit.",
   path: "/404",
+  repo,
 });
 
 export const unavailable: Failure = {
@@ -74,23 +85,26 @@ export const unavailable: Failure = {
   said: "The page failed to load on the server.",
   next: "Try again shortly.",
   path: "/503",
+  repo: null,
 };
 
 export const badRepoName: Failure = {
   title: "Not a repo name · Càrn",
   heading: "Not a repo name",
   said: "That URL doesn't carry a repo name this server can look up.",
-  next: "A name is letters, numbers, dots, dashes, and underscores, up to 40 characters. Check the URL, or find the repo in all repos.",
+  next: "A name is letters, numbers, dots, dashes, and underscores, up to 40 characters. Check the URL.",
   path: "/404",
+  repo: null,
 };
 
 // no route matched, so there is no repo, ref, or path here to name
 export const noSuchRoute: Failure = {
-  title: "Nothing to see here · Càrn",
-  heading: "Nothing to see here",
+  title: "Nothing here · Càrn",
+  heading: "Nothing here",
   said: "That URL doesn't match a route on this server.",
   next: "Check the URL.",
   path: "/404",
+  repo: null,
 };
 
 export function errorPage(view: { failure: Failure }): string {
@@ -100,11 +114,16 @@ export function errorPage(view: { failure: Failure }): string {
     title: failure.title,
     description: failure.said,
     path: failure.path,
+    crumbs: failure.repo === null ? undefined : repoTrail(failure.repo),
     main: html`<h1 class="t-l">${failure.heading}</h1>
       <div class="empty">
         <p class="t-body">${failure.said}</p>
         <p class="t-body">${failure.next}</p>
-        <p><a class="t-mono" href="/">All repos</a></p>
+        ${
+          failure.repo === null
+            ? html`<p><a class="t-mono" href="/">All repos</a></p>`
+            : html``
+        }
       </div>`,
   });
 }
