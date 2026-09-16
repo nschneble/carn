@@ -41,21 +41,20 @@ import { loadRepoView } from "../repos/show.js";
 import { listTree, resolveTip } from "../repos/tree.js";
 import { revalidate, sendPage, sendStatus } from "./cache.js";
 
-type PageRoute = { Params: { repo: string }; Querystring: { all?: string } };
-type RefRoute = { Params: { repo: string } };
-type TreeRefRoute = { Params: { repo: string; rev: string } };
-type AssetRoute = { Params: { repo: string; asset: string } };
-type BlobRoute = { Params: { repo: string; rev: string; "*": string } };
-type CommitRoute = { Params: { repo: string; sha: string } };
-type ChangeRoute = { Params: { repo: string; sha: string; "*": string } };
+type RepoRoute = { Params: { repo: string } };
+type PageRoute = RepoRoute & { Querystring: { all?: string } };
+type TreeRefRoute = RepoRoute & { Params: { rev: string } };
+type AssetRoute = RepoRoute & { Params: { asset: string } };
+type BlobRoute = RepoRoute & { Params: { rev: string; "*": string } };
+type CommitRoute = RepoRoute & { Params: { sha: string } };
+type ChangeRoute = RepoRoute & { Params: { sha: string; "*": string } };
 
-type TreeRoute = {
-  Params: { repo: string; rev: string; "*": string };
+type TreeRoute = RepoRoute & {
+  Params: { rev: string; "*": string };
   Querystring: { all?: string };
 };
 
-type LogRoute = {
-  Params: { repo: string };
+type LogRoute = RepoRoute & {
   Querystring: {
     ref?: string | string[];
     from?: string | string[];
@@ -94,7 +93,7 @@ function fail(
 }
 
 async function resolveOrFail(
-  request: FastifyRequest<{ Params: { repo: string } }>,
+  request: FastifyRequest<RepoRoute>,
   reply: FastifyReply,
 ): Promise<ResolvedRepo | null> {
   const found = await resolveRepo(request.params.repo);
@@ -214,7 +213,7 @@ async function showBlob(
 
 // /r/:repo is the root tree: a bare ref names nothing, so no lookup
 function toRepoRoot(
-  request: FastifyRequest<{ Params: { repo: string } }>,
+  request: FastifyRequest<RepoRoute>,
   reply: FastifyReply,
 ): FastifyReply {
   return reply.redirect(`/r/${encodeURIComponent(request.params.repo)}`, 301);
@@ -306,7 +305,7 @@ async function showCommits(
 }
 
 async function showRefs(
-  request: FastifyRequest<RefRoute>,
+  request: FastifyRequest<RepoRoute>,
   reply: FastifyReply,
   kind: RefKind,
 ): Promise<FastifyReply> {
@@ -461,11 +460,11 @@ export function repoPageRoutes(app: FastifyInstance): void {
   app.get<CommitRoute>("/r/:repo/commits/:sha", showCommit);
   app.get<PageRoute>("/r/:repo", showRepo);
 
-  app.get<RefRoute>("/r/:repo/branches", (request, reply) =>
+  app.get<RepoRoute>("/r/:repo/branches", (request, reply) =>
     showRefs(request, reply, "branch"),
   );
 
-  app.get<RefRoute>("/r/:repo/tags", (request, reply) =>
+  app.get<RepoRoute>("/r/:repo/tags", (request, reply) =>
     showRefs(request, reply, "tag"),
   );
 }

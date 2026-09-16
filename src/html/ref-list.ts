@@ -59,7 +59,12 @@ function row(view: RefListPage, ref: Ref): Raw {
 
 function truncated(view: RefListPage, shown: number, more: boolean): Raw {
   if (!more) return html``;
-  return html`<p class="t-note">Showing the first ${shown} ${refNouns[view.list.kind].many}.</p>
+
+  // a count of one reads as a quantity where the noun alone reads as rank
+  const nouns = refNouns[view.list.kind];
+  const counted = shown === 1 ? nouns.one : `${shown} ${nouns.many}`;
+
+  return html`<p class="t-note">Showing the first ${counted}.</p>
       `;
 }
 

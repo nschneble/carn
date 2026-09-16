@@ -55,6 +55,11 @@ function formatCount(count: number): string {
   return `${count < 0 ? "-" : ""}${groups.join(",")}`;
 }
 
+// a count of one reads as a quantity where the noun alone reads as rank
+function firstLines(shown: number): string {
+  return shown === 1 ? "line" : `${formatCount(shown)} lines`;
+}
+
 function formatBytes(bytes: number): string {
   let scaled = bytes;
   let unit = 0;
@@ -147,7 +152,7 @@ function sourceDocument(
     shown === null
       ? html`<pre class="src" tabindex="0" role="region" aria-labelledby="blob-h"><code class="${cls}">${body}</code></pre>`
       : html`<pre class="src" tabindex="0" role="region" aria-labelledby="blob-h" aria-describedby="blob-cut"><code class="${cls}">${body}</code></pre>
-      <p class="t-note" id="blob-cut">Showing the first ${formatCount(shown)} lines of ${formatCount(blob.lines)}.</p>`;
+      <p class="t-note" id="blob-cut">Showing the first ${firstLines(shown)} of ${formatCount(blob.lines)}.</p>`;
 
   return shell(
     view,

@@ -234,8 +234,11 @@ const states = {
   "show-header": showDocument({ repo: view({ header: committedHeader }) }),
   "not-found": errorPage({ failure: noSuchRepo("linklater") }),
   blob: blobDocument(),
-  "blob-cut": blobDocument({ rawOrigin, sheetWire: 29_000 }),
   "blob-image": blobDocument({ blob: imageBlob, rawOrigin }),
+
+  // sheetWire squeezes the budget until the page truncates; this line
+  // holds from 28,873 to 28,939
+  "blob-cut": blobDocument({ rawOrigin, sheetWire: 28_906 }),
 
   "blob-binary": blobDocument({
     blob: binaryBlob("media/clip.mp4", 4_404_019),
@@ -246,15 +249,16 @@ const states = {
     log: log({ commits: commits(9), next: null }),
   }),
 
+  // sheetWire squeezes the budget until the page truncates; this line
+  // holds from 25,666 to 25,966
+  "commit-cut": commitDocument({
+    commit: detail({ files: noisyFiles(12, 8) }),
+    sheetWire: 25_816,
+  }),
+
   "commits-none": logDocument({ log: log({ commits: [], next: null }) }),
   commits: logDocument(),
   commit: commitDocument(),
-
-  "commit-cut": commitDocument({
-    commit: detail({ files: noisyFiles(12, 8) }),
-    sheetWire: 26_000,
-  }),
-
   "commit-binary": commitDocument({ commit: detail({ files: [binaryFile] }) }),
   "commit-file": changeDocument("src/reader.ts"),
   branches: refsDocument(),
@@ -723,6 +727,11 @@ test("the truncated blob fixture is genuinely truncated", () => {
   const cut = states["blob-cut"];
 
   assert.match(cut, /<p class="t-note" id="blob-cut">Showing the first /);
+  assert.match(
+    cut,
+    /Showing the first line of/,
+    "the one-line fixture counts where the noun alone says it",
+  );
   assert.match(cut, /aria-describedby="blob-cut"/);
   assert.ok(cut.includes("Show entire file"));
   assert.doesNotMatch(

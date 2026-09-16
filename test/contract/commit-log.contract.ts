@@ -560,6 +560,28 @@ test("the ref reaches the heading, the title, and the canonical", () => {
     ),
     "page two's canonical claims to be page one",
   );
+
+  // two trails can reach one page, so a canonical carrying the trail
+  // would declare the same content under more than one url
+  const trailed = logDocument({
+    log: log({ ref: "main" }),
+    from: "b".repeat(40),
+    back: ["a".repeat(40), "c".repeat(40)],
+  });
+  const canonical = /<link rel="canonical" href="([^"]+)"/.exec(trailed)?.[1];
+
+  assert.strictEqual(
+    canonical,
+    `https://carn.fancyenchiladas.net/r/linklater/commits?ref=main&amp;from=${"b".repeat(40)}`,
+    "the cursor trail reached the canonical, so one page has two of them",
+  );
+
+  // the trail still belongs in the navigation it was built for
+  assert.match(
+    trailed,
+    /href="[^"]*back=/,
+    "the Newer link lost the trail it walks back along",
+  );
 });
 
 test("a refused ref says what happened, then what to do", () => {
