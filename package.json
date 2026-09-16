@@ -18,10 +18,14 @@
     "migrate": "set -a && . ./.env && set +a && prisma migrate deploy",
     "prepare": "git config core.hooksPath .githooks || true",
     "pretest": "npm run build",
+    "previsual": "npm run build",
+    "previsual:approve": "npm run build",
+    "previsual:seed": "npm run build",
     "test": "node --env-file-if-exists=.env --enable-source-maps --test \"dist/test/**/*.js\"",
-    "visual": "npm run build && sh scripts/visual.sh",
-    "visual:approve": "npm run build && sh scripts/approve.sh",
-    "visual:seed": "npm run build && sh scripts/visual.sh --seed-only"
+    "visual": "sh scripts/visual.sh",
+    "visual:approve": "sh scripts/approve.sh",
+    "visual:refresh": "sh scripts/visual-docker.sh",
+    "visual:seed": "sh scripts/visual.sh --seed-only"
   },
   "allowScripts": {
     "@prisma/engines@7.9.1": true,
