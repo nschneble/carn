@@ -1,0 +1,5 @@
+{
+  "action": "error-no-repo",
+  "steps": [{ "kind": "navigate", "path": "/r/nope" }],
+  "expect": { "anyOf": [{ "role": "heading", "text": "No repo here" }] }
+}
