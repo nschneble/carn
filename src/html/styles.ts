@@ -108,6 +108,9 @@ export const tokens = css`:root {
 }`;
 
 export const components = css`body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
   background: var(--ground);
   color: var(--ink);
   font-family: var(--f-display);
@@ -194,6 +197,7 @@ export const components = css`body {
   font-variation-settings: "wdth" 100, "wght" 400;
   font-size: 16.5px;
   line-height: 1.62;
+  text-wrap: pretty;
 }
 
 .t-label {
@@ -203,6 +207,11 @@ export const components = css`body {
   letter-spacing: 0.11em;
   text-transform: uppercase;
   color: var(--ink-faint);
+}
+
+.repos > caption.t-label {
+  text-align: left;
+  padding: 0 var(--s2);
 }
 
 /* a short explanatory sentence */
@@ -374,8 +383,8 @@ export const components = css`body {
 
 /* no display values on any table element; fixed not auto */
 .tbl {
-  width: calc(100% + var(--s2));
-  margin-left: calc(var(--s2) * -1);
+  width: calc(100% + (var(--s2) * 2));
+  margin-inline: calc(var(--s2) * -1);
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -389,11 +398,15 @@ export const components = css`body {
 }
 
 .tbl thead th {
-  border-bottom: 1px solid var(--ink);
-  padding: 0 var(--s4) var(--s2) 0;
+  border-bottom: 1px solid var(--rule-soft);
+  padding: 0 var(--s2) var(--s2) 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tbl.repos thead {
+  border-bottom: 1px solid var(--rule-soft);
 }
 
 .tbl thead .age,
@@ -426,13 +439,18 @@ export const components = css`body {
 }
 
 /* the name is the only link so the wash stays inside the clickable area */
+
 .tree tbody .name:hover,
 .tree tbody .name:focus-within,
-.repos tbody .name:hover,
-.repos tbody .name:focus-within,
 .files tbody .name:hover,
 .files tbody .name:focus-within {
   background: var(--sunk);
+}
+
+.repos .name:hover,
+.repos .name:focus-within {
+  background: var(--accent-fill);
+  color: var(--on-accent);
 }
 
 /* every cell is a target, so the box sits on the child that fills it */
@@ -443,6 +461,22 @@ export const components = css`body {
   padding: 6px var(--s4) 6px 0;
 }
 
+.tbl tbody td.msg {
+  padding: 0 var(--s2) 0 var(--s4);
+}
+
+.tbl tbody td.msg > * {
+  padding: 0;
+}
+
+.repos .msg > * {
+  min-height: 0;
+}
+
+.repos .msg {
+  vertical-align: middle;
+}
+
 .tbl a {
   text-decoration: none;
 }
@@ -450,12 +484,20 @@ export const components = css`body {
 .tbl a:hover,
 .tbl a:focus-visible {
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: 3px;
 }
 
 /* name is link text + row's a11y name, so it wraps not truncates */
-.tbl .name > * {
+
+.repos .name > * {
+  font-size: clamp(1.75rem, 7.5vw, 3rem);
   color: var(--ink);
+}
+
+.repos .name:hover > *,
+.repos .name:focus-within > * {
+  background: var(--accent-fill);
+  color: var(--on-accent);
 }
 
 .tbl .name a:focus-visible {
@@ -497,6 +539,13 @@ export const components = css`body {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+.repos .msg time {
+  font-variant-numeric: tabular-nums;
+}
+
+.repos .c-name {
+  width: 100%;
+}
 
 @media (min-width: 640px) {
   .repos .msg,
@@ -504,7 +553,7 @@ export const components = css`body {
     display: table-cell;
   }
 
-  .tbl .name {
+  .repos .c-name {
     width: 65%;
   }
 }
@@ -729,37 +778,58 @@ body > header,
 body > main,
 body > footer {
   box-sizing: border-box;
-  max-width: 1160px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 0 var(--s5);
+  padding-inline: var(--s4);
 }
 
 body > header {
-  padding-top: var(--s5);
-  padding-bottom: var(--s6);
-}
-
-/* inset to the gutters so it matches every rule inside main */
-body > footer {
+  width: 100%;
   position: relative;
-  border-top: 0;
-  margin-top: var(--s8);
-  padding-top: var(--s4);
-  padding-bottom: var(--s8);
+  margin-bottom: var(--s8);
+  padding-block: var(--s5);
 }
 
+body > main {
+  width: 100%;
+  flex: 1;
+}
+
+body > footer {
+  width: 100%;
+  position: relative;
+  margin-top: var(--s8);
+  padding-block: var(--s4) var(--s8);
+}
+
+/* a border sits on its own box, so an inset rule has to be drawn */
+body > header::before,
 body > footer::before {
   content: "";
   position: absolute;
+  left: var(--s2);
+  right: var(--s2);
+}
+
+body > header::before {
+  bottom: 0;
+  border-top: 1px solid var(--ink);
+}
+
+body > footer::before {
   top: 0;
-  left: var(--s5);
-  right: var(--s5);
   border-top: 1px solid var(--rule);
 }
 
 body > header > p,
 body > footer > p {
   margin: 0;
+}
+
+body > main a,
+body > footer a
+{
+  text-underline-offset: 3px;
 }
 
 main > h1 {
@@ -774,18 +844,24 @@ main > h1 {
   overflow-wrap: anywhere;
 }
 
-.empty code {
+.empty .src {
+  max-width: var(--measure);
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
 .home {
+  font-variation-settings: "wdth" 110, "wght" 700;
+  font-size: 16px;
   color: var(--ink);
   text-decoration: none;
+  text-transform: uppercase;
 }
 
 .home:hover,
 .home:focus-visible {
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* breadcrumb */

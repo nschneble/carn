@@ -2,7 +2,7 @@
 
 import type { RepoSummary } from "../repos/list.js";
 import { sshRemote } from "../repos/remote.js";
-import { ageCell } from "./age.js";
+import { age } from "./age.js";
 import { emptyState } from "./empty-state.js";
 import { plainName } from "./filename.js";
 import { html, type Raw } from "./index.js";
@@ -11,9 +11,14 @@ import { page } from "./page.js";
 function row(repo: RepoSummary, now: Date): Raw {
   return html`<tr class="row">
             <th class="name" scope="row"><a class="t-item" lang="en" href="/r/${repo.name}">${plainName(repo.name)}</a></th>
-            <td class="msg"><span>${repo.description || "-"}</span></td>
-            ${ageCell(repo.createdAt, now)}
+            <td class="msg"><span>${repo.description || html`<em>No description</em>`}</span><span>Created <time datetime="${repo.createdAt.toISOString()}">${age(repo.createdAt, now)}</time> ago</span></td>
           </tr>`;
+}
+
+function repoListTableCaption(numRepos: number): string {
+  if (numRepos === 1) return "1 Repo";
+
+  return `${numRepos} Repos · Listed A→Z`;
 }
 
 export function repoListPage(view: {
@@ -22,17 +27,23 @@ export function repoListPage(view: {
 }): string {
   const main =
     view.repos.length === 0
-      ? emptyState(
-          "No repos yet. Every repo on this server is listed here, and pushing to a name that doesn't exist creates it.",
+      ? html`      <h1 class="t-l">No repos yet</h1>
+        ${emptyState(
+          "Every repo on this server is listed here, and pushing to a name that doesn't exist creates it.",
           `git push ${sshRemote("your-repo")} main`,
-        )
-      : html`      <table class="tbl repos">
-        <caption class="vh">Repositories</caption>
+        )}
+      `
+      : html`      <h1 class="vh">Repos</h1>
+      <table class="tbl repos">
+        <caption class="t-label">${repoListTableCaption(view.repos.length)}</caption>
+        <colgroup>
+          <col class="c-name" />
+          <col class="c-msg" />
+        </colgroup>
         <thead>
           <tr>
-            <th class="name t-label" scope="col">Name</th>
-            <th class="msg t-label" scope="col">About</th>
-            <th class="age t-label" scope="col">Age</th>
+            <th class="name vh" scope="col">Name</th>
+            <th class="vh" scope="col">Description and age</th>
           </tr>
         </thead>
         <tbody>
@@ -42,9 +53,8 @@ export function repoListPage(view: {
 
   return page({
     title: "Càrn",
-    description: "Repositories",
+    description: "Repos",
     path: "/",
-    main: html`<h1 class="t-item t-item--title">Repositories</h1>
-${main}`,
+    main: html`${main}`,
   });
 }
