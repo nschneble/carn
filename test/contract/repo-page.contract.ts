@@ -449,10 +449,16 @@ test("a 404 page says what happened, then what to do", () => {
     assert.doesNotMatch(markup, /<script/i);
   }
 
-  assert.ok(missing.includes("<title>No repo named linklater · Càrn</title>"));
+  assert.ok(
+    missing.includes(
+      "<title>No repo named &quot;linklater&quot; · Càrn</title>",
+    ),
+  );
   assert.ok(bad.includes(html`${badRepoName.said}`.value));
   assert.ok(
-    missing.includes("There&#39;s no repo named linklater on this server."),
+    missing.includes(
+      "There&#39;s no repo named &quot;linklater&quot; on this server.",
+    ),
     "the copy no longer reaches the page through the escaping tag",
   );
 });

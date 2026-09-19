@@ -35,7 +35,7 @@ readonly SPAWN_BUDGET=12
 readonly SSH_FLAGS="-o IdentitiesOnly=yes -o IdentityAgent=none -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o LogLevel=ERROR -o ConnectTimeout=5"
 readonly CSP="base-uri 'none'; default-src 'none'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self';"
 # as served: error-page.ts writes an apostrophe and the html tag escapes it
-readonly NO_REPO="There&#39;s no repo named $ABSENT_NAME on this server."
+readonly NO_REPO="There&#39;s no repo named &quot;$ABSENT_NAME&quot; on this server."
 readonly BAD_NAME="That URL doesn&#39;t carry a repo name this server can look up."
 readonly NO_README="No README yet. A README.md at the root of main is rendered here, under the file tree."
 readonly REL='rel="nofollow ugc"'

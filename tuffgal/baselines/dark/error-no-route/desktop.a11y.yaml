@@ -5,7 +5,7 @@
     - link "Càrn":
       - /url: /
 - main:
-  - heading "Nothing to see here" [level=1]
+  - heading "Nothing here" [level=1]
   - paragraph: That URL doesn't match a route on this server.
   - paragraph: Check the URL.
   - paragraph:

@@ -1,0 +1,32 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - navigation "Breadcrumb":
+    - list:
+      - listitem:
+        - link "Càrn":
+          - /url: /
+      - listitem: sparrow
+- main:
+  - heading "sparrow" [level=1]
+  - navigation "Repo views":
+    - list:
+      - listitem:
+        - link "Commits":
+          - /url: /r/sparrow/commits?ref=main
+      - listitem:
+        - link "Branches":
+          - /url: /r/sparrow/branches
+      - listitem:
+        - link "Tags":
+          - /url: /r/sparrow/tags
+  - paragraph: No commits yet. The file tree at main is shown here once something is pushed to it.
+  - paragraph:
+    - code: git push ssh://git@127.0.0.1:2222/sparrow main
+  - text: No README yet.
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

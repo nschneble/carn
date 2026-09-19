@@ -1,4 +1,8 @@
 {
-  "story": "A visitor reads the repo index, then a repo",
-  "actions": [{ "action": "repo-index" }, { "action": "repo-show" }]
+  "story": "A visitor reads the repo index, then a repo, then one with no commits",
+  "actions": [
+    { "action": "repo-index" },
+    { "action": "repo-show" },
+    { "action": "sparrow-show" }
+  ]
 }

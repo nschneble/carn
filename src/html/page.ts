@@ -42,7 +42,7 @@ const head = (title: string, description: string, path: string) => html`<head>
 
 const masthead = (crumbs: Crumb[] | undefined) =>
   crumbs === undefined
-    ? html`<p class="t-mono"><a class="home" href="/">Càrn</a></p>`
+    ? html`<p><a class="home" href="/">Càrn</a></p>`
     : breadcrumb(crumbs);
 
 const body = (main: Raw, crumbs: Crumb[] | undefined) => html`<body>

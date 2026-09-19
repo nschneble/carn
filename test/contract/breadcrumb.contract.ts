@@ -190,7 +190,7 @@ test("the index page keeps its own masthead, unchanged", () => {
 
   assert.ok(
     markup.includes(
-      '<a class="skip" href="#main">Skip to content</a>\n      <p class="t-mono"><a class="home" href="/">Càrn</a></p>',
+      '<a class="skip" href="#main">Skip to content</a>\n      <p><a class="home" href="/">Càrn</a></p>',
     ),
     "the index masthead changed shape",
   );

@@ -181,11 +181,12 @@ async function showBlob(
   reply: FastifyReply,
 ): Promise<FastifyReply> {
   const path = request.params["*"];
-  if (path === "") return fail(request, reply, 404, noBlobPath);
 
   try {
     const found = await resolveOrFail(request, reply);
     if (found === null) return reply;
+
+    if (path === "") return fail(request, reply, 404, noBlobPath(found.name));
 
     const blob = await loadBlobView({
       repoPath: found.path,
@@ -194,7 +195,8 @@ async function showBlob(
       signal: abortWith(reply),
     });
 
-    if (blob === null) return fail(request, reply, 404, noSuchFile(path));
+    if (blob === null)
+      return fail(request, reply, 404, noSuchFile(found.name, path));
 
     return sendPage(
       request,
@@ -239,7 +241,8 @@ async function showTree(
       signal: abortWith(reply),
     });
 
-    if (tree === null) return fail(request, reply, 404, noSuchTree(path));
+    if (tree === null)
+      return fail(request, reply, 404, noSuchTree(found.name, path));
 
     return sendPage(
       request,
@@ -266,14 +269,19 @@ async function showCommits(
   const asked = request.query.ref;
   const from = request.query.from ?? null;
 
-  // a repeated query key parses to an array, which is refused here
-  if (Array.isArray(asked) || Array.isArray(from)) {
-    return fail(request, reply, 404, noSuchRef(String(asked ?? from)));
-  }
-
   try {
     const found = await resolveOrFail(request, reply);
     if (found === null) return reply;
+
+    // a repeated query key parses to an array, which is refused here
+    if (Array.isArray(asked) || Array.isArray(from)) {
+      return fail(
+        request,
+        reply,
+        404,
+        noSuchRef(found.name, String(asked ?? from)),
+      );
+    }
 
     const ref = asked ?? found.defaultBranch;
     const log = await loadCommitLog({
@@ -284,7 +292,7 @@ async function showCommits(
     });
 
     if (log === null && (asked !== undefined || from !== null)) {
-      return fail(request, reply, 404, noSuchRef(from ?? ref));
+      return fail(request, reply, 404, noSuchRef(found.name, from ?? ref));
     }
 
     return sendPage(
@@ -353,13 +361,15 @@ async function showCommit(
       signal: abortWith(reply),
     });
 
-    if (commit === null) return fail(request, reply, 404, noSuchCommit(sha));
+    if (commit === null)
+      return fail(request, reply, 404, noSuchCommit(found.name, sha));
 
     const view = { repo: found.name, commit, now: now() };
     if (path === null) return sendPage(request, reply, commitPage(view));
 
     const one = commitFilePage(view, path);
-    if (one === null) return fail(request, reply, 404, noSuchChange(path));
+    if (one === null)
+      return fail(request, reply, 404, noSuchChange(found.name, path));
 
     return sendPage(request, reply, one);
   } catch (error) {

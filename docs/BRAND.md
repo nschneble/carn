@@ -99,6 +99,9 @@ Every element in every state.
 
 ```css
 body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
   background: var(--ground);
   color: var(--ink);
   font-family: var(--f-display);
@@ -185,6 +188,7 @@ body {
   font-variation-settings: "wdth" 100, "wght" 400;
   font-size: 16.5px;
   line-height: 1.62;
+  text-wrap: pretty;
 }
 
 .t-label {
@@ -194,6 +198,11 @@ body {
   letter-spacing: 0.11em;
   text-transform: uppercase;
   color: var(--ink-faint);
+}
+
+.repos > caption.t-label {
+  text-align: left;
+  padding: 0 var(--s2);
 }
 
 /* a short explanatory sentence */
@@ -365,8 +374,8 @@ body {
 
 /* no display values on any table element; fixed not auto */
 .tbl {
-  width: calc(100% + var(--s2));
-  margin-left: calc(var(--s2) * -1);
+  width: calc(100% + (var(--s2) * 2));
+  margin-inline: calc(var(--s2) * -1);
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -380,11 +389,15 @@ body {
 }
 
 .tbl thead th {
-  border-bottom: 1px solid var(--ink);
-  padding: 0 var(--s4) var(--s2) 0;
+  border-bottom: 1px solid var(--rule-soft);
+  padding: 0 var(--s2) var(--s2) 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tbl.repos thead {
+  border-bottom: 1px solid var(--rule-soft);
 }
 
 .tbl thead .age,
@@ -417,13 +430,18 @@ body {
 }
 
 /* the name is the only link so the wash stays inside the clickable area */
+
 .tree tbody .name:hover,
 .tree tbody .name:focus-within,
-.repos tbody .name:hover,
-.repos tbody .name:focus-within,
 .files tbody .name:hover,
 .files tbody .name:focus-within {
   background: var(--sunk);
+}
+
+.repos .name:hover,
+.repos .name:focus-within {
+  background: var(--accent-fill);
+  color: var(--on-accent);
 }
 
 /* every cell is a target, so the box sits on the child that fills it */
@@ -434,6 +452,22 @@ body {
   padding: 6px var(--s4) 6px 0;
 }
 
+.tbl tbody td.msg {
+  padding: 0 var(--s2) 0 var(--s4);
+}
+
+.tbl tbody td.msg > * {
+  padding: 0;
+}
+
+.repos .msg > * {
+  min-height: 0;
+}
+
+.repos .msg {
+  vertical-align: middle;
+}
+
 .tbl a {
   text-decoration: none;
 }
@@ -441,12 +475,20 @@ body {
 .tbl a:hover,
 .tbl a:focus-visible {
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: 3px;
 }
 
 /* name is link text + row's a11y name, so it wraps not truncates */
-.tbl .name > * {
+
+.repos .name > * {
+  font-size: clamp(1.75rem, 7.5vw, 3rem);
   color: var(--ink);
+}
+
+.repos .name:hover > *,
+.repos .name:focus-within > * {
+  background: var(--accent-fill);
+  color: var(--on-accent);
 }
 
 .tbl .name a:focus-visible {
@@ -488,6 +530,13 @@ body {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+.repos .msg time {
+  font-variant-numeric: tabular-nums;
+}
+
+.repos .c-name {
+  width: 100%;
+}
 
 @media (min-width: 640px) {
   .repos .msg,
@@ -495,7 +544,7 @@ body {
     display: table-cell;
   }
 
-  .tbl .name {
+  .repos .c-name {
     width: 65%;
   }
 }

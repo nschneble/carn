@@ -432,7 +432,7 @@ test("the wash covers what takes a click, by row or by cell", () => {
   );
   assert.match(
     rule(
-      ".tree tbody .name:hover,\n.tree tbody .name:focus-within,\n.repos tbody .name:hover,\n.repos tbody .name:focus-within,\n.files tbody .name:hover,\n.files tbody .name:focus-within",
+      ".tree tbody .name:hover,\n.tree tbody .name:focus-within,\n.files tbody .name:hover,\n.files tbody .name:focus-within",
     ),
     /background: var\(--sunk\);/,
   );
