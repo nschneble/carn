@@ -86,9 +86,7 @@ test("one h1, the list's own label, and no other heading", () => {
 
   assert.strictEqual([...markup.matchAll(/<h[1-6][ >]/g)].length, 1);
   assert.doesNotMatch(markup, /class="[^"]*t-xl/);
-  assert.ok(
-    markup.includes('<h1 class="t-item t-item--title">Repositories</h1>'),
-  );
+  assert.ok(markup.includes('<h1 class="vh">Repos</h1>'));
 });
 
 test("the index lists every repo, with no cap and no show-all", () => {
@@ -113,9 +111,18 @@ test("the index lists every repo, with no cap and no show-all", () => {
 test("a row is an anchored name, a description slot, and a datetime", () => {
   const markup = indexDocument();
 
+  assert.match(
+    markup,
+    /<colgroup>\s*<col class="c-name" \/>\s*<col class="c-msg" \/>\s*<\/colgroup>/,
+  );
   assert.ok(markup.includes('<table class="tbl repos">'));
-  assert.ok(markup.includes('<caption class="vh">Repositories</caption>'));
-  assert.ok(markup.includes('<th class="name t-label" scope="col">Name</th>'));
+  assert.ok(
+    markup.includes('<caption class="t-label">5 Repos · Listed A→Z</caption>'),
+  );
+  assert.ok(markup.includes('<th class="name vh" scope="col">Name</th>'));
+  assert.ok(
+    markup.includes('<th class="vh" scope="col">Description and age</th>'),
+  );
   assert.ok(
     markup.includes(
       `<th class="name" scope="row"><a class="t-item" lang="en" href="/r/linklater">${plainName("linklater").value}</a></th>`,
@@ -127,9 +134,9 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
   assert.match(
     markup,
     new RegExp(
-      `<a class="t-item" lang="en" href="/r/${noDescription.name}">${plainName(noDescription.name).value}</a></th>\\s*<td class="msg"><span>-</span></td>`,
+      `<a class="t-item" lang="en" href="/r/${noDescription.name}">${plainName(noDescription.name).value}</a></th>\\s*<td class="msg"><span><em>No description</em></span><span>Created`,
     ),
-    "a repo with no description dropped its .msg cell or its dash, so the columns no longer line up",
+    "a repo with no description dropped its .msg cell or its placeholder",
   );
 
   assert.strictEqual(
@@ -137,14 +144,11 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
     populated.length,
   );
 
-  // the Created column header names this cell, so it carries no vh label
   assert.ok(
     markup.includes(
-      '<td class="age"><time datetime="2026-05-11T08:30:00.000Z">15w</time></td>',
+      '<td class="msg"><span>Save a URL, read it later.</span><span>Created <time datetime="2026-05-11T08:30:00.000Z">15w</time> ago</span></td>',
     ),
   );
-
-  assert.doesNotMatch(markup, /<span class="vh">Created <\/span>/);
 });
 
 test("a repo name wears the caps wrapper like every other Row, and no tooltip", () => {
@@ -179,37 +183,36 @@ test("a dot in a repo name is part of the name, not an extension", () => {
 test("a description is escaped, never interpolated raw", () => {
   const markup = indexDocument();
 
-  assert.doesNotMatch(markup, /<td class="msg"><span>[^<]*<(?!\/span)/);
   assert.ok(
     markup.includes(
-      '<td class="msg"><span>The blob origin. &quot;Say &lt;what&gt; it does&quot; &amp; why.</span></td>',
+      "<span>The blob origin. &quot;Say &lt;what&gt; it does&quot; &amp; why.</span>",
     ),
   );
+  assert.doesNotMatch(markup, /Say <what> it does/);
 });
 
 test("the empty state says what would be here and how to make one", () => {
   const markup = indexDocument({ repos: [] });
 
-  assert.doesNotMatch(markup, /<pre[ >]/);
   assert.strictEqual(rows(markup), 0);
   assert.ok(markup.includes("<footer>"));
 
-  assert.ok(
-    markup.includes('<h1 class="t-item t-item--title">Repositories</h1>'),
-  );
+  assert.ok(markup.includes('<h1 class="t-l">No repos yet</h1>'));
 
   assert.ok(
     markup.includes(
-      `<code class="t-mono">git push ${sshRemote("your-repo")} main</code>`,
+      `<pre class="src"><code>git push ${sshRemote("your-repo")} main</code></pre>`,
     ),
     "the empty state's command doesn't come from config",
   );
 
   const start = markup.indexOf('<div class="empty">');
   assert.notStrictEqual(start, -1, "the empty state is missing");
-  const copy = markup.slice(start, markup.indexOf("</div>", start));
 
-  assert.ok(copy.includes("No repos yet."));
+  const main = markup.indexOf('<main id="main" tabindex="-1">');
+  const copy = markup.slice(main, markup.indexOf("</main>", main));
+
+  assert.ok(copy.includes("No repos yet"));
   assert.ok(
     copy.includes("pushing to a name that doesn&#39;t exist creates it"),
   );

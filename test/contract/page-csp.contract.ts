@@ -48,9 +48,9 @@ const axes = mark.value.match(/font-weight="(\d+)" font-stretch="(\d+)%"/);
 
 const marked = page({
   title: "Càrn",
-  description: "Repositories",
+  description: "Repos",
   path: "/",
-  main: html`<h1 class="t-label">Repositories</h1>
+  main: html`<h1 class="t-label">Repos</h1>
 <span id="generated">${mark}</span>`,
 });
 
@@ -153,9 +153,9 @@ test("the stylesheet arrives as a route and applies under the real CSP", async (
   assert.match(state.fontFamily, /^"Carn Sans"/);
   const size = Number.parseFloat(state.fontSize);
   assert.ok(
-    size >= 16.8 && size <= 22.72,
-    // .t-item's clamp(1.05rem, 2.5vw, 1.42rem) at a 16px root
-    `h1 font-size ${state.fontSize} is outside .t-item's clamp range`,
+    size >= 28 && size <= 43.2,
+    // .t-l's clamp(1.75rem, 4.4vw, 2.7rem) at a 16px root
+    `h1 font-size ${state.fontSize} is outside .t-l's clamp range`,
   );
 });
 

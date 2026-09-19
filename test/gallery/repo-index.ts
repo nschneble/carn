@@ -44,7 +44,12 @@ export const populated: RepoSummary[] = [
 
 export const hoverSimulation = css`
 .tbl tbody tr.is-hover {
-  background: var(--sunk);
+  background: var(--accent-fill);
+}
+
+.tbl tbody tr.is-hover > td > *,
+.tbl tbody tr.is-hover th.name a {
+  color: var(--on-accent);
 }`;
 
 export function indexDocument(

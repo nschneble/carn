@@ -58,6 +58,7 @@ import {
 import { fixtureHeaders } from "../support/fixture-repos.js";
 import { renderPaths } from "../support/render-paths.js";
 import { type Served, type ServedAsset, serve } from "../support/serve.js";
+import { dark, light } from "../support/tokens.js";
 
 declare const document: BrowserDocument;
 declare const axe: {
@@ -534,8 +535,8 @@ function contrastPin(results: AxeResults, where: string, pinned: number): void {
 // audit the same bytes and differ only in which token block applies
 const contrastNodes: Record<string, number> = {
   gallery: 63,
-  populated: 21,
-  hover: 21,
+  populated: 24,
+  hover: 24,
   empty: 6,
   show: 94,
   "show-all": 169,
@@ -574,8 +575,8 @@ const foldedContrastNodes: Record<string, number> = {
   "blob-cut": 21,
   "commit-file": 41,
   gallery: 58,
-  hover: 16,
-  populated: 16,
+  hover: 9,
+  populated: 9,
   show: 78,
   "show-all": 135,
   "show-bare": 52,
@@ -815,7 +816,9 @@ test("the committed header the audit renders is a real 4:1 image", async (t) => 
   }
 });
 
-test("the hover wash is measured under the two columns that sit on it", async (t) => {
+// axe rewrites its target selectors whenever the row's shape moves, so the
+// wash is read off the verdict itself rather than off a generated path
+test("the hover wash is what color-contrast measured the row against", async (t) => {
   for (const path of renderPaths) {
     const { results } = await fetched("/hover", path.colorScheme);
     const contrast: Result | undefined = results.passes.find(
@@ -827,17 +830,24 @@ test("the hover wash is measured under the two columns that sit on it", async (t
       `color-contrast evaluated nothing on the ${path.name} hover fixture, so the stylesheet never reached the page and a clean run proves nothing`,
     );
 
-    for (const column of [".msg", ".age"]) {
-      const measured: number = contrast.nodes.filter((node) =>
-        node.target.some((target) => String(target).includes(column)),
-      ).length;
+    const fill = (path.palette === "dark" ? dark : light).get("--accent-fill");
+    assert.ok(fill, "--accent-fill is undeclared");
 
-      assert.ok(
-        measured > 0,
-        `color-contrast never measured ${column} on the ${path.name} hover fixture`,
-      );
-      t.diagnostic(`${path.name} ${column}: ${measured} measured`);
-    }
+    const washed = contrast.nodes.filter((node) =>
+      node.any.some(
+        (check) =>
+          check.id === "color-contrast" &&
+          (
+            check.data as { bgColor?: string } | null
+          )?.bgColor?.toLowerCase() === fill.toLowerCase(),
+      ),
+    );
+
+    assert.ok(
+      washed.length > 0,
+      `color-contrast settled nothing against ${fill} on the ${path.name} hover fixture, so the wash the row takes is unmeasured`,
+    );
+    t.diagnostic(`${path.name}: ${washed.length} nodes settled on ${fill}`);
   }
 });
 
@@ -1154,7 +1164,7 @@ test("a gitlink row is inert", async () => {
 
 const tableWidths = [320, narrowWidth, wideWidth];
 const tablePaths = ["/populated", "/tree", "/commits", "/branches", "/commit"];
-const tableColumns: Record<number, number> = { 320: 12, 375: 12, 1440: 14 };
+const tableColumns: Record<number, number> = { 320: 10, 375: 10, 1440: 11 };
 
 test("every column header is legible at every width", async (t) => {
   const page = await (await browser()).newPage();
@@ -1174,6 +1184,8 @@ test("every column header is legible at every width", async (t) => {
           .evaluate((head) =>
             [...head.querySelectorAll("th")]
               .filter((cell) => cell.getClientRects().length > 0)
+              // a vh header is named for the reader, not laid out for the eye
+              .filter((cell) => !cell.classList.contains("vh"))
               .map((cell) => ({
                 label: (cell.textContent ?? "").trim(),
                 scroll: cell.scrollWidth,
