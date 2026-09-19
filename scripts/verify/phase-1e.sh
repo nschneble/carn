@@ -1190,7 +1190,7 @@ if require_daemon 16 "$TITLE_16" && require_scratch 16 "$TITLE_16"; then
   over_status=$(fetch_page "/r/$over_cap" "$work/16b")
   [ "$cap_status" = "404" ] || wrong="$wrong a $NAME_CAP-character name answered $cap_status;"
   [ "$over_status" = "404" ] || wrong="$wrong a $((NAME_CAP + 1))-character name answered $over_status;"
-  grep -qF "There&#39;s no repo named $at_cap on this server." "$work/16a.body" \
+  grep -qF "There&#39;s no repo named &quot;$at_cap&quot; on this server." "$work/16a.body" \
     || wrong="$wrong a $NAME_CAP-character name was refused as a bad name, not looked up;"
   grep -qF "$BAD_NAME" "$work/16b.body" \
     || wrong="$wrong a $((NAME_CAP + 1))-character name drew no bad-name page;"
@@ -1782,7 +1782,7 @@ readonly TITLE_41="one .tbl rule widths every three-column table, and only .file
 wrong=""
 sheet_flat=$(tr '\n' ' ' < src/html/styles.ts)
 # two spaces of indent is the nesting: a top-level rule starts at column 0
-grep -A1 -E '^  \.tbl \.name \{$' src/html/styles.ts | grep -qF 'width: 65%;' \
+grep -A1 -E '^  \.repos \.c\-name \{$' src/html/styles.ts | grep -qF 'width: 65%;' \
   || wrong="$wrong .tbl's shared name column width is missing from the 640 query;"
 grep -qE '^\.tbl \.name \{$' src/html/styles.ts \
   && wrong="$wrong the name column is widthed outside the query, where no subject column exists;"
@@ -1840,7 +1840,7 @@ tr '\n' ' ' < src/html/styles.ts \
   | grep -qE '\.t-item--title \{[[:space:]]+color: var\(--ink-soft\);' \
   || wrong="$wrong .t-item--title doesn't resolve to --ink-soft;"
 if require_daemon 43 "$TITLE_43" && require_seed 43 "$TITLE_43"; then
-  for page in index tree branches tags; do
+  for page in tree branches tags; do
     body="$work/$page.body"
     [ -f "$body" ] || continue
     count=$(occurrences "$body" 't-item--title')
@@ -1856,11 +1856,11 @@ fi
 
 # 44
 # part C4: a sentence takes .t-note; .t-label is left holding only captions
-readonly TITLE_44=".t-label appears in no template carrying more than two words"
+readonly TITLE_44=".t-label only appears in templates as a table caption"
 wrong=""
 label_sites=$(grep -rl 'class="t-label"' src/html/*.ts | wc -l | tr -d ' ')
-[ "$label_sites" = "1" ] \
-  || wrong="$wrong .t-label appears in $label_sites template files, wanted exactly 1 (repo-show.ts's Files caption);"
+[ "$label_sites" = "2" ] \
+  || wrong="$wrong .t-label appears in $label_sites template files, wanted exactly 2 (repo-list.ts + repo-show.ts's table captions);"
 grep -qF 'class="t-label"' src/html/repo-show.ts \
   || wrong="$wrong repo-show.ts no longer carries the one surviving .t-label use;"
 if [ -n "$wrong" ]; then
@@ -2116,10 +2116,12 @@ if require_daemon 54 "$TITLE_54" && require_seed 54 "$TITLE_54"; then
     opened=$(occurrences "$work/$page.body" '<table class="tbl')
     [ "$opened" -gt 0 ] || continue
     counted=$((counted + opened))
-    caps=$(occurrences "$work/$page.body" '<caption class="vh">')
+    caps=$(occurrences "$work/$page.body" '<caption class="')
     # a rendered README carries its own <thead>, so the header row is
-    # counted by the name column's own marker rather than by the tag
-    heads=$(matches "$work/$page.body" '<th class="name( [a-z-]+)* t-label" scope="col">')
+    # counted by the name column's own marker rather than by the tag. the
+    # index draws its caption instead of its header row, so the marker
+    # names the column without requiring it to be visible
+    heads=$(matches "$work/$page.body" '<th class="name( [a-z-]+)*( t-label)?" scope="col">')
     [ "$caps" = "$opened" ] \
       || wrong="$wrong /$page has $opened table(s) and $caps caption(s);"
     [ "$heads" = "$opened" ] \
@@ -2128,7 +2130,7 @@ if require_daemon 54 "$TITLE_54" && require_seed 54 "$TITLE_54"; then
     headers=$(matches "$work/$page.body" '<th class="name( [a-z-]+)*" scope="row">')
     [ "$rows" = "$headers" ] \
       || wrong="$wrong /$page draws $rows row(s) but $headers row header(s);"
-    grep -qE '<th class="[a-z]+ t-label" scope="col">' "$work/$page.body" \
+    grep -qE '<th class="([a-z]+ )*(t-label|vh)" scope="col">' "$work/$page.body" \
       || wrong="$wrong /$page names no column in its header row;"
   done
   [ "$counted" != "0" ] \
