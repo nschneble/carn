@@ -11,6 +11,8 @@
     "biome:migrate": "biome migrate --write",
     "build": "prisma generate && tsc",
     "db:reset": "set -a && . ./.env && set +a && prisma migrate reset --force",
+    "dev:build": "tsc --watch",
+    "dev:serve": "node --watch --env-file=local/visual.env dist/scripts/visual-server.js",
     "format": "biome check --write .",
     "format:check": "biome check .",
     "gallery": "npm run build && node dist/scripts/gallery.js",
