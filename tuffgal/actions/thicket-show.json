@@ -1,0 +1,5 @@
+{
+  "action": "thicket-show",
+  "steps": [{ "kind": "navigate", "path": "/r/thicket" }],
+  "expect": { "anyOf": [{ "role": "heading", "text": "thicket" }] }
+}

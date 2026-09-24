@@ -1,8 +1,9 @@
 {
-  "story": "A visitor reads the repo index, then a repo, then one with no commits",
+  "story": "A visitor reads the repo index, then a repo, then one with no commits, then one with no README or license",
   "actions": [
     { "action": "repo-index" },
     { "action": "repo-show" },
-    { "action": "sparrow-show" }
+    { "action": "sparrow-show" },
+    { "action": "thicket-show" }
   ]
 }
