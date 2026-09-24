@@ -2,7 +2,7 @@
 
 import type { RepoSummary } from "../repos/list.js";
 import { sshRemote } from "../repos/remote.js";
-import { age, stamp } from "./age.js";
+import { stamp } from "./age.js";
 import { emptyState } from "./empty-state.js";
 import { plainName } from "./filename.js";
 import { html, type Raw } from "./index.js";

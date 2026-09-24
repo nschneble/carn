@@ -8,7 +8,7 @@ import { headerMarkup } from "../repos/header.js";
 import { headerAssetPath } from "../repos/header-asset.js";
 import { sshRemote } from "../repos/remote.js";
 import type { RepoView } from "../repos/show.js";
-import { age, stamp } from "./age.js";
+import { stamp } from "./age.js";
 import { emptyState } from "./empty-state.js";
 import { commitsHref, refsHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";

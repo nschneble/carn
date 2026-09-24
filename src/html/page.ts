@@ -40,6 +40,7 @@ const head = (title: string, description: string, path: string) => html`<head>
     <link rel="stylesheet" href="${styleHref}" />
   </head>`;
 
+// FIXME: redo the masthead; use src/html/tree-page.ts:31 maybe?
 const masthead = (crumbs: Crumb[] | undefined) =>
   crumbs === undefined
     ? html`<p><a class="home" href="/">Càrn</a></p>`

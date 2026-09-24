@@ -56,8 +56,12 @@ function row(view: TreeListView, entry: TreeEntry): Raw {
           </tr>`;
 }
 
-function treeListTableCaption(numShownEntries: number, numTotalEntries: number): string {
-  if (numTotalEntries > numShownEntries) return `${numShownEntries}/${numTotalEntries} Items · Listed A→Z`;
+function treeListTableCaption(
+  numShownEntries: number,
+  numTotalEntries: number,
+): string {
+  if (numTotalEntries > numShownEntries)
+    return `${numShownEntries}/${numTotalEntries} Items · Listed A→Z`;
   if (numShownEntries === 1) return "1 Item";
 
   return `${numShownEntries} Items · Listed A→Z`;
