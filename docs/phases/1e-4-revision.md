@@ -96,7 +96,7 @@ plain. `.t-item` already sets `"case" 1`, which is what a path needs for `. -
 
 Leave alone, so they don't get swept up:
 
-- `<h2 class="t-label">Files</h2>` on the repo page. A section heading
+- `<h2 class="t-label">Items</h2>` on the repo page. A section heading
   inside a page isn't a page title, and `.t-label` is right for it.
 - `.t-label` on the truncation notices (`Showing the first …`). Same
   reason.
@@ -312,7 +312,7 @@ links:
 - `/r/:repo/tags`: **nothing**
 
 Two routes shipped with no way in. The repo page is `identity → h1.vh →
-Files → README` and carries no navigation at all.
+Items → README` and carries no navigation at all.
 
 **This is a new component, so `docs/BRAND.md` gets it first.** There's no
 nav or tabs component in BRAND today. Write the section, regenerate, then

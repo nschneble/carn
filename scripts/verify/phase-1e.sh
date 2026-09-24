@@ -1866,7 +1866,7 @@ grep -qF 'class="t-label"' src/html/repo-show.ts \
 if [ -n "$wrong" ]; then
   record FAIL 44 "$TITLE_44" "$wrong"
 else
-  record PASS 44 "$TITLE_44" "repo-show.ts's Files caption is the one .t-label site left"
+  record PASS 44 "$TITLE_44" "repo-show.ts's Items caption is the one .t-label site left"
 fi
 
 # 45
