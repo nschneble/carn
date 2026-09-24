@@ -43,9 +43,9 @@ export const noBlobPath = (repo: string): Failure => ({
 });
 
 export const noSuchTree = (repo: string, path: string): Failure => ({
-  title: `No directory at ${path} · Càrn`,
-  heading: "No directory here",
-  said: `There's no directory at ${path} on that ref.`,
+  title: `No "${path}" directory · Càrn`,
+  heading: "No dir here",
+  said: `There's no "${path}" directory on that ref.`,
   next: "Check the path and the ref, or browse the repo.",
   path: "/404",
   repo,
@@ -120,7 +120,11 @@ export function errorPage(view: { failure: Failure }): string {
           <span>${failure.said}</span>
           <span>${failure.next}</span>
         </p>
-        ${failure.repo ? html`` : html`<p><a class="t-mono" href="/">All repos</a></p>`}
+        ${
+          failure.repo
+            ? html`<p><a class="t-mono" href="/r/${failure.repo}">Browse repo</a></p>`
+            : html`<p><a class="t-mono" href="/">All repos</a></p>`
+        }
       </div>`,
   });
 }

@@ -8,7 +8,7 @@ import { headerMarkup } from "../repos/header.js";
 import { headerAssetPath } from "../repos/header-asset.js";
 import { sshRemote } from "../repos/remote.js";
 import type { RepoView } from "../repos/show.js";
-import { site } from "./breadcrumb.js";
+import { age, stamp } from "./age.js";
 import { emptyState } from "./empty-state.js";
 import { commitsHref, refsHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
@@ -16,9 +16,9 @@ import { page } from "./page.js";
 import { refLabel } from "./ref-list.js";
 import { treeList } from "./tree-list.js";
 
-// the hub every breadcrumb passes through: nothing else reaches these three
 function repoNav(repo: string, branch: string): Raw {
   return html`<nav class="repo-nav" aria-label="Repo views">
+      <p class="t-label">Go</p>
       <ul role="list">
         <li><a href="${commitsHref(repo, branch)}">Commits</a></li>
         <li><a href="${refsHref(repo, "branch")}">${refLabel("branch")}</a></li>
@@ -28,16 +28,26 @@ function repoNav(repo: string, branch: string): Raw {
 }
 
 function noCommits(view: RepoView): Raw {
-  return emptyState(
-    `No commits yet. The file tree at ${view.branch} is shown here once something is pushed to it.`,
+  return html`      <h1 class="t-l">No commits</h1>
+  ${emptyState(
+    `The file tree at ${view.branch} is shown here once something is pushed to it.`,
     `git push ${sshRemote(view.name)} ${view.branch}`,
+  )}
+  `;
+}
+
+// a commit whose tree is empty still has history, so it isn't no commits
+function emptyTree(view: RepoView): Raw {
+  return emptyState(
+    `Nothing at ${view.branch}. The commit it points at leaves the tree empty.`,
   );
 }
 
 function tree(view: RepoView, showAll: boolean, now: Date): Raw {
-  if (view.entries.length === 0) return noCommits(view);
+  if (view.tip === null) return noCommits(view);
+  if (view.entries.length === 0) return emptyTree(view);
 
-  return html`<h2 class="t-label">Files</h2>
+  return html`<h2 class="vh">Items</h2>
       ${treeList({
         repo: view.name,
         rev: view.branch,
@@ -49,34 +59,40 @@ function tree(view: RepoView, showAll: boolean, now: Date): Raw {
       })}`;
 }
 
-function noReadme(view: RepoView): Raw {
-  return emptyState(
-    `No README yet. A README.md at the root of ${view.branch} is rendered here, under the file tree.`,
-    `git add README.md && git commit -m "add README" && git push`,
-  );
-}
-
 function readme(view: RepoView): Raw {
-  if (view.tip === null) return html`<span class="vh">No README yet.</span>`;
-  if (view.readme === null) return noReadme(view);
+  if (view.tip === null || view.readme === null) return html``;
 
-  return html`<div class="readme">
+  return html`<div class="repo-readme">
+      <div class="readme-caption" id="readme"><h2 class="t-label">README</h2></div>
+      <div class="readme">
 
 <!-- (⌐■_■) real punks don't indent their READMEs -->
 ${renderMarkdown(view.readme, { repo: view.name, rev: view.branch })}
-      </div>`;
+      </div>
+    </div>`;
 }
 
 function metaDescription(view: RepoView): string {
-  if (view.tip === null) return "";
-  if (view.readme === null) return "No README yet.";
-
-  return renderPlainText(view.readme, 150);
+  return view.tip && view.readme
+    ? renderPlainText(view.readme, 150)
+    : (view.description ?? "");
 }
 
-function about(repo: RepoView): Raw {
-  if (!repo.description) return html``;
-  return html`<p class="t-body about">${repo.description}</p>`;
+function about(repo: RepoView, now: Date): Raw {
+  const [verb, at] =
+    repo.updatedAt === null
+      ? (["Created", repo.createdAt] as const)
+      : (["Updated", repo.updatedAt] as const);
+
+  return html`<div class="about">
+        <p class="t-label">
+          ${repo.name} · ${repo.branch} · ${repo.license?.spdx ?? "No license"}
+          <br />
+          ${stamp(verb, at, now)}
+        </p>
+        ${repo.description ? html`<p class="t-mono">${repo.description}</p>` : html``}
+      </div>
+  `;
 }
 
 // the mark is decorative, so .vh carries the name as a real heading
@@ -97,12 +113,15 @@ export function repoShowPage(view: {
     title: `${repo.name} · Càrn`,
     description: `${metaDescription(repo)}`,
     path: `/r/${repo.name}`,
-    crumbs: [site, { label: repo.name, href: null }],
-    main: html`${identity}
-      <h1 class="vh">${repo.name}</h1>
-      ${about(repo)}
+    main: html`<div class="repo-identity">${identity}</div>
+    <h1 class="vh">${repo.name}</h1>
+    <div class="repo-body">
+      <div class="repo-files">
+        ${about(repo, view.now)}
+        ${tree(repo, view.showAll, view.now)}
+      </div>
       ${repoNav(repo.name, repo.branch)}
-      ${tree(repo, view.showAll, view.now)}
-      ${readme(repo)}`,
+      ${readme(repo)}
+    </div>`,
   });
 }

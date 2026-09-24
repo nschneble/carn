@@ -16,6 +16,7 @@ export type ResolvedRepo = {
   id: string;
   name: string;
   description: string | null;
+  createdAt: Date;
   ownerId: string;
   defaultBranch: string;
   path: string;
@@ -39,7 +40,7 @@ export async function resolveRepo(target: string): Promise<RepoLookup> {
   // raw: insensitive equals emits ILIKE, which seq-scans and wildcards _
   const rows = await db.$queryRaw<Omit<ResolvedRepo, "path">[]>`
     SELECT id, name, description, owner_id AS "ownerId",
-           default_branch AS "defaultBranch"
+           default_branch AS "defaultBranch", created_at AS "createdAt"
     FROM repos
     WHERE lower(name) = lower(${name})
   `;

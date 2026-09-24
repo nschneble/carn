@@ -3,7 +3,7 @@
 // one row implementation for the root tree and every tree below it
 
 import type { TreeEntry } from "../repos/tree.js";
-import { ageCell } from "./age.js";
+import { age } from "./age.js";
 import { shortShaLength } from "./commit-log.js";
 import { pathName } from "./filename.js";
 import { blobHref, treeHref } from "./hrefs.js";
@@ -27,7 +27,7 @@ function columns(entry: TreeEntry, now: Date): Raw {
     return html`<td class="msg"><span></span></td><td class="age"><span></span></td>`;
   }
 
-  return html`<td class="msg"><span>${entry.touched.subject}</span></td>${ageCell(entry.touched.at, now)}`;
+  return html`<td class="msg"><span>${entry.touched.subject}</span><span><time datetime="${entry.touched.at.toISOString()}">${age(entry.touched.at, now)}</time> ago</span></td>`;
 }
 
 function row(view: TreeListView, entry: TreeEntry): Raw {
@@ -56,16 +56,26 @@ function row(view: TreeListView, entry: TreeEntry): Raw {
           </tr>`;
 }
 
+function treeListTableCaption(numShownEntries: number, numTotalEntries: number): string {
+  if (numTotalEntries > numShownEntries) return `${numShownEntries}/${numTotalEntries} Items · Listed A→Z`;
+  if (numShownEntries === 1) return "1 Item";
+
+  return `${numShownEntries} Items · Listed A→Z`;
+}
+
 export function treeList(view: TreeListView): Raw {
   const shown = view.showAll ? view.entries : view.entries.slice(0, treeRowCap);
 
   const list = html`<table class="tbl tree">
-        <caption class="vh">Files</caption>
+        <caption class="t-label">${treeListTableCaption(shown.length, view.entries.length)}</caption>
+        <colgroup>
+          <col class="c-name" />
+          <col class="c-msg" />
+        </colgroup>
         <thead>
           <tr>
-            <th class="name t-label" scope="col">Name</th>
-            <th class="msg t-label" scope="col">Commit</th>
-            <th class="age t-label" scope="col">Age</th>
+            <th class="name vh" scope="col">Name</th>
+            <th class="vh" scope="col">Commit message and age</th>
           </tr>
         </thead>
         <tbody>

@@ -37,3 +37,10 @@ export function ageMarkup(label: string, at: Date, now: Date): Raw {
 export function ageCell(at: Date, now: Date): Raw {
   return html`<td class="age"><time datetime="${at.toISOString()}">${age(at, now)}</time></td>`;
 }
+
+export type StampVerb = "Created" | "Updated";
+
+// the index row and the about line say this identically, by construction
+export function stamp(verb: StampVerb, at: Date, now: Date): Raw {
+  return html`${verb} <time datetime="${at.toISOString()}">${age(at, now)}</time> ago`;
+}

@@ -156,7 +156,7 @@ async function serveHeader(
 
     const header = await resolveHeader({
       repoPath: found.repo.path,
-      commit,
+      commit: commit?.oid ?? null,
       signal,
     });
 

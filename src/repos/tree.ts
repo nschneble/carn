@@ -9,6 +9,7 @@ import { oidPattern } from "../git/oid.js";
 import { validPath, validRev } from "./blob-view.js";
 import { maxSubjectChars } from "./log.js";
 
+export type Tip = { oid: string; at: Date };
 export type Touch = { subject: string; at: Date };
 export type Tree = { path: string; entries: TreeEntry[] };
 export type TreeEntryKind = "file" | "directory" | "gitlink";
@@ -39,13 +40,13 @@ export async function resolveTip(options: {
   repoPath: string;
   branch: string;
   signal?: AbortSignal;
-}): Promise<string | null> {
+}): Promise<Tip | null> {
   const { code, stdout } = await captureGit({
     args: [
-      "rev-parse",
-      "--verify",
-      "--quiet",
-      `refs/heads/${options.branch}^{commit}`,
+      "for-each-ref",
+      "--format=%(refname)%00%(objectname)%00%(authordate:unix)",
+      "--end-of-options",
+      `refs/heads/${options.branch}`,
     ],
     cwd: options.repoPath,
     signal: options.signal,
@@ -54,8 +55,12 @@ export async function resolveTip(options: {
 
   if (code !== 0) return null;
 
-  const oid = stdout.toString("utf8").trim();
-  return oidPattern.test(oid) ? oid : null;
+  const [name, oid, seconds] = stdout.toString("utf8").trim().split("\0");
+  if (name !== `refs/heads/${options.branch}`) return null;
+  if (oid === undefined || !oidPattern.test(oid)) return null;
+
+  const at = Number(seconds);
+  return Number.isFinite(at) ? { oid, at: new Date(at * 1000) } : null;
 }
 
 function kindOf(mode: string, type: string): TreeEntryKind {
