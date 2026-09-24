@@ -19,6 +19,7 @@ const repo: ResolvedRepo = {
   id: repoId,
   name: "carn",
   description: "A self-hosted git forge.",
+  createdAt: new Date(),
   ownerId,
   defaultBranch: "main",
   path: `/var/lib/carn/repos/3a/${repoId}.git`,

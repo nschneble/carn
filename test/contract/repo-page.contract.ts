@@ -45,6 +45,7 @@ import {
   readmeSource,
   showDocument,
   treeNow,
+  unrecognized,
   view,
   wide,
 } from "../gallery/repo-show.js";
@@ -75,6 +76,11 @@ function empties(markup: string): string {
   return [...markup.matchAll(/<div class="empty">([\s\S]*?)<\/div>/g)]
     .map((found) => found[1] as string)
     .join("\n");
+}
+
+function about(markup: string): string {
+  const found = markup.match(/<div class="about">([\s\S]*?)<\/p>/);
+  return found?.[1] ?? "";
 }
 
 function readmeBody(markup: string): string {
@@ -122,6 +128,7 @@ function build(
     id: "00000000-0000-4000-8000-000000000000",
     name: "linklater",
     description: description ?? null,
+    createdAt: new Date(),
     ownerId: "owner",
     defaultBranch: "main",
     path,
@@ -131,6 +138,7 @@ function build(
 test("a real repo renders its tree and its readme", async () => {
   const repo = build({
     "README.md": "# Linklater\n\nSave a URL, read it later.\n",
+    LICENSE: "GNU AFFERO GENERAL PUBLIC LICENSE\nVersion 3, 19 November 2007\n",
     "src/index.ts": "export {};\n",
     "docs/BRAND.md": "# Brand\n",
     "package.json": "{}\n",
@@ -171,37 +179,37 @@ test("a nested directory contributes one row, not its contents", async () => {
   );
 });
 
-test("a repo with no readme renders the tree and says how to make one", async () => {
-  const repo = build({ "package.json": "{}\n" });
-  const loaded = await loadRepoView({ repo });
-  assert.strictEqual(loaded.readme, null);
-
-  const markup = repoShowPage({ repo: loaded, showAll: false, now: treeNow });
-  assert.doesNotMatch(empties(markup), /[!…]|Oops/);
-  assert.doesNotMatch(markup, /<div class="readme">/);
-  assert.strictEqual(rows(markup), 1, "the tree vanished with the readme");
-  assert.ok(markup.includes('<div class="empty">'));
-  assert.ok(markup.includes("No README yet."));
-  assert.ok(markup.includes("git add README.md"), "no command to make one");
-  assert.ok(
-    markup.includes("README.md"),
-    "the empty state never names the file",
-  );
-});
-
 test("a repo with no commits says what would be here and how to push it", () => {
   const markup = showDocument({
-    repo: view({ tip: null, entries: [], readme: null }),
+    repo: view({ tip: null, entries: [], readme: null, license: null }),
   });
 
   assert.strictEqual(rows(markup), 0);
-  assert.ok(markup.includes("No commits yet."));
+  assert.ok(markup.includes("No commits"));
   assert.ok(markup.includes("git push "));
   assert.doesNotMatch(empties(markup), /[!…]|Oops/);
+});
+
+// a license we found but cannot name is its own state; it must never
+// collapse into the sentence a repo with no license gets
+test("the about line names the license, or says there is none", () => {
+  for (const [repo, named] of [
+    [view(), "MIT"],
+    [unrecognized, "License"],
+    [view({ license: null }), "No license"],
+  ] as const) {
+    const line = about(showDocument({ repo }));
+
+    assert.ok(
+      line.includes(`· ${named}`),
+      `the about line reads ${line.trim()}, not "· ${named}"`,
+    );
+  }
+
   assert.doesNotMatch(
-    markup,
-    /<p class="t-body">No README yet/,
-    "an empty repo gets one empty state, not two",
+    about(showDocument({ repo: unrecognized })),
+    /No license/,
+    "an unrecognized license reads as no license at all",
   );
 });
 
@@ -283,7 +291,11 @@ async function counting(
 }
 
 test("a repo page render stays inside the spawn budget", async () => {
-  const repo = build({ "README.md": "# hi\n", "src/a.ts": "export {};\n" });
+  const repo = build({
+    "README.md": "# hi\n",
+    LICENSE: "v1\n",
+    "src/a.ts": "export {};\n",
+  });
 
   await counting(async (calls) => {
     await loadRepoView({ repo });
@@ -294,12 +306,12 @@ test("a repo page render stays inside the spawn budget", async () => {
 
     assert.strictEqual(
       cold.length,
-      5,
-      `rev-parse, ls-tree .carn, ls-tree root, log, cat-file:\n${cold.join("\n")}`,
+      6,
+      `for-each-ref, ls-tree .carn, ls-tree root, log, cat-files:\n${cold.join("\n")}`,
     );
     assert.strictEqual(
       warm.length,
-      4,
+      5,
       "the header ls-tree is no longer cached on the tip",
     );
 
@@ -631,7 +643,7 @@ test("the identity mark is decorative and a visually hidden h1 carries the name"
   assert.doesNotMatch(
     markup,
     /<h1 class="t-label">/,
-    "the repo name is a visible label again, next to the Files label it used to sit against",
+    "the repo name is a visible label again, next to the Items label it used to sit against",
   );
   assert.strictEqual(
     [...markup.matchAll(/<h1[ >]/g)].length,
@@ -760,7 +772,7 @@ test("the repo page fits the weight budget as wire bytes, fonts in", () => {
     [
       "empty",
       showDocument({
-        repo: view({ tip: null, entries: [], readme: null }),
+        repo: view({ tip: null, entries: [], readme: null, license: null }),
       }),
     ],
   ] as const) {

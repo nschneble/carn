@@ -336,7 +336,7 @@ test("a repo with no commits gets an empty state, not an error", async () => {
   });
 
   assert.match(markup, /<div class="empty">/);
-  assert.ok(markup.includes("No commits yet."));
+  assert.ok(markup.includes("No commits"));
   assert.ok(markup.includes("git push "));
   assert.doesNotMatch(markup, /<table class="tbl log"/);
   assert.doesNotMatch(markup, /class="showall"/);

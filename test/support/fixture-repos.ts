@@ -88,6 +88,30 @@ const readme = [
   "",
 ].join("\n");
 
+const license = [
+  "MIT License",
+  "",
+  "Copyright (c) 2026 Nick Schneble",
+  "",
+  "Permission is hereby granted, free of charge, to any person obtaining a copy",
+  'of this software and associated documentation files (the "Software"), to deal',
+  "in the Software without restriction, including without limitation the rights",
+  "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell",
+  "copies of the Software, and to permit persons to whom the Software is",
+  "furnished to do so, subject to the following conditions:",
+  "",
+  "The above copyright notice and this permission notice shall be included in all",
+  "copies or substantial portions of the Software.",
+  "",
+  'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR',
+  "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,",
+  "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE",
+  "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER",
+  "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,",
+  "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE",
+  "SOFTWARE.",
+].join("\n");
+
 // 1600x400 and transparent, geometry only; an svg in an <img> reaches no
 // @font-face, so text would differ across machines
 function header(ink: string, rule: string): string {
@@ -308,6 +332,10 @@ function gantryCommits(): FixtureCommit[] {
           path: "README.md",
           body: "# Gantry\n\nA rig that holds the other rigs.\n",
         },
+        {
+          path: "LICENSE",
+          body: "GNU AFFERO GENERAL PUBLIC LICENSE\nVersion 3, 19 November 2007\n",
+        },
         { path: "package.json", body: '{ "name": "gantry" }\n' },
         { path: "src/index.ts", body: "export const version = 1;\n" },
       ],
@@ -397,6 +425,7 @@ export const fixtureRepos: FixtureRepo[] = [
           { path: ".carn/header-dark.svg", body: fixtureHeaders.dark },
           { path: ".carn/header-light.svg", body: fixtureHeaders.light },
           { path: "README.md", body: readme },
+          { path: "LICENSE.md", body: license },
           {
             path: "docs/BRAND.md",
             body: "# Brand\n\nOne accent, no motion.\n",
@@ -419,6 +448,10 @@ export const fixtureRepos: FixtureRepo[] = [
         at: "2026-01-30T12:20:00.000Z",
         files: [
           { path: "README.md", body: "# Moonlight\n\nPhases and tides.\n" },
+          {
+            path: "LICENSE.txt",
+            body: "Redistribution and use in source and binary forms\nNeither the name of\n",
+          },
           { path: "phases.csv", body: "date,phase\n2026-02-01,waxing\n" },
         ],
       },

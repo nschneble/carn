@@ -19,7 +19,7 @@ test("the gallery exercises every primitive and every state", () => {
     'class="chip"',
     'class="chip chip--current"',
     'class="tbl tree"',
-    '<caption class="vh">Files</caption>',
+    '<caption class="vh">Items</caption>',
     'class="row is-dir"',
     'class="row is-dir is-hover"',
     'class="name" scope="row"',

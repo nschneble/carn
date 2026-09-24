@@ -203,6 +203,15 @@ const emptyRepo = view({
   tip: null,
   entries: [],
   readme: null,
+  license: null,
+});
+
+// a commit that leaves nothing behind: the history exists and the tree
+// doesn't, so the page owes a different sentence than a repo with no commits
+const emptiedTree = view({
+  entries: [],
+  readme: null,
+  license: null,
 });
 
 // the show page's only external subresource; without it the audited
@@ -230,8 +239,9 @@ const states = {
   empty: indexDocument({ repos: [] }),
   show: showDocument(),
   "show-all": showDocument({ showAll: true }),
-  "show-bare": showDocument({ repo: view({ readme: null }) }),
+  "show-bare": showDocument({ repo: view({ readme: null, license: null }) }),
   "show-new": showDocument({ repo: emptyRepo }),
+  "show-empty": showDocument({ repo: emptiedTree }),
   "show-header": showDocument({ repo: view({ header: committedHeader }) }),
   "not-found": errorPage({ failure: noSuchRepo("linklater") }),
   blob: blobDocument(),

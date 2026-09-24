@@ -136,7 +136,7 @@ async function record<T>(run: () => Promise<T>): Promise<[T, string[]]> {
 async function tip(): Promise<string> {
   const found = await resolveTip({ repoPath, branch: "main" });
   assert.ok(found, "the fixture has no main");
-  return found;
+  return found.oid;
 }
 
 function rows(markup: string): number {
