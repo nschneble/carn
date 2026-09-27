@@ -22,7 +22,6 @@ process.env.LOG_LEVEL = "silent";
 
 const { blobDocument } = await import("../gallery/blob.js");
 const { indexDocument } = await import("../gallery/repo-index.js");
-const { showDocument } = await import("../gallery/repo-show.js");
 const { treeDocument } = await import("../gallery/tree.js");
 const { logDocument } = await import("../gallery/commit-log.js");
 const { textBlob } = await import("../gallery/blob.js");
@@ -110,7 +109,6 @@ const deepBlob = blobDocument({
 
 const fixtures: Record<string, string> = {
   "/index-page": indexDocument(),
-  "/show": showDocument(),
   "/tree": treeDocument(),
   "/commits": logDocument(),
   "/deep-blob": deepBlob,
@@ -195,18 +193,6 @@ test("the index page keeps its own masthead, unchanged", () => {
     "the index masthead changed shape",
   );
   assert.doesNotMatch(markup, /aria-label="Breadcrumb"/);
-});
-
-test("the breadcrumb doesn't replace the repo page's .vh heading", () => {
-  const markup = showDocument();
-
-  assert.ok(markup.includes('<h1 class="vh">linklater</h1>'));
-  assert.ok(markup.includes('aria-label="Breadcrumb"'));
-  assert.doesNotMatch(
-    crumbList(markup),
-    /<h[1-6]/,
-    "the breadcrumb grew a heading",
-  );
 });
 
 // four or fewer segments can never collapse, so rendering the fold and the

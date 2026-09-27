@@ -548,11 +548,12 @@ const contrastNodes: Record<string, number> = {
   populated: 24,
   hover: 24,
   empty: 6,
-  show: 94,
-  "show-all": 169,
-  "show-bare": 68,
-  "show-new": 10,
-  "show-header": 94,
+  show: 108,
+  "show-all": 201,
+  "show-bare": 79,
+  "show-new": 12,
+  "show-empty": 11,
+  "show-header": 108,
   "not-found": 7,
   blob: 73,
   "blob-cut": 22,
@@ -571,10 +572,10 @@ const contrastNodes: Record<string, number> = {
   "branches-quiet": 20,
   tags: 29,
   "tags-none": 10,
-  tree: 48,
-  "tree-cut": 66,
-  "tree-all": 141,
-  "tree-sub": 25,
+  tree: 55,
+  "tree-cut": 79,
+  "tree-all": 172,
+  "tree-sub": 26,
 };
 
 // two ways a state measures fewer nodes below the breakpoint: breadcrumb
@@ -587,14 +588,14 @@ const foldedContrastNodes: Record<string, number> = {
   gallery: 58,
   hover: 9,
   populated: 9,
-  show: 78,
-  "show-all": 135,
-  "show-bare": 52,
-  "show-header": 78,
-  tree: 38,
-  "tree-all": 107,
-  "tree-cut": 50,
-  "tree-sub": 21,
+  show: 63,
+  "show-all": 102,
+  "show-bare": 34,
+  "show-header": 63,
+  tree: 28,
+  "tree-all": 73,
+  "tree-cut": 34,
+  "tree-sub": 17,
 };
 
 for (const width of auditWidths) {
@@ -1100,13 +1101,13 @@ test("the tree row's link fills its cell and the wash stops there", async (t) =>
     );
     assert.strictEqual(
       filled.cells,
-      3,
+      2,
       `the tree row lays out ${filled.cells} cells, so a column collapsed`,
     );
 
-    const sunk = rgb(
+    const fill = rgb(
       await cell.evaluate((node) =>
-        getComputedStyle(node).getPropertyValue("--sunk"),
+        getComputedStyle(node).getPropertyValue("--accent-fill"),
       ),
     );
     const subject = page.locator(".tree tbody .row:not(.is-sub) .msg").first();
@@ -1117,7 +1118,7 @@ test("the tree row's link fills its cell and the wash stops there", async (t) =>
     await cell.hover();
     const washed = await read();
 
-    assert.strictEqual(washed, sunk, "the hover wash isn't --sunk");
+    assert.strictEqual(washed, fill, "the hover wash isn't --accent-fill");
     assert.notStrictEqual(
       washed,
       rest,
@@ -1174,7 +1175,7 @@ test("a gitlink row is inert", async () => {
 
 const tableWidths = [320, narrowWidth, wideWidth];
 const tablePaths = ["/populated", "/tree", "/commits", "/branches", "/commit"];
-const tableColumns: Record<number, number> = { 320: 10, 375: 10, 1440: 11 };
+const tableColumns: Record<number, number> = { 320: 8, 375: 8, 1440: 8 };
 
 test("every column header is legible at every width", async (t) => {
   const page = await (await browser()).newPage();

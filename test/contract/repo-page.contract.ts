@@ -83,6 +83,10 @@ function about(markup: string): string {
   return found?.[1] ?? "";
 }
 
+function aboutBlock(markup: string): string {
+  return markup.match(/<div class="about">([\s\S]*?)<\/div>/)?.[1] ?? "";
+}
+
 function readmeBody(markup: string): string {
   const opening = '<div class="readme">';
   const start = markup.indexOf(opening);
@@ -155,14 +159,14 @@ test("a real repo renders its tree and its readme", async () => {
     loaded.entries.map(
       (entry) => `${entry.name}${entry.kind === "directory" ? "/" : ""}`,
     ),
-    ["docs/", "src/", "README.md", "package.json"],
+    ["docs/", "src/", "LICENSE", "README.md", "package.json"],
     "directories sort first, then files, each by name",
   );
 
   const markup = repoShowPage({ repo: loaded, showAll: false, now: treeNow });
   assert.ok(markup.includes('<h1 class="vh">linklater</h1>'));
   assert.ok(markup.includes("<h1>Linklater</h1>"), "the readme did not render");
-  assert.strictEqual(rows(markup), 4);
+  assert.strictEqual(rows(markup), 5);
 });
 
 test("a nested directory contributes one row, not its contents", async () => {
@@ -591,7 +595,7 @@ test("an .sc span appears exactly when a final segment carries an extension", ()
   }
 });
 
-test("the repo page carries the repo's own description, and nothing when it has none", async () => {
+test("the repo page carries the repo's own description", async () => {
   const said = "Save a URL, read it later.";
   const loaded = await loadRepoView({
     repo: build({ "a.ts": "export {};\n" }, said),
@@ -600,32 +604,27 @@ test("the repo page carries the repo's own description, and nothing when it has 
 
   const markup = repoShowPage({ repo: loaded, showAll: false, now: treeNow });
   assert.ok(
-    markup.includes(
-      `<h1 class="vh">linklater</h1>\n      <p class="t-body about">${said}</p>\n      <nav class="repo-nav"`,
-    ),
-    "the description isn't the one thing between the identity heading and the repo nav",
+    aboutBlock(markup).includes(`<p class="t-mono">${said}</p>`),
+    "the description isn't in the about block",
   );
 
-  // unlike the index, a null description has no row to hold a dash open,
-  // so the page renders no paragraph at all rather than a bare hyphen
   for (const [label, value] of [
     ["null", null],
     ["blank", ""],
   ] as const) {
-    assert.ok(
-      !showDocument({ repo: view({ description: value }) }).includes(
-        'class="t-body about"',
-      ),
+    assert.doesNotMatch(
+      aboutBlock(showDocument({ repo: view({ description: value }) })),
+      /<p class="t-mono">/,
       `a ${label} description rendered a paragraph the page shouldn't have`,
     );
   }
 
   assert.ok(
-    showDocument({
-      repo: view({ description: "<script>alert(1)</script>" }),
-    }).includes(
-      '<p class="t-body about">&lt;script&gt;alert(1)&lt;/script&gt;</p>',
-    ),
+    aboutBlock(
+      showDocument({
+        repo: view({ description: "<script>alert(1)</script>" }),
+      }),
+    ).includes('<p class="t-mono">&lt;script&gt;alert(1)&lt;/script&gt;</p>'),
     "the description reaches the page without the escaping tag",
   );
 });

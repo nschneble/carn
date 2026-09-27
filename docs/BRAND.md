@@ -200,7 +200,8 @@ body {
   color: var(--ink-faint);
 }
 
-.repos > caption.t-label {
+.repos > caption.t-label,
+.tree > caption.t-label {
   text-align: left;
   padding: 0 var(--s2);
 }
@@ -391,8 +392,9 @@ body {
   white-space: nowrap;
 }
 
-.tbl.repos thead {
-  border-bottom: 1px solid var(--rule-soft);
+.tbl.repos thead,
+.tbl.tree thead {
+  border-bottom: 1px solid var(--rule);
 }
 
 .tbl thead .age,
@@ -425,15 +427,15 @@ body {
 
 /* the name is the only link so the wash stays inside the clickable area */
 
-.tree tbody .name:hover,
-.tree tbody .name:focus-within,
 .files tbody .name:hover,
 .files tbody .name:focus-within {
   background: var(--sunk);
 }
 
 .repos .name:hover,
-.repos .name:focus-within {
+.repos .name:focus-within,
+.tree .name:hover,
+.tree .name:focus-within {
   background: var(--accent-fill);
   color: var(--on-accent);
 }
@@ -443,7 +445,7 @@ body {
 .tbl tbody td > * {
   display: block;
   min-height: 24px;
-  padding: 6px var(--s4) 6px 0;
+  padding: var(--s2) var(--s4) var(--s2) 0;
 }
 
 .tbl tbody td.msg {
@@ -454,11 +456,13 @@ body {
   padding: 0;
 }
 
-.repos .msg > * {
+.repos .msg > *,
+.tree .msg > * {
   min-height: 0;
 }
 
-.repos .msg {
+.repos .msg,
+.tree .msg {
   vertical-align: middle;
 }
 
@@ -479,7 +483,9 @@ body {
 }
 
 .repos .name:hover > *,
-.repos .name:focus-within > * {
+.repos .name:focus-within > *,
+.tree .name:hover > *,
+.tree .name:focus-within > * {
   background: var(--accent-fill);
   color: var(--on-accent);
 }
@@ -488,8 +494,17 @@ body {
   outline-offset: -2px;
 }
 
+.tbl .name > * {
+  color: var(--ink);
+}
+
 .tbl .is-dir .name > * {
   color: var(--accent-text);
+}
+
+.tbl .is-dir .name:hover > *,
+.tbl .is-dir .name:focus-within > *{
+  color: var(--on-accent);
 }
 
 .tbl .msg > *,
@@ -527,7 +542,8 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.repos .c-name {
+.repos .c-name,
+.tree .c-name {
   width: 100%;
 }
 
@@ -537,7 +553,8 @@ body {
     display: table-cell;
   }
 
-  .repos .c-name {
+  .repos .c-name,
+  .tree .c-name {
     width: 65%;
   }
 }

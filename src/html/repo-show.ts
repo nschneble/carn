@@ -6,6 +6,7 @@
 import { renderMarkdown, renderPlainText } from "../markdown/render.js";
 import { headerMarkup } from "../repos/header.js";
 import { headerAssetPath } from "../repos/header-asset.js";
+import type { License } from "../repos/license.js";
 import { sshRemote } from "../repos/remote.js";
 import type { RepoView } from "../repos/show.js";
 import { stamp } from "./age.js";
@@ -78,6 +79,11 @@ function metaDescription(view: RepoView): string {
     : (view.description ?? "");
 }
 
+function licenseLabel(license: License | null): string {
+  if (license === null) return "No license";
+  return license.spdx ?? "License";
+}
+
 function about(repo: RepoView, now: Date): Raw {
   const [verb, at] =
     repo.updatedAt === null
@@ -86,7 +92,7 @@ function about(repo: RepoView, now: Date): Raw {
 
   return html`<div class="about">
         <p class="t-label">
-          ${repo.name} · ${repo.branch} · ${repo.license?.spdx ?? "No license"}
+          ${repo.name} · ${repo.branch} · ${licenseLabel(repo.license)}
           <br />
           ${stamp(verb, at, now)}
         </p>

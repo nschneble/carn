@@ -24,7 +24,7 @@ export const treeRowCap = 16;
 // an unattributed path renders blank, and the span holds the row's height
 function columns(entry: TreeEntry, now: Date): Raw {
   if (entry.touched === null) {
-    return html`<td class="msg"><span></span></td><td class="age"><span></span></td>`;
+    return html`<td class="msg"><span></span></td>`;
   }
 
   return html`<td class="msg"><span>${entry.touched.subject}</span><span><time datetime="${entry.touched.at.toISOString()}">${age(entry.touched.at, now)}</time> ago</span></td>`;
@@ -36,7 +36,7 @@ function row(view: TreeListView, entry: TreeEntry): Raw {
   if (entry.kind === "gitlink") {
     return html`<tr class="row is-sub">
             <th class="name" scope="row"><span class="t-item" lang="en">${pathName(entry.name)}<span class="t-micro"> Pinned</span></span></th>
-            <td class="pin" colspan="2"><span class="t-mono"><span class="vh">Submodule pinned at </span>${entry.oid.slice(0, shortShaLength)}</span></td>
+            <td class="pin"><span class="t-mono"><span class="vh">Submodule pinned at </span>${entry.oid.slice(0, shortShaLength)}</span></td>
           </tr>`;
   }
 

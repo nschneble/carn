@@ -277,17 +277,18 @@ test("the bounded walk attributes what it reaches and blanks the rest", async ()
   });
 
   assert.strictEqual(rows(markup), 4, "an un-attributed row stopped rendering");
-  // blank, but not childless: the 24px floor sits on the cell's child, so
-  // a cell that emits nothing holds no height and shortens its row
   assert.ok(
-    rowFor(markup, "index.ts").includes(
-      '<td class="msg"><span></span></td><td class="age"><span></span></td>',
-    ),
-    "an un-attributed row rendered something other than empty columns",
+    rowFor(markup, "index.ts").includes('<td class="msg"><span></span></td>'),
+    "an un-attributed row rendered something other than an empty column",
+  );
+  assert.doesNotMatch(
+    rowFor(markup, "index.ts"),
+    /class="age"/,
+    "an un-attributed row grew a column the table doesn't have",
   );
   assert.ok(
     rowFor(markup, "store.ts").includes(
-      '<td class="msg"><span>Seed the store</span></td>',
+      '<td class="msg"><span>Seed the store</span><span><time',
     ),
     "the attributed row lost its subject",
   );
@@ -371,7 +372,7 @@ test("rows link by kind, and a gitlink links nowhere", () => {
   );
   assert.ok(
     submodule.includes(
-      '<td class="pin" colspan="2"><span class="t-mono"><span class="vh">Submodule pinned at </span>9999999</span></td>',
+      '<td class="pin"><span class="t-mono"><span class="vh">Submodule pinned at </span>9999999</span></td>',
     ),
     "the gitlink row lost its short sha",
   );
