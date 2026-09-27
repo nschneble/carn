@@ -1,16 +1,54 @@
 - banner:
   - link "Skip to content":
     - /url: "#main"
-  - navigation "Breadcrumb":
-    - list:
-      - listitem:
-        - link "Càrn":
-          - /url: /
-      - listitem: gantry
+  - paragraph:
+    - link "Càrn":
+      - /url: /
 - main:
   - heading "gantry" [level=1]
+  - paragraph:
+    - text: gantry · main · AGPL-3.0 Updated
+    - time: 25m
+    - text: ago
   - paragraph: A rig that holds the other rigs.
+  - heading "Items" [level=2]
+  - table "7 Items · Listed A→Z":
+    - caption: 7 Items · Listed A→Z
+    - rowgroup:
+      - row "Name Commit message and age":
+        - columnheader "Name"
+        - columnheader "Commit message and age"
+    - rowgroup:
+      - row "apps/":
+        - rowheader "apps/":
+          - link "apps/":
+            - /url: /r/gantry/tree/main/apps
+      - row "assets/":
+        - rowheader "assets/":
+          - link "assets/":
+            - /url: /r/gantry/tree/main/assets
+      - row "src/":
+        - rowheader "src/":
+          - link "src/":
+            - /url: /r/gantry/tree/main/src
+      - row "vendor/":
+        - rowheader "vendor/":
+          - link "vendor/":
+            - /url: /r/gantry/tree/main/vendor
+      - row "LICENSE":
+        - rowheader "LICENSE":
+          - link "LICENSE":
+            - /url: /r/gantry/blob/main/LICENSE
+      - row "README.md":
+        - rowheader "README.md":
+          - link "README.md":
+            - /url: /r/gantry/blob/main/README.md
+      - row "package.json":
+        - rowheader "package.json":
+          - link "package.json":
+            - /url: /r/gantry/blob/main/package.json
   - navigation "Repo views":
+    - paragraph: Go
     - list:
       - listitem:
         - link "Commits":
@@ -21,50 +59,7 @@
       - listitem:
         - link "Tags":
           - /url: /r/gantry/tags
-  - heading "Files" [level=2]
-  - table "Files":
-    - caption: Files
-    - rowgroup:
-      - row "Name Age":
-        - columnheader "Name"
-        - columnheader "Age"
-    - rowgroup:
-      - row "apps/ 3d":
-        - rowheader "apps/":
-          - link "apps/":
-            - /url: /r/gantry/tree/main/apps
-        - cell "3d":
-          - time: 3d
-      - row "assets/ 6h":
-        - rowheader "assets/":
-          - link "assets/":
-            - /url: /r/gantry/tree/main/assets
-        - cell "6h":
-          - time: 6h
-      - row "src/ 25m":
-        - rowheader "src/":
-          - link "src/":
-            - /url: /r/gantry/tree/main/src
-        - cell "25m":
-          - time: 25m
-      - row "vendor/ 3w":
-        - rowheader "vendor/":
-          - link "vendor/":
-            - /url: /r/gantry/tree/main/vendor
-        - cell "3w":
-          - time: 3w
-      - row "README.md 2d":
-        - rowheader "README.md":
-          - link "README.md":
-            - /url: /r/gantry/blob/main/README.md
-        - cell "2d":
-          - time: 2d
-      - row "package.json 3w":
-        - rowheader "package.json":
-          - link "package.json":
-            - /url: /r/gantry/blob/main/package.json
-        - cell "3w":
-          - time: 3w
+  - heading "README" [level=2]
   - heading "Gantry" [level=1]
   - paragraph: A rig that holds the other rigs.
   - paragraph: Version 2.

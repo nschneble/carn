@@ -1,16 +1,50 @@
 - banner:
   - link "Skip to content":
     - /url: "#main"
-  - navigation "Breadcrumb":
-    - list:
-      - listitem:
-        - link "Càrn":
-          - /url: /
-      - listitem: linklater
+  - paragraph:
+    - link "Càrn":
+      - /url: /
 - main:
   - heading "linklater" [level=1]
+  - paragraph:
+    - text: linklater · main · MIT Updated
+    - time: 2w
+    - text: ago
   - paragraph: Save a URL, read it later.
+  - heading "Items" [level=2]
+  - table "6 Items · Listed A→Z":
+    - caption: 6 Items · Listed A→Z
+    - rowgroup:
+      - row "Name Commit message and age":
+        - columnheader "Name"
+        - columnheader "Commit message and age"
+    - rowgroup:
+      - row ".carn/":
+        - rowheader ".carn/":
+          - link ".carn/":
+            - /url: /r/linklater/tree/main/.carn
+      - row "docs/":
+        - rowheader "docs/":
+          - link "docs/":
+            - /url: /r/linklater/tree/main/docs
+      - row "src/":
+        - rowheader "src/":
+          - link "src/":
+            - /url: /r/linklater/tree/main/src
+      - row "LICENSE.md":
+        - rowheader "LICENSE.md":
+          - link "LICENSE.md":
+            - /url: /r/linklater/blob/main/LICENSE.md
+      - row "README.md":
+        - rowheader "README.md":
+          - link "README.md":
+            - /url: /r/linklater/blob/main/README.md
+      - row "package.json":
+        - rowheader "package.json":
+          - link "package.json":
+            - /url: /r/linklater/blob/main/package.json
   - navigation "Repo views":
+    - paragraph: Go
     - list:
       - listitem:
         - link "Commits":
@@ -21,44 +55,7 @@
       - listitem:
         - link "Tags":
           - /url: /r/linklater/tags
-  - heading "Files" [level=2]
-  - table "Files":
-    - caption: Files
-    - rowgroup:
-      - row "Name Age":
-        - columnheader "Name"
-        - columnheader "Age"
-    - rowgroup:
-      - row ".carn/ 2w":
-        - rowheader ".carn/":
-          - link ".carn/":
-            - /url: /r/linklater/tree/main/.carn
-        - cell "2w":
-          - time: 2w
-      - row "docs/ 2w":
-        - rowheader "docs/":
-          - link "docs/":
-            - /url: /r/linklater/tree/main/docs
-        - cell "2w":
-          - time: 2w
-      - row "src/ 2w":
-        - rowheader "src/":
-          - link "src/":
-            - /url: /r/linklater/tree/main/src
-        - cell "2w":
-          - time: 2w
-      - row "README.md 2w":
-        - rowheader "README.md":
-          - link "README.md":
-            - /url: /r/linklater/blob/main/README.md
-        - cell "2w":
-          - time: 2w
-      - row "package.json 2w":
-        - rowheader "package.json":
-          - link "package.json":
-            - /url: /r/linklater/blob/main/package.json
-        - cell "2w":
-          - time: 2w
+  - heading "README" [level=2]
   - heading "Linklater" [level=1]
   - paragraph: Save a URL, read it later. Linklater keeps a reading list you can push to from anywhere, with no account and no client-side JavaScript.
   - heading "Install" [level=2]

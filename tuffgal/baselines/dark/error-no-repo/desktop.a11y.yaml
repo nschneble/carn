@@ -6,8 +6,7 @@
       - /url: /
 - main:
   - heading "No repo here" [level=1]
-  - paragraph: There's no repo named nope on this server.
-  - paragraph: Check the spelling, or push to this name to create it.
+  - paragraph: There's no repo named "nope" on this server. Check the spelling, or push to this name to create it.
   - paragraph:
     - link "All repos":
       - /url: /

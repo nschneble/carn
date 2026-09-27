@@ -406,7 +406,7 @@ test("every ancestor link on a blob three levels deep answers 200", async (t) =>
     );
     assert.doesNotMatch(
       body,
-      /No repo here|No directory here|No file here|Unavailable/,
+      /No repo here|No dir here|No file here|Unavailable/,
       `${href} answered 200 with an error page`,
     );
 

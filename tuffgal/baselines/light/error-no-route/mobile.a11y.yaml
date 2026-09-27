@@ -6,8 +6,7 @@
       - /url: /
 - main:
   - heading "Nothing here" [level=1]
-  - paragraph: That URL doesn't match a route on this server.
-  - paragraph: Check the URL.
+  - paragraph: That URL doesn't match a route on this server. Check the URL.
   - paragraph:
     - link "All repos":
       - /url: /

@@ -1,0 +1,47 @@
+- banner:
+  - link "Skip to content":
+    - /url: "#main"
+  - paragraph:
+    - link "Càrn":
+      - /url: /
+- main:
+  - heading "thicket" [level=1]
+  - paragraph:
+    - text: thicket · main · No license Updated
+    - time: 5h
+    - text: ago
+  - paragraph: A shell script and nothing else.
+  - heading "Items" [level=2]
+  - table "1 Item":
+    - caption: 1 Item
+    - rowgroup:
+      - row "Name Commit message and age":
+        - columnheader "Name"
+        - columnheader "Commit message and age"
+    - rowgroup:
+      - row "thicket.sh Plant it 5h ago":
+        - rowheader "thicket.sh":
+          - link "thicket.sh":
+            - /url: /r/thicket/blob/main/thicket.sh
+        - cell "Plant it 5h ago":
+          - text: Plant it
+          - time: 5h
+          - text: ago
+  - navigation "Repo views":
+    - paragraph: Go
+    - list:
+      - listitem:
+        - link "Commits":
+          - /url: /r/thicket/commits?ref=main
+      - listitem:
+        - link "Branches":
+          - /url: /r/thicket/branches
+      - listitem:
+        - link "Tags":
+          - /url: /r/thicket/tags
+- contentinfo:
+  - paragraph:
+    - text: Càrn ·
+    - link "Source":
+      - /url: https://github.com/nschneble/carn
+    - text: · AGPL-3.0-or-later

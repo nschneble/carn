@@ -12,12 +12,12 @@
       - listitem: vendor
 - main:
   - heading "vendor" [level=1]
-  - table "Files":
-    - caption: Files
+  - table "1 Item":
+    - caption: 1 Item
     - rowgroup:
-      - row "Name Age":
+      - row "Name Commit message and age":
         - columnheader "Name"
-        - columnheader "Age"
+        - columnheader "Commit message and age"
     - rowgroup:
       - row "lib Pinned Submodule pinned at a3f29c8":
         - rowheader "lib Pinned"
