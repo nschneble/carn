@@ -35,6 +35,7 @@ export async function createRepo(
             id: true,
             name: true,
             description: true,
+            createdAt: true,
             ownerId: true,
             defaultBranch: true,
           },

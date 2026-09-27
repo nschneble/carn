@@ -1,0 +1,5 @@
+{
+  "action": "sparrow-show",
+  "steps": [{ "kind": "navigate", "path": "/r/sparrow" }],
+  "expect": { "anyOf": [{ "role": "heading", "text": "sparrow" }] }
+}

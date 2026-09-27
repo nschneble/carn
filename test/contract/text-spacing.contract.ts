@@ -173,6 +173,7 @@ async function readAll(site: Served): Promise<Record<string, Reading>> {
     for (const path of Object.keys(documents)) {
       await page.goto(`${site.origin}${path}`);
       await page.evaluate(() => document.fonts.ready);
+
       out[path] = (await page.evaluate(readTable)) as Reading;
     }
   } finally {

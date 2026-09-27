@@ -336,7 +336,7 @@ test("a repo with no commits gets an empty state, not an error", async () => {
   });
 
   assert.match(markup, /<div class="empty">/);
-  assert.ok(markup.includes("No commits yet."));
+  assert.ok(markup.includes("No commits"));
   assert.ok(markup.includes("git push "));
   assert.doesNotMatch(markup, /<table class="tbl log"/);
   assert.doesNotMatch(markup, /class="showall"/);
@@ -585,7 +585,7 @@ test("the ref reaches the heading, the title, and the canonical", () => {
 });
 
 test("a refused ref says what happened, then what to do", () => {
-  const failure = noSuchRef("release/9.9");
+  const failure = noSuchRef("linklater", "release/9.9");
 
   assert.strictEqual(failure.path, "/404");
   assert.ok(failure.said.startsWith("There's no branch, tag, or commit named"));

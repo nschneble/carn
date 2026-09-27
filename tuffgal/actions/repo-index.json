@@ -1,5 +1,5 @@
 {
   "action": "repo-index",
   "steps": [{ "kind": "navigate", "path": "/" }],
-  "expect": { "anyOf": [{ "role": "heading", "text": "Repositories" }] }
+  "expect": { "anyOf": [{ "role": "heading", "text": "Repos" }] }
 }

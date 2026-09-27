@@ -225,8 +225,7 @@ false. Measured against a bare Fastify with that one route:
 So `path === ""`, the branch that returns `noTreeRoot` today and becomes
 the 301, is reachable only with the trailing slash. Without it the request
 never reaches `showTree` at all; it falls to `setNotFoundHandler` in
-`src/app.ts` and gets `noSuchRoute`, the generic "Nothing to see here"
-page.
+`src/app.ts` and gets `noSuchRoute`, the generic "Nothing here" page.
 
 **The no-slash form is the one a person is more likely to type**, and it's
 currently the one the redirect wouldn't cover. Fix both. Register the bare

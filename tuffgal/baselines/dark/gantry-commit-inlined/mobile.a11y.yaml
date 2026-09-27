@@ -12,18 +12,18 @@
       - listitem:
         - link "Commits":
           - /url: /r/gantry/commits
-      - listitem: 11e621f
+      - listitem: 968c871
 - main:
   - heading "Bump version" [level=1]
-  - paragraph: 11e621f
+  - paragraph: 968c871
   - term: Author
   - definition:
     - text: Nick Schneble authored
     - time: 2d
   - term: Parents
   - definition:
-    - link "1efab6e":
-      - /url: /r/gantry/commits/1efab6e420f0c30bd73161c43fd98f1a69217b36
+    - link "7730cff":
+      - /url: /r/gantry/commits/7730cfff7bf1e06f165fc541773f71b470d44f13
   - term: Changed
   - definition: 2 files, +3 added −1 removed
   - term: Signed

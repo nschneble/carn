@@ -6,7 +6,7 @@ export function emptyState(message: string, command?: string): Raw {
   const hint =
     command === undefined
       ? html``
-      : html`<p><code class="t-mono">${command}</code></p>`;
+      : html`<pre class="src"><code>${command}</code></pre>`;
 
   return html`<div class="empty">
         <p class="t-body">${message}</p>

@@ -22,7 +22,6 @@ process.env.LOG_LEVEL = "silent";
 
 const { blobDocument } = await import("../gallery/blob.js");
 const { indexDocument } = await import("../gallery/repo-index.js");
-const { showDocument } = await import("../gallery/repo-show.js");
 const { treeDocument } = await import("../gallery/tree.js");
 const { logDocument } = await import("../gallery/commit-log.js");
 const { textBlob } = await import("../gallery/blob.js");
@@ -110,7 +109,6 @@ const deepBlob = blobDocument({
 
 const fixtures: Record<string, string> = {
   "/index-page": indexDocument(),
-  "/show": showDocument(),
   "/tree": treeDocument(),
   "/commits": logDocument(),
   "/deep-blob": deepBlob,
@@ -190,23 +188,11 @@ test("the index page keeps its own masthead, unchanged", () => {
 
   assert.ok(
     markup.includes(
-      '<a class="skip" href="#main">Skip to content</a>\n      <p class="t-mono"><a class="home" href="/">Càrn</a></p>',
+      '<a class="skip" href="#main">Skip to content</a>\n      <p><a class="home" href="/">Càrn</a></p>',
     ),
     "the index masthead changed shape",
   );
   assert.doesNotMatch(markup, /aria-label="Breadcrumb"/);
-});
-
-test("the breadcrumb doesn't replace the repo page's .vh heading", () => {
-  const markup = showDocument();
-
-  assert.ok(markup.includes('<h1 class="vh">linklater</h1>'));
-  assert.ok(markup.includes('aria-label="Breadcrumb"'));
-  assert.doesNotMatch(
-    crumbList(markup),
-    /<h[1-6]/,
-    "the breadcrumb grew a heading",
-  );
 });
 
 // four or fewer segments can never collapse, so rendering the fold and the
@@ -420,7 +406,7 @@ test("every ancestor link on a blob three levels deep answers 200", async (t) =>
     );
     assert.doesNotMatch(
       body,
-      /No repo here|No directory here|No file here|Unavailable/,
+      /No repo here|No dir here|No file here|Unavailable/,
       `${href} answered 200 with an error page`,
     );
 

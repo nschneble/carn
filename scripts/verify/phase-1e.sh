@@ -968,7 +968,7 @@ if require_daemon 9 "$TITLE_9" && require_seed 9 "$TITLE_9"; then
   walks=$(grep -c 'name-status' "$spawn_log")
   bounded_walk=$(grep -c 'max-count' "$spawn_log")
   tree_spawns=$(spawns_of)
-  filled=$(occurrences "$work/tree.body" '<td class="msg"><span>Lay the tree down</span></td>')
+  filled=$(occurrences "$work/tree.body" '<td class="msg"><span>Lay the tree down</span>')
   wrong=""
   [ "$tree_status" = "200" ] || wrong="$wrong the tree answered $tree_status;"
   [ "$tree_spawns" -gt 0 ] || wrong="$wrong the shim recorded no call, so it never reached the daemon's PATH;"
@@ -1098,7 +1098,7 @@ fi
 # 13
 # served over real http, not set into about:blank, so the audit measures
 # Carn Sans and Carn Mono rather than whatever the host falls back to
-contract 13 "zero axe violations across both render paths, on every new view" 147 "" \
+contract 13 "zero axe violations across both render paths, on every new view" 151 "" \
   axe
 
 # 14
@@ -1190,7 +1190,7 @@ if require_daemon 16 "$TITLE_16" && require_scratch 16 "$TITLE_16"; then
   over_status=$(fetch_page "/r/$over_cap" "$work/16b")
   [ "$cap_status" = "404" ] || wrong="$wrong a $NAME_CAP-character name answered $cap_status;"
   [ "$over_status" = "404" ] || wrong="$wrong a $((NAME_CAP + 1))-character name answered $over_status;"
-  grep -qF "There&#39;s no repo named $at_cap on this server." "$work/16a.body" \
+  grep -qF "There&#39;s no repo named &quot;$at_cap&quot; on this server." "$work/16a.body" \
     || wrong="$wrong a $NAME_CAP-character name was refused as a bad name, not looked up;"
   grep -qF "$BAD_NAME" "$work/16b.body" \
     || wrong="$wrong a $((NAME_CAP + 1))-character name drew no bad-name page;"
@@ -1557,7 +1557,7 @@ if require_daemon 30 "$TITLE_30" && require_seed 30 "$TITLE_30"; then
   # the tree row holds one link, the name, so the wash is on the name cell.
   # the earlier pattern here was .name::after, which never matched the
   # .name a::after the sheet actually shipped, so it never fired either way
-  grep -qE '^\.tree tbody \.name:hover,' src/html/styles.ts \
+  grep -qE '^\.tree \.name:hover,' src/html/styles.ts \
     || wrong="$wrong the sheet no longer washes the tree's name cell on hover;"
   grep -qE '^\.tbl tbody tr:hover,' src/html/styles.ts \
     && wrong="$wrong a one-link row washes whole again, over columns that take no click;"
@@ -1681,8 +1681,8 @@ if require_daemon 36 "$TITLE_36"; then
   [ "$miss_status" = "404" ] || wrong="$wrong the unmatched url answered $miss_status;"
   printf '%s' "$miss_type" | grep -qi 'text/html' \
     || wrong="$wrong the unmatched url answered '$miss_type', not text/html;"
-  grep -qF '<h1 class="t-l">Nothing to see here</h1>' "$work/36miss.body" \
-    || wrong="$wrong the 404 page carries no Nothing to see here heading;"
+  grep -qF '<h1 class="t-l">Nothing here</h1>' "$work/36miss.body" \
+    || wrong="$wrong the 404 page carries no Nothing here heading;"
   grep -qF '{"message"' "$work/36miss.body" \
     && wrong="$wrong the unmatched url still answers as fastify's default json 404;"
   [ "$miss_csp" -ge 1 ] || wrong="$wrong the 404 page carries no Content-Security-Policy header;"
@@ -1782,7 +1782,7 @@ readonly TITLE_41="one .tbl rule widths every three-column table, and only .file
 wrong=""
 sheet_flat=$(tr '\n' ' ' < src/html/styles.ts)
 # two spaces of indent is the nesting: a top-level rule starts at column 0
-grep -A1 -E '^  \.tbl \.name \{$' src/html/styles.ts | grep -qF 'width: 65%;' \
+grep -A1 -E '^  \.tree \.c-name \{$' src/html/styles.ts | grep -qF 'width: 65%;' \
   || wrong="$wrong .tbl's shared name column width is missing from the 640 query;"
 grep -qE '^\.tbl \.name \{$' src/html/styles.ts \
   && wrong="$wrong the name column is widthed outside the query, where no subject column exists;"
@@ -1840,7 +1840,7 @@ tr '\n' ' ' < src/html/styles.ts \
   | grep -qE '\.t-item--title \{[[:space:]]+color: var\(--ink-soft\);' \
   || wrong="$wrong .t-item--title doesn't resolve to --ink-soft;"
 if require_daemon 43 "$TITLE_43" && require_seed 43 "$TITLE_43"; then
-  for page in index tree branches tags; do
+  for page in tree branches tags; do
     body="$work/$page.body"
     [ -f "$body" ] || continue
     count=$(occurrences "$body" 't-item--title')
@@ -1855,18 +1855,17 @@ else
 fi
 
 # 44
-# part C4: a sentence takes .t-note; .t-label is left holding only captions
-readonly TITLE_44=".t-label appears in no template carrying more than two words"
+# part C4: a sentence takes .t-note; .t-label holds captions, section
+# headings, and markers, chained with · or not
+readonly TITLE_44=".t-label only appears in templates as a caption or a label"
 wrong=""
-label_sites=$(grep -rl 'class="t-label"' src/html/*.ts | wc -l | tr -d ' ')
-[ "$label_sites" = "1" ] \
-  || wrong="$wrong .t-label appears in $label_sites template files, wanted exactly 1 (repo-show.ts's Files caption);"
-grep -qF 'class="t-label"' src/html/repo-show.ts \
-  || wrong="$wrong repo-show.ts no longer carries the one surviving .t-label use;"
+label_sites=$(grep -rl 'class="t-label"' src/html/*.ts | sed 's|.*/||' | sort | tr '\n' ' ')
+[ "$label_sites" = "repo-list.ts repo-show.ts tree-list.ts " ] \
+  || wrong="$wrong .t-label appears in $label_sites, wanted repo-list.ts, repo-show.ts and tree-list.ts;"
 if [ -n "$wrong" ]; then
   record FAIL 44 "$TITLE_44" "$wrong"
 else
-  record PASS 44 "$TITLE_44" "repo-show.ts's Files caption is the one .t-label site left"
+  record PASS 44 "$TITLE_44" "the two table captions and repo-show.ts's labels are the only .t-label sites"
 fi
 
 # 45
@@ -2116,10 +2115,12 @@ if require_daemon 54 "$TITLE_54" && require_seed 54 "$TITLE_54"; then
     opened=$(occurrences "$work/$page.body" '<table class="tbl')
     [ "$opened" -gt 0 ] || continue
     counted=$((counted + opened))
-    caps=$(occurrences "$work/$page.body" '<caption class="vh">')
+    caps=$(occurrences "$work/$page.body" '<caption class="')
     # a rendered README carries its own <thead>, so the header row is
-    # counted by the name column's own marker rather than by the tag
-    heads=$(matches "$work/$page.body" '<th class="name( [a-z-]+)* t-label" scope="col">')
+    # counted by the name column's own marker rather than by the tag. the
+    # index draws its caption instead of its header row, so the marker
+    # names the column without requiring it to be visible
+    heads=$(matches "$work/$page.body" '<th class="name( [a-z-]+)*( t-label)?" scope="col">')
     [ "$caps" = "$opened" ] \
       || wrong="$wrong /$page has $opened table(s) and $caps caption(s);"
     [ "$heads" = "$opened" ] \
@@ -2128,7 +2129,7 @@ if require_daemon 54 "$TITLE_54" && require_seed 54 "$TITLE_54"; then
     headers=$(matches "$work/$page.body" '<th class="name( [a-z-]+)*" scope="row">')
     [ "$rows" = "$headers" ] \
       || wrong="$wrong /$page draws $rows row(s) but $headers row header(s);"
-    grep -qE '<th class="[a-z]+ t-label" scope="col">' "$work/$page.body" \
+    grep -qE '<th class="([a-z]+ )*(t-label|vh)" scope="col">' "$work/$page.body" \
       || wrong="$wrong /$page names no column in its header row;"
   done
   [ "$counted" != "0" ] \

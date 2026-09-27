@@ -5,50 +5,55 @@
     - link "Càrn":
       - /url: /
 - main:
-  - heading "Repositories" [level=1]
-  - table "Repositories":
-    - caption: Repositories
+  - heading "Repos" [level=1]
+  - table "5 Repos · Listed A→Z":
+    - caption: 5 Repos · Listed A→Z
     - rowgroup:
-      - row "Name About Age":
+      - row "Name Description and age":
         - columnheader "Name"
-        - columnheader "About"
-        - columnheader "Age"
+        - columnheader "Description and age"
     - rowgroup:
-      - row "gantry A rig that holds the other rigs. 3w":
+      - row "gantry A rig that holds the other rigs. Created 3w ago":
         - rowheader "gantry":
           - link "gantry":
             - /url: /r/gantry
-        - cell "A rig that holds the other rigs."
-        - cell "3w":
+        - cell "A rig that holds the other rigs. Created 3w ago":
+          - text: A rig that holds the other rigs. Created
           - time: 3w
-      - row "linklater Save a URL, read it later. 2w":
+          - text: ago
+      - row "linklater Save a URL, read it later. Created 2w ago":
         - rowheader "linklater":
           - link "linklater":
             - /url: /r/linklater
-        - cell "Save a URL, read it later."
-        - cell "2w":
+        - cell "Save a URL, read it later. Created 2w ago":
+          - text: Save a URL, read it later. Created
           - time: 2w
-      - row "moonlight Phases, tides, and a lunar calendar. 2d":
+          - text: ago
+      - row "moonlight Phases, tides, and a lunar calendar. Created 2d ago":
         - rowheader "moonlight":
           - link "moonlight":
             - /url: /r/moonlight
-        - cell "Phases, tides, and a lunar calendar."
-        - cell "2d":
+        - cell "Phases, tides, and a lunar calendar. Created 2d ago":
+          - text: Phases, tides, and a lunar calendar. Created
           - time: 2d
-      - row "sparrow - 15m":
+          - text: ago
+      - row "sparrow No description Created 15m ago":
         - rowheader "sparrow":
           - link "sparrow":
             - /url: /r/sparrow
-        - cell "-"
-        - cell "15m":
+        - cell "No description Created 15m ago":
+          - emphasis: No description
+          - text: Created
           - time: 15m
-      - row "thicket A shell script and nothing else. 6h":
+          - text: ago
+      - row "thicket A shell script and nothing else. Created 6h ago":
         - rowheader "thicket":
           - link "thicket":
             - /url: /r/thicket
-        - cell "A shell script and nothing else."
-        - cell "6h":
+        - cell "A shell script and nothing else. Created 6h ago":
+          - text: A shell script and nothing else. Created
           - time: 6h
+          - text: ago
 - contentinfo:
   - paragraph:
     - text: Càrn ·

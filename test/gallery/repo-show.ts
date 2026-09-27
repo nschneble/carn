@@ -153,20 +153,29 @@ export function view(options: Partial<RepoView> = {}): RepoView {
   return {
     name: "linklater",
     description: "Save a URL, read it later.",
+    createdAt: new Date(treeNow.getTime() - 7_200_000),
+    updatedAt: new Date(treeNow.getTime() - 3_600_000),
     branch: "main",
     tip,
     header: { light: "wordmark", dark: "wordmark" },
     entries: wide,
     readme: readmeSource,
+    license: { spdx: "MIT" },
     ...options,
   };
 }
 
 export const empty: RepoView = view({
+  updatedAt: null,
   tip: null,
   entries: [],
   readme: null,
+  license: null,
 });
+
+// a license file none of the marks recognize, so the page can only say
+// that a license is there
+export const unrecognized: RepoView = view({ license: { spdx: null } });
 
 export function showDocument(
   options: { repo?: RepoView; showAll?: boolean } = {},

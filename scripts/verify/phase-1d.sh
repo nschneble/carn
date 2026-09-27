@@ -35,9 +35,8 @@ readonly SPAWN_BUDGET=12
 readonly SSH_FLAGS="-o IdentitiesOnly=yes -o IdentityAgent=none -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o LogLevel=ERROR -o ConnectTimeout=5"
 readonly CSP="base-uri 'none'; default-src 'none'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self';"
 # as served: error-page.ts writes an apostrophe and the html tag escapes it
-readonly NO_REPO="There&#39;s no repo named $ABSENT_NAME on this server."
+readonly NO_REPO="There&#39;s no repo named &quot;$ABSENT_NAME&quot; on this server."
 readonly BAD_NAME="That URL doesn&#39;t carry a repo name this server can look up."
-readonly NO_README="No README yet. A README.md at the root of main is rendered here, under the file tree."
 readonly REL='rel="nofollow ugc"'
 
 work=$(mktemp -d) || work=""
@@ -537,7 +536,7 @@ if require_daemon 3 "$TITLE_3" && require_seed 3 "$TITLE_3"; then
 fi
 
 # 4
-readonly TITLE_4="a repo with no readme draws the tree and says how to make one"
+readonly TITLE_4="a repo with no readme draws the tree"
 if require_daemon 4 "$TITLE_4" && require_seed 4 "$TITLE_4"; then
   status=$(fetch_page "/r/$BARE_NAME" "$work/4")
   tree_rows=$(occurrences "$work/4.body" '<tr class="row')
@@ -547,12 +546,8 @@ if require_daemon 4 "$TITLE_4" && require_seed 4 "$TITLE_4"; then
     record FAIL 4 "$TITLE_4" "the tree drew $tree_rows row(s), wanted 1"
   elif grep -qF '<div class="readme">' "$work/4.body"; then
     record FAIL 4 "$TITLE_4" "the page rendered a readme it doesn't have"
-  elif ! grep -qF "$NO_README" "$work/4.body"; then
-    record FAIL 4 "$TITLE_4" "wanted \"$NO_README\", got: $(grep -oF -m1 '<div class="empty">' "$work/4.body")"
-  elif ! grep -qF 'git add README.md' "$work/4.body"; then
-    record FAIL 4 "$TITLE_4" "the empty state says what would be here but not how to make one"
   else
-    record PASS 4 "$TITLE_4" "200, 1 tree row, and the empty state carries the command"
+    record PASS 4 "$TITLE_4" "200, 1 tree row"
   fi
 fi
 
@@ -672,8 +667,7 @@ contract 10 "every BRAND.md token resolves non-empty on :root in both paths" 5 "
 # 11
 # served over real http, not set into about:blank, so the audit measures
 # Carn Sans and Carn Mono rather than whatever the host falls back to.
-# 1e's five new views brought the file from 31 audits to 83
-contract 11 "zero axe violations across both render paths, gallery included" 147 "" \
+contract 11 "zero axe violations across both render paths, gallery included" 151 "" \
   axe
 
 # 12

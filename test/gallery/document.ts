@@ -70,7 +70,7 @@ const chips = html`<section>
 const rows = html`<section>
   <h2 class="t-l">Table</h2>
   <table class="tbl tree">
-    <caption class="vh">Files</caption>
+    <caption class="vh">Items</caption>
     <thead>
       <tr>
         <th class="name t-label" scope="col">Name</th>

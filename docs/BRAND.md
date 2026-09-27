@@ -99,6 +99,9 @@ Every element in every state.
 
 ```css
 body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
   background: var(--ground);
   color: var(--ink);
   font-family: var(--f-display);
@@ -185,6 +188,7 @@ body {
   font-variation-settings: "wdth" 100, "wght" 400;
   font-size: 16.5px;
   line-height: 1.62;
+  text-wrap: pretty;
 }
 
 .t-label {
@@ -194,6 +198,12 @@ body {
   letter-spacing: 0.11em;
   text-transform: uppercase;
   color: var(--ink-faint);
+}
+
+.repos > caption.t-label,
+.tree > caption.t-label {
+  text-align: left;
+  padding: 0 var(--s2);
 }
 
 /* a short explanatory sentence */
@@ -281,11 +291,6 @@ body {
   display: none;
 }
 
-.btn[aria-disabled="true"]:hover {
-  background: none;
-  filter: none;
-}
-
 /* form fields */
 
 .field {
@@ -365,8 +370,8 @@ body {
 
 /* no display values on any table element; fixed not auto */
 .tbl {
-  width: calc(100% + var(--s2));
-  margin-left: calc(var(--s2) * -1);
+  width: calc(100% + (var(--s2) * 2));
+  margin-inline: calc(var(--s2) * -1);
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -380,11 +385,16 @@ body {
 }
 
 .tbl thead th {
-  border-bottom: 1px solid var(--ink);
-  padding: 0 var(--s4) var(--s2) 0;
+  border-bottom: 1px solid var(--rule-soft);
+  padding: 0 var(--s2) var(--s2) 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tbl.repos thead,
+.tbl.tree thead {
+  border-bottom: 1px solid var(--rule);
 }
 
 .tbl thead .age,
@@ -403,8 +413,7 @@ body {
 }
 
 /* gutter bleed sits inside link so the whole wash width is clickable */
-.tbl tbody th:first-child > *,
-.tbl tbody td:first-child > * {
+.tbl tbody th:first-child > * {
   padding-left: var(--s2);
 }
 
@@ -417,13 +426,18 @@ body {
 }
 
 /* the name is the only link so the wash stays inside the clickable area */
-.tree tbody .name:hover,
-.tree tbody .name:focus-within,
-.repos tbody .name:hover,
-.repos tbody .name:focus-within,
+
 .files tbody .name:hover,
 .files tbody .name:focus-within {
   background: var(--sunk);
+}
+
+.repos .name:hover,
+.repos .name:focus-within,
+.tree .name:hover,
+.tree .name:focus-within {
+  background: var(--accent-fill);
+  color: var(--on-accent);
 }
 
 /* every cell is a target, so the box sits on the child that fills it */
@@ -431,7 +445,25 @@ body {
 .tbl tbody td > * {
   display: block;
   min-height: 24px;
-  padding: 6px var(--s4) 6px 0;
+  padding: var(--s2) var(--s4) var(--s2) 0;
+}
+
+.tbl tbody td.msg {
+  padding: 0 var(--s2) 0 var(--s4);
+}
+
+.tbl tbody td.msg > * {
+  padding: 0;
+}
+
+.repos .msg > *,
+.tree .msg > * {
+  min-height: 0;
+}
+
+.repos .msg,
+.tree .msg {
+  vertical-align: middle;
 }
 
 .tbl a {
@@ -441,20 +473,38 @@ body {
 .tbl a:hover,
 .tbl a:focus-visible {
   text-decoration: underline;
-  text-underline-offset: 2px;
 }
 
 /* name is link text + row's a11y name, so it wraps not truncates */
-.tbl .name > * {
+
+.repos .name > * {
+  font-size: clamp(1.75rem, 7.5vw, 3rem);
   color: var(--ink);
+}
+
+.repos .name:hover > *,
+.repos .name:focus-within > *,
+.tree .name:hover > *,
+.tree .name:focus-within > * {
+  background: var(--accent-fill);
+  color: var(--on-accent);
 }
 
 .tbl .name a:focus-visible {
   outline-offset: -2px;
 }
 
+.tbl .name > * {
+  color: var(--ink);
+}
+
 .tbl .is-dir .name > * {
   color: var(--accent-text);
+}
+
+.tbl .is-dir .name:hover > *,
+.tbl .is-dir .name:focus-within > *{
+  color: var(--on-accent);
 }
 
 .tbl .msg > *,
@@ -488,6 +538,14 @@ body {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+.repos .msg time {
+  font-variant-numeric: tabular-nums;
+}
+
+.repos .c-name,
+.tree .c-name {
+  width: 100%;
+}
 
 @media (min-width: 640px) {
   .repos .msg,
@@ -495,7 +553,8 @@ body {
     display: table-cell;
   }
 
-  .tbl .name {
+  .repos .c-name,
+  .tree .c-name {
     width: 65%;
   }
 }
@@ -732,7 +791,7 @@ The license permits the splice; `fonts/README.md` carries the reasoning and the 
 
 ### A note, not a caption
 
-**`.t-label` is a caption class for one to two words.** A `<dt>`, a section heading (like "Files"), a marker (like "Default"). It's 11px, uppercase, and tracked out at 0.11em, which reads fine at that length but turns hostile at sentence length.
+**`.t-label` is a caption class for one to three words.** A `<dt>`, a section heading (like "Items"), a marker (like "Default"). Markers can chain into one line with ` · `, each still one to two words, like "linklater · main · MIT". It's 11px, uppercase, and tracked out at 0.11em, which reads fine at that length but turns hostile at sentence length.
 
 **`.t-note` is for short explanatory sentences.** Monospace font, sentence case, `--ink-mid` token, no uppercase or tracking. A truncation notice, a cutoff count, or anything that says *why* a page looks the way it does. Same family + size as `.t-label`, so the two still read as one register; only the caption treatment is gone.
 

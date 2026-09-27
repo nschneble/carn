@@ -58,6 +58,7 @@ import {
 import { fixtureHeaders } from "../support/fixture-repos.js";
 import { renderPaths } from "../support/render-paths.js";
 import { type Served, type ServedAsset, serve } from "../support/serve.js";
+import { dark, light } from "../support/tokens.js";
 
 declare const document: BrowserDocument;
 declare const axe: {
@@ -202,6 +203,15 @@ const emptyRepo = view({
   tip: null,
   entries: [],
   readme: null,
+  license: null,
+});
+
+// a commit that leaves nothing behind: the history exists and the tree
+// doesn't, so the page owes a different sentence than a repo with no commits
+const emptiedTree = view({
+  entries: [],
+  readme: null,
+  license: null,
 });
 
 // the show page's only external subresource; without it the audited
@@ -229,8 +239,9 @@ const states = {
   empty: indexDocument({ repos: [] }),
   show: showDocument(),
   "show-all": showDocument({ showAll: true }),
-  "show-bare": showDocument({ repo: view({ readme: null }) }),
+  "show-bare": showDocument({ repo: view({ readme: null, license: null }) }),
   "show-new": showDocument({ repo: emptyRepo }),
+  "show-empty": showDocument({ repo: emptiedTree }),
   "show-header": showDocument({ repo: view({ header: committedHeader }) }),
   "not-found": errorPage({ failure: noSuchRepo("linklater") }),
   blob: blobDocument(),
@@ -296,7 +307,7 @@ fixtures["/blob-long-path"] = blobDocument({
 });
 
 fixtures["/error-long-path"] = errorPage({
-  failure: noSuchFile(requestedPath),
+  failure: noSuchFile("linklater", requestedPath),
 });
 
 let site: Served;
@@ -534,14 +545,15 @@ function contrastPin(results: AxeResults, where: string, pinned: number): void {
 // audit the same bytes and differ only in which token block applies
 const contrastNodes: Record<string, number> = {
   gallery: 63,
-  populated: 21,
-  hover: 21,
+  populated: 24,
+  hover: 24,
   empty: 6,
-  show: 94,
-  "show-all": 169,
-  "show-bare": 68,
-  "show-new": 10,
-  "show-header": 94,
+  show: 108,
+  "show-all": 201,
+  "show-bare": 79,
+  "show-new": 12,
+  "show-empty": 11,
+  "show-header": 108,
   "not-found": 7,
   blob: 73,
   "blob-cut": 22,
@@ -560,10 +572,10 @@ const contrastNodes: Record<string, number> = {
   "branches-quiet": 20,
   tags: 29,
   "tags-none": 10,
-  tree: 48,
-  "tree-cut": 66,
-  "tree-all": 141,
-  "tree-sub": 25,
+  tree: 55,
+  "tree-cut": 79,
+  "tree-all": 172,
+  "tree-sub": 26,
 };
 
 // two ways a state measures fewer nodes below the breakpoint: breadcrumb
@@ -574,16 +586,16 @@ const foldedContrastNodes: Record<string, number> = {
   "blob-cut": 21,
   "commit-file": 41,
   gallery: 58,
-  hover: 16,
-  populated: 16,
-  show: 78,
-  "show-all": 135,
-  "show-bare": 52,
-  "show-header": 78,
-  tree: 38,
-  "tree-all": 107,
-  "tree-cut": 50,
-  "tree-sub": 21,
+  hover: 9,
+  populated: 9,
+  show: 63,
+  "show-all": 102,
+  "show-bare": 34,
+  "show-header": 63,
+  tree: 28,
+  "tree-all": 73,
+  "tree-cut": 34,
+  "tree-sub": 17,
 };
 
 for (const width of auditWidths) {
@@ -815,7 +827,9 @@ test("the committed header the audit renders is a real 4:1 image", async (t) => 
   }
 });
 
-test("the hover wash is measured under the two columns that sit on it", async (t) => {
+// axe rewrites its target selectors whenever the row's shape moves, so the
+// wash is read off the verdict itself rather than off a generated path
+test("the hover wash is what color-contrast measured the row against", async (t) => {
   for (const path of renderPaths) {
     const { results } = await fetched("/hover", path.colorScheme);
     const contrast: Result | undefined = results.passes.find(
@@ -827,17 +841,24 @@ test("the hover wash is measured under the two columns that sit on it", async (t
       `color-contrast evaluated nothing on the ${path.name} hover fixture, so the stylesheet never reached the page and a clean run proves nothing`,
     );
 
-    for (const column of [".msg", ".age"]) {
-      const measured: number = contrast.nodes.filter((node) =>
-        node.target.some((target) => String(target).includes(column)),
-      ).length;
+    const fill = (path.palette === "dark" ? dark : light).get("--accent-fill");
+    assert.ok(fill, "--accent-fill is undeclared");
 
-      assert.ok(
-        measured > 0,
-        `color-contrast never measured ${column} on the ${path.name} hover fixture`,
-      );
-      t.diagnostic(`${path.name} ${column}: ${measured} measured`);
-    }
+    const washed = contrast.nodes.filter((node) =>
+      node.any.some(
+        (check) =>
+          check.id === "color-contrast" &&
+          (
+            check.data as { bgColor?: string } | null
+          )?.bgColor?.toLowerCase() === fill.toLowerCase(),
+      ),
+    );
+
+    assert.ok(
+      washed.length > 0,
+      `color-contrast settled nothing against ${fill} on the ${path.name} hover fixture, so the wash the row takes is unmeasured`,
+    );
+    t.diagnostic(`${path.name}: ${washed.length} nodes settled on ${fill}`);
   }
 });
 
@@ -1080,13 +1101,13 @@ test("the tree row's link fills its cell and the wash stops there", async (t) =>
     );
     assert.strictEqual(
       filled.cells,
-      3,
+      2,
       `the tree row lays out ${filled.cells} cells, so a column collapsed`,
     );
 
-    const sunk = rgb(
+    const fill = rgb(
       await cell.evaluate((node) =>
-        getComputedStyle(node).getPropertyValue("--sunk"),
+        getComputedStyle(node).getPropertyValue("--accent-fill"),
       ),
     );
     const subject = page.locator(".tree tbody .row:not(.is-sub) .msg").first();
@@ -1097,7 +1118,7 @@ test("the tree row's link fills its cell and the wash stops there", async (t) =>
     await cell.hover();
     const washed = await read();
 
-    assert.strictEqual(washed, sunk, "the hover wash isn't --sunk");
+    assert.strictEqual(washed, fill, "the hover wash isn't --accent-fill");
     assert.notStrictEqual(
       washed,
       rest,
@@ -1154,7 +1175,7 @@ test("a gitlink row is inert", async () => {
 
 const tableWidths = [320, narrowWidth, wideWidth];
 const tablePaths = ["/populated", "/tree", "/commits", "/branches", "/commit"];
-const tableColumns: Record<number, number> = { 320: 12, 375: 12, 1440: 14 };
+const tableColumns: Record<number, number> = { 320: 8, 375: 8, 1440: 8 };
 
 test("every column header is legible at every width", async (t) => {
   const page = await (await browser()).newPage();
@@ -1174,6 +1195,8 @@ test("every column header is legible at every width", async (t) => {
           .evaluate((head) =>
             [...head.querySelectorAll("th")]
               .filter((cell) => cell.getClientRects().length > 0)
+              // a vh header is named for the reader, not laid out for the eye
+              .filter((cell) => !cell.classList.contains("vh"))
               .map((cell) => ({
                 label: (cell.textContent ?? "").trim(),
                 scroll: cell.scrollWidth,

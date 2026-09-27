@@ -108,6 +108,9 @@ export const tokens = css`:root {
 }`;
 
 export const components = css`body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
   background: var(--ground);
   color: var(--ink);
   font-family: var(--f-display);
@@ -194,6 +197,7 @@ export const components = css`body {
   font-variation-settings: "wdth" 100, "wght" 400;
   font-size: 16.5px;
   line-height: 1.62;
+  text-wrap: pretty;
 }
 
 .t-label {
@@ -203,6 +207,12 @@ export const components = css`body {
   letter-spacing: 0.11em;
   text-transform: uppercase;
   color: var(--ink-faint);
+}
+
+.repos > caption.t-label,
+.tree > caption.t-label {
+  text-align: left;
+  padding: 0 var(--s2);
 }
 
 /* a short explanatory sentence */
@@ -290,11 +300,6 @@ export const components = css`body {
   display: none;
 }
 
-.btn[aria-disabled="true"]:hover {
-  background: none;
-  filter: none;
-}
-
 /* form fields */
 
 .field {
@@ -374,8 +379,8 @@ export const components = css`body {
 
 /* no display values on any table element; fixed not auto */
 .tbl {
-  width: calc(100% + var(--s2));
-  margin-left: calc(var(--s2) * -1);
+  width: calc(100% + (var(--s2) * 2));
+  margin-inline: calc(var(--s2) * -1);
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -389,11 +394,16 @@ export const components = css`body {
 }
 
 .tbl thead th {
-  border-bottom: 1px solid var(--ink);
-  padding: 0 var(--s4) var(--s2) 0;
+  border-bottom: 1px solid var(--rule-soft);
+  padding: 0 var(--s2) var(--s2) 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tbl.repos thead,
+.tbl.tree thead {
+  border-bottom: 1px solid var(--rule);
 }
 
 .tbl thead .age,
@@ -412,8 +422,7 @@ export const components = css`body {
 }
 
 /* gutter bleed sits inside link so the whole wash width is clickable */
-.tbl tbody th:first-child > *,
-.tbl tbody td:first-child > * {
+.tbl tbody th:first-child > * {
   padding-left: var(--s2);
 }
 
@@ -426,13 +435,18 @@ export const components = css`body {
 }
 
 /* the name is the only link so the wash stays inside the clickable area */
-.tree tbody .name:hover,
-.tree tbody .name:focus-within,
-.repos tbody .name:hover,
-.repos tbody .name:focus-within,
+
 .files tbody .name:hover,
 .files tbody .name:focus-within {
   background: var(--sunk);
+}
+
+.repos .name:hover,
+.repos .name:focus-within,
+.tree .name:hover,
+.tree .name:focus-within {
+  background: var(--accent-fill);
+  color: var(--on-accent);
 }
 
 /* every cell is a target, so the box sits on the child that fills it */
@@ -440,7 +454,25 @@ export const components = css`body {
 .tbl tbody td > * {
   display: block;
   min-height: 24px;
-  padding: 6px var(--s4) 6px 0;
+  padding: var(--s2) var(--s4) var(--s2) 0;
+}
+
+.tbl tbody td.msg {
+  padding: 0 var(--s2) 0 var(--s4);
+}
+
+.tbl tbody td.msg > * {
+  padding: 0;
+}
+
+.repos .msg > *,
+.tree .msg > * {
+  min-height: 0;
+}
+
+.repos .msg,
+.tree .msg {
+  vertical-align: middle;
 }
 
 .tbl a {
@@ -450,20 +482,38 @@ export const components = css`body {
 .tbl a:hover,
 .tbl a:focus-visible {
   text-decoration: underline;
-  text-underline-offset: 2px;
 }
 
 /* name is link text + row's a11y name, so it wraps not truncates */
-.tbl .name > * {
+
+.repos .name > * {
+  font-size: clamp(1.75rem, 7.5vw, 3rem);
   color: var(--ink);
+}
+
+.repos .name:hover > *,
+.repos .name:focus-within > *,
+.tree .name:hover > *,
+.tree .name:focus-within > * {
+  background: var(--accent-fill);
+  color: var(--on-accent);
 }
 
 .tbl .name a:focus-visible {
   outline-offset: -2px;
 }
 
+.tbl .name > * {
+  color: var(--ink);
+}
+
 .tbl .is-dir .name > * {
   color: var(--accent-text);
+}
+
+.tbl .is-dir .name:hover > *,
+.tbl .is-dir .name:focus-within > *{
+  color: var(--on-accent);
 }
 
 .tbl .msg > *,
@@ -497,6 +547,14 @@ export const components = css`body {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+.repos .msg time {
+  font-variant-numeric: tabular-nums;
+}
+
+.repos .c-name,
+.tree .c-name {
+  width: 100%;
+}
 
 @media (min-width: 640px) {
   .repos .msg,
@@ -504,7 +562,8 @@ export const components = css`body {
     display: table-cell;
   }
 
-  .tbl .name {
+  .repos .c-name,
+  .tree .c-name {
     width: 65%;
   }
 }
@@ -729,31 +788,44 @@ body > header,
 body > main,
 body > footer {
   box-sizing: border-box;
-  max-width: 1160px;
+  width: 100%;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 0 var(--s5);
+  padding-inline: var(--s4);
 }
 
 body > header {
-  padding-top: var(--s5);
-  padding-bottom: var(--s6);
+  position: relative;
+  margin-bottom: var(--s8);
+  padding-block: var(--s5);
 }
 
-/* inset to the gutters so it matches every rule inside main */
+body > main {
+  flex: 1;
+}
+
 body > footer {
   position: relative;
-  border-top: 0;
   margin-top: var(--s8);
-  padding-top: var(--s4);
-  padding-bottom: var(--s8);
+  padding-block: var(--s4) var(--s8);
 }
 
+/* a border sits on its own box, so an inset rule has to be drawn */
+body > header::before,
 body > footer::before {
   content: "";
   position: absolute;
+  left: var(--s2);
+  right: var(--s2);
+}
+
+body > header::before {
+  bottom: 0;
+  border-top: 1px solid var(--ink);
+}
+
+body > footer::before {
   top: 0;
-  left: var(--s5);
-  right: var(--s5);
   border-top: 1px solid var(--rule);
 }
 
@@ -762,8 +834,27 @@ body > footer > p {
   margin: 0;
 }
 
+body > main a,
+body > footer a {
+  text-underline-offset: 3px;
+}
+
 main > h1 {
   margin: 0 0 var(--s2);
+}
+
+.home {
+  font-variation-settings: "wdth" 110, "wght" 700;
+  font-size: 16px;
+  color: var(--ink);
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.home:hover,
+.home:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* repo index */
@@ -774,18 +865,10 @@ main > h1 {
   overflow-wrap: anywhere;
 }
 
-.empty code {
+.empty .src {
+  max-width: var(--measure);
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
-}
-
-.home {
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.home:hover,
-.home:focus-visible {
-  text-decoration: underline;
 }
 
 /* breadcrumb */
@@ -836,17 +919,30 @@ main > h1 {
 
 /* repo show */
 
-.about {
-  max-width: var(--measure);
-  overflow-wrap: anywhere;
+.repo-identity
+{
+  margin-bottom: var(--s8);
+}
+
+.repo-body {
+  display: grid;
+  gap: var(--s7);
+}
+
+.repo-nav {
+  margin-inline: calc(var(--s2) * -1);
+}
+
+.repo-nav p {
+  margin: 0;
+  padding: 0 var(--s2);
 }
 
 .repo-nav ul {
-  display: flex;
-  flex-wrap: wrap;
+  border-top: 1px solid var(--rule);
   list-style: none;
-  margin: 0 0 var(--s7);
-  padding: 0;
+  margin: 0;
+  padding: var(--s1) var(--s2) 0;
 }
 
 .repo-nav a {
@@ -857,7 +953,41 @@ main > h1 {
   text-transform: uppercase;
   color: var(--accent-text);
   text-decoration: underline;
-  padding: 10px 14px;
+}
+
+@media (min-width: 640px) {
+  .repo-body {
+    grid-template-columns: minmax(0, 1fr) 168px;
+  }
+
+  .repo-body:not(:has(> .repo-readme)) > .repo-nav {
+    grid-row: 1;
+  }
+
+  .repo-files {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .repo-nav {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: start;
+    margin-left: 0;
+  }
+
+  .repo-readme {
+    grid-column: 1;
+    grid-row: 2;
+  }
+}
+
+.about {
+  margin-bottom: var(--s7);
+}
+
+.about .t-label {
+  margin-top: 0;
 }
 
 /* a submodule is pinned here, not browsable, so its name takes no wash: a
@@ -873,6 +1003,7 @@ main > h1 {
 
 .showall {
   margin: var(--s3) 0 0;
+  text-transform: uppercase;
 }
 
 /* one commit */
@@ -926,16 +1057,18 @@ main > h1 {
   margin: var(--s3) 0 0;
 }
 
+.diff .a,
+.diff .d {
+  border-left: 2px solid;
+  padding-left: var(--s2);
+}
+
 .diff .a {
   color: var(--diff-add);
-  border-left: 2px solid var(--diff-add);
-  padding-left: var(--s2);
 }
 
 .diff .d {
   color: var(--diff-del);
-  border-left: 2px solid var(--diff-del);
-  padding-left: var(--s2);
 }
 
 .diff .h {
@@ -945,10 +1078,20 @@ main > h1 {
 
 /* rendered READMEs */
 
+.readme-caption {
+  scroll-margin-top: var(--s5);
+  margin-inline: calc(var(--s2) * -1);
+  padding-inline: var(--s2);
+  border-bottom: 1px solid var(--rule);
+}
+
+.readme-caption .t-label {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .readme {
-  margin-top: var(--s7);
-  border-top: 1px solid var(--rule);
-  padding-top: var(--s5);
+  padding-top: var(--s3);
 }
 
 .readme > :first-child {
@@ -957,8 +1100,25 @@ main > h1 {
 
 .readme p,
 .readme li,
-.readme blockquote {
+.readme blockquote,
+.readme pre,
+.readme table,
+.readme img {
   max-width: var(--measure);
+  text-wrap: pretty;
+}
+
+/* a bullet needs a fraction of the default 40px, a two-digit number more */
+.readme ul {
+  padding-left: 1.15em;
+}
+
+.readme ol {
+  padding-left: 1.8em;
+}
+
+.readme li::marker {
+  color: var(--ink-faint);
 }
 
 .readme h1,
@@ -974,17 +1134,14 @@ main > h1 {
 }
 
 .readme h1 {
-  font-size: 1.6rem;
-}
-
-.readme h2 {
   font-size: 1.32rem;
 }
 
-.readme h3 {
+.readme h2 {
   font-size: 1.14rem;
 }
 
+.readme h3,
 .readme h4,
 .readme h5,
 .readme h6 {
@@ -1047,6 +1204,10 @@ main > h1 {
   text-transform: uppercase;
   color: var(--ink-faint);
   border-bottom-color: var(--ink);
+}
+
+.readme td {
+  font-variant-numeric: tabular-nums;
 }`;
 
 export const stylesheet = `${faces}\n\n${tokens}\n\n${components}\n\n${identity}\n\n${source}\n\n${pages}\n`;

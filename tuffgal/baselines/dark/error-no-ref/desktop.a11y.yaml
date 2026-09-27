@@ -1,16 +1,20 @@
 - banner:
   - link "Skip to content":
     - /url: "#main"
-  - paragraph:
-    - link "Càrn":
-      - /url: /
+  - navigation "Breadcrumb":
+    - list:
+      - listitem:
+        - link "Càrn":
+          - /url: /
+      - listitem:
+        - link "gantry":
+          - /url: /r/gantry
 - main:
   - heading "No ref here" [level=1]
-  - paragraph: There's no branch, tag, or commit named nope in this repo.
-  - paragraph: Check the ref, or browse the repo.
+  - paragraph: There's no branch, tag, or commit named nope in this repo. Check the ref, or browse the repo.
   - paragraph:
-    - link "All repos":
-      - /url: /
+    - link "Browse repo":
+      - /url: /r/gantry
 - contentinfo:
   - paragraph:
     - text: Càrn ·
