@@ -791,7 +791,7 @@ The license permits the splice; `fonts/README.md` carries the reasoning and the 
 
 ### A note, not a caption
 
-**`.t-label` is a caption class for one to two words.** A `<dt>`, a section heading (like "Items"), a marker (like "Default"). It's 11px, uppercase, and tracked out at 0.11em, which reads fine at that length but turns hostile at sentence length.
+**`.t-label` is a caption class for one to three words.** A `<dt>`, a section heading (like "Items"), a marker (like "Default"). Markers can chain into one line with ` · `, each still one to two words, like "linklater · main · MIT". It's 11px, uppercase, and tracked out at 0.11em, which reads fine at that length but turns hostile at sentence length.
 
 **`.t-note` is for short explanatory sentences.** Monospace font, sentence case, `--ink-mid` token, no uppercase or tracking. A truncation notice, a cutoff count, or anything that says *why* a page looks the way it does. Same family + size as `.t-label`, so the two still read as one register; only the caption treatment is gone.
 

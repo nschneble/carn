@@ -968,7 +968,7 @@ if require_daemon 9 "$TITLE_9" && require_seed 9 "$TITLE_9"; then
   walks=$(grep -c 'name-status' "$spawn_log")
   bounded_walk=$(grep -c 'max-count' "$spawn_log")
   tree_spawns=$(spawns_of)
-  filled=$(occurrences "$work/tree.body" '<td class="msg"><span>Lay the tree down</span></td>')
+  filled=$(occurrences "$work/tree.body" '<td class="msg"><span>Lay the tree down</span>')
   wrong=""
   [ "$tree_status" = "200" ] || wrong="$wrong the tree answered $tree_status;"
   [ "$tree_spawns" -gt 0 ] || wrong="$wrong the shim recorded no call, so it never reached the daemon's PATH;"
@@ -1098,7 +1098,7 @@ fi
 # 13
 # served over real http, not set into about:blank, so the audit measures
 # Carn Sans and Carn Mono rather than whatever the host falls back to
-contract 13 "zero axe violations across both render paths, on every new view" 147 "" \
+contract 13 "zero axe violations across both render paths, on every new view" 151 "" \
   axe
 
 # 14
@@ -1557,7 +1557,7 @@ if require_daemon 30 "$TITLE_30" && require_seed 30 "$TITLE_30"; then
   # the tree row holds one link, the name, so the wash is on the name cell.
   # the earlier pattern here was .name::after, which never matched the
   # .name a::after the sheet actually shipped, so it never fired either way
-  grep -qE '^\.tree tbody \.name:hover,' src/html/styles.ts \
+  grep -qE '^\.tree \.name:hover,' src/html/styles.ts \
     || wrong="$wrong the sheet no longer washes the tree's name cell on hover;"
   grep -qE '^\.tbl tbody tr:hover,' src/html/styles.ts \
     && wrong="$wrong a one-link row washes whole again, over columns that take no click;"
@@ -1782,7 +1782,7 @@ readonly TITLE_41="one .tbl rule widths every three-column table, and only .file
 wrong=""
 sheet_flat=$(tr '\n' ' ' < src/html/styles.ts)
 # two spaces of indent is the nesting: a top-level rule starts at column 0
-grep -A1 -E '^  \.repos \.c\-name \{$' src/html/styles.ts | grep -qF 'width: 65%;' \
+grep -A1 -E '^  \.tree \.c-name \{$' src/html/styles.ts | grep -qF 'width: 65%;' \
   || wrong="$wrong .tbl's shared name column width is missing from the 640 query;"
 grep -qE '^\.tbl \.name \{$' src/html/styles.ts \
   && wrong="$wrong the name column is widthed outside the query, where no subject column exists;"
@@ -1855,18 +1855,17 @@ else
 fi
 
 # 44
-# part C4: a sentence takes .t-note; .t-label is left holding only captions
-readonly TITLE_44=".t-label only appears in templates as a table caption"
+# part C4: a sentence takes .t-note; .t-label holds captions, section
+# headings, and markers, chained with · or not
+readonly TITLE_44=".t-label only appears in templates as a caption or a label"
 wrong=""
-label_sites=$(grep -rl 'class="t-label"' src/html/*.ts | wc -l | tr -d ' ')
-[ "$label_sites" = "2" ] \
-  || wrong="$wrong .t-label appears in $label_sites template files, wanted exactly 2 (repo-list.ts + repo-show.ts's table captions);"
-grep -qF 'class="t-label"' src/html/repo-show.ts \
-  || wrong="$wrong repo-show.ts no longer carries the one surviving .t-label use;"
+label_sites=$(grep -rl 'class="t-label"' src/html/*.ts | sed 's|.*/||' | sort | tr '\n' ' ')
+[ "$label_sites" = "repo-list.ts repo-show.ts tree-list.ts " ] \
+  || wrong="$wrong .t-label appears in $label_sites, wanted repo-list.ts, repo-show.ts and tree-list.ts;"
 if [ -n "$wrong" ]; then
   record FAIL 44 "$TITLE_44" "$wrong"
 else
-  record PASS 44 "$TITLE_44" "repo-show.ts's Items caption is the one .t-label site left"
+  record PASS 44 "$TITLE_44" "the two table captions and repo-show.ts's labels are the only .t-label sites"
 fi
 
 # 45
