@@ -1702,8 +1702,8 @@ fi
 readonly TITLE_37="/r/:repo links to all three of commits, branches and tags"
 if require_daemon 37 "$TITLE_37" && require_seed 37 "$TITLE_37"; then
   wrong=""
-  grep -qF "<nav class=\"list-nav\" aria-label=\"Repo views\">" "$work/show.body" \
-    || wrong="$wrong the repo page carries no repo nav;"
+  grep -qF "<nav class=\"list-nav\" aria-labelledby=\"go-label\">" "$work/show.body" \
+    || wrong="$wrong the repo page carries no Go nav;"
   grep -qF "href=\"/r/$REPO_NAME/commits?ref=main\"" "$work/show.body" \
     || wrong="$wrong the repo page doesn't link to the commit log;"
   grep -qF "href=\"/r/$REPO_NAME/branches\"" "$work/show.body" \

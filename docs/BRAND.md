@@ -204,6 +204,7 @@ body {
 .tree > caption.t-label {
   text-align: left;
   padding: 0 var(--s2);
+  border-bottom: 1px solid var(--rule);
 }
 
 /* a short explanatory sentence */
@@ -385,16 +386,10 @@ body {
 }
 
 .tbl thead th {
-  border-bottom: 1px solid var(--rule-soft);
   padding: 0 var(--s2) var(--s2) 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.tbl.repos thead,
-.tbl.tree thead {
-  border-bottom: 1px solid var(--rule);
 }
 
 .tbl thead .age,
@@ -477,9 +472,15 @@ body {
 
 /* name is link text + row's a11y name, so it wraps not truncates */
 
-.repos .name > * {
+.repos .name > *,
+.tree-body .tree .name > *,
+.blob-body .name > * {
   font-size: clamp(1.75rem, 7.5vw, 3rem);
   color: var(--ink);
+}
+
+.tree-body .tree .is-dir .name > * {
+  color: var(--accent);
 }
 
 .repos .name:hover > *,

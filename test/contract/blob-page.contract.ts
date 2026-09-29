@@ -576,8 +576,8 @@ test("counts are grouped the same way on every machine", () => {
 
   assert.ok(markup.includes("of 6,310."), "the notice total lost its groups");
   assert.ok(
-    markup.includes("<dd>6,310</dd>"),
-    "the Lines field is unformatted",
+    markup.includes("6,310 lines"),
+    "the about line's count is unformatted",
   );
 });
 
@@ -592,8 +592,12 @@ test("an unregistered extension still renders in the same shape", () => {
   assert.strictEqual(languageFor(odd.path), null);
   assert.match(markup, /<pre class="src" tabindex="0" role="region"/);
   assert.ok(markup.includes('<code class="hljs">'));
-  assert.ok(markup.includes("<dd>Plain text</dd>"));
-  assert.doesNotMatch(codeBody(markup), /<span/);
+  assert.ok(markup.includes("<br />Plain text</p>"));
+  assert.match(
+    codeBody(markup),
+    /^(?:<span class="line">[^<]*<\/span>\n)+$/,
+    "an unhighlighted body carries markup beyond the line wrappers",
+  );
 });
 
 test("the extension map answers for the languages it registers", () => {
