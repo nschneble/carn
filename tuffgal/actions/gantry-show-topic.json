@@ -1,0 +1,9 @@
+{
+  "action": "gantry-show-topic",
+  "steps": [{ "kind": "navigate", "path": "/r/gantry?ref=topic" }],
+  "expect": {
+    "anyOf": [
+      { "selector": ".list-nav a[href=\"/r/gantry/commits?ref=topic\"]" }
+    ]
+  }
+}

@@ -213,6 +213,7 @@ export const components = css`body {
 .tree > caption.t-label {
   text-align: left;
   padding: 0 var(--s2);
+  border-bottom: 1px solid var(--rule);
 }
 
 /* a short explanatory sentence */
@@ -394,16 +395,10 @@ export const components = css`body {
 }
 
 .tbl thead th {
-  border-bottom: 1px solid var(--rule-soft);
   padding: 0 var(--s2) var(--s2) 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.tbl.repos thead,
-.tbl.tree thead {
-  border-bottom: 1px solid var(--rule);
 }
 
 .tbl thead .age,
@@ -486,9 +481,15 @@ export const components = css`body {
 
 /* name is link text + row's a11y name, so it wraps not truncates */
 
-.repos .name > * {
+.repos .name > *,
+.tree-body .tree .name > *,
+.blob-body .name > * {
   font-size: clamp(1.75rem, 7.5vw, 3rem);
   color: var(--ink);
+}
+
+.tree-body .tree .is-dir .name > * {
+  color: var(--accent);
 }
 
 .repos .name:hover > *,
@@ -697,6 +698,23 @@ export const source = css`.src {
 
 .src code {
   font-family: inherit;
+  counter-reset: line;
+}
+
+.src .line {
+  counter-increment: line;
+}
+
+/* generated, so a copy takes the code without them; the empty alt keeps a
+   screen reader from reading one before every line */
+.src .line::before {
+  content: counter(line) / "";
+  display: inline-block;
+  width: 4ch;
+  margin-right: 2ch;
+  text-align: right;
+  color: var(--ink-mid);
+  user-select: none;
 }
 
 .hljs-comment,
@@ -871,52 +889,6 @@ main > h1 {
   overflow-wrap: anywhere;
 }
 
-/* breadcrumb */
-
-/* one continuous inline run, so the separators are real selectable text
-   rather than a gap no Ctrl-F can match */
-.crumbs {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  color: var(--ink-mid);
-  overflow-wrap: anywhere;
-}
-
-.crumbs li {
-  display: inline;
-}
-
-.crumbs a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.crumbs a:hover,
-.crumbs a:focus-visible {
-  text-decoration: underline;
-}
-
-/* Carn Mono ships two static faces, so the 500 is a weight, not an axis */
-.crumbs .here {
-  color: var(--ink);
-  font-weight: 500;
-}
-
-.crumbs .mid {
-  display: none;
-}
-
-@media (min-width: 640px) {
-  .crumbs .mid {
-    display: inline;
-  }
-
-  .crumbs .fold {
-    display: none;
-  }
-}
-
 /* repo show */
 
 .repo-identity
@@ -924,56 +896,108 @@ main > h1 {
   margin-bottom: var(--s8);
 }
 
-.repo-body {
+.repo-body,
+.tree-body,
+.blob-body {
   display: grid;
   gap: var(--s7);
 }
 
-.repo-nav {
+.list-nav {
   margin-inline: calc(var(--s2) * -1);
 }
 
-.repo-nav p {
+.list-nav p {
   margin: 0;
   padding: 0 var(--s2);
 }
 
-.repo-nav ul {
+.list-nav ul,
+.list-nav ol {
   border-top: 1px solid var(--rule);
   list-style: none;
   margin: 0;
   padding: var(--s1) var(--s2) 0;
 }
 
-.repo-nav a {
-  display: inline-block;
+.list-nav li {
   font-family: var(--f-mono);
   font-size: 12px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
+  color: var(--ink);
+  margin-top: var(--s1);
+  width: 100%;
+}
+
+.blob-side > * + * {
+  margin-top: var(--s5);
+}
+
+.blob-head > h1 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* the grid's gap already sits below the head, so the about line's own
+   margin would double it */
+.blob-head .about {
+  margin: var(--s3) 0 0;
+}
+
+.blob-file .src {
+  margin: 0;
+}
+
+.list-nav a {
   color: var(--accent-text);
   text-decoration: underline;
 }
 
 @media (min-width: 640px) {
-  .repo-body {
+  .repo-body,
+  .tree-body,
+  .blob-body {
     grid-template-columns: minmax(0, 1fr) 168px;
   }
 
-  .repo-body:not(:has(> .repo-readme)) > .repo-nav {
+  .repo-body:not(:has(> .repo-readme)) > .list-nav {
     grid-row: 1;
   }
 
-  .repo-files {
+  .repo-files,
+  .tree-files {
     grid-column: 1;
     grid-row: 1;
   }
 
-  .repo-nav {
+  .list-nav {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    margin-left: 0;
+  }
+
+  /* the sidebar spans a flexible second row, so its height lands there
+     and the title's row stays exactly as tall as the title */
+  .blob-body {
+    grid-template-rows: auto 1fr;
+  }
+
+  .blob-head {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .blob-side {
     grid-column: 2;
     grid-row: 1 / span 2;
     align-self: start;
-    margin-left: 0;
+  }
+
+  .blob-file {
+    grid-column: 1;
+    grid-row: 2;
   }
 
   .repo-readme {

@@ -271,6 +271,7 @@ test("the bounded walk attributes what it reaches and blanks the rest", async ()
   const markup = treePage({
     repo: "linklater",
     rev,
+    defaultBranch: "main",
     tree: cut,
     showAll: false,
     now,

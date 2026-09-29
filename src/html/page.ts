@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { config } from "../config.js";
-import { breadcrumb, type Crumb } from "./breadcrumb.js";
 import { html, type Raw } from "./index.js";
 import { styleHref } from "./styles.js";
 
@@ -10,7 +9,6 @@ export type Page = {
   description: string;
   path: string;
   main: Raw;
-  crumbs?: Crumb[];
 };
 
 const head = (title: string, description: string, path: string) => html`<head>
@@ -40,15 +38,10 @@ const head = (title: string, description: string, path: string) => html`<head>
     <link rel="stylesheet" href="${styleHref}" />
   </head>`;
 
-const masthead = (crumbs: Crumb[] | undefined) =>
-  crumbs === undefined
-    ? html`<p><a class="home" href="/">Càrn</a></p>`
-    : breadcrumb(crumbs);
-
-const body = (main: Raw, crumbs: Crumb[] | undefined) => html`<body>
+const body = (main: Raw) => html`<body>
     <header>
       <a class="skip" href="#main">Skip to content</a>
-      ${masthead(crumbs)}
+      <p><a class="home" href="/">Càrn</a></p>
     </header>
 
     <main id="main" tabindex="-1">
@@ -64,7 +57,7 @@ export function page(view: Page): string {
   return `<!doctype html>
 <html lang="en">
   ${head(view.title, view.description, view.path).value}
-  ${body(view.main, view.crumbs).value}
+  ${body(view.main).value}
 </html>
 `;
 }

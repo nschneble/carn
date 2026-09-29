@@ -1,54 +1,63 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// extends the masthead line with an asset trail; media queries decide
-// which items to collapse (to `display: none`) so they leave the a11y tree
-
-import { treeHref } from "./hrefs.js";
+import { plainName } from "./filename.js";
+import { repoHref, treeHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
 
-// readonly because site below is one object every render is handed
-export type Crumb = { readonly label: string; readonly href: string | null };
-
-export const site: Crumb = { label: "Càrn", href: "/" };
+export type Crumb = {
+  readonly label: Raw;
+  readonly href: string | null;
+  readonly container: boolean;
+};
 
 export function repoTrail(repo: string): Crumb[] {
-  return [site, { label: repo, href: `/r/${repo}` }];
+  return [{ label: plainName(repo), href: `/r/${repo}`, container: true }];
 }
 
-export function pathTrail(repo: string, rev: string, path: string): Crumb[] {
+// the rev links to the root tree at that rev, one level above any path
+export function revTrail(
+  repo: string,
+  rev: string,
+  defaultBranch: string,
+): Crumb[] {
+  return [
+    ...repoTrail(repo),
+    {
+      label: plainName(rev),
+      href: repoHref(repo, rev, defaultBranch),
+      container: true,
+    },
+  ];
+}
+
+// the leaf is the page itself: a tree is a container, a blob isn't
+export function pathTrail(
+  repo: string,
+  rev: string,
+  path: string,
+  leaf: "tree" | "blob",
+): Crumb[] {
   const names = path.split("/");
+  const last = names.length - 1;
+
   return names.map((name, index) => ({
-    label: name,
+    label: plainName(name),
     href:
-      index === names.length - 1
+      index === last
         ? null
         : treeHref(repo, rev, names.slice(0, index + 1).join("/")),
+    container: index < last || leaf === "tree",
   }));
 }
 
 function segment(crumb: Crumb): Raw {
+  const text = html`${crumb.label}${crumb.container ? "/" : ""}`;
+
   return crumb.href === null
-    ? html`<span class="here">${crumb.label}</span>`
-    : html`<a href="${crumb.href}">${crumb.label}</a>`;
+    ? html`<li aria-current="page">${text}</li>`
+    : html`<li><a href="${crumb.href}">${text}</a></li>`;
 }
 
-function item(crumb: Crumb, index: number, middle: boolean): Raw {
-  const separator =
-    index === 0 ? html`` : html`<span aria-hidden="true"> » </span>`;
-  const body = html`${separator}${segment(crumb)}`;
-
-  return middle ? html`<li class="mid">${body}</li>` : html`<li>${body}</li>`;
-}
-
-const kept = 2;
-
-export function breadcrumb(crumbs: Crumb[]): Raw {
-  const last = crumbs.length - kept;
-  const items = crumbs.map((crumb, index) =>
-    item(crumb, index, index >= kept && index < last),
-  );
-  const fold =
-    last > kept ? html`<li class="fold" aria-hidden="true"> » …</li>` : html``;
-
-  return html`<nav aria-label="Breadcrumb"><ol class="crumbs t-mono" role="list">${items.slice(0, kept)}${fold}${items.slice(kept)}</ol></nav>`;
+export function address(crumbs: Crumb[]): Raw {
+  return html`${crumbs.map(segment)}`;
 }

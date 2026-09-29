@@ -84,6 +84,32 @@ function key(oid: string, language: Language | null, bytes: number): string {
 }
 
 // the length joins the key: a blob renders at two as the budget moves
+const tag = /<span[^>]*>|<\/span>/g;
+
+// highlight.js lets a span run across newlines, so each line closes what is
+// still open at its end and reopens it at the start of the next
+export function numberLines(marked: string): string {
+  if (marked === "") return "";
+
+  const trailing = marked.endsWith("\n");
+  const body = trailing ? marked.slice(0, -1) : marked;
+  const open: string[] = [];
+  const lines: string[] = [];
+
+  for (const text of body.split("\n")) {
+    const carried = open.join("");
+    for (const [found] of text.matchAll(tag)) {
+      if (found === "</span>") open.pop();
+      else open.push(found);
+    }
+    lines.push(
+      `<span class="line">${carried}${text}${"</span>".repeat(open.length)}</span>`,
+    );
+  }
+
+  return `${lines.join("\n")}${trailing ? "\n" : ""}`;
+}
+
 export function highlight(options: {
   oid: string;
   source: string;

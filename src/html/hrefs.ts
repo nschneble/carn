@@ -10,6 +10,21 @@ function trail(rev: string, path: string): string {
   return `${encodeURIComponent(rev)}/${segments}`;
 }
 
+// the default branch is just the main repo page
+export function repoHref(
+  repo: string,
+  rev: string,
+  defaultBranch: string,
+  all = false,
+): string {
+  const query = new URLSearchParams();
+  if (rev !== defaultBranch) query.set("ref", rev);
+  if (all) query.set("all", "1");
+
+  const search = query.toString();
+  return search === "" ? `/r/${repo}` : `/r/${repo}?${search}`;
+}
+
 export function blobHref(repo: string, rev: string, path: string): string {
   return `/r/${repo}/blob/${trail(rev, path)}`;
 }

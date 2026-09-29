@@ -1,4 +1,8 @@
 {
-  "story": "A visitor checks which branches and tags a repo carries",
-  "actions": [{ "action": "gantry-branches" }, { "action": "gantry-tags" }]
+  "story": "A visitor checks which branches and tags a repo carries, then reads the repo at a branch",
+  "actions": [
+    { "action": "gantry-branches" },
+    { "action": "gantry-tags" },
+    { "action": "gantry-show-topic" }
+  ]
 }

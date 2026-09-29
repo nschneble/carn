@@ -6,13 +6,18 @@
 
 import { blobAssetPath } from "../repos/blob-asset.js";
 import { type BlobView, countLines } from "../repos/blob-view.js";
-import { pathTrail, repoTrail } from "./breadcrumb.js";
+import { address, pathTrail, revTrail } from "./breadcrumb.js";
 import { emptyState } from "./empty-state.js";
 import { pathName } from "./filename.js";
 import { blobHref } from "./hrefs.js";
 import { html, type Raw, raw } from "./index.js";
 import { page } from "./page.js";
-import { highlight, type Language, languageFor } from "./syntax.js";
+import {
+  highlight,
+  type Language,
+  languageFor,
+  numberLines,
+} from "./syntax.js";
 import {
   budgetBytes,
   pageWireBytes,
@@ -22,6 +27,7 @@ import {
 
 export type BlobPage = {
   repo: string;
+  defaultBranch: string;
   blob: BlobView;
   rawOrigin?: string | undefined;
   sheetWire?: number;
@@ -100,43 +106,76 @@ function hatch(view: BlobPage, label: string): Raw {
       <p class="showall"><a class="t-mono" href="${href}">${label}<span class="vh"> · ${view.blob.path}</span><span aria-hidden="true"> →</span></a></p>`;
 }
 
-function field(term: string, value: string): Raw {
-  return html`<div><dt>${term}</dt><dd>${value}</dd></div>`;
+function lineCount(lines: number): string {
+  return lines === 1 ? "1 line" : `${formatCount(lines)} lines`;
 }
 
-function sourceMeta(blob: BlobView, language: Language | null): Raw {
-  return html`<dl class="meta">${[
-    field("Size", formatBytes(blob.bytes)),
-    field("Lines", formatCount(blob.lines)),
-    field("Language", language?.label ?? "Plain text"),
-  ]}</dl>`;
+function sourceMeasures(blob: BlobView): string[] {
+  return [formatBytes(blob.bytes), lineCount(blob.lines)];
 }
 
-function objectMeta(blob: BlobView): Raw {
-  return html`<dl class="meta">${[
-    field("Size", formatBytes(blob.bytes)),
-    field("Type", typeName(blob)),
-  ]}</dl>`;
+function objectMeasures(blob: BlobView): string[] {
+  return [formatBytes(blob.bytes)];
 }
 
+// the file's own name; the path to it is the sidebar's
 function heading(blob: BlobView): Raw {
-  return html`<h1 class="t-item" lang="en" id="blob-h">${pathName(blob.path)}</h1>`;
+  const name = blob.path.split("/").pop() ?? blob.path;
+  return html`<h1 class="t-item name" lang="en" id="blob-h">${pathName(name)}</h1>`;
 }
 
 function codeClass(language: Language | null): string {
   return language === null ? "hljs" : `hljs language-${language.id}`;
 }
 
-function shell(view: BlobPage, main: Raw): string {
+function side(view: BlobPage): Raw {
+  const { repo, defaultBranch, blob } = view;
+
+  return html`<div class="blob-side">
+          <nav class="list-nav" aria-labelledby="blob-path">
+            <p class="t-label" id="blob-path">Path</p>
+            <ol role="list">
+              ${address([
+                ...revTrail(repo, blob.rev, defaultBranch),
+                ...pathTrail(repo, blob.rev, blob.path, "blob"),
+              ])}
+            </ol>
+          </nav>
+        </div>`;
+}
+
+// the file's about line reads like the repo page's: what it measures over
+// what kind of file it is, with where it lives in the sidebar
+function frame(
+  view: BlobPage,
+  measures: string[],
+  kind: string,
+  body: Raw,
+): string {
   const { repo, blob } = view;
+  const plainAddress = [repo, blob.rev, blob.path].join("/");
 
   return page({
-    title: `${blob.path} · ${repo} · Càrn`,
+    title: `${plainAddress} · Càrn`,
     description: `${blob.path} at ${blob.rev} in ${repo}.`,
     path: blobHref(repo, blob.rev, blob.path),
-    crumbs: [...repoTrail(repo), ...pathTrail(repo, blob.rev, blob.path)],
-    main,
+    main: html`<div class="blob-body">
+        <div class="blob-head">
+          ${heading(blob)}
+          <div class="about">
+            <p class="t-label">${measures.join(" · ")}<br />${kind}</p>
+          </div>
+        </div>
+        ${side(view)}
+        <div class="blob-file">
+          ${body}
+        </div>
+      </div>`,
   });
+}
+
+function languageLabel(language: Language | null): string {
+  return language?.label ?? "Plain text";
 }
 
 function sourceDocument(
@@ -152,32 +191,37 @@ function sourceDocument(
     shown === null
       ? html`<pre class="src" tabindex="0" role="region" aria-labelledby="blob-h"><code class="${cls}">${body}</code></pre>`
       : html`<pre class="src" tabindex="0" role="region" aria-labelledby="blob-h" aria-describedby="blob-cut"><code class="${cls}">${body}</code></pre>
-      <p class="t-note" id="blob-cut">Showing the first ${firstLines(shown)} of ${formatCount(blob.lines)}.</p>`;
+          <p class="t-note" id="blob-cut">Showing the first ${firstLines(shown)} of ${formatCount(blob.lines)}.</p>`;
 
-  return shell(
+  return frame(
     view,
-    html`${heading(blob)}
-      ${sourceMeta(blob, language)}
-      ${block}${shown === null ? html`` : hatch(view, "Show entire file")}`,
+    sourceMeasures(blob),
+    languageLabel(language),
+    html`${block}${shown === null ? html`` : hatch(view, "Show entire file")}`,
   );
 }
 
-function declined(view: BlobPage, meta: Raw, why: string): string {
+function declined(
+  view: BlobPage,
+  measures: string[],
+  kind: string,
+  why: string,
+): string {
   const said = `${typeName(view.blob)}, ${formatBytes(view.blob.bytes)}. ${why}`;
-  return shell(
+  return frame(
     view,
-    html`${heading(view.blob)}
-      ${meta}
-      ${emptyState(said)}${hatch(view, "Open raw")}`,
+    measures,
+    kind,
+    html`${emptyState(said)}${hatch(view, "Open raw")}`,
   );
 }
 
 function preview(view: BlobPage, asset: string): string {
-  return shell(
+  return frame(
     view,
-    html`${heading(view.blob)}
-      ${objectMeta(view.blob)}
-      <img class="preview" src="${asset}" alt="" />${hatch(view, "Open raw")}`,
+    objectMeasures(view.blob),
+    typeName(view.blob),
+    html`<img class="preview" src="${asset}" alt="" />${hatch(view, "Open raw")}`,
   );
 }
 
@@ -198,7 +242,7 @@ function highlighted(
   source: string,
   language: Language | null,
 ): Raw {
-  return raw(highlight({ oid: blob.oid, source, language }));
+  return raw(numberLines(highlight({ oid: blob.oid, source, language })));
 }
 
 // exported so a test can vary the sheet size and watch the cap follow
@@ -263,7 +307,8 @@ function textPage(view: BlobPage, source: string): string {
 
   return declined(
     view,
-    sourceMeta(view.blob, language),
+    sourceMeasures(view.blob),
+    languageLabel(language),
     "Its first line is longer than can be shown here.",
   );
 }
@@ -282,14 +327,29 @@ export function blobPage(view: BlobPage): string {
       );
     }
 
-    return declined(view, objectMeta(blob), "Too large to show here.");
+    return declined(
+      view,
+      objectMeasures(blob),
+      typeName(blob),
+      "Too large to show here.",
+    );
   }
 
   if (!blob.whole) {
-    return declined(view, objectMeta(blob), "Too large to show here.");
+    return declined(
+      view,
+      objectMeasures(blob),
+      typeName(blob),
+      "Too large to show here.",
+    );
   }
   if (blob.kind === "binary") {
-    return declined(view, objectMeta(blob), "Not shown here.");
+    return declined(
+      view,
+      objectMeasures(blob),
+      typeName(blob),
+      "Not shown here.",
+    );
   }
 
   return textPage(view, blob.source ?? "");

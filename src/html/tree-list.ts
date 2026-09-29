@@ -61,17 +61,19 @@ function treeListTableCaption(
   numTotalEntries: number,
 ): string {
   if (numTotalEntries > numShownEntries)
-    return `${numShownEntries}/${numTotalEntries} Items · Listed A→Z`;
+    return `${numShownEntries}/${numTotalEntries} Items`;
   if (numShownEntries === 1) return "1 Item";
 
-  return `${numShownEntries} Items · Listed A→Z`;
+  return `${numShownEntries} Items`;
 }
 
 export function treeList(view: TreeListView): Raw {
   const shown = view.showAll ? view.entries : view.entries.slice(0, treeRowCap);
 
   const list = html`<table class="tbl tree">
-        <caption class="t-label">${treeListTableCaption(shown.length, view.entries.length)}</caption>
+        <caption class="t-label">
+          ${treeListTableCaption(shown.length, view.entries.length)}
+        </caption>
         <colgroup>
           <col class="c-name" />
           <col class="c-msg" />

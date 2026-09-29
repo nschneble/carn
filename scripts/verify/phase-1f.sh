@@ -735,16 +735,18 @@ if require_seed 9 "$TITLE_9"; then
   wrong=""
   [ "$main_status" = "301" ] || wrong="$wrong tree/main/ answered $main_status, wanted 301;"
   [ "$tag_status" = "301" ] || wrong="$wrong tree/v9.9.9/ answered $tag_status, wanted 301;"
-  for page in "$work/9.main" "$work/9.tag"; do
+  for pair in "9.main main" "9.tag v9.9.9"; do
+    page="$work/${pair%% *}"
+    want="/r/$OTHER_NAME?ref=${pair#* }"
     to=$(location_of "$page")
-    [ "$to" = "/r/$OTHER_NAME" ] \
-      || wrong="$wrong $(basename "$page") points at '${to:-nothing}', wanted /r/$OTHER_NAME;"
+    [ "$to" = "$want" ] \
+      || wrong="$wrong $(basename "$page") points at '${to:-nothing}', wanted $want;"
   done
   [ -s "$work/9.main.body" ] && wrong="$wrong the redirect carried a body;"
   if [ -n "$wrong" ]; then
     record FAIL 9 "$TITLE_9" "$wrong"
   else
-    record PASS 9 "$TITLE_9" "main and an unresolvable tag both 301 to /r/$OTHER_NAME"
+    record PASS 9 "$TITLE_9" "main and an unresolvable tag both 301 to /r/$OTHER_NAME, ref carried"
   fi
 fi
 
@@ -758,8 +760,8 @@ if require_seed 10 "$TITLE_10"; then
   wrong=""
   [ "$bare_status" != "404" ] || wrong="$wrong tree/main answered 404, so it never reached a route;"
   [ "$bare_status" = "301" ] || wrong="$wrong tree/main answered $bare_status, wanted 301;"
-  [ "$bare_to" = "/r/$OTHER_NAME" ] \
-    || wrong="$wrong it points at '${bare_to:-nothing}', wanted /r/$OTHER_NAME;"
+  [ "$bare_to" = "/r/$OTHER_NAME?ref=main" ] \
+    || wrong="$wrong it points at '${bare_to:-nothing}', wanted /r/$OTHER_NAME?ref=main;"
   # the global switch stays off: it would make /r/:repo/ and /r/:repo/commits/
   # second spellings of pages that have exactly one canonical url
   grep -qF 'ignoreTrailingSlash' src/app.ts \
@@ -767,7 +769,7 @@ if require_seed 10 "$TITLE_10"; then
   if [ -n "$wrong" ]; then
     record FAIL 10 "$TITLE_10" "$wrong"
   else
-    record PASS 10 "$TITLE_10" "301 to /r/$OTHER_NAME with ignoreTrailingSlash still unset"
+    record PASS 10 "$TITLE_10" "301 to /r/$OTHER_NAME?ref=main with ignoreTrailingSlash still unset"
   fi
 fi
 

@@ -1520,8 +1520,8 @@ if require_daemon 29 "$TITLE_29" && require_seed 29 "$TITLE_29"; then
   [ "$root_ref" = "301" ] || wrong="$wrong an empty tree path answered $root_ref, wanted 301;"
   [ "$bad_ref" = "404" ] || wrong="$wrong an unknown ref answered $bad_ref, wanted 404;"
   root_to=$(grep -i '^location:' "$work/tree-root.head" | sed 's/^[^:]*: *//' | tr -d '\r')
-  [ "$root_to" = "/r/$REPO_NAME" ] \
-    || wrong="$wrong the empty tree path points at '${root_to:-nothing}', wanted /r/$REPO_NAME;"
+  [ "$root_to" = "/r/$REPO_NAME?ref=main" ] \
+    || wrong="$wrong the empty tree path points at '${root_to:-nothing}', wanted /r/$REPO_NAME?ref=main;"
   for page in tree-blob tree-ref; do
     location=$(grep -i '^location:' "$work/$page.head" | tr -d '\r')
     [ -z "$location" ] || wrong="$wrong $page redirected: $location;"
@@ -1584,7 +1584,7 @@ fi
 readonly TITLE_32="every visible page title renders .t-item, never .t-l or a .t-label h1"
 if require_daemon 32 "$TITLE_32" && require_seed 32 "$TITLE_32"; then
   wrong=""
-  for page in blob-text tree log1 branches tags commit-big commit-one; do
+  for page in blob-text log1 branches tags commit-big commit-one; do
     grep -qE '<h1 class="t-item( t-item--title)?"' "$work/$page.body" \
       || wrong="$wrong $page carries no visible .t-item heading;"
     grep -qE '<h1 class="t-l"|<h1 class="t-label"' "$work/$page.body" \
@@ -1702,7 +1702,7 @@ fi
 readonly TITLE_37="/r/:repo links to all three of commits, branches and tags"
 if require_daemon 37 "$TITLE_37" && require_seed 37 "$TITLE_37"; then
   wrong=""
-  grep -qF "<nav class=\"repo-nav\" aria-label=\"Repo views\">" "$work/show.body" \
+  grep -qF "<nav class=\"list-nav\" aria-label=\"Repo views\">" "$work/show.body" \
     || wrong="$wrong the repo page carries no repo nav;"
   grep -qF "href=\"/r/$REPO_NAME/commits?ref=main\"" "$work/show.body" \
     || wrong="$wrong the repo page doesn't link to the commit log;"
@@ -1840,7 +1840,7 @@ tr '\n' ' ' < src/html/styles.ts \
   | grep -qE '\.t-item--title \{[[:space:]]+color: var\(--ink-soft\);' \
   || wrong="$wrong .t-item--title doesn't resolve to --ink-soft;"
 if require_daemon 43 "$TITLE_43" && require_seed 43 "$TITLE_43"; then
-  for page in tree branches tags; do
+  for page in branches tags; do
     body="$work/$page.body"
     [ -f "$body" ] || continue
     count=$(occurrences "$body" 't-item--title')
@@ -1874,14 +1874,14 @@ fi
 readonly TITLE_45="the repo nav entries resolve to the link color"
 wrong=""
 tr '\n' ' ' < src/html/styles.ts \
-  | grep -qE '\.repo-nav a \{[^}]*color: var\(--accent-text\);[^}]*text-decoration: underline;' \
-  || wrong="$wrong .repo-nav a doesn't resolve to --accent-text, underlined;"
-grep -A8 -E '^\.repo-nav a \{' src/html/styles.ts | grep -q -- '--ink-mid' \
-  && wrong="$wrong .repo-nav a still carries the old muted color;"
+  | grep -qE '\.list-nav a \{[^}]*color: var\(--accent-text\);[^}]*text-decoration: underline;' \
+  || wrong="$wrong .list-nav a doesn't resolve to --accent-text, underlined;"
+grep -A8 -E '^\.list-nav a \{' src/html/styles.ts | grep -q -- '--ink-mid' \
+  && wrong="$wrong .list-nav a still carries the old muted color;"
 if [ -n "$wrong" ]; then
   record FAIL 45 "$TITLE_45" "$wrong"
 else
-  record PASS 45 "$TITLE_45" ".repo-nav a resolves to --accent-text, underlined, like every other link"
+  record PASS 45 "$TITLE_45" ".list-nav a resolves to --accent-text, underlined, like every other link"
 fi
 
 # 46

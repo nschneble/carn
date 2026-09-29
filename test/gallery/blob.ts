@@ -159,5 +159,10 @@ export const imageBlob = rasterBlob("assets/logo.png", pngBody);
 export const svgBlob = textBlob(".carn/header.svg", svgBody);
 
 export function blobDocument(options: Partial<BlobPage> = {}): string {
-  return blobPage({ repo: "linklater", blob: smallBlob, ...options });
+  return blobPage({
+    repo: "linklater",
+    defaultBranch: "main",
+    blob: smallBlob,
+    ...options,
+  });
 }

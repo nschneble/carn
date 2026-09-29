@@ -38,6 +38,7 @@ import { findBlobEntry } from "../../src/repos/blob-view.js";
 import { headerAssetPath } from "../../src/repos/header-asset.js";
 import type { ResolvedRepo } from "../../src/repos/resolve.js";
 import { loadRepoView } from "../../src/repos/show.js";
+import { resolveTip } from "../../src/repos/tree.js";
 import { pngBody, svgBody } from "../gallery/blob.js";
 import {
   files,
@@ -311,7 +312,7 @@ test("a repo page render stays inside the spawn budget", async () => {
     assert.strictEqual(
       cold.length,
       6,
-      `for-each-ref, ls-tree .carn, ls-tree root, log, cat-files:\n${cold.join("\n")}`,
+      `rev-list, ls-tree .carn, ls-tree root, log, cat-files:\n${cold.join("\n")}`,
     );
     assert.strictEqual(
       warm.length,
@@ -335,6 +336,37 @@ test("a repo page render stays inside the spawn budget", async () => {
       cold.length < 12,
       "the page render broke CLAUDE.md's spawn budget",
     );
+  });
+});
+
+// the fixture world's default branch is always main, and a refusal is a
+// spawn that never happens, so no story could picture either half
+test("a default branch resolves by refname, and one validRev refuses never spawns", async () => {
+  const repo = build({ "a.ts": "export {};\n" });
+  execFileSync("git", ["-C", repo.path, "branch", "feat+x"]);
+
+  // git takes the name, so a null below is the check refusing it, not git
+  assert.match(
+    execFileSync("git", ["-C", repo.path, "branch", "--list", "feat+x"], {
+      encoding: "utf8",
+    }),
+    /feat\+x/,
+  );
+
+  await counting(async (calls) => {
+    const valid = await resolveTip({ repoPath: repo.path, branch: "main" });
+    assert.ok(valid, "main resolved to nothing");
+    assert.match(valid.oid, /^[0-9a-f]{40}$/);
+    assert.strictEqual(calls().length, 1, "main cost more than one call");
+    assert.ok(
+      calls()[0]?.startsWith("rev-list ") &&
+        calls()[0]?.includes("refs/heads/main"),
+      `main didn't resolve by its full refname: ${calls()[0]}`,
+    );
+
+    const refused = await resolveTip({ repoPath: repo.path, branch: "feat+x" });
+    assert.strictEqual(refused, null, "a name validRev refuses still resolved");
+    assert.strictEqual(calls().length, 1, "a refused name reached git anyway");
   });
 });
 
@@ -430,9 +462,13 @@ test("an invalid repo name is refused before any database query", () => {
   // was answered rather than merely unrouted. a tag nobody could resolve
   // redirects the same way, so no ref is special-cased
   assert.strictEqual(nestedTree.status, 503);
-  for (const answer of [rootTree, bareTree, taggedTree]) {
+  for (const [answer, ref] of [
+    [rootTree, "main"],
+    [bareTree, "main"],
+    [taggedTree, "v1.2.0"],
+  ] as const) {
     assert.strictEqual(answer.status, 301);
-    assert.strictEqual(answer.location, "/r/linklater");
+    assert.strictEqual(answer.location, `/r/linklater?ref=${ref}`);
   }
 
   assert.strictEqual(

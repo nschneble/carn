@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { repoTrail } from "./breadcrumb.js";
 import { html } from "./index.js";
 import { page } from "./page.js";
 
@@ -113,7 +112,6 @@ export function errorPage(view: { failure: Failure }): string {
     title: failure.title,
     description: failure.said,
     path: failure.path,
-    crumbs: failure.repo ? repoTrail(failure.repo) : undefined,
     main: html`<h1 class="t-l">${failure.heading}</h1>
       <div class="empty">
         <p class="t-body">

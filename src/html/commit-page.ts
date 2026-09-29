@@ -4,10 +4,9 @@
 
 import { type CommitDetail, type DiffFile, hunks } from "../repos/commit.js";
 import { ageMarkup } from "./age.js";
-import { type Crumb, repoTrail } from "./breadcrumb.js";
-import { commitsLabel, shortShaLength } from "./commit-log.js";
+import { shortShaLength } from "./commit-log.js";
 import { emptyState } from "./empty-state.js";
-import { changeHref, commitHref, commitsPath } from "./hrefs.js";
+import { changeHref, commitHref } from "./hrefs.js";
 import { html, type Raw, raw } from "./index.js";
 import { page } from "./page.js";
 import {
@@ -224,19 +223,6 @@ function head(view: CommitPage, linked: boolean): Raw {
       ${message(commit)}${meta(view)}`;
 }
 
-function trail(view: CommitPage, file: string | null): Crumb[] {
-  const commit: Crumb[] = [
-    ...repoTrail(view.repo),
-    { label: commitsLabel, href: commitsPath(view.repo) },
-    {
-      label: short(view.commit.sha),
-      href: file === null ? null : commitHref(view.repo, view.commit.sha),
-    },
-  ];
-
-  return file === null ? commit : [...commit, { label: file, href: null }];
-}
-
 function shell(view: CommitPage, main: Raw, file: string | null): string {
   const { repo, commit } = view;
 
@@ -247,7 +233,6 @@ function shell(view: CommitPage, main: Raw, file: string | null): string {
       file === null
         ? commitHref(repo, commit.sha)
         : changeHref(repo, commit.sha, file),
-    crumbs: trail(view, file),
     main,
   });
 }

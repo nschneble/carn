@@ -25,9 +25,10 @@ const { indexDocument } = await import("../gallery/repo-index.js");
 const { treeDocument } = await import("../gallery/tree.js");
 const { logDocument } = await import("../gallery/commit-log.js");
 const { textBlob } = await import("../gallery/blob.js");
-const { breadcrumb, pathTrail, repoTrail } = await import(
+const { address, pathTrail, revTrail } = await import(
   "../../src/html/breadcrumb.js"
 );
+const { html } = await import("../../src/html/index.js");
 const { stylesheet } = await import("../../src/html/styles.js");
 const { browser, closeBrowser } = await import("../support/browser.js");
 const { serve } = await import("../support/serve.js");
@@ -212,7 +213,7 @@ test("a trail with nothing to hide doesn't render a fold or hide segments", () =
 });
 
 test("every path segment carries the tree route at its own depth", () => {
-  assert.deepStrictEqual(pathTrail("linklater", "main", "a/b/c.ts"), [
+  assert.deepStrictEqual(pathTrail("linklater", "main", "a/b/c.ts", "blob"), [
     { label: "a", href: "/r/linklater/tree/main/a" },
     { label: "b", href: "/r/linklater/tree/main/a/b" },
     { label: "c.ts", href: null },
@@ -220,16 +221,19 @@ test("every path segment carries the tree route at its own depth", () => {
 
   // a ref carrying a slash and a name carrying a hash go through treeHref,
   // so the encoding is the tree route's own rather than a second spelling
-  assert.deepStrictEqual(pathTrail("linklater", "feat/x", "a b/c#d.ts"), [
-    { label: "a b", href: "/r/linklater/tree/feat%2Fx/a%20b" },
-    { label: "c#d.ts", href: null },
-  ]);
+  assert.deepStrictEqual(
+    pathTrail("linklater", "feat/x", "a b/c#d.ts", "blob"),
+    [
+      { label: "a b", href: "/r/linklater/tree/feat%2Fx/a%20b" },
+      { label: "c#d.ts", href: null },
+    ],
+  );
 });
 
 test("a label is escaped into the trail", () => {
-  const nav = breadcrumb([
-    ...repoTrail("linklater"),
-    { label: "<script>alert(1)</script>", href: null },
+  const nav = address([
+    ...revTrail("linklater", "main", "main"),
+    { label: html`<script>alert(1)</script>`, href: null, container: false },
   ]).value;
 
   assert.ok(!nav.includes("<script"), nav);

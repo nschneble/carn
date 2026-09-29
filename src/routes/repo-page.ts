@@ -42,7 +42,9 @@ import { listTree, resolveTip } from "../repos/tree.js";
 import { revalidate, sendPage, sendStatus } from "./cache.js";
 
 type RepoRoute = { Params: { repo: string } };
-type PageRoute = RepoRoute & { Querystring: { all?: string } };
+type PageRoute = RepoRoute & {
+  Querystring: { all?: string; ref?: string | string[] };
+};
 type TreeRefRoute = RepoRoute & { Params: { rev: string } };
 type AssetRoute = RepoRoute & { Params: { asset: string } };
 type BlobRoute = RepoRoute & { Params: { rev: string; "*": string } };
@@ -110,14 +112,26 @@ async function showRepo(
   request: FastifyRequest<PageRoute>,
   reply: FastifyReply,
 ): Promise<FastifyReply> {
+  const asked = request.query.ref;
+
   try {
     const found = await resolveOrFail(request, reply);
     if (found === null) return reply;
 
+    // a repeated query key parses to an array (refused here)
+    if (Array.isArray(asked))
+      return fail(request, reply, 404, noSuchRef(found.name, String(asked)));
+
+    // the default branch is the same as not having a ref
+    const ref = asked === found.defaultBranch ? undefined : asked;
     const repo = await loadRepoView({
       repo: found,
+      ref,
       signal: abortWith(reply),
     });
+
+    if (ref !== undefined && repo.tip === null)
+      return fail(request, reply, 404, noSuchRef(found.name, ref));
 
     return sendPage(
       request,
@@ -203,6 +217,7 @@ async function showBlob(
       reply,
       blobPage({
         repo: found.name,
+        defaultBranch: found.defaultBranch,
         blob,
         rawOrigin: config.rawOrigin,
       }),
@@ -213,12 +228,14 @@ async function showBlob(
   }
 }
 
-// /r/:repo is the root tree: a bare ref names nothing, so no lookup
+// /r/:repo is the root tree, and the rev carries over as ?ref= off the url
 function toRepoRoot(
-  request: FastifyRequest<RepoRoute>,
+  request: FastifyRequest<TreeRefRoute>,
   reply: FastifyReply,
 ): FastifyReply {
-  return reply.redirect(`/r/${encodeURIComponent(request.params.repo)}`, 301);
+  const { repo, rev } = request.params;
+  const ref = encodeURIComponent(rev);
+  return reply.redirect(`/r/${encodeURIComponent(repo)}?ref=${ref}`, 301);
 }
 
 // a path that isn't a tree is still a 404
@@ -250,6 +267,7 @@ async function showTree(
       treePage({
         repo: found.name,
         rev,
+        defaultBranch: found.defaultBranch,
         tree,
         showAll: request.query.all === "1",
         now: now(),

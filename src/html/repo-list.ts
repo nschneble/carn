@@ -18,7 +18,7 @@ function row(repo: RepoSummary, now: Date): Raw {
 function repoListTableCaption(numRepos: number): string {
   if (numRepos === 1) return "1 Repo";
 
-  return `${numRepos} Repos · Listed A→Z`;
+  return `${numRepos} Repos`;
 }
 
 export function repoListPage(view: {

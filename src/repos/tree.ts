@@ -35,18 +35,23 @@ const wholeTree = ".";
 // SOH marks a commit header; a 40-hex filename would imitate one
 const headerMark = String.fromCharCode(1);
 
-// refs/heads/ prefixed so a branch name can never arrive as an option
-export async function resolveTip(options: {
+// a branch, tag, or sha: rev-list peels a tag to its commit, and the
+// trailing -- keeps a rev from being read as a path
+export async function resolveRev(options: {
   repoPath: string;
-  branch: string;
+  rev: string;
   signal?: AbortSignal;
 }): Promise<Tip | null> {
+  if (!validRev(options.rev)) return null;
+
   const { code, stdout } = await captureGit({
     args: [
-      "for-each-ref",
-      "--format=%(refname)%00%(objectname)%00%(authordate:unix)",
+      "rev-list",
+      "--max-count=1",
+      "--format=%H%x00%at",
       "--end-of-options",
-      `refs/heads/${options.branch}`,
+      options.rev,
+      "--",
     ],
     cwd: options.repoPath,
     signal: options.signal,
@@ -55,12 +60,26 @@ export async function resolveTip(options: {
 
   if (code !== 0) return null;
 
-  const [name, oid, seconds] = stdout.toString("utf8").trim().split("\0");
-  if (name !== `refs/heads/${options.branch}`) return null;
+  // rev-list heads each formatted commit with its own "commit <sha>" line
+  const [, line] = stdout.toString("utf8").split("\n");
+  const [oid, seconds] = (line ?? "").split("\0");
   if (oid === undefined || !oidPattern.test(oid)) return null;
 
   const at = Number(seconds);
   return Number.isFinite(at) ? { oid, at: new Date(at * 1000) } : null;
+}
+
+// refs/heads/ prefixed so a branch name can never arrive as an option
+export function resolveTip(options: {
+  repoPath: string;
+  branch: string;
+  signal?: AbortSignal;
+}): Promise<Tip | null> {
+  return resolveRev({
+    repoPath: options.repoPath,
+    rev: `refs/heads/${options.branch}`,
+    signal: options.signal,
+  });
 }
 
 function kindOf(mode: string, type: string): TreeEntryKind {

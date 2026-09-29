@@ -16,6 +16,7 @@ export function treeDocument(
   return treePage({
     repo: options.repo ?? "linklater",
     rev: options.rev ?? "main",
+    defaultBranch: "main",
     tree: options.tree ?? tree(),
     showAll: options.showAll ?? false,
     now: treeNow,

@@ -6,13 +6,11 @@ import { oidPattern } from "../git/oid.js";
 import type { CommitLog } from "../repos/log.js";
 import { sshRemote } from "../repos/remote.js";
 import { age } from "./age.js";
-import { repoTrail } from "./breadcrumb.js";
 import { emptyState } from "./empty-state.js";
 import { commitHref, commitsHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
 
-export const commitsLabel = "Commits";
 export const shortShaLength = 7;
 export const backStackCap = 32;
 
@@ -108,11 +106,7 @@ export function commitLogPage(view: {
   return page({
     title: `Commits on ${log.ref} · ${repo} · Càrn`,
     description: `The commit log for ${log.ref} in ${repo}.`,
-
-    // back is a cursor trail, not identity: two routes, one page
     path: commitsHref(repo, log.ref, from),
-
-    crumbs: [...repoTrail(repo), { label: commitsLabel, href: null }],
     main: html`<h1 class="t-item">Commits on ${log.ref}</h1>
       ${body}`,
   });

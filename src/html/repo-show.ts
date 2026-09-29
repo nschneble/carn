@@ -11,22 +11,11 @@ import { sshRemote } from "../repos/remote.js";
 import type { RepoView } from "../repos/show.js";
 import { stamp } from "./age.js";
 import { emptyState } from "./empty-state.js";
-import { commitsHref, refsHref } from "./hrefs.js";
+import { goNav } from "./go-nav.js";
+import { repoHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
-import { refLabel } from "./ref-list.js";
 import { treeList } from "./tree-list.js";
-
-function repoNav(repo: string, branch: string): Raw {
-  return html`<nav class="repo-nav" aria-label="Repo views">
-      <p class="t-label">Go</p>
-      <ul role="list">
-        <li><a href="${commitsHref(repo, branch)}">Commits</a></li>
-        <li><a href="${refsHref(repo, "branch")}">${refLabel("branch")}</a></li>
-        <li><a href="${refsHref(repo, "tag")}">${refLabel("tag")}</a></li>
-      </ul>
-    </nav>`;
-}
 
 function noCommits(view: RepoView): Raw {
   return html`      <h1 class="t-l">No commits</h1>
@@ -55,7 +44,7 @@ function tree(view: RepoView, showAll: boolean, now: Date): Raw {
         path: "",
         entries: view.entries,
         showAll,
-        allHref: `/r/${view.name}?all=1`,
+        allHref: repoHref(view.name, view.branch, view.defaultBranch, true),
         now,
       })}`;
 }
@@ -118,7 +107,7 @@ export function repoShowPage(view: {
   return page({
     title: `${repo.name} · Càrn`,
     description: `${metaDescription(repo)}`,
-    path: `/r/${repo.name}`,
+    path: repoHref(repo.name, repo.branch, repo.defaultBranch),
     main: html`<div class="repo-identity">${identity}</div>
     <h1 class="vh">${repo.name}</h1>
     <div class="repo-body">
@@ -126,7 +115,7 @@ export function repoShowPage(view: {
         ${about(repo, view.now)}
         ${tree(repo, view.showAll, view.now)}
       </div>
-      ${repoNav(repo.name, repo.branch)}
+      ${goNav(repo.name, repo.branch)}
       ${readme(repo)}
     </div>`,
   });

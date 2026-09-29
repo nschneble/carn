@@ -8,7 +8,6 @@ import {
 } from "../repos/refs.js";
 import { sshRemote } from "../repos/remote.js";
 import { age } from "./age.js";
-import { repoTrail } from "./breadcrumb.js";
 import { emptyState } from "./empty-state.js";
 import { plainName } from "./filename.js";
 import { commitsHref, refsHref } from "./hrefs.js";
@@ -105,7 +104,6 @@ function document(view: RefListPage, refs: Ref[], more: boolean): string {
     title: `${heading} · ${view.repo} · Càrn`,
     description: `The ${refNouns[view.list.kind].many} in ${view.repo}.`,
     path: refsHref(view.repo, view.list.kind),
-    crumbs: [...repoTrail(view.repo), { label: heading, href: null }],
     main: html`<h1 class="t-item t-item--title">${heading}</h1>
       ${refs.length === 0 ? empty(view) : list(view, refs, more)}`,
   });

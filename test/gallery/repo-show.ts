@@ -156,6 +156,7 @@ export function view(options: Partial<RepoView> = {}): RepoView {
     createdAt: new Date(treeNow.getTime() - 7_200_000),
     updatedAt: new Date(treeNow.getTime() - 3_600_000),
     branch: "main",
+    defaultBranch: "main",
     tip,
     header: { light: "wordmark", dark: "wordmark" },
     entries: wide,

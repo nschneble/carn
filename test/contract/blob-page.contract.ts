@@ -64,7 +64,12 @@ function renderedLines(body: string): number {
 }
 
 test("a file under the cap renders whole, with no notice or hatch", () => {
-  const markup = blobPage({ repo: "linklater", blob: smallBlob, rawOrigin });
+  const markup = blobPage({
+    repo: "linklater",
+    defaultBranch: "main",
+    blob: smallBlob,
+    rawOrigin,
+  });
 
   assert.doesNotMatch(markup, noticePattern);
   assert.doesNotMatch(markup, /aria-describedby/);
@@ -79,7 +84,12 @@ test("a file under the cap renders whole, with no notice or hatch", () => {
 });
 
 test("a file over the cap is cut on a line boundary", () => {
-  const markup = blobPage({ repo: "linklater", blob: hugeBlob, rawOrigin });
+  const markup = blobPage({
+    repo: "linklater",
+    defaultBranch: "main",
+    blob: hugeBlob,
+    rawOrigin,
+  });
   const notice = noticePattern.exec(markup);
 
   assert.ok(notice, "a truncated file rendered no notice");
@@ -102,7 +112,9 @@ test("a file over the cap is cut on a line boundary", () => {
 
 test("the truncated block's markup is balanced, so nothing is repaired", () => {
   for (const blob of [smallBlob, hugeBlob]) {
-    const { opened, closed } = spans(codeBody(blobPage({ repo: "a", blob })));
+    const { opened, closed } = spans(
+      codeBody(blobPage({ repo: "a", defaultBranch: "main", blob })),
+    );
 
     assert.ok(opened > 0, `${blob.path} highlighted to no spans at all`);
     assert.strictEqual(
@@ -119,6 +131,7 @@ test("the truncated block's markup is balanced, so nothing is repaired", () => {
 test("a front-loaded file never ships over a budget the model missed", () => {
   const markup = blobPage({
     repo: "linklater",
+    defaultBranch: "main",
     blob: frontLoadedBlob,
     rawOrigin,
   });
@@ -142,6 +155,7 @@ test("a front-loaded file never ships over a budget the model missed", () => {
 test("a file whose first line outruns the cap says so, and isn't blank", () => {
   const markup = blobPage({
     repo: "linklater",
+    defaultBranch: "main",
     blob: textBlob(
       "dist/bundle.js",
       `const b = "${"payload".repeat(20_000)}";\n`,
@@ -161,15 +175,14 @@ test("a file whose first line outruns the cap says so, and isn't blank", () => {
     ),
     "the page declined without saying what it holds or why it declined",
   );
-  assert.ok(markup.includes("<dt>Lines</dt><dd>1</dd>"));
-  assert.ok(markup.includes("<dt>Size</dt><dd>136.7 KB</dd>"));
+  assert.ok(markup.includes("136.7 KB · 1 line<br />"));
 });
 
 // the decline above comes back from an empty cut; this one's first line is
 // well inside the source cap and still outweighs the room the chrome
 // leaves, so the shrink pass and the halving both run out on one line
 test("a file the cap admits and the budget refuses declines the same way", () => {
-  const view = { repo: "linklater", blob: deniedBlob };
+  const view = { repo: "linklater", defaultBranch: "main", blob: deniedBlob };
   const first = (deniedBlob.source ?? "").split("\n")[0] ?? "";
 
   assert.ok(
@@ -199,11 +212,12 @@ test("a 0-byte file reports no lines", () => {
 
   const markup = blobPage({
     repo: "linklater",
+    defaultBranch: "main",
     blob: textBlob("src/empty.ts", ""),
   });
 
   assert.ok(
-    markup.includes("<dt>Lines</dt><dd>0</dd>"),
+    markup.includes("0 B · 0 lines"),
     "an empty file claimed a line it doesn't have",
   );
 });
@@ -211,7 +225,9 @@ test("a 0-byte file reports no lines", () => {
 // every other truncation fixture closes each span on the line it opened,
 // so cutting rendered markup at a line boundary would stay balanced there
 test("a span opening lines before the cut still closes after it", () => {
-  const body = codeBody(blobPage({ repo: "linklater", blob: spanningBlob }));
+  const body = codeBody(
+    blobPage({ repo: "linklater", defaultBranch: "main", blob: spanningBlob }),
+  );
   const { opened, closed } = spans(body);
 
   assert.match(
@@ -237,6 +253,7 @@ test("the notice renders whether or not a raw origin is configured", () => {
   for (const origin of [rawOrigin, undefined]) {
     const markup = blobPage({
       repo: "linklater",
+      defaultBranch: "main",
       blob: hugeBlob,
       rawOrigin: origin,
     });
@@ -253,7 +270,7 @@ test("the escape hatches are absent unset and point at the origin set", () => {
   ];
 
   for (const { blob, label } of cases) {
-    const absent = blobPage({ repo: "linklater", blob });
+    const absent = blobPage({ repo: "linklater", defaultBranch: "main", blob });
 
     assert.doesNotMatch(
       absent,
@@ -267,7 +284,12 @@ test("the escape hatches are absent unset and point at the origin set", () => {
       `${blob.path} disabled the hatch instead of dropping it`,
     );
 
-    const present = blobPage({ repo: "linklater", blob, rawOrigin });
+    const present = blobPage({
+      repo: "linklater",
+      defaultBranch: "main",
+      blob,
+      rawOrigin,
+    });
     const href = `${rawOrigin}/linklater/${blob.rev}/${blob.path}`;
 
     assert.ok(present.includes(label), `${blob.path} lost the ${label} copy`);
@@ -284,7 +306,7 @@ test("the escape hatches are absent unset and point at the origin set", () => {
 });
 
 test("the cap is computed from the budget, so a bigger sheet shrinks it", () => {
-  const view = { repo: "linklater", blob: hugeBlob };
+  const view = { repo: "linklater", defaultBranch: "main", blob: hugeBlob };
   const base = sourceCapBytes(view);
   const grown = sourceCapBytes({ ...view, sheetWire: 8_000 });
   const shrunk = sourceCapBytes({ ...view, sheetWire: 200 });
@@ -316,6 +338,7 @@ test("a bigger stylesheet renders fewer lines, not just a smaller number", () =>
   const shown = (sheetWire: number) => {
     const markup = blobPage({
       repo: "linklater",
+      defaultBranch: "main",
       blob: hugeBlob,
       sheetWire,
     });
@@ -333,31 +356,56 @@ test("a bigger stylesheet renders fewer lines, not just a smaller number", () =>
 
 test("every rendered blob page fits the budget as real gzip-5 wire bytes", () => {
   const pages: [string, string][] = [
-    ["small text", blobPage({ repo: "linklater", blob: smallBlob, rawOrigin })],
+    [
+      "small text",
+      blobPage({
+        repo: "linklater",
+        defaultBranch: "main",
+        blob: smallBlob,
+        rawOrigin,
+      }),
+    ],
     [
       "truncated text",
-      blobPage({ repo: "linklater", blob: hugeBlob, rawOrigin }),
+      blobPage({
+        repo: "linklater",
+        defaultBranch: "main",
+        blob: hugeBlob,
+        rawOrigin,
+      }),
     ],
     [
       "denser truncated text",
       blobPage({
         repo: "linklater",
+        defaultBranch: "main",
         blob: textBlob("src/wide.ts", largeSource(20_000)),
         rawOrigin,
       }),
     ],
     [
       "span-crossing text",
-      blobPage({ repo: "linklater", blob: spanningBlob, rawOrigin }),
+      blobPage({
+        repo: "linklater",
+        defaultBranch: "main",
+        blob: spanningBlob,
+        rawOrigin,
+      }),
     ],
     [
       "inline raster",
-      blobPage({ repo: "linklater", blob: imageBlob, rawOrigin }),
+      blobPage({
+        repo: "linklater",
+        defaultBranch: "main",
+        blob: imageBlob,
+        rawOrigin,
+      }),
     ],
     [
       "oversize raster",
       blobPage({
         repo: "linklater",
+        defaultBranch: "main",
         blob: rasterBlob("assets/huge.png", pngBody, 2_400_000),
         rawOrigin,
       }),
@@ -366,6 +414,7 @@ test("every rendered blob page fits the budget as real gzip-5 wire bytes", () =>
       "binary",
       blobPage({
         repo: "linklater",
+        defaultBranch: "main",
         blob: binaryBlob("media/clip.mp4", 44_040_192),
         rawOrigin,
       }),
@@ -382,7 +431,12 @@ test("every rendered blob page fits the budget as real gzip-5 wire bytes", () =>
 });
 
 test("a raster under the cap inlines first-party, eagerly, with no alt", () => {
-  const markup = blobPage({ repo: "linklater", blob: imageBlob, rawOrigin });
+  const markup = blobPage({
+    repo: "linklater",
+    defaultBranch: "main",
+    blob: imageBlob,
+    rawOrigin,
+  });
   const src = blobAssetPath("linklater", {
     oid: imageBlob.oid,
     format: sniffRaster(pngBody) as NonNullable<ReturnType<typeof sniffRaster>>,
@@ -414,6 +468,7 @@ test("a raster under the cap inlines first-party, eagerly, with no alt", () => {
 test("an oversize raster and a binary decline in the file's own words", () => {
   const oversize = blobPage({
     repo: "linklater",
+    defaultBranch: "main",
     blob: rasterBlob("assets/huge.png", pngBody, 2_516_582),
   });
 
@@ -422,6 +477,7 @@ test("an oversize raster and a binary decline in the file's own words", () => {
 
   const clip = blobPage({
     repo: "linklater",
+    defaultBranch: "main",
     blob: binaryBlob("media/clip.mp4", 4_404_019),
   });
 
@@ -430,6 +486,7 @@ test("an oversize raster and a binary decline in the file's own words", () => {
   // past the read cap it cannot state a line count, so it states its size
   const unread = blobPage({
     repo: "linklater",
+    defaultBranch: "main",
     blob: binaryBlob("media/feature.mp4", 44_040_192),
   });
 
@@ -437,6 +494,7 @@ test("an oversize raster and a binary decline in the file's own words", () => {
 
   const unknown = blobPage({
     repo: "linklater",
+    defaultBranch: "main",
     blob: binaryBlob("build/carn", 8_400),
   });
 
@@ -455,7 +513,12 @@ test("an oversize raster and a binary decline in the file's own words", () => {
 // an svg is repo-controlled markup whose title and text enter the host
 // page's accessibility tree, so it never inlines however small it is
 test("an svg blob renders as source and never as an inline image", () => {
-  const markup = blobPage({ repo: "linklater", blob: svgBlob, rawOrigin });
+  const markup = blobPage({
+    repo: "linklater",
+    defaultBranch: "main",
+    blob: svgBlob,
+    rawOrigin,
+  });
 
   assert.doesNotMatch(markup, /<img class="preview"/);
   assert.match(markup, /<pre class="src"/);
@@ -469,10 +532,14 @@ test("an svg blob renders as source and never as an inline image", () => {
 });
 
 test("the source block carries the region semantics the audit needs", () => {
-  const markup = blobPage({ repo: "linklater", blob: smallBlob });
+  const markup = blobPage({
+    repo: "linklater",
+    defaultBranch: "main",
+    blob: smallBlob,
+  });
 
   assert.strictEqual((markup.match(/<h1/g) ?? []).length, 1);
-  assert.match(markup, /<h1 class="t-item" lang="en" id="blob-h">/);
+  assert.match(markup, /<h1 class="t-item name" lang="en" id="blob-h">/);
   assert.match(
     markup,
     /<pre class="src" tabindex="0" role="region" aria-labelledby="blob-h">/,
@@ -488,7 +555,11 @@ test("the source block carries the region semantics the audit needs", () => {
 });
 
 test("nothing but the file's own bytes goes inside the block", () => {
-  const markup = blobPage({ repo: "linklater", blob: hugeBlob });
+  const markup = blobPage({
+    repo: "linklater",
+    defaultBranch: "main",
+    blob: hugeBlob,
+  });
   const body = codeBody(markup);
 
   assert.doesNotMatch(body, /Showing the first/);
@@ -497,7 +568,11 @@ test("nothing but the file's own bytes goes inside the block", () => {
 });
 
 test("counts are grouped the same way on every machine", () => {
-  const markup = blobPage({ repo: "linklater", blob: hugeBlob });
+  const markup = blobPage({
+    repo: "linklater",
+    defaultBranch: "main",
+    blob: hugeBlob,
+  });
 
   assert.ok(markup.includes("of 6,310."), "the notice total lost its groups");
   assert.ok(
@@ -508,7 +583,11 @@ test("counts are grouped the same way on every machine", () => {
 
 test("an unregistered extension still renders in the same shape", () => {
   const odd = textBlob("notes/thoughts.qqq", "one\ntwo\nthree\n");
-  const markup = blobPage({ repo: "linklater", blob: odd });
+  const markup = blobPage({
+    repo: "linklater",
+    defaultBranch: "main",
+    blob: odd,
+  });
 
   assert.strictEqual(languageFor(odd.path), null);
   assert.match(markup, /<pre class="src" tabindex="0" role="region"/);
