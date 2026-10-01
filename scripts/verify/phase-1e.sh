@@ -592,7 +592,7 @@ build_seed() {
     printf 'export const mod%02d = %d;\n' "$i" "$i" > "$top/$NESTED_DIR/mod$(printf '%02d' "$i").ts"
   done
 
-  # over the computed source cap, which sits near 70 KB of source
+  # over the computed source cap, which sits near 58 KB of source
   seq 1 3000 \
     | awk '{ printf "export const item%04d = { id: %d, name: \"row %d\" };\n", $1, $1, $1 }' \
     > "$top/big.ts"

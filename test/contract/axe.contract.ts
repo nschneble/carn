@@ -250,7 +250,7 @@ const states = {
   "blob-image": blobDocument({ blob: imageBlob, rawOrigin }),
 
   // sheetWire squeezes the budget until the page truncates; this line
-  // holds from 28,873 to 28,939
+  // holds from 28,849 to 28,917
   "blob-cut": blobDocument({ rawOrigin, sheetWire: 28_906 }),
 
   "blob-binary": blobDocument({

@@ -33,8 +33,8 @@ export type BlobPage = {
   sheetWire?: number;
 };
 
-// 0.348 measured over 88 files here: 604,313 source bytes to 210,433 wire
-export const wirePerSourceByte = 0.348;
+// 0.434: 113 files here, highlighted and numbered, gzipped as one stream
+export const wirePerSourceByte = 274_809 / 633_134;
 
 const binaryLabels: Record<string, string> = {
   gz: "gzip archive",
