@@ -934,6 +934,7 @@ main > h1 {
   color: var(--ink);
   margin-top: var(--s1);
   width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .page-side > * + * {
@@ -1027,6 +1028,16 @@ main > h1 {
 
 .tree .pin > * {
   color: var(--ink-mid);
+}
+
+/* c-name is 100% below 640px, which leaves a gitlink's sha no column */
+.tree:has(.is-sub) .c-msg {
+  width: 72px;
+}
+
+/* a folded msg cell draws no rule, so the row draws it instead */
+.tree:has(.is-sub) tbody tr {
+  border-bottom: 1px solid var(--rule-soft);
 }
 
 .showall {

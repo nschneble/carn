@@ -297,13 +297,31 @@ for (const [state, markup] of Object.entries(states)) {
 const committedPath = "prisma/migrations/20260824223229_init/migration.sql";
 const requestedPath = `objects/pack/${"0123456789abcdef".repeat(5)}.pack`;
 
+const longDirectory = `vendored_${"dependency_".repeat(6)}snapshots`;
+const longFile = `${"generated_".repeat(7)}schema.ts`;
+
 const reflowCases = [
-  { path: "/error-long-path", selector: ".empty p" },
-  { path: "/blob-long-path", selector: "h1.t-item" },
+  { path: "/error-long-path", selector: ".empty p", width: 320 },
+  { path: "/blob-long-path", selector: "h1.t-item", width: 320 },
+  {
+    path: "/blob-long-name",
+    selector: ".list-nav li[aria-current]",
+    width: 320,
+  },
+  {
+    path: "/blob-long-name",
+    selector: ".list-nav li:nth-last-child(2)",
+    width: 320,
+  },
+  { path: "/tree-sub", selector: ".is-sub .pin > *", width: 375 },
 ];
 
 fixtures["/blob-long-path"] = blobDocument({
   blob: textBlob(committedPath, sampleSource),
+});
+
+fixtures["/blob-long-name"] = blobDocument({
+  blob: textBlob(`${longDirectory}/${longFile}`, sampleSource),
 });
 
 fixtures["/error-long-path"] = errorPage({
@@ -961,15 +979,14 @@ test("the source block is a focusable scroll region on the widest path", async (
 
 // 1.4.10 asks for 320 CSS px with nothing lost and nothing scrolled in two
 // directions, which axe cannot see: it reads the DOM, not the layout
-test("a long path reflows at 320px rather than scrolling the page", async (t) => {
+test("a long path reflows rather than scrolling the page", async (t) => {
   const page = await (await browser()).newPage();
-  const viewport = 320;
 
   try {
-    await page.setViewportSize({ width: viewport, height: 900 });
     const overflowing: string[] = [];
 
-    for (const { path, selector } of reflowCases) {
+    for (const { path, selector, width } of reflowCases) {
+      await page.setViewportSize({ width, height: 900 });
       await page.goto(`${site.origin}${path}`);
       await page.evaluate(() => document.fonts.ready);
 
@@ -991,9 +1008,9 @@ test("a long path reflows at 320px rather than scrolling the page", async (t) =>
         );
       }
 
-      if (sideways > viewport) {
+      if (sideways > width) {
         overflowing.push(
-          `${path} scrolls to ${sideways}px inside a ${viewport}px viewport`,
+          `${path} scrolls to ${sideways}px inside a ${width}px viewport`,
         );
       }
 
