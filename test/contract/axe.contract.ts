@@ -245,6 +245,7 @@ const states = {
   "show-empty": showDocument({ repo: emptiedTree }),
   "show-header": showDocument({ repo: view({ header: committedHeader }) }),
   "not-found": errorPage({ failure: noSuchRepo("linklater") }),
+  "no-file": errorPage({ failure: noSuchFile("linklater", "src/nowhere.ts") }),
   blob: blobDocument(),
   "blob-image": blobDocument({ blob: imageBlob, rawOrigin }),
 
@@ -590,6 +591,7 @@ const contrastNodes: Record<string, number> = {
   "show-empty": 11,
   "show-header": 108,
   "not-found": 7,
+  "no-file": 9,
   blob: 77,
   "blob-cut": 15,
   "blob-image": 12,
