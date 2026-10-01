@@ -955,8 +955,11 @@ main > h1 {
   margin: var(--s3) 0 0;
 }
 
-.page-main > .src {
-  margin: 0;
+.page-main > .dpath:first-child,
+.page-main > .files:first-child,
+.page-main > .src:first-child,
+.page-main > .t-note:first-child {
+  margin-top: 0;
 }
 
 /* the padding is what lifts a 12px link past the 24px target size */
@@ -1061,6 +1064,7 @@ main > h1 {
    column, so the name takes the remainder rather than the shared split */
 .files .name {
   width: auto;
+  overflow-wrap: anywhere;
 }
 
 .files .counts {

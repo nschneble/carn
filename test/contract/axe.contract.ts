@@ -38,6 +38,7 @@ import {
   commitDocument,
   detail,
   noisyFiles,
+  textFile,
 } from "../gallery/commit.js";
 import { commits, log, logDocument } from "../gallery/commit-log.js";
 import { galleryCss, galleryDocument } from "../gallery/document.js";
@@ -314,6 +315,12 @@ const reflowCases = [
     width: 320,
   },
   { path: "/tree-sub", selector: ".is-sub .name > *", width: 375 },
+  { path: "/commit-long-name", selector: ".files .name > *", width: 320 },
+  {
+    path: "/change-long-name",
+    selector: ".list-nav li[aria-current]",
+    width: 320,
+  },
 ];
 
 fixtures["/blob-long-path"] = blobDocument({
@@ -322,6 +329,16 @@ fixtures["/blob-long-path"] = blobDocument({
 
 fixtures["/blob-long-name"] = blobDocument({
   blob: textBlob(`${longDirectory}/${longFile}`, sampleSource),
+});
+
+const longChange = detail({
+  files: [textFile(`${longDirectory}/${longFile}`, 3, 1)],
+});
+
+fixtures["/commit-long-name"] = commitDocument({ commit: longChange });
+
+fixtures["/change-long-name"] = changeDocument(`${longDirectory}/${longFile}`, {
+  commit: longChange,
 });
 
 fixtures["/error-long-path"] = errorPage({
@@ -580,10 +597,10 @@ const contrastNodes: Record<string, number> = {
   commits: 59,
   "commits-tail": 37,
   "commits-none": 9,
-  commit: 39,
-  "commit-cut": 134,
-  "commit-binary": 19,
-  "commit-file": 34,
+  commit: 42,
+  "commit-cut": 137,
+  "commit-binary": 22,
+  "commit-file": 38,
   branches: 35,
   "branches-cut": 35,
   "branches-none": 8,
