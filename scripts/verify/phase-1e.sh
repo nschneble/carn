@@ -1786,7 +1786,7 @@ grep -A1 -E '^  \.tree \.c-name \{$' src/html/styles.ts | grep -qF 'width: 65%;'
   || wrong="$wrong .tbl's shared name column width is missing from the 640 query;"
 grep -qE '^\.tbl \.name \{$' src/html/styles.ts \
   && wrong="$wrong the name column is widthed outside the query, where no subject column exists;"
-printf '%s' "$sheet_flat" | grep -qE '\.repos \.msg, \.tree \.msg \{[[:space:]]*display: none;' \
+printf '%s' "$sheet_flat" | grep -qE '\.repos \.msg, \.tree \.msg[^{]*\{[[:space:]]*display: none;' \
   || wrong="$wrong the description column is no longer dropped below the breakpoint;"
 printf '%s' "$sheet_flat" | grep -qE '\.(log|refs) \.msg[^{]*\{[^}]*display:' \
   && wrong="$wrong a view whose subject is the row's link drops it at some width;"

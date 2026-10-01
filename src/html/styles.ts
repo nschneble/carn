@@ -538,7 +538,8 @@ export const components = css`body {
 
 /* metadata goes below the breakpoint; a subject that is a link stays */
 .repos .msg,
-.tree .msg {
+.tree .msg,
+.tree .pin {
   display: none;
 }
 
@@ -562,7 +563,8 @@ export const components = css`body {
 
 @media (min-width: 640px) {
   .repos .msg,
-  .tree .msg {
+  .tree .msg,
+  .tree .pin {
     display: table-cell;
   }
 
@@ -1029,16 +1031,6 @@ main > h1 {
 
 .tree .pin > * {
   color: var(--ink-mid);
-}
-
-/* c-name is 100% below 640px, which leaves a gitlink's sha no column */
-.tree:has(.is-sub) .c-msg {
-  width: 72px;
-}
-
-/* a folded msg cell draws no rule, so the row draws it instead */
-.tree:has(.is-sub) tbody tr {
-  border-bottom: 1px solid var(--rule-soft);
 }
 
 .showall {

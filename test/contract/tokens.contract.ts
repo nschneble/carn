@@ -394,13 +394,13 @@ test("no table element carries an authored display override", () => {
   // description column below the breakpoint and hand it back above one
   assert.match(
     stylesheet,
-    /\.repos \.msg,\n\.tree \.msg \{\n {2}display: none;\n\}/,
+    /\.repos \.msg,\n\.tree \.msg,\n\.tree \.pin \{\n {2}display: none;\n\}/,
     "nothing in the sheet takes the exemption, so it excuses only a future mistake",
   );
 
   assert.match(
     stylesheet,
-    /\.repos \.msg,\n {2}\.tree \.msg \{\n {4}display: table-cell;\n {2}\}/,
+    /\.repos \.msg,\n {2}\.tree \.msg,\n {2}\.tree \.pin \{\n {4}display: table-cell;\n {2}\}/,
   );
 
   // the two views whose middle column is a link are hidden at no width: a

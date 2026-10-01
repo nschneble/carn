@@ -313,7 +313,7 @@ const reflowCases = [
     selector: ".list-nav li:nth-last-child(2)",
     width: 320,
   },
-  { path: "/tree-sub", selector: ".is-sub .pin > *", width: 375 },
+  { path: "/tree-sub", selector: ".is-sub .name > *", width: 375 },
 ];
 
 fixtures["/blob-long-path"] = blobDocument({
@@ -608,7 +608,7 @@ const foldedContrastNodes: Record<string, number> = {
   tree: 26,
   "tree-all": 71,
   "tree-cut": 32,
-  "tree-sub": 15,
+  "tree-sub": 14,
 };
 
 for (const width of auditWidths) {
@@ -977,9 +977,9 @@ test("the source block is a focusable scroll region on the widest path", async (
   }
 });
 
-// 1.4.10 asks for 320 CSS px with nothing lost and nothing scrolled in two
-// directions, which axe cannot see: it reads the DOM, not the layout
-test("a long path reflows rather than scrolling the page", async (t) => {
+// 1.4.10 asks for nothing lost and nothing scrolled in two directions at
+// narrow widths, which axe cannot see: it reads the DOM, not the layout
+test("narrow content reflows rather than scrolling the page", async (t) => {
   const page = await (await browser()).newPage();
 
   try {
@@ -1002,9 +1002,13 @@ test("a long path reflows rather than scrolling the page", async (t) => {
         .locator("html")
         .evaluate((node) => node.scrollWidth);
 
+      if (carrier.client === 0) {
+        overflowing.push(`${selector} on ${path} renders no box to fit`);
+      }
+
       if (carrier.scroll > carrier.client) {
         overflowing.push(
-          `${selector} on ${path} wants ${carrier.scroll}px inside ${carrier.client}px, so the path never breaks`,
+          `${selector} on ${path} wants ${carrier.scroll}px inside ${carrier.client}px, so it runs past its box`,
         );
       }
 

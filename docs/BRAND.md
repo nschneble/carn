@@ -529,7 +529,8 @@ body {
 
 /* metadata goes below the breakpoint; a subject that is a link stays */
 .repos .msg,
-.tree .msg {
+.tree .msg,
+.tree .pin {
   display: none;
 }
 
@@ -553,7 +554,8 @@ body {
 
 @media (min-width: 640px) {
   .repos .msg,
-  .tree .msg {
+  .tree .msg,
+  .tree .pin {
     display: table-cell;
   }
 
