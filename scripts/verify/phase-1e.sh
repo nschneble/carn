@@ -1579,13 +1579,11 @@ fi
 # revision round one, part A item 2: one heading treatment across the six
 # routes that carry no mark. blob already carried .t-item, so it is in the
 # sweep for completeness rather than because anything changed under it.
-# round two adds --title as an optional second class on the list pages'
-# titles (check 43 pins which pages carry it); the base face stays .t-item
 readonly TITLE_32="every visible page title renders .t-item, never .t-l or a .t-label h1"
 if require_daemon 32 "$TITLE_32" && require_seed 32 "$TITLE_32"; then
   wrong=""
   for page in blob-text log1 branches tags commit-big commit-one; do
-    grep -qE '<h1 class="t-item( t-item--title)?"' "$work/$page.body" \
+    grep -qE '<h1 class="t-item"' "$work/$page.body" \
       || wrong="$wrong $page carries no visible .t-item heading;"
     grep -qE '<h1 class="t-l"|<h1 class="t-label"' "$work/$page.body" \
       && wrong="$wrong $page still carries a .t-l or .t-label h1;"
@@ -1836,9 +1834,6 @@ fi
 # it keep the bare .t-item, so the marker appears exactly once per page
 readonly TITLE_43="every visible page title resolves to --ink-soft, and its rows stay --ink"
 wrong=""
-tr '\n' ' ' < src/html/styles.ts \
-  | grep -qE '\.t-item--title \{[[:space:]]+color: var\(--ink-soft\);' \
-  || wrong="$wrong .t-item--title doesn't resolve to --ink-soft;"
 if require_daemon 43 "$TITLE_43" && require_seed 43 "$TITLE_43"; then
   for page in branches tags; do
     body="$work/$page.body"

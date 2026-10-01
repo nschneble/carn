@@ -190,10 +190,6 @@ export const components = css`body {
   overflow-wrap: anywhere;
 }
 
-.t-item--title {
-  color: var(--ink-soft);
-}
-
 .t-body {
   font-variation-settings: "wdth" 100, "wght" 400;
   font-size: 16.5px;
