@@ -951,7 +951,7 @@ main > h1 {
   margin: var(--s3) 0 0;
 }
 
-.page-main .src {
+.page-main > .src {
   margin: 0;
 }
 
