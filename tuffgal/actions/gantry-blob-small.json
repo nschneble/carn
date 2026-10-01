@@ -5,5 +5,5 @@
     { "kind": "click", "hint": { "role": "link", "text": "src/" } },
     { "kind": "click", "hint": { "role": "link", "text": "manifest.ts" } }
   ],
-  "expect": { "anyOf": [{ "role": "heading", "text": "src/manifest.ts" }] }
+  "expect": { "anyOf": [{ "role": "heading", "text": "manifest.ts" }] }
 }

@@ -4,8 +4,10 @@
 
 import { type CommitDetail, type DiffFile, hunks } from "../repos/commit.js";
 import { ageMarkup } from "./age.js";
+import { pathNav, repoTrail } from "./breadcrumb.js";
 import { shortShaLength } from "./commit-log.js";
 import { emptyState } from "./empty-state.js";
+import { plainName } from "./filename.js";
 import { changeHref, commitHref } from "./hrefs.js";
 import { html, type Raw, raw } from "./index.js";
 import { page } from "./page.js";
@@ -223,7 +225,24 @@ function head(view: CommitPage, linked: boolean): Raw {
       ${message(commit)}${meta(view)}`;
 }
 
-function shell(view: CommitPage, main: Raw, file: string | null): string {
+function side(view: CommitPage, file: string | null): Raw {
+  const { repo, commit } = view;
+  const sha = html`${short(commit.sha)}`;
+
+  const trail =
+    file === null
+      ? [{ label: sha, href: null, container: false }]
+      : [
+          { label: sha, href: commitHref(repo, commit.sha), container: true },
+          { label: plainName(file), href: null, container: false },
+        ];
+
+  return html`<div class="page-side">
+          ${pathNav([...repoTrail(repo), ...trail])}
+        </div>`;
+}
+
+function shell(view: CommitPage, body: Raw, file: string | null): string {
   const { repo, commit } = view;
 
   return page({
@@ -233,7 +252,15 @@ function shell(view: CommitPage, main: Raw, file: string | null): string {
       file === null
         ? commitHref(repo, commit.sha)
         : changeHref(repo, commit.sha, file),
-    main,
+    main: html`<div class="page-body">
+        <div class="page-head">
+          ${head(view, file !== null)}
+        </div>
+        ${side(view, file)}
+        <div class="page-main">
+          ${body}
+        </div>
+      </div>`,
   });
 }
 
@@ -250,8 +277,7 @@ function render(view: CommitPage, shape: Shape, candidates: number[]): string {
 
   return shell(
     view,
-    html`${head(view, false)}
-      ${fileList(view, shape, new Set(inlined), candidates.length)}
+    html`${fileList(view, shape, new Set(inlined), candidates.length)}
       ${diffs}`,
     null,
   );
@@ -329,12 +355,7 @@ function changeDocument(
       : html`${cutBlock(file, index, text, cut)}
       <p class="t-body">Read the rest of it with <code class="t-mono">git show ${view.commit.sha} -- ${file.path}</code></p>`;
 
-  return shell(
-    view,
-    html`${head(view, true)}
-      ${shown}`,
-    file.path,
-  );
+  return shell(view, shown, file.path);
 }
 
 function noDiff(view: CommitPage, file: DiffFile): string {
@@ -344,8 +365,7 @@ function noDiff(view: CommitPage, file: DiffFile): string {
 
   return shell(
     view,
-    html`${head(view, true)}
-      <h2 class="t-mono dpath">${file.path}</h2>
+    html`<h2 class="t-mono dpath">${file.path}</h2>
       ${emptyState(said)}`,
     file.path,
   );

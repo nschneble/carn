@@ -23,13 +23,11 @@ process.env.LOG_LEVEL = "silent";
 const { blobDocument } = await import("../gallery/blob.js");
 const { indexDocument } = await import("../gallery/repo-index.js");
 const { treeDocument } = await import("../gallery/tree.js");
-const { logDocument } = await import("../gallery/commit-log.js");
 const { textBlob } = await import("../gallery/blob.js");
-const { address, pathTrail, revTrail } = await import(
+const { address, pathNav, pathTrail, revTrail } = await import(
   "../../src/html/breadcrumb.js"
 );
-const { html } = await import("../../src/html/index.js");
-const { stylesheet } = await import("../../src/html/styles.js");
+const { plainName } = await import("../../src/html/filename.js");
 const { browser, closeBrowser } = await import("../support/browser.js");
 const { serve } = await import("../support/serve.js");
 const { renderPaths } = await import("../support/render-paths.js");
@@ -111,7 +109,6 @@ const deepBlob = blobDocument({
 const fixtures: Record<string, string> = {
   "/index-page": indexDocument(),
   "/tree": treeDocument(),
-  "/commits": logDocument(),
   "/deep-blob": deepBlob,
 };
 
@@ -130,57 +127,147 @@ after(async () => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-function crumbList(markup: string): string {
-  const start = markup.indexOf('<nav aria-label="Breadcrumb">');
-  assert.notStrictEqual(start, -1, "the page rendered no breadcrumb");
+function sidebar(markup: string): string {
+  const opener = '<nav class="list-nav" aria-labelledby="path-label">';
+  const start = markup.indexOf(opener);
+  assert.notStrictEqual(start, -1, "the page rendered no Path sidebar");
   return markup.slice(start, markup.indexOf("</nav>", start) + 6);
 }
 
 function hrefs(markup: string): string[] {
-  return [...crumbList(markup).matchAll(/<a href="([^"]+)"/g)].map(
+  return [...sidebar(markup).matchAll(/<a href="([^"]+)"/g)].map(
     (found) => found[1] as string,
   );
 }
 
-// the folded trail is the case a count of separator spans alone would
-// miss: the ellipsis item carries its own », hidden by the <li> around it
-test("the separator is real dom text, and every one is aria-hidden", () => {
-  for (const [where, markup] of [
-    ["a short trail", treeDocument()],
-    ["a folded trail", deepBlob],
-  ] as const) {
-    const nav = crumbList(markup);
-    const separators = [...nav.matchAll(/»/g)].length;
-    const exposed = nav
-      .replace(/<span aria-hidden="true"> » <\/span>/g, "")
-      .replace(/<li class="fold" aria-hidden="true">[^<]*<\/li>/g, "");
+function crumbFields(crumbs: ReturnType<typeof pathTrail>) {
+  return crumbs.map((crumb) => ({
+    label: crumb.label.value,
+    href: crumb.href,
+    container: crumb.container,
+  }));
+}
 
-    assert.ok(separators > 1, `${where}: only ${separators} separators`);
-    assert.doesNotMatch(
-      exposed,
-      /»|…/,
-      `${where}: punctuation reached the accessible name`,
+test("the Path nav is a labeled list, and the label is its own heading", () => {
+  const nav = pathNav(revTrail(repoName, "main", "main")).value;
+
+  assert.match(nav, /^<nav class="list-nav" aria-labelledby="path-label">/);
+  assert.ok(nav.includes('<p class="t-label" id="path-label">Path</p>'));
+  assert.ok(nav.includes('<ol role="list">'));
+
+  for (const markup of [treeDocument(), deepBlob]) {
+    assert.strictEqual(
+      [...markup.matchAll(/id="path-label"/g)].length,
+      1,
+      "the page carries the Path label id more than once",
+    );
+    assert.deepStrictEqual(
+      [...markup.matchAll(/<nav [^>]*aria-labelledby="([^"]+)"/g)].map(
+        (found) => found[1],
+      ),
+      ["path-label"],
+      "a nav on the page is labeled by something other than path-label",
     );
   }
+});
 
-  assert.doesNotMatch(
-    stylesheet,
-    /\.crumbs[^{]*\{[^}]*content:/,
-    "the separator moved into generated content, which can't be selected and isn't found by page search",
+test("every path segment carries the tree route at its own depth", () => {
+  assert.deepStrictEqual(
+    crumbFields(pathTrail(repoName, "main", "a/b/c.ts", "blob")),
+    [
+      {
+        label: '<span class="caps">a</span>',
+        href: "/r/linklater/tree/main/a",
+        container: true,
+      },
+      {
+        label: '<span class="caps">b</span>',
+        href: "/r/linklater/tree/main/a/b",
+        container: true,
+      },
+      { label: '<span class="caps">c.ts</span>', href: null, container: false },
+    ],
+  );
+
+  // a ref carrying a slash and a name carrying a hash go through treeHref,
+  // so the encoding is the tree route's own rather than a second spelling
+  assert.deepStrictEqual(
+    crumbFields(pathTrail(repoName, "feat/x", "a b/c#d.ts", "blob")),
+    [
+      {
+        label: '<span class="caps">a b</span>',
+        href: "/r/linklater/tree/feat%2Fx/a%20b",
+        container: true,
+      },
+      {
+        label: '<span class="caps">c#d.ts</span>',
+        href: null,
+        container: false,
+      },
+    ],
+  );
+
+  assert.deepStrictEqual(
+    crumbFields(pathTrail(repoName, "main", "a/b", "tree")).at(-1),
+    { label: '<span class="caps">b</span>', href: null, container: true },
   );
 });
 
-test("ancestors are links, and the current segment isn't one", () => {
-  const nav = crumbList(treeDocument());
-  const links = [...nav.matchAll(/<a /g)].length;
-  const here = [...nav.matchAll(/<span class="here">/g)].length;
+test("a hostile filename is escaped on its way into the label", () => {
+  const hostile = "<script>alert(1)</script>.ts";
+  const nav = pathNav([
+    ...revTrail(repoName, "main", "main"),
+    { label: plainName(hostile), href: null, container: false },
+  ]).value;
 
-  assert.strictEqual(here, 1, "there's not exactly one current segment");
-  assert.strictEqual(links, 3, `Càrn, linklater and src should link: ${nav}`);
+  assert.ok(!nav.includes("<script"), nav);
+  assert.ok(nav.includes("&lt;script&gt;alert(1)&lt;/script&gt;.ts"));
+
   assert.ok(
-    nav.endsWith('<span class="here">components</span></li></ol></nav>'),
-    `the current segment isn't last, or it links: ${nav}`,
+    !address([
+      { label: plainName(hostile), href: null, container: false },
+    ]).value.includes("<script"),
   );
+});
+
+test("a container ends in a slash and the current item is unlinked", () => {
+  const nav = sidebar(treeDocument());
+
+  assert.ok(
+    nav.includes(
+      '<li aria-current="page"><span class="caps">components</span>/</li>',
+    ),
+    `the tree's own path isn't an unlinked container: ${nav}`,
+  );
+  assert.strictEqual(
+    [...nav.matchAll(/aria-current="page"/g)].length,
+    1,
+    "the sidebar marks more than one current item",
+  );
+
+  const blob = sidebar(deepBlob);
+  assert.ok(
+    blob.includes(
+      '<li aria-current="page"><span class="caps">index.ts</span></li>',
+    ),
+    `the blob's own name isn't an unlinked leaf: ${blob}`,
+  );
+  for (const [where, markup] of [
+    ["tree", nav],
+    ["blob", blob],
+  ] as const) {
+    const linked = [...markup.matchAll(/<li><a [^>]*>(.*?)<\/a><\/li>/g)].map(
+      (found) => found[1] as string,
+    );
+
+    assert.ok(linked.length > 1, `${where}: the trail carries no ancestors`);
+    for (const segment of linked) {
+      assert.ok(
+        segment.endsWith("/"),
+        `${where}: the ancestor ${segment} doesn't end in a slash`,
+      );
+    }
+  }
 });
 
 // wordmark on / is the current segment and keeps treatment it already has
@@ -193,56 +280,95 @@ test("the index page keeps its own masthead, unchanged", () => {
     ),
     "the index masthead changed shape",
   );
-  assert.doesNotMatch(markup, /aria-label="Breadcrumb"/);
+  assert.doesNotMatch(markup, /class="list-nav"/);
 });
 
-// four or fewer segments can never collapse, so rendering the fold and the
-// hidden set would be markup no viewport ever shows
-test("a trail with nothing to hide doesn't render a fold or hide segments", () => {
-  const short = crumbList(logDocument());
+// a .page-head selects the show grid and its absence the list grid
+test("the show grid follows .page-head, and the list grid its absence", async (t) => {
+  const page = await (await browser()).newPage();
 
-  assert.doesNotMatch(short, /class="fold"|class="mid"/);
-  assert.strictEqual([...short.matchAll(/<li/g)].length, 3);
+  try {
+    const expected = {
+      1440: {
+        list: { rows: 1, sideRow: "1" },
+        show: { rows: 2, sideRow: "1 / span 2" },
+      },
+      375: {
+        list: { rows: 2, sideRow: "auto" },
+        show: { rows: 3, sideRow: "auto" },
+      },
+    };
 
-  // eight segments, so the four between the first two and the last two
-  // fold into one ellipsis rather than shedding one at a time
-  const long = crumbList(deepBlob);
-  assert.strictEqual([...long.matchAll(/<li/g)].length, 9);
-  assert.strictEqual([...long.matchAll(/class="mid"/g)].length, 4);
-  assert.strictEqual([...long.matchAll(/class="fold"/g)].length, 1);
-});
+    for (const width of [1440, 375] as const) {
+      await page.setViewportSize({ width, height: 900 });
 
-test("every path segment carries the tree route at its own depth", () => {
-  assert.deepStrictEqual(pathTrail("linklater", "main", "a/b/c.ts", "blob"), [
-    { label: "a", href: "/r/linklater/tree/main/a" },
-    { label: "b", href: "/r/linklater/tree/main/a/b" },
-    { label: "c.ts", href: null },
-  ]);
+      for (const [path, shape] of [
+        ["/tree", "list"],
+        ["/deep-blob", "show"],
+      ] as const) {
+        await page.goto(`${site.origin}${path}`);
+        await page.evaluate(() => document.fonts.ready);
 
-  // a ref carrying a slash and a name carrying a hash go through treeHref,
-  // so the encoding is the tree route's own rather than a second spelling
-  assert.deepStrictEqual(
-    pathTrail("linklater", "feat/x", "a b/c#d.ts", "blob"),
-    [
-      { label: "a b", href: "/r/linklater/tree/feat%2Fx/a%20b" },
-      { label: "c#d.ts", href: null },
-    ],
-  );
-});
+        const read = await page.locator(".page-body").evaluate((node) => {
+          const side = node.querySelector(".page-side") as HTMLElement;
+          const main = node.querySelector(".page-main") as HTMLElement;
+          const style = getComputedStyle(node);
 
-test("a label is escaped into the trail", () => {
-  const nav = address([
-    ...revTrail("linklater", "main", "main"),
-    { label: html`<script>alert(1)</script>`, href: null, container: false },
-  ]).value;
+          return {
+            heads: node.querySelectorAll(":scope > .page-head").length,
+            columns: style.gridTemplateColumns.split(" ").length,
+            rows: style.gridTemplateRows.split(" ").length,
+            sideRow: getComputedStyle(side).gridRow,
+            sideTop: Math.round(side.getBoundingClientRect().top),
+            mainTop: Math.round(main.getBoundingClientRect().top),
+          };
+        });
 
-  assert.ok(!nav.includes("<script"), nav);
-  assert.ok(nav.includes("&lt;script&gt;"));
+        const want = expected[width][shape];
+
+        assert.strictEqual(
+          read.heads,
+          shape === "show" ? 1 : 0,
+          `${path} at ${width}px is the wrong shape for this assertion`,
+        );
+        assert.strictEqual(
+          read.columns,
+          width === 1440 ? 2 : 1,
+          `${path} at ${width}px lays out ${read.columns} column(s)`,
+        );
+        assert.strictEqual(
+          read.rows,
+          want.rows,
+          `${path} at ${width}px lays out ${read.rows} row(s), wanted ${want.rows}`,
+        );
+        assert.strictEqual(
+          read.sideRow,
+          want.sideRow,
+          `${path} at ${width}px put the sidebar on grid-row ${read.sideRow}`,
+        );
+
+        if (width === 1440) {
+          assert.ok(
+            shape === "show"
+              ? read.mainTop > read.sideTop
+              : read.mainTop === read.sideTop,
+            `${path} at ${width}px: sidebar top ${read.sideTop}, content top ${read.mainTop}`,
+          );
+        }
+
+        t.diagnostic(
+          `${path} ${shape} at ${width}px: ${read.columns}x${read.rows}, side row ${read.sideRow}, tops ${read.sideTop}/${read.mainTop}`,
+        );
+      }
+    }
+  } finally {
+    await page.close();
+  }
 });
 
 // the three signals BRAND.md asks for, read off the rendered page rather
-// than off the stylesheet: color, weight, and the absence of a target
-test("the current segment is inked and weighted apart from its ancestors", async (t) => {
+// than off the stylesheet: color, hit area, and the absence of a target
+test("an ancestor is a link that clears 24px; the current item is neither", async (t) => {
   const page = await (await browser()).newPage();
 
   try {
@@ -253,19 +379,19 @@ test("the current segment is inked and weighted apart from its ancestors", async
       await page.goto(`${site.origin}/deep-blob`);
       await page.evaluate(() => document.fonts.ready);
 
-      const read = await page.locator(".crumbs").evaluate((node) => {
+      const read = await page.locator(".list-nav").evaluate((node) => {
         const style = getComputedStyle(node);
-        const ancestor = node.querySelector("a") as HTMLElement;
-        const here = node.querySelector(".here") as HTMLElement;
+        const link = node.querySelector("a") as HTMLElement;
+        const here = node.querySelector('[aria-current="page"]') as HTMLElement;
 
         return {
-          mid: style.getPropertyValue("--ink-mid").trim(),
+          accent: style.getPropertyValue("--accent-text").trim(),
           ink: style.getPropertyValue("--ink").trim(),
-          ancestorColor: getComputedStyle(ancestor).color,
-          ancestorTag: ancestor.tagName,
+          linkColor: getComputedStyle(link).color,
+          linkDisplay: getComputedStyle(link).display,
+          linkBox: link.getBoundingClientRect(),
           hereColor: getComputedStyle(here).color,
           hereTag: here.tagName,
-          hereWeight: getComputedStyle(here).fontWeight,
           hereLinks: here.querySelectorAll("a").length,
         };
       });
@@ -276,103 +402,26 @@ test("the current segment is inked and weighted apart from its ancestors", async
       };
 
       assert.strictEqual(
-        read.ancestorColor,
-        rgb(read.mid),
-        `${path.name}: an ancestor isn't --ink-mid`,
+        read.linkColor,
+        rgb(read.accent),
+        `${path.name}: an ancestor isn't --accent-text`,
       );
-      assert.strictEqual(read.ancestorTag, "A");
+      assert.strictEqual(read.linkDisplay, "inline-block");
+      assert.ok(
+        read.linkBox.height >= 24,
+        `${path.name}: an ancestor link is ${read.linkBox.height}px tall, under the 24px floor`,
+      );
       assert.strictEqual(
         read.hereColor,
         rgb(read.ink),
-        `${path.name}: the current segment isn't --ink`,
+        `${path.name}: the current item isn't --ink`,
       );
-      assert.strictEqual(read.hereWeight, "500");
-      assert.notStrictEqual(
-        read.hereTag,
-        "A",
-        `${path.name}: the current segment is a link`,
-      );
+      assert.strictEqual(read.hereTag, "LI");
       assert.strictEqual(read.hereLinks, 0);
 
       t.diagnostic(
-        `${path.name}: ancestor ${read.ancestorColor}, current ${read.hereColor} at ${read.hereWeight}`,
+        `${path.name}: ancestor ${read.linkColor} at ${read.linkBox.height}px, current ${read.hereColor}`,
       );
-    }
-  } finally {
-    await page.close();
-  }
-});
-
-// the collapse is the wave's new invariant, so it is read in both
-// directions off the a11y tree; `display: none` is the whole point
-test("the collapse drops the middle from the layout and the a11y tree", async (t) => {
-  const page = await (await browser()).newPage();
-  const whole = [
-    "Càrn",
-    "linklater",
-    "apps",
-    "web",
-    "src",
-    "components",
-    "ThemeEditor",
-    "index.ts",
-  ];
-  const folded = ["Càrn", "linklater", "ThemeEditor", "index.ts"];
-
-  // two lines BRAND.md prints as the component's own example, read back
-  // off the rendered page: real text, so selection and search get the path
-  const lines: Record<number, string> = {
-    1440: "Càrn » linklater » apps » web » src » components » ThemeEditor » index.ts",
-    375: "Càrn » linklater » … » ThemeEditor » index.ts",
-  };
-
-  try {
-    for (const [width, expected] of [
-      [1440, whole],
-      [375, folded],
-    ] as const) {
-      await page.setViewportSize({ width, height: 900 });
-      await page.goto(`${site.origin}/deep-blob`);
-      await page.evaluate(() => document.fonts.ready);
-
-      const tree = await page
-        .locator("nav[aria-label=Breadcrumb]")
-        .ariaSnapshot();
-      const named = [
-        ...tree.matchAll(/- link "([^"]+)"|- listitem: (.+)$/gm),
-      ].map((found) => (found[1] ?? found[2] ?? "").trim());
-
-      assert.deepStrictEqual(
-        named,
-        expected,
-        `at ${width}px the accessibility tree reads ${named.join(" » ")}\n${tree}`,
-      );
-
-      const laidOut = await page
-        .locator(".crumbs li")
-        .evaluateAll((nodes) =>
-          nodes
-            .filter((node) => getComputedStyle(node).display !== "none")
-            .map((node) => (node.textContent ?? "").replace(/[»…\s]+/g, "")),
-        );
-
-      assert.deepStrictEqual(
-        laidOut.filter((text) => text !== ""),
-        expected,
-        `at ${width}px the layout shows ${laidOut.join(" » ")}`,
-      );
-
-      const read = await page
-        .locator(".crumbs")
-        .evaluate((node) => (node as HTMLElement).innerText.trim());
-
-      assert.strictEqual(
-        read.replace(/\s+/g, " "),
-        lines[width],
-        `at ${width}px the breadcrumb reads back as "${read}"`,
-      );
-
-      t.diagnostic(`${width}px: ${read.replace(/\s+/g, " ")}`);
     }
   } finally {
     await page.close();
@@ -420,16 +469,18 @@ test("every ancestor link on a blob three levels deep answers 200", async (t) =>
   assert.deepStrictEqual(
     ancestors,
     [
-      "/",
+      `/r/${repoName}`,
       `/r/${repoName}`,
       `/r/${repoName}/tree/main/a`,
       `/r/${repoName}/tree/main/a/b`,
     ],
-    "the trail on a three-deep blob isn't site, repo, a, b",
+    "the trail on a three-deep blob isn't repo, rev, a, b",
   );
   assert.ok(
-    markup.includes('<span class="here">c.ts</span>'),
-    "the filename isn't the current segment",
+    markup.includes(
+      '<li aria-current="page"><span class="caps">c.ts</span></li>',
+    ),
+    "the filename isn't the current item",
   );
 
   // a 200 alone wouldn't catch a tree link that listed the root, so pin
@@ -439,9 +490,7 @@ test("every ancestor link on a blob three levels deep answers 200", async (t) =>
   ).text();
 
   assert.ok(
-    listed.includes(
-      '<h1 class="t-item t-item--title" lang="en"><span class="caps">a/b</span></h1>',
-    ),
+    listed.includes(`<h1 class="vh">${repoName}/main/a/b</h1>`),
     "the a/b ancestor answered 200 with some other page",
   );
   assert.ok(listed.includes(`/r/${repoName}/blob/main/a/b/c.ts`));
@@ -454,11 +503,15 @@ test("the trail from a nested tree page climbs to the repo page", async () => {
   ).text();
 
   assert.deepStrictEqual(hrefs(markup), [
-    "/",
+    `/r/${repoName}`,
     `/r/${repoName}`,
     `/r/${repoName}/tree/main/a`,
   ]);
-  assert.ok(markup.includes('<span class="here">b</span>'));
+  assert.ok(
+    markup.includes(
+      '<li aria-current="page"><span class="caps">b</span>/</li>',
+    ),
+  );
 
   const repoPage = await fetch(`${origin}/r/${repoName}`);
   assert.strictEqual(repoPage.status, 200);

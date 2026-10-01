@@ -4,7 +4,7 @@
 // readme, and the only page that's the root tree
 
 import type { Tree } from "../repos/tree.js";
-import { address, pathTrail, revTrail } from "./breadcrumb.js";
+import { pathNav, pathTrail, revTrail } from "./breadcrumb.js";
 import { treeHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
@@ -27,19 +27,15 @@ function treeBodyList(view: TreePage, href: string): Raw {
   return treeList({ repo, rev, path, entries, showAll, allHref, now });
 }
 
-function treeNav(view: TreePage): Raw {
+function side(view: TreePage): Raw {
   const { repo, rev, defaultBranch, tree } = view;
-  const { path } = tree;
 
-  return html`<nav class="list-nav" aria-labelledby="nav_label">
-      <p class="t-label" id="nav_label">Path</p>
-      <ol role="list">
-        ${address([
-          ...revTrail(repo, rev, defaultBranch),
-          ...pathTrail(repo, rev, path, "tree"),
-        ])}
-      </ol>
-    </nav>`;
+  return html`<div class="page-side">
+          ${pathNav([
+            ...revTrail(repo, rev, defaultBranch),
+            ...pathTrail(repo, rev, tree.path, "tree"),
+          ])}
+        </div>`;
 }
 
 export function treePage(view: TreePage): string {
@@ -52,9 +48,9 @@ export function treePage(view: TreePage): string {
     description: `The items at ${tree.path} on ${rev} in ${repo}.`,
     path: href,
     main: html`<h1 class="vh">${plainAddress}</h1>
-      <div class="tree-body">
-        ${treeNav(view)}
-        <div class="tree-files">
+      <div class="page-body">
+        ${side(view)}
+        <div class="page-main">
           ${treeBodyList(view, href)}
         </div>
       </div>`,

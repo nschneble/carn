@@ -175,13 +175,10 @@ body {
 .t-item {
   font-variation-settings: "wdth" 110, "wght" 700;
   font-feature-settings: "case" 1;
+  font-weight: 700;
   font-size: clamp(1.05rem, 2.5vw, 1.42rem);
   line-height: 1.18;
   overflow-wrap: anywhere;
-}
-
-.t-item--title {
-  color: var(--ink-soft);
 }
 
 .t-body {
@@ -200,10 +197,12 @@ body {
   color: var(--ink-faint);
 }
 
+.refs > caption.t-label,
 .repos > caption.t-label,
 .tree > caption.t-label {
   text-align: left;
   padding: 0 var(--s2);
+  border-bottom: 1px solid var(--rule);
 }
 
 /* a short explanatory sentence */
@@ -216,6 +215,7 @@ body {
 .t-micro {
   font-family: var(--f-mono);
   font-size: 9.5px;
+  font-weight: 400;
   letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--ink-faint);
@@ -385,16 +385,10 @@ body {
 }
 
 .tbl thead th {
-  border-bottom: 1px solid var(--rule-soft);
   padding: 0 var(--s2) var(--s2) 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.tbl.repos thead,
-.tbl.tree thead {
-  border-bottom: 1px solid var(--rule);
 }
 
 .tbl thead .age,
@@ -477,9 +471,15 @@ body {
 
 /* name is link text + row's a11y name, so it wraps not truncates */
 
-.repos .name > * {
+.repos .name > *,
+.page-body .tree .name > *,
+.page-head .name > * {
   font-size: clamp(1.75rem, 7.5vw, 3rem);
   color: var(--ink);
+}
+
+.page-body .tree .is-dir .name > * {
+  color: var(--accent);
 }
 
 .repos .name:hover > *,
@@ -525,7 +525,8 @@ body {
 
 /* metadata goes below the breakpoint; a subject that is a link stays */
 .repos .msg,
-.tree .msg {
+.tree .msg,
+.tree .pin {
   display: none;
 }
 
@@ -549,7 +550,8 @@ body {
 
 @media (min-width: 640px) {
   .repos .msg,
-  .tree .msg {
+  .tree .msg,
+  .tree .pin {
     display: table-cell;
   }
 

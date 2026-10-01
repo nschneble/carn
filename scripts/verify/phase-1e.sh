@@ -592,7 +592,7 @@ build_seed() {
     printf 'export const mod%02d = %d;\n' "$i" "$i" > "$top/$NESTED_DIR/mod$(printf '%02d' "$i").ts"
   done
 
-  # over the computed source cap, which sits near 70 KB of source
+  # over the computed source cap, which sits near 58 KB of source
   seq 1 3000 \
     | awk '{ printf "export const item%04d = { id: %d, name: \"row %d\" };\n", $1, $1, $1 }' \
     > "$top/big.ts"
@@ -1098,7 +1098,7 @@ fi
 # 13
 # served over real http, not set into about:blank, so the audit measures
 # Carn Sans and Carn Mono rather than whatever the host falls back to
-contract 13 "zero axe violations across both render paths, on every new view" 151 "" \
+contract 13 "zero axe violations across both render paths, on every new view" 155 "" \
   axe
 
 # 14
@@ -1134,28 +1134,47 @@ if require_daemon 14 "$TITLE_14" && require_seed 14 "$TITLE_14"; then
 fi
 
 # 15
-# the trail is followed, not merely counted: an href that looks like a url
+# the Path is followed, not merely counted: an href that looks like a url
 # is the defect worth catching, and only a fetch tells them apart
-readonly TITLE_15="every breadcrumb ancestor on a deep blob resolves to a real route"
+readonly PATH_NAV='<nav class="list-nav" aria-labelledby="path-label">'
+readonly TITLE_15="every Path ancestor on a deep blob resolves to a real route"
 if require_daemon 15 "$TITLE_15" && require_seed 15 "$TITLE_15"; then
-  tr '\n' ' ' < "$work/blob-deep.body" \
-    | sed 's/.*<nav aria-label="Breadcrumb">//' \
-    | sed 's|</nav>.*||' > "$work/crumbs"
-  grep -oE 'href="[^"]+"' "$work/crumbs" | sed 's/href="//;s/"$//' > "$work/crumb.hrefs"
-  ancestors=$(grep -c . "$work/crumb.hrefs")
   wrong=""
   [ "$(cat "$work/blob-deep.status")" = "200" ] \
     || wrong="$wrong the deep blob answered $(cat "$work/blob-deep.status");"
+  grep -qF "$PATH_NAV" "$work/blob-deep.body" \
+    || wrong="$wrong the deep blob carries no Path nav;"
+  tr '\n' ' ' < "$work/blob-deep.body" \
+    | sed "s/.*$PATH_NAV//" \
+    | sed 's|</nav>.*||' > "$work/crumbs"
+  grep -qF '<p class="t-label" id="path-label">Path</p>' "$work/crumbs" \
+    || wrong="$wrong the Path nav carries no Path label;"
+  grep -qF '<ol role="list">' "$work/crumbs" \
+    || wrong="$wrong the Path isn't an <ol role=\"list\">;"
+  grep -oE 'href="[^"]+"' "$work/crumbs" | sed 's/href="//;s/"$//' > "$work/crumb.hrefs"
+  ancestors=$(grep -c . "$work/crumb.hrefs")
   [ "$ancestors" = "5" ] \
-    || wrong="$wrong the trail carries $ancestors ancestor link(s), wanted 5;"
-  grep -qF '<span aria-hidden="true"> » </span>' "$work/crumbs" \
-    || wrong="$wrong the separator isn't real aria-hidden dom text;"
-  grep -qF '<span class="here">deep.ts</span>' "$work/crumbs" \
-    || wrong="$wrong the current segment isn't an unlinked here span;"
-  grep -qF '<li class="fold" aria-hidden="true">' "$work/crumbs" \
-    || wrong="$wrong a six-segment trail renders no fold;"
-  grep -qF '<li class="mid">' "$work/crumbs" \
-    || wrong="$wrong no segment is marked as collapsible middle;"
+    || wrong="$wrong the Path carries $ancestors ancestor link(s), wanted 5;"
+  awk '{ gsub(/<\/li>/, "</li>\n"); print }' "$work/crumbs" \
+    | grep '<li' | sed 's/.*<li/<li/' > "$work/crumb.items"
+  while IFS= read -r item; do
+    case "$item" in *'<a '*) ;; *) continue ;; esac
+    label=$(printf '%s' "$item" | sed -E 's/<[^>]*>//g;s/[[:space:]]+$//')
+    case "$label" in
+      */) ;;
+      *) wrong="$wrong the ancestor \"$label\" doesn't end in \"/\";" ;;
+    esac
+  done < "$work/crumb.items"
+  current=$(grep -cF '<li aria-current="page">' "$work/crumb.items")
+  [ "$current" = "1" ] \
+    || wrong="$wrong the Path marks $current item(s) current, wanted 1;"
+  leaf=$(grep -F '<li aria-current="page">' "$work/crumb.items" | head -1)
+  case "$leaf" in
+    *'<a '*) wrong="$wrong the current item is a link;" ;;
+  esac
+  leaf_text=$(printf '%s' "$leaf" | sed -E 's/<[^>]*>//g;s/^[[:space:]]+//;s/[[:space:]]+$//')
+  [ "$leaf_text" = "deep.ts" ] \
+    || wrong="$wrong the current item reads \"$leaf_text\", wanted \"deep.ts\";"
   followed=0
   while IFS= read -r href; do
     [ -n "$href" ] || continue
@@ -1168,11 +1187,11 @@ if require_daemon 15 "$TITLE_15" && require_seed 15 "$TITLE_15"; then
   else
     contract 15 "$TITLE_15" 6 "$followed ancestor link(s) followed, all 200" \
       breadcrumb -- \
-      "the separator is real dom text, and every one is aria-hidden" \
-      "ancestors are links, and the current segment isn't one" \
+      "the Path nav is a labeled list, and the label is its own heading" \
+      "a container ends in a slash and the current item is unlinked" \
       "every path segment carries the tree route at its own depth" \
       "every ancestor link on a blob three levels deep answers 200" \
-      "the collapse drops the middle from the layout and the a11y tree" \
+      "an ancestor is a link that clears 24px; the current item is neither" \
       "the trail from a nested tree page climbs to the repo page"
   fi
 fi
@@ -1576,24 +1595,25 @@ if require_daemon 30 "$TITLE_30" && require_seed 30 "$TITLE_30"; then
 fi
 
 # 32
-# revision round one, part A item 2: one heading treatment across the six
-# routes that carry no mark. blob already carried .t-item, so it is in the
-# sweep for completeness rather than because anything changed under it.
-# round two adds --title as an optional second class on the list pages'
-# titles (check 43 pins which pages carry it); the base face stays .t-item
-readonly TITLE_32="every visible page title renders .t-item, never .t-l or a .t-label h1"
+readonly TITLE_32="show pages carry a visible .t-item h1, list pages a .vh one, none .t-l or .t-label"
 if require_daemon 32 "$TITLE_32" && require_seed 32 "$TITLE_32"; then
   wrong=""
-  for page in blob-text log1 branches tags commit-big commit-one; do
-    grep -qE '<h1 class="t-item( t-item--title)?"' "$work/$page.body" \
+  for page in blob-text commit-big commit-one; do
+    grep -qE '<h1 class="([^"]* )?t-item[ "]' "$work/$page.body" \
       || wrong="$wrong $page carries no visible .t-item heading;"
-    grep -qE '<h1 class="t-l"|<h1 class="t-label"' "$work/$page.body" \
+  done
+  for page in log1 branches tags; do
+    grep -qF '<h1 class="vh"' "$work/$page.body" \
+      || wrong="$wrong $page carries no .vh heading;"
+  done
+  for page in blob-text commit-big commit-one log1 branches tags; do
+    grep -qE '<h1 class="([^"]* )?t-(l|label)[ "]' "$work/$page.body" \
       && wrong="$wrong $page still carries a .t-l or .t-label h1;"
   done
   if [ -n "$wrong" ]; then
     record FAIL 32 "$TITLE_32" "$wrong"
   else
-    record PASS 32 "$TITLE_32" "blob, tree, log, branches, tags and commit all agree"
+    record PASS 32 "$TITLE_32" "blob and both commits show a .t-item title, log, branches and tags a .vh one"
   fi
 fi
 
@@ -1605,7 +1625,7 @@ markup_only=$(grep -vE '^\s*//' src/html/ref-list.ts)
 wrong=""
 printf '%s' "$markup_only" | grep -qF '<table class="tbl refs">' \
   || wrong="$wrong ref-list.ts emits no table;"
-printf '%s' "$markup_only" | grep -qF '<caption class="vh">' \
+printf '%s' "$markup_only" | grep -qF '<caption class="' \
   || wrong="$wrong ref-list.ts emits no caption;"
 printf '%s' "$markup_only" | grep -qF '<th class="name" scope="row">' \
   || wrong="$wrong a ref row's first cell isn't its header;"
@@ -1702,8 +1722,8 @@ fi
 readonly TITLE_37="/r/:repo links to all three of commits, branches and tags"
 if require_daemon 37 "$TITLE_37" && require_seed 37 "$TITLE_37"; then
   wrong=""
-  grep -qF "<nav class=\"list-nav\" aria-label=\"Repo views\">" "$work/show.body" \
-    || wrong="$wrong the repo page carries no repo nav;"
+  grep -qF "<nav class=\"list-nav\" aria-labelledby=\"go-label\">" "$work/show.body" \
+    || wrong="$wrong the repo page carries no Go nav;"
   grep -qF "href=\"/r/$REPO_NAME/commits?ref=main\"" "$work/show.body" \
     || wrong="$wrong the repo page doesn't link to the commit log;"
   grep -qF "href=\"/r/$REPO_NAME/branches\"" "$work/show.body" \
@@ -1786,7 +1806,7 @@ grep -A1 -E '^  \.tree \.c-name \{$' src/html/styles.ts | grep -qF 'width: 65%;'
   || wrong="$wrong .tbl's shared name column width is missing from the 640 query;"
 grep -qE '^\.tbl \.name \{$' src/html/styles.ts \
   && wrong="$wrong the name column is widthed outside the query, where no subject column exists;"
-printf '%s' "$sheet_flat" | grep -qE '\.repos \.msg, \.tree \.msg \{[[:space:]]*display: none;' \
+printf '%s' "$sheet_flat" | grep -qE '\.repos \.msg, \.tree \.msg[^{]*\{[[:space:]]*display: none;' \
   || wrong="$wrong the description column is no longer dropped below the breakpoint;"
 printf '%s' "$sheet_flat" | grep -qE '\.(log|refs) \.msg[^{]*\{[^}]*display:' \
   && wrong="$wrong a view whose subject is the row's link drops it at some width;"
@@ -1832,40 +1852,37 @@ else
 fi
 
 # 43
-# part B: the title takes --ink-soft via a modifier class; the rows under
-# it keep the bare .t-item, so the marker appears exactly once per page
-readonly TITLE_43="every visible page title resolves to --ink-soft, and its rows stay --ink"
+readonly TITLE_43="every list page carries exactly one .vh h1 and no visible one"
 wrong=""
-tr '\n' ' ' < src/html/styles.ts \
-  | grep -qE '\.t-item--title \{[[:space:]]+color: var\(--ink-soft\);' \
-  || wrong="$wrong .t-item--title doesn't resolve to --ink-soft;"
 if require_daemon 43 "$TITLE_43" && require_seed 43 "$TITLE_43"; then
-  for page in branches tags; do
-    body="$work/$page.body"
-    [ -f "$body" ] || continue
-    count=$(occurrences "$body" 't-item--title')
-    [ "$count" = "1" ] \
-      || wrong="$wrong $page.body carries the title modifier $count times, wanted exactly 1;"
+  for page in log1 branches tags; do
+    headings=$(grep -oE '<h1[ >]' "$work/$page.body" | grep -c .)
+    hidden=$(grep -oE '<h1 class="([^"]* )?vh[ "]' "$work/$page.body" | grep -c .)
+    [ "$hidden" = "1" ] \
+      || wrong="$wrong $page carries $hidden .vh h1(s), wanted exactly 1;"
+    [ "$headings" = "$hidden" ] \
+      || wrong="$wrong $page carries $((headings - hidden)) visible h1(s), wanted none;"
   done
 fi
 if [ -n "$wrong" ]; then
   record FAIL 43 "$TITLE_43" "$wrong"
 else
-  record PASS 43 "$TITLE_43" "the modifier resolves to --ink-soft and marks exactly one heading per page"
+  record PASS 43 "$TITLE_43" "log, branches and tags each title themselves once, for the a11y tree only"
 fi
 
 # 44
-# part C4: a sentence takes .t-note; .t-label holds captions, section
-# headings, and markers, chained with · or not
+# a sentence takes .t-note; .t-label holds captions, section headings,
+# and markers, chained with · or not
+readonly LABEL_SITES="blob-page.ts breadcrumb.ts commit-log.ts commit-page.ts go-nav.ts ref-list.ts repo-list.ts repo-show.ts tree-list.ts "
 readonly TITLE_44=".t-label only appears in templates as a caption or a label"
 wrong=""
-label_sites=$(grep -rl 'class="t-label"' src/html/*.ts | sed 's|.*/||' | sort | tr '\n' ' ')
-[ "$label_sites" = "repo-list.ts repo-show.ts tree-list.ts " ] \
-  || wrong="$wrong .t-label appears in $label_sites, wanted repo-list.ts, repo-show.ts and tree-list.ts;"
+label_sites=$(grep -lE 'class="([^"]* )?t-label[ "]' src/html/*.ts | sed 's|.*/||' | sort | tr '\n' ' ')
+[ "$label_sites" = "$LABEL_SITES" ] \
+  || wrong="$wrong .t-label appears in $label_sites, wanted $LABEL_SITES;"
 if [ -n "$wrong" ]; then
   record FAIL 44 "$TITLE_44" "$wrong"
 else
-  record PASS 44 "$TITLE_44" "the two table captions and repo-show.ts's labels are the only .t-label sites"
+  record PASS 44 "$TITLE_44" "only ${LABEL_SITES% } carry it"
 fi
 
 # 45

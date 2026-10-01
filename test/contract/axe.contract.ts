@@ -38,6 +38,7 @@ import {
   commitDocument,
   detail,
   noisyFiles,
+  textFile,
 } from "../gallery/commit.js";
 import { commits, log, logDocument } from "../gallery/commit-log.js";
 import { galleryCss, galleryDocument } from "../gallery/document.js";
@@ -244,11 +245,12 @@ const states = {
   "show-empty": showDocument({ repo: emptiedTree }),
   "show-header": showDocument({ repo: view({ header: committedHeader }) }),
   "not-found": errorPage({ failure: noSuchRepo("linklater") }),
+  "no-file": errorPage({ failure: noSuchFile("linklater", "src/nowhere.ts") }),
   blob: blobDocument(),
   "blob-image": blobDocument({ blob: imageBlob, rawOrigin }),
 
   // sheetWire squeezes the budget until the page truncates; this line
-  // holds from 28,873 to 28,939
+  // holds from 28,849 to 28,917
   "blob-cut": blobDocument({ rawOrigin, sheetWire: 28_906 }),
 
   "blob-binary": blobDocument({
@@ -297,13 +299,47 @@ for (const [state, markup] of Object.entries(states)) {
 const committedPath = "prisma/migrations/20260824223229_init/migration.sql";
 const requestedPath = `objects/pack/${"0123456789abcdef".repeat(5)}.pack`;
 
+const longDirectory = `vendored_${"dependency_".repeat(6)}snapshots`;
+const longFile = `${"generated_".repeat(7)}schema.ts`;
+
 const reflowCases = [
-  { path: "/error-long-path", selector: ".empty p" },
-  { path: "/blob-long-path", selector: "h1.t-item" },
+  { path: "/error-long-path", selector: ".empty p", width: 320 },
+  { path: "/blob-long-path", selector: "h1.t-item", width: 320 },
+  {
+    path: "/blob-long-name",
+    selector: ".list-nav li[aria-current]",
+    width: 320,
+  },
+  {
+    path: "/blob-long-name",
+    selector: ".list-nav li:nth-last-child(2)",
+    width: 320,
+  },
+  { path: "/tree-sub", selector: ".is-sub .name > *", width: 375 },
+  { path: "/commit-long-name", selector: ".files .name > *", width: 320 },
+  {
+    path: "/change-long-name",
+    selector: ".list-nav li[aria-current]",
+    width: 320,
+  },
 ];
 
 fixtures["/blob-long-path"] = blobDocument({
   blob: textBlob(committedPath, sampleSource),
+});
+
+fixtures["/blob-long-name"] = blobDocument({
+  blob: textBlob(`${longDirectory}/${longFile}`, sampleSource),
+});
+
+const longChange = detail({
+  files: [textFile(`${longDirectory}/${longFile}`, 3, 1)],
+});
+
+fixtures["/commit-long-name"] = commitDocument({ commit: longChange });
+
+fixtures["/change-long-name"] = changeDocument(`${longDirectory}/${longFile}`, {
+  commit: longChange,
 });
 
 fixtures["/error-long-path"] = errorPage({
@@ -555,36 +591,32 @@ const contrastNodes: Record<string, number> = {
   "show-empty": 11,
   "show-header": 108,
   "not-found": 7,
-  blob: 73,
-  "blob-cut": 22,
-  "blob-image": 16,
-  "blob-binary": 17,
-  commits: 60,
-  "commits-tail": 38,
-  "commits-none": 10,
-  commit: 45,
-  "commit-cut": 140,
-  "commit-binary": 25,
-  "commit-file": 42,
-  branches: 36,
-  "branches-cut": 37,
-  "branches-none": 10,
-  "branches-quiet": 20,
-  tags: 29,
-  "tags-none": 10,
-  tree: 55,
-  "tree-cut": 79,
-  "tree-all": 172,
-  "tree-sub": 26,
+  "no-file": 9,
+  blob: 77,
+  "blob-cut": 15,
+  "blob-image": 12,
+  "blob-binary": 13,
+  commits: 59,
+  "commits-tail": 37,
+  "commits-none": 9,
+  commit: 42,
+  "commit-cut": 137,
+  "commit-binary": 22,
+  "commit-file": 38,
+  branches: 35,
+  "branches-cut": 35,
+  "branches-none": 8,
+  "branches-quiet": 19,
+  tags: 28,
+  "tags-none": 8,
+  tree: 53,
+  "tree-cut": 77,
+  "tree-all": 170,
+  "tree-sub": 24,
 };
 
-// two ways a state measures fewer nodes below the breakpoint: breadcrumb
-// folds its middle segments out of the layout and a11y tree, and the tree
-// and repo index drop their description column
+// the tree and repo index drop their description column below 640px
 const foldedContrastNodes: Record<string, number> = {
-  blob: 72,
-  "blob-cut": 21,
-  "commit-file": 41,
   gallery: 58,
   hover: 9,
   populated: 9,
@@ -592,10 +624,10 @@ const foldedContrastNodes: Record<string, number> = {
   "show-all": 102,
   "show-bare": 34,
   "show-header": 63,
-  tree: 28,
-  "tree-all": 73,
-  "tree-cut": 34,
-  "tree-sub": 17,
+  tree: 26,
+  "tree-all": 71,
+  "tree-cut": 32,
+  "tree-sub": 14,
 };
 
 for (const width of auditWidths) {
@@ -964,17 +996,16 @@ test("the source block is a focusable scroll region on the widest path", async (
   }
 });
 
-// 1.4.10 asks for 320 CSS px with nothing lost and nothing scrolled in two
-// directions, which axe cannot see: it reads the DOM, not the layout
-test("a long path reflows at 320px rather than scrolling the page", async (t) => {
+// 1.4.10 asks for nothing lost and nothing scrolled in two directions at
+// narrow widths, which axe cannot see: it reads the DOM, not the layout
+test("narrow content reflows rather than scrolling the page", async (t) => {
   const page = await (await browser()).newPage();
-  const viewport = 320;
 
   try {
-    await page.setViewportSize({ width: viewport, height: 900 });
     const overflowing: string[] = [];
 
-    for (const { path, selector } of reflowCases) {
+    for (const { path, selector, width } of reflowCases) {
+      await page.setViewportSize({ width, height: 900 });
       await page.goto(`${site.origin}${path}`);
       await page.evaluate(() => document.fonts.ready);
 
@@ -990,15 +1021,19 @@ test("a long path reflows at 320px rather than scrolling the page", async (t) =>
         .locator("html")
         .evaluate((node) => node.scrollWidth);
 
+      if (carrier.client === 0) {
+        overflowing.push(`${selector} on ${path} renders no box to fit`);
+      }
+
       if (carrier.scroll > carrier.client) {
         overflowing.push(
-          `${selector} on ${path} wants ${carrier.scroll}px inside ${carrier.client}px, so the path never breaks`,
+          `${selector} on ${path} wants ${carrier.scroll}px inside ${carrier.client}px, so it runs past its box`,
         );
       }
 
-      if (sideways > viewport) {
+      if (sideways > width) {
         overflowing.push(
-          `${path} scrolls to ${sideways}px inside a ${viewport}px viewport`,
+          `${path} scrolls to ${sideways}px inside a ${width}px viewport`,
         );
       }
 

@@ -318,6 +318,7 @@ async function showCommits(
       reply,
       commitLogPage({
         repo: found.name,
+        defaultBranch: found.defaultBranch,
         log: log ?? { ref, commits: [], next: null },
         now: now(),
         from,

@@ -6,6 +6,7 @@ import { oidPattern } from "../git/oid.js";
 import type { CommitLog } from "../repos/log.js";
 import { sshRemote } from "../repos/remote.js";
 import { age } from "./age.js";
+import { pathNav, revTrail } from "./breadcrumb.js";
 import { emptyState } from "./empty-state.js";
 import { commitHref, commitsHref } from "./hrefs.js";
 import { html, type Raw } from "./index.js";
@@ -72,8 +73,18 @@ function newer(
       <p class="showall"><a class="t-mono" href="${commitsHref(repo, ref, target, walked)}"><span aria-hidden="true">← </span>Newer</a></p>`;
 }
 
+function side(repo: string, ref: string, defaultBranch: string): Raw {
+  return html`<div class="page-side">
+          ${pathNav([
+            ...revTrail(repo, ref, defaultBranch),
+            { label: html`Commits`, href: null, container: false },
+          ])}
+        </div>`;
+}
+
 export function commitLogPage(view: {
   repo: string;
+  defaultBranch: string;
   log: CommitLog;
   now: Date;
   from?: string | null;
@@ -107,7 +118,12 @@ export function commitLogPage(view: {
     title: `Commits on ${log.ref} · ${repo} · Càrn`,
     description: `The commit log for ${log.ref} in ${repo}.`,
     path: commitsHref(repo, log.ref, from),
-    main: html`<h1 class="t-item">Commits on ${log.ref}</h1>
-      ${body}`,
+    main: html`<h1 class="vh">Commits on ${log.ref}</h1>
+      <div class="page-body">
+        ${side(repo, log.ref, view.defaultBranch)}
+        <div class="page-main">
+          ${body}
+        </div>
+      </div>`,
   });
 }

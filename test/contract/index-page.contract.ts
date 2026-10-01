@@ -116,9 +116,7 @@ test("a row is an anchored name, a description slot, and a datetime", () => {
     /<colgroup>\s*<col class="c-name" \/>\s*<col class="c-msg" \/>\s*<\/colgroup>/,
   );
   assert.ok(markup.includes('<table class="tbl repos">'));
-  assert.ok(
-    markup.includes('<caption class="t-label">5 Repos · Listed A→Z</caption>'),
-  );
+  assert.ok(markup.includes('<caption class="t-label">5 Repos</caption>'));
   assert.ok(markup.includes('<th class="name vh" scope="col">Name</th>'));
   assert.ok(
     markup.includes('<th class="vh" scope="col">Description and age</th>'),

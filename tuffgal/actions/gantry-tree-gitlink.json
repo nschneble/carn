@@ -4,5 +4,5 @@
     { "kind": "navigate", "path": "/r/gantry" },
     { "kind": "click", "hint": { "role": "link", "text": "vendor/" } }
   ],
-  "expect": { "anyOf": [{ "text": "Submodule pinned at" }] }
+  "expect": { "anyOf": [{ "text": "Pinned" }] }
 }

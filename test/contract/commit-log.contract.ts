@@ -207,6 +207,7 @@ test("the rendered pages repeat no sha either", async () => {
     shasIn(
       commitLogPage({
         repo: "linklater",
+        defaultBranch: "main",
         log: page,
         now: logNow,
         from: index === 0 ? null : (pages[index - 1] as CommitLog).next,
@@ -245,11 +246,17 @@ test("the last page says so, and the pages before it do not", async () => {
   assert.strictEqual(last.next, null, "the last page offered a next page");
   assert.ok(last.commits.length < logRowCap);
 
-  const tail = commitLogPage({ repo: "linklater", log: last, now: logNow });
+  const tail = commitLogPage({
+    repo: "linklater",
+    defaultBranch: "main",
+    log: last,
+    now: logNow,
+  });
   assert.doesNotMatch(tail, /class="showall"/, "the last page linked onward");
 
   const head = commitLogPage({
     repo: "linklater",
+    defaultBranch: "main",
     log: pages[0] as CommitLog,
     now: logNow,
   });
@@ -353,7 +360,12 @@ test("one render costs one spawn", async () => {
     const page = await loadCommitLog({ repoPath, ref: "main" });
     assert.ok(page);
 
-    return commitLogPage({ repo: "linklater", log: page, now: logNow });
+    return commitLogPage({
+      repo: "linklater",
+      defaultBranch: "main",
+      log: page,
+      now: logNow,
+    });
   });
 
   assert.strictEqual(
@@ -538,7 +550,7 @@ test("the ref reaches the heading, the title, and the canonical", () => {
   const markup = logDocument({ log: log({ ref: "14-conflict-output" }) });
 
   assert.ok(
-    markup.includes('<h1 class="t-item">Commits on 14-conflict-output</h1>'),
+    markup.includes('<h1 class="vh">Commits on 14-conflict-output</h1>'),
   );
   assert.ok(
     markup.includes("<title>Commits on 14-conflict-output · linklater · Càrn"),
@@ -582,6 +594,90 @@ test("the ref reaches the heading, the title, and the canonical", () => {
     /href="[^"]*back=/,
     "the Newer link lost the trail it walks back along",
   );
+});
+
+type PathItem = { href: string | null; text: string; current: boolean };
+
+function pathItems(markup: string): PathItem[] {
+  const nav =
+    /<div class="page-side">\s*<nav class="list-nav" aria-labelledby="path-label">([\s\S]*?)<\/nav>/.exec(
+      markup,
+    )?.[1];
+  assert.ok(nav, "the log carries no Path nav in its sidebar");
+  assert.match(nav, /<p class="t-label" id="path-label">Path<\/p>/);
+  assert.match(nav, /<ol role="list">/);
+
+  return [...nav.matchAll(/<li( aria-current="page")?>([\s\S]*?)<\/li>/g)].map(
+    (found) => ({
+      href: /^<a href="([^"]+)">/.exec(found[2] as string)?.[1] ?? null,
+      text: (found[2] as string).replace(/<[^>]+>/g, ""),
+      current: found[1] !== undefined,
+    }),
+  );
+}
+
+function logPath(revHref: string, rev: string): PathItem[] {
+  return [
+    { href: "/r/linklater", text: "linklater/", current: false },
+    { href: revHref, text: `${rev}/`, current: false },
+    { href: null, text: "Commits", current: true },
+  ];
+}
+
+test("the log's Path is repo, rev, then Commits as the page itself", () => {
+  const markup = logDocument();
+
+  assert.deepStrictEqual(pathItems(markup), logPath("/r/linklater", "main"));
+  assert.match(markup, /<h1 class="vh">Commits on main<\/h1>/);
+  assert.strictEqual([...markup.matchAll(/<h1[ >]/g)].length, 1);
+  assert.ok(
+    markup.indexOf('class="page-side"') < markup.indexOf('class="page-main"') &&
+      markup.indexOf('class="page-main"') <
+        markup.indexOf('<table class="tbl log"'),
+    "the table isn't in the main column after the sidebar",
+  );
+});
+
+test("the rev carries ?ref= off the default branch and drops it on it", () => {
+  const off = logDocument({ log: log({ ref: "release/1.2" }) });
+  assert.deepStrictEqual(
+    pathItems(off),
+    logPath("/r/linklater?ref=release%2F1.2", "release/1.2"),
+  );
+
+  const on = logDocument({
+    defaultBranch: "release/1.2",
+    log: log({ ref: "release/1.2" }),
+  });
+  assert.deepStrictEqual(
+    pathItems(on),
+    logPath("/r/linklater", "release/1.2"),
+    "the rev linked with ?ref= on the repo's own default branch",
+  );
+
+  const trunk = logDocument({ defaultBranch: "trunk" });
+  assert.deepStrictEqual(
+    pathItems(trunk),
+    logPath("/r/linklater?ref=main", "main"),
+    "the rev took main to be the default rather than the repo's own",
+  );
+});
+
+test("every page of the log carries the same Path", () => {
+  const first = pathItems(logDocument({ log: log({ ref: "release/1.2" }) }));
+  const pages = [
+    logDocument({ log: log({ ref: "release/1.2" }), from: sha(0xa) }),
+    logDocument({
+      log: log({ ref: "release/1.2", next: null }),
+      from: sha(0xb),
+      back: [sha(0xa)],
+    }),
+    logDocument({ log: log({ ref: "release/1.2", commits: [], next: null }) }),
+  ];
+
+  for (const markup of pages) {
+    assert.deepStrictEqual(pathItems(markup), first);
+  }
 });
 
 test("a refused ref says what happened, then what to do", () => {
