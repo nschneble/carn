@@ -6,7 +6,7 @@
 
 import { blobAssetPath } from "../repos/blob-asset.js";
 import { type BlobView, countLines } from "../repos/blob-view.js";
-import { address, pathTrail, revTrail } from "./breadcrumb.js";
+import { pathNav, pathTrail, revTrail } from "./breadcrumb.js";
 import { emptyState } from "./empty-state.js";
 import { pathName } from "./filename.js";
 import { blobHref } from "./hrefs.js";
@@ -131,16 +131,11 @@ function codeClass(language: Language | null): string {
 function side(view: BlobPage): Raw {
   const { repo, defaultBranch, blob } = view;
 
-  return html`<div class="blob-side">
-          <nav class="list-nav" aria-labelledby="blob-path">
-            <p class="t-label" id="blob-path">Path</p>
-            <ol role="list">
-              ${address([
-                ...revTrail(repo, blob.rev, defaultBranch),
-                ...pathTrail(repo, blob.rev, blob.path, "blob"),
-              ])}
-            </ol>
-          </nav>
+  return html`<div class="page-side">
+          ${pathNav([
+            ...revTrail(repo, blob.rev, defaultBranch),
+            ...pathTrail(repo, blob.rev, blob.path, "blob"),
+          ])}
         </div>`;
 }
 
@@ -159,15 +154,15 @@ function frame(
     title: `${plainAddress} · Càrn`,
     description: `${blob.path} at ${blob.rev} in ${repo}.`,
     path: blobHref(repo, blob.rev, blob.path),
-    main: html`<div class="blob-body">
-        <div class="blob-head">
+    main: html`<div class="page-body">
+        <div class="page-head">
           ${heading(blob)}
           <div class="about">
             <p class="t-label">${measures.join(" · ")}<br />${kind}</p>
           </div>
         </div>
         ${side(view)}
-        <div class="blob-file">
+        <div class="page-main">
           ${body}
         </div>
       </div>`,

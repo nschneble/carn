@@ -175,6 +175,7 @@ body {
 .t-item {
   font-variation-settings: "wdth" 110, "wght" 700;
   font-feature-settings: "case" 1;
+  font-weight: 700;
   font-size: clamp(1.05rem, 2.5vw, 1.42rem);
   line-height: 1.18;
   overflow-wrap: anywhere;
@@ -217,6 +218,7 @@ body {
 .t-micro {
   font-family: var(--f-mono);
   font-size: 9.5px;
+  font-weight: 400;
   letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--ink-faint);
@@ -473,13 +475,13 @@ body {
 /* name is link text + row's a11y name, so it wraps not truncates */
 
 .repos .name > *,
-.tree-body .tree .name > *,
-.blob-body .name > * {
+.page-body .tree .name > *,
+.page-head .name > * {
   font-size: clamp(1.75rem, 7.5vw, 3rem);
   color: var(--ink);
 }
 
-.tree-body .tree .is-dir .name > * {
+.page-body .tree .is-dir .name > * {
   color: var(--accent);
 }
 

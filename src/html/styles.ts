@@ -184,6 +184,7 @@ export const components = css`body {
 .t-item {
   font-variation-settings: "wdth" 110, "wght" 700;
   font-feature-settings: "case" 1;
+  font-weight: 700;
   font-size: clamp(1.05rem, 2.5vw, 1.42rem);
   line-height: 1.18;
   overflow-wrap: anywhere;
@@ -226,6 +227,7 @@ export const components = css`body {
 .t-micro {
   font-family: var(--f-mono);
   font-size: 9.5px;
+  font-weight: 400;
   letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--ink-faint);
@@ -482,13 +484,13 @@ export const components = css`body {
 /* name is link text + row's a11y name, so it wraps not truncates */
 
 .repos .name > *,
-.tree-body .tree .name > *,
-.blob-body .name > * {
+.page-body .tree .name > *,
+.page-head .name > * {
   font-size: clamp(1.75rem, 7.5vw, 3rem);
   color: var(--ink);
 }
 
-.tree-body .tree .is-dir .name > * {
+.page-body .tree .is-dir .name > * {
   color: var(--accent);
 }
 
@@ -897,10 +899,14 @@ main > h1 {
 }
 
 .repo-body,
-.tree-body,
-.blob-body {
+.page-body {
   display: grid;
   gap: var(--s7);
+}
+
+/* an implicit column grows to a long source line and scrolls the page */
+.page-body {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .list-nav {
@@ -930,34 +936,36 @@ main > h1 {
   width: 100%;
 }
 
-.blob-side > * + * {
+.page-side > * + * {
   margin-top: var(--s5);
 }
 
-.blob-head > h1 {
+.page-head > h1 {
   margin: 0;
   overflow-wrap: anywhere;
 }
 
 /* the grid's gap already sits below the head, so the about line's own
    margin would double it */
-.blob-head .about {
+.page-head .about {
   margin: var(--s3) 0 0;
 }
 
-.blob-file .src {
+.page-main .src {
   margin: 0;
 }
 
+/* the padding is what lifts a 12px link past the 24px target size */
 .list-nav a {
+  display: inline-block;
+  padding: var(--s1) 0;
   color: var(--accent-text);
   text-decoration: underline;
 }
 
 @media (min-width: 640px) {
   .repo-body,
-  .tree-body,
-  .blob-body {
+  .page-body {
     grid-template-columns: minmax(0, 1fr) 168px;
   }
 
@@ -965,39 +973,35 @@ main > h1 {
     grid-row: 1;
   }
 
-  .repo-files,
-  .tree-files {
+  .repo-files {
     grid-column: 1;
     grid-row: 1;
   }
 
-  .list-nav {
+  .page-head,
+  .page-main {
+    grid-column: 1;
+  }
+
+  .repo-body > .list-nav,
+  .page-side {
     grid-column: 2;
     grid-row: 1;
     align-self: start;
+  }
+
+  .list-nav {
     margin-left: 0;
   }
 
   /* the sidebar spans a flexible second row, so its height lands there
      and the title's row stays exactly as tall as the title */
-  .blob-body {
+  .page-body:has(> .page-head) {
     grid-template-rows: auto 1fr;
   }
 
-  .blob-head {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .blob-side {
-    grid-column: 2;
+  .page-body:has(> .page-head) > .page-side {
     grid-row: 1 / span 2;
-    align-self: start;
-  }
-
-  .blob-file {
-    grid-column: 1;
-    grid-row: 2;
   }
 
   .repo-readme {

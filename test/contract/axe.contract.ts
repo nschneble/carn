@@ -555,10 +555,10 @@ const contrastNodes: Record<string, number> = {
   "show-empty": 11,
   "show-header": 108,
   "not-found": 7,
-  blob: 73,
-  "blob-cut": 22,
-  "blob-image": 16,
-  "blob-binary": 17,
+  blob: 77,
+  "blob-cut": 15,
+  "blob-image": 12,
+  "blob-binary": 13,
   commits: 56,
   "commits-tail": 34,
   "commits-none": 6,
@@ -572,16 +572,14 @@ const contrastNodes: Record<string, number> = {
   "branches-quiet": 16,
   tags: 25,
   "tags-none": 6,
-  tree: 55,
-  "tree-cut": 79,
-  "tree-all": 172,
-  "tree-sub": 26,
+  tree: 53,
+  "tree-cut": 77,
+  "tree-all": 170,
+  "tree-sub": 24,
 };
 
 // the tree and repo index drop their description column below 640px
 const foldedContrastNodes: Record<string, number> = {
-  blob: 72,
-  "blob-cut": 21,
   gallery: 58,
   hover: 9,
   populated: 9,
@@ -589,10 +587,10 @@ const foldedContrastNodes: Record<string, number> = {
   "show-all": 102,
   "show-bare": 34,
   "show-header": 63,
-  tree: 28,
-  "tree-all": 73,
-  "tree-cut": 34,
-  "tree-sub": 17,
+  tree: 26,
+  "tree-all": 71,
+  "tree-cut": 32,
+  "tree-sub": 15,
 };
 
 for (const width of auditWidths) {
