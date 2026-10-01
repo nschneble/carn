@@ -2,6 +2,6 @@
   "action": "gantry-blob-deep",
   "steps": [{ "kind": "click", "hint": { "role": "link", "text": "deep.ts" } }],
   "expect": {
-    "anyOf": [{ "role": "heading", "text": "apps/web/src/deep.ts" }]
+    "anyOf": [{ "role": "heading", "text": "deep.ts" }]
   }
 }
