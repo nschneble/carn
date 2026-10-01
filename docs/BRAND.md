@@ -201,6 +201,7 @@ body {
   color: var(--ink-faint);
 }
 
+.refs > caption.t-label,
 .repos > caption.t-label,
 .tree > caption.t-label {
   text-align: left;

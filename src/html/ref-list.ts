@@ -8,6 +8,7 @@ import {
 } from "../repos/refs.js";
 import { sshRemote } from "../repos/remote.js";
 import { age } from "./age.js";
+import { pathNav, repoTrail } from "./breadcrumb.js";
 import { emptyState } from "./empty-state.js";
 import { plainName } from "./filename.js";
 import { commitsHref, refsHref } from "./hrefs.js";
@@ -56,15 +57,16 @@ function row(view: RefListPage, ref: Ref): Raw {
           </tr>`;
 }
 
-function truncated(view: RefListPage, shown: number, more: boolean): Raw {
-  if (!more) return html``;
+// a count of one reads as a quantity where the noun alone reads as rank
+function caption(kind: RefKind, shown: number, more: boolean): string {
+  const one = capitalize(refNouns[kind].one);
+  const many = capitalize(refNouns[kind].many);
 
-  // a count of one reads as a quantity where the noun alone reads as rank
-  const nouns = refNouns[view.list.kind];
-  const counted = shown === 1 ? nouns.one : `${shown} ${nouns.many}`;
+  if (more && shown === 1) return `First ${one}`;
+  if (more) return `First ${shown} ${many}`;
+  if (shown === 1) return `1 ${one}`;
 
-  return html`<p class="t-note">Showing the first ${counted}.</p>
-      `;
+  return `${shown} ${many}`;
 }
 
 function empty(view: RefListPage): Raw {
@@ -78,12 +80,10 @@ function empty(view: RefListPage): Raw {
 }
 
 function list(view: RefListPage, refs: Ref[], more: boolean): Raw {
-  const { many, one } = refNouns[view.list.kind];
-  const heading = capitalize(many);
-  const column = capitalize(one);
+  const column = capitalize(refNouns[view.list.kind].one);
 
-  return html`${truncated(view, refs.length, more)}<table class="tbl refs">
-        <caption class="vh">${heading}</caption>
+  return html`<table class="tbl refs">
+        <caption class="t-label">${caption(view.list.kind, refs.length, more)}</caption>
         <thead>
           <tr>
             <th class="name t-label" scope="col">${column}</th>
@@ -97,6 +97,15 @@ function list(view: RefListPage, refs: Ref[], more: boolean): Raw {
       </table>`;
 }
 
+function side(repo: string, heading: string): Raw {
+  return html`<div class="page-side">
+          ${pathNav([
+            ...repoTrail(repo),
+            { label: html`${heading}`, href: null, container: false },
+          ])}
+        </div>`;
+}
+
 function document(view: RefListPage, refs: Ref[], more: boolean): string {
   const heading = refLabel(view.list.kind);
 
@@ -104,8 +113,13 @@ function document(view: RefListPage, refs: Ref[], more: boolean): string {
     title: `${heading} · ${view.repo} · Càrn`,
     description: `The ${refNouns[view.list.kind].many} in ${view.repo}.`,
     path: refsHref(view.repo, view.list.kind),
-    main: html`<h1 class="t-item t-item--title">${heading}</h1>
-      ${refs.length === 0 ? empty(view) : list(view, refs, more)}`,
+    main: html`<h1 class="vh">${heading}</h1>
+      <div class="page-body">
+        ${side(view.repo, heading)}
+        <div class="page-main">
+          ${refs.length === 0 ? empty(view) : list(view, refs, more)}
+        </div>
+      </div>`,
   });
 }
 

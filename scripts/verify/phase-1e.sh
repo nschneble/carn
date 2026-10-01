@@ -1605,7 +1605,7 @@ markup_only=$(grep -vE '^\s*//' src/html/ref-list.ts)
 wrong=""
 printf '%s' "$markup_only" | grep -qF '<table class="tbl refs">' \
   || wrong="$wrong ref-list.ts emits no table;"
-printf '%s' "$markup_only" | grep -qF '<caption class="vh">' \
+printf '%s' "$markup_only" | grep -qF '<caption class="' \
   || wrong="$wrong ref-list.ts emits no caption;"
 printf '%s' "$markup_only" | grep -qF '<th class="name" scope="row">' \
   || wrong="$wrong a ref row's first cell isn't its header;"
