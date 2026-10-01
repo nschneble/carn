@@ -228,6 +228,19 @@ test("a hostile filename is escaped on its way into the label", () => {
       { label: plainName(hostile), href: null, container: false },
     ]).value.includes("<script"),
   );
+
+  const routed = pathNav([
+    ...revTrail(repoName, "main", "main"),
+    ...pathTrail(repoName, "main", "<img src=x onerror=1>.ts", "blob"),
+  ]).value;
+
+  assert.ok(!routed.includes("<img"), routed);
+  assert.ok(
+    routed.includes(
+      '<li aria-current="page"><span class="caps">&lt;img src=x onerror=1&gt;.ts</span></li>',
+    ),
+    routed,
+  );
 });
 
 test("a container ends in a slash and the current item is unlinked", () => {
@@ -283,7 +296,6 @@ test("the index page keeps its own masthead, unchanged", () => {
   assert.doesNotMatch(markup, /class="list-nav"/);
 });
 
-// a .page-head selects the show grid and its absence the list grid
 test("the show grid follows .page-head, and the list grid its absence", async (t) => {
   const page = await (await browser()).newPage();
 

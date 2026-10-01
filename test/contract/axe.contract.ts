@@ -615,7 +615,6 @@ const contrastNodes: Record<string, number> = {
   "tree-sub": 24,
 };
 
-// the tree and repo index drop their description column below 640px
 const foldedContrastNodes: Record<string, number> = {
   gallery: 58,
   hover: 9,
