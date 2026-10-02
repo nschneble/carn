@@ -228,7 +228,7 @@ test("both lists are tables with a caption and a header row", () => {
       `${kind} lost the counted caption that labels the table`,
     );
     assert.ok(
-      markup.includes(`<th class="name t-label" scope="col">${column}</th>`),
+      markup.includes(`<th class="name vh" scope="col">${column}</th>`),
       kind,
     );
     assert.strictEqual(

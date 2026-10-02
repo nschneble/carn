@@ -84,11 +84,16 @@ function list(view: RefListPage, refs: Ref[], more: boolean): Raw {
 
   return html`<table class="tbl refs">
         <caption class="t-label">${caption(view.list.kind, refs.length, more)}</caption>
+        <colgroup>
+          <col />
+          <col />
+          <col class="age" />
+        </colgroup>
         <thead>
           <tr>
-            <th class="name t-label" scope="col">${column}</th>
-            <th class="msg t-label" scope="col">Subject</th>
-            <th class="age t-label" scope="col">Age</th>
+            <th class="name vh" scope="col">${column}</th>
+            <th class="vh" scope="col">Subject</th>
+            <th class="vh" scope="col">Age</th>
           </tr>
         </thead>
         <tbody>

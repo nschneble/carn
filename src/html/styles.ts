@@ -400,6 +400,10 @@ export const components = css`body {
   white-space: nowrap;
 }
 
+.tbl thead th:not(.vh) {
+  border-bottom: 1px solid var(--rule-soft);
+}
+
 .tbl thead .age,
 .tbl thead .counts {
   padding-right: 0;

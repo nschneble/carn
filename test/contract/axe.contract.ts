@@ -603,11 +603,11 @@ const contrastNodes: Record<string, number> = {
   "commit-cut": 137,
   "commit-binary": 22,
   "commit-file": 38,
-  branches: 35,
-  "branches-cut": 35,
+  branches: 32,
+  "branches-cut": 32,
   "branches-none": 8,
-  "branches-quiet": 19,
-  tags: 28,
+  "branches-quiet": 16,
+  tags: 25,
   "tags-none": 8,
   tree: 53,
   "tree-cut": 77,
@@ -1209,7 +1209,7 @@ test("a gitlink row is inert", async () => {
 
 const tableWidths = [320, narrowWidth, wideWidth];
 const tablePaths = ["/populated", "/tree", "/commits", "/branches", "/commit"];
-const tableColumns: Record<number, number> = { 320: 8, 375: 8, 1440: 8 };
+const tableColumns: Record<number, number> = { 320: 5, 375: 5, 1440: 5 };
 
 test("every column header is legible at every width", async (t) => {
   const page = await (await browser()).newPage();
@@ -1260,6 +1260,60 @@ test("every column header is legible at every width", async (t) => {
         `${width}px lays out ${counted} column headers, not the ${wanted} the five tables carry there`,
       );
       t.diagnostic(`${width}px: ${counted} column headers whole`);
+    }
+  } finally {
+    await page.close();
+  }
+});
+
+const ruledHeads: Record<string, boolean> = {
+  "/populated": false,
+  "/tree": false,
+  "/commits": true,
+  "/branches": false,
+  "/commit": true,
+};
+
+test("only a visible header row draws a rule under its labels", async () => {
+  const page = await (await browser()).newPage();
+
+  try {
+    for (const path of renderPaths) {
+      await page.emulateMedia({ colorScheme: path.colorScheme });
+
+      for (const width of [narrowWidth, wideWidth]) {
+        await page.setViewportSize({ width, height: 900 });
+
+        for (const [route, ruled] of Object.entries(ruledHeads)) {
+          await page.goto(`${site.origin}${route}`);
+
+          const table = page.locator(".tbl").first();
+          const soft = await table
+            .locator("tbody td")
+            .first()
+            .evaluate((cell) => getComputedStyle(cell).borderBottomColor);
+          const heads = await table.locator("thead th").evaluateAll((cells) =>
+            cells.map((cell) => ({
+              hidden: cell.classList.contains("vh"),
+              width: getComputedStyle(cell).borderBottomWidth,
+              color: getComputedStyle(cell).borderBottomColor,
+            })),
+          );
+          const where = `${route} at ${width}px, ${path.name}`;
+
+          assert.ok(heads.length > 0, `${where} has no header row`);
+
+          for (const head of heads) {
+            assert.strictEqual(head.hidden, !ruled, `${where} header class`);
+            assert.strictEqual(
+              head.width,
+              ruled ? "1px" : "0px",
+              `${where} header rule width`,
+            );
+            if (ruled) assert.strictEqual(head.color, soft, where);
+          }
+        }
+      }
     }
   } finally {
     await page.close();
