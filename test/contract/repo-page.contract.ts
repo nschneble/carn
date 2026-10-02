@@ -563,6 +563,17 @@ test("an error inside a repo carries a Path of just the repo, as a link", () => 
     );
     assert.doesNotMatch(markup, /aria-current/, where);
     assert.ok(markup.includes('<h1 class="t-l">'), where);
+
+    const order = [
+      markup.indexOf('<h1 class="t-l">'),
+      markup.indexOf("Browse repo"),
+      markup.indexOf('<nav class="list-nav"'),
+    ];
+    assert.deepStrictEqual(
+      order,
+      order.toSorted((a, b) => a - b),
+      `${where}: wanted the h1, then the message, then the Path`,
+    );
   }
 });
 

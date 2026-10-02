@@ -124,11 +124,11 @@ function withSide(repo: string | null, body: Raw): Raw {
   if (repo === null) return body;
 
   return html`<div class="page-body">
-        <div class="page-side">
-          ${pathNav(repoTrail(repo))}
-        </div>
         <div class="page-main">
           ${body}
+        </div>
+        <div class="page-side">
+          ${pathNav(repoTrail(repo))}
         </div>
       </div>`;
 }
