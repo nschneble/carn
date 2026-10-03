@@ -51,6 +51,7 @@ export function log(options: Partial<CommitLog> = {}): CommitLog {
 export function logDocument(
   options: {
     repo?: string;
+    defaultBranch?: string;
     log?: CommitLog;
     from?: string | null;
     back?: string[];
@@ -58,6 +59,7 @@ export function logDocument(
 ): string {
   return commitLogPage({
     repo: options.repo ?? "linklater",
+    defaultBranch: options.defaultBranch ?? "main",
     log: options.log ?? log(),
     now: logNow,
     from: options.from ?? null,

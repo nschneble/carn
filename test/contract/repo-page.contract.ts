@@ -21,7 +21,16 @@ import { readBlob } from "../../src/git/blob.js";
 import {
   badRepoName,
   errorPage,
+  type Failure,
+  noBlobPath,
+  noSuchChange,
+  noSuchCommit,
+  noSuchFile,
+  noSuchRef,
   noSuchRepo,
+  noSuchRoute,
+  noSuchTree,
+  unavailable,
 } from "../../src/html/error-page.js";
 import { pathName } from "../../src/html/filename.js";
 import { html } from "../../src/html/index.js";
@@ -513,6 +522,71 @@ test("a 404 page says what happened, then what to do", () => {
     ),
     "the copy no longer reaches the page through the escaping tag",
   );
+});
+
+const scopedFailures: Failure[] = [
+  noSuchFile("linklater", "src/nowhere.ts"),
+  noBlobPath("linklater"),
+  noSuchTree("linklater", "src/nowhere"),
+  noSuchRef("linklater", "nowhere"),
+  noSuchCommit("linklater", "0".repeat(40)),
+  noSuchChange("linklater", "src/nowhere.ts"),
+];
+
+const unscopedFailures: Failure[] = [
+  noSuchRepo("linklater"),
+  badRepoName,
+  unavailable,
+  noSuchRoute,
+];
+
+test("an error inside a repo carries a Path of just the repo, as a link", () => {
+  for (const failure of scopedFailures) {
+    const markup = errorPage({ failure });
+    const where = failure.heading;
+    const navs = [...markup.matchAll(/<nav class="list-nav"[\s\S]*?<\/nav>/g)];
+
+    assert.strictEqual(navs.length, 1, `${where}: wanted one Path nav`);
+    assert.match(
+      markup,
+      /<div class="page-side">\s*<nav class="list-nav" aria-labelledby="path-label">\s*<p class="t-label" id="path-label">Path<\/p>/,
+      where,
+    );
+    assert.deepStrictEqual(
+      [...(navs[0]?.[0] ?? "").matchAll(/<li[^>]*>[\s\S]*?<\/li>/g)].map(
+        (item) => item[0],
+      ),
+      [
+        '<li><a href="/r/linklater"><span class="caps">linklater</span>/</a></li>',
+      ],
+      where,
+    );
+    assert.doesNotMatch(markup, /aria-current/, where);
+    assert.ok(markup.includes('<h1 class="t-l">'), where);
+
+    const order = [
+      markup.indexOf('<h1 class="t-l">'),
+      markup.indexOf("Browse repo"),
+      markup.indexOf('<nav class="list-nav"'),
+    ];
+    assert.deepStrictEqual(
+      order,
+      order.toSorted((a, b) => a - b),
+      `${where}: wanted the h1, then the message, then the Path`,
+    );
+  }
+});
+
+test("an error outside any repo has no sidebar", () => {
+  for (const failure of unscopedFailures) {
+    const markup = errorPage({ failure });
+    const where = failure.heading;
+
+    assert.ok(!markup.includes("page-side"), `${where}: has a sidebar`);
+    assert.ok(!markup.includes("page-body"), `${where}: sits in the grid`);
+    assert.ok(!markup.includes('class="list-nav"'), `${where}: has a Path`);
+    assert.ok(markup.includes('<h1 class="t-l">'), where);
+  }
 });
 
 test("the tree cap holds, and show-all lifts it", () => {

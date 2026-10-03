@@ -61,3 +61,12 @@ function segment(crumb: Crumb): Raw {
 export function address(crumbs: Crumb[]): Raw {
   return html`${crumbs.map(segment)}`;
 }
+
+export function pathNav(crumbs: Crumb[]): Raw {
+  return html`<nav class="list-nav" aria-labelledby="path-label">
+      <p class="t-label" id="path-label">Path</p>
+      <ol role="list">
+        ${address(crumbs)}
+      </ol>
+    </nav>`;
+}

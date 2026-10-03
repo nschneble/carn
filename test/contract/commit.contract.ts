@@ -695,3 +695,135 @@ test("a text file's diff never renders whichever side is escaped", () => {
   assert.ok(!markup.includes("<script>"), "a path reached the page unescaped");
   assert.ok(markup.includes("&lt;script&gt;"));
 });
+
+type PathItem = { href: string | null; text: string; current: boolean };
+
+function pathItems(markup: string): PathItem[] {
+  const nav =
+    /<div class="page-side">\s*<nav class="list-nav" aria-labelledby="path-label">([\s\S]*?)<\/nav>/.exec(
+      markup,
+    )?.[1];
+  assert.ok(nav, "the page carries no Path nav in its sidebar");
+  assert.match(nav, /<p class="t-label" id="path-label">Path<\/p>/);
+  assert.match(nav, /<ol role="list">/);
+
+  return [...nav.matchAll(/<li( aria-current="page")?>([\s\S]*?)<\/li>/g)].map(
+    (found) => ({
+      href: /^<a href="([^"]+)">/.exec(found[2] as string)?.[1] ?? null,
+      text: (found[2] as string).replace(/<[^>]+>/g, ""),
+      current: found[1] !== undefined,
+    }),
+  );
+}
+
+const repoItem: PathItem = {
+  href: "/r/linklater",
+  text: "linklater/",
+  current: false,
+};
+
+function changePath(commit: CommitDetail, path: string): PathItem[] {
+  return [
+    repoItem,
+    {
+      href: `/r/linklater/commits/${commit.sha}`,
+      text: `${commit.sha.slice(0, 7)}/`,
+      current: false,
+    },
+    { href: null, text: path, current: true },
+  ];
+}
+
+test("the commit page's Path is the repo, then its short sha as the page", () => {
+  const commit = detail();
+
+  assert.deepStrictEqual(pathItems(commitDocument()), [
+    repoItem,
+    { href: null, text: commit.sha.slice(0, 7), current: true },
+  ]);
+});
+
+test("the change view links its sha and holds the whole path as one item", () => {
+  const nested = detail({ files: [textFile("a/b/c.ts", 2, 1)] });
+
+  for (const [commit, path] of [
+    [detail(), "src/reader.ts"],
+    [nested, "a/b/c.ts"],
+  ] as const) {
+    const markup = changeDocument(path, { commit });
+
+    assert.deepStrictEqual(pathItems(markup), changePath(commit, path));
+    assert.ok(
+      markup.includes(
+        `<li aria-current="page"><span class="caps">${path}</span></li>`,
+      ),
+      `${path} isn't one unlinked plainName() item`,
+    );
+  }
+
+  const sha = detail().sha.slice(0, 7);
+  assert.ok(
+    commitDocument().includes(`<li aria-current="page">${sha}</li>`),
+    "the commit page's sha isn't its current item",
+  );
+  assert.doesNotMatch(
+    changeDocument("src/reader.ts"),
+    new RegExp(`<li aria-current="page">${sha}`),
+    "the change view marks its sha as the page",
+  );
+});
+
+test("a hostile path is escaped on its way into the change view's Path", () => {
+  const path = `src/<img src=x onerror="alert(1)">'.ts`;
+  const commit = detail({ files: [textFile(path, 1, 1)] });
+  const markup = commitFilePage(view({ commit }), path);
+
+  assert.ok(markup);
+  const nav = /<nav class="list-nav"[\s\S]*?<\/nav>/.exec(markup)?.[0] ?? "";
+
+  assert.ok(!nav.includes("<img"), "the path reached the sidebar unescaped");
+  assert.deepStrictEqual(pathItems(markup).at(-1), {
+    href: null,
+    text: "src/&lt;img src=x onerror=&quot;alert(1)&quot;&gt;&#39;.ts",
+    current: true,
+  });
+});
+
+test("the head, the Path, and the files and diffs sit in the show grid", () => {
+  const commit = detail();
+  const head = `<h1 class="t-item">Read the list back</h1>
+      <p class="t-mono sha">`;
+
+  for (const [named, markup, content] of [
+    ["commit", commitDocument(), '<table class="tbl files">'],
+    ["change", changeDocument("src/reader.ts"), '<h2 class="t-mono dpath"'],
+  ] as const) {
+    const order = [
+      '<div class="page-body">',
+      '<div class="page-head">',
+      head,
+      '<dl class="meta">',
+      '<div class="page-side">',
+      '<div class="page-main">',
+      content,
+      '<pre class="src diff"',
+    ].map((marker) => markup.indexOf(marker));
+
+    assert.ok(
+      order.every((at, index) => at !== -1 && at > (order[index - 1] ?? -1)),
+      `${named}: the grid's pieces are missing or out of order: ${order}`,
+    );
+    assert.strictEqual([...markup.matchAll(/<h1[ >]/g)].length, 1);
+  }
+
+  assert.ok(
+    commitDocument().includes(
+      `<p class="t-mono sha">${commit.sha.slice(0, 7)}</p>`,
+    ),
+  );
+  assert.ok(
+    changeDocument("src/reader.ts").includes(
+      `<p class="t-mono sha"><a class="t-mono" href="/r/linklater/commits/${commit.sha}">`,
+    ),
+  );
+});

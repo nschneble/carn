@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { html } from "./index.js";
+import { pathNav, repoTrail } from "./breadcrumb.js";
+import { html, type Raw } from "./index.js";
 import { page } from "./page.js";
 
 // path is each failure's own og:url, e.g. /404 or /503; repo is the
@@ -105,15 +106,8 @@ export const noSuchRoute: Failure = {
   repo: null,
 };
 
-export function errorPage(view: { failure: Failure }): string {
-  const { failure } = view;
-
-  return page({
-    title: failure.title,
-    description: failure.said,
-    path: failure.path,
-    main: html`<h1 class="t-l">${failure.heading}</h1>
-      <div class="empty">
+function message(failure: Failure): Raw {
+  return html`<div class="empty">
         <p class="t-body">
           <span>${failure.said}</span>
           <span>${failure.next}</span>
@@ -123,6 +117,30 @@ export function errorPage(view: { failure: Failure }): string {
             ? html`<p><a class="t-mono" href="/r/${failure.repo}">Browse repo</a></p>`
             : html`<p><a class="t-mono" href="/">All repos</a></p>`
         }
-      </div>`,
+      </div>`;
+}
+
+function withSide(repo: string | null, body: Raw): Raw {
+  if (repo === null) return body;
+
+  return html`<div class="page-body">
+        <div class="page-main">
+          ${body}
+        </div>
+        <div class="page-side">
+          ${pathNav(repoTrail(repo))}
+        </div>
+      </div>`;
+}
+
+export function errorPage(view: { failure: Failure }): string {
+  const { failure } = view;
+
+  return page({
+    title: failure.title,
+    description: failure.said,
+    path: failure.path,
+    main: html`<h1 class="t-l">${failure.heading}</h1>
+      ${withSide(failure.repo, message(failure))}`,
   });
 }

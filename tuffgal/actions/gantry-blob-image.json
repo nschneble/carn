@@ -5,5 +5,5 @@
     { "kind": "click", "hint": { "role": "link", "text": "assets/" } },
     { "kind": "click", "hint": { "role": "link", "text": "cover.png" } }
   ],
-  "expect": { "anyOf": [{ "role": "heading", "text": "assets/cover.png" }] }
+  "expect": { "anyOf": [{ "role": "heading", "text": "cover.png" }] }
 }

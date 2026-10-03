@@ -438,10 +438,8 @@ test("a tree page carries no readme and one h1", () => {
 
   assert.strictEqual([...markup.matchAll(/<h1[ >]/g)].length, 1);
   assert.ok(
-    markup.includes(
-      '<h1 class="t-item t-item--title" lang="en"><span class="caps">src/components</span></h1>',
-    ),
-    "the heading isn't the path",
+    markup.includes('<h1 class="vh">linklater/main/src/components</h1>'),
+    "the heading isn't the address",
   );
   assert.doesNotMatch(
     markup,
@@ -449,7 +447,7 @@ test("a tree page carries no readme and one h1", () => {
     "a tree page rendered a readme; /r/:repo is the only page that does",
   );
   assert.ok(
-    markup.includes("<title>src/components · linklater · Càrn</title>"),
+    markup.includes("<title>linklater/main/src/components · Càrn</title>"),
   );
 });
 

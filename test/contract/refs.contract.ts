@@ -224,11 +224,11 @@ test("both lists are tables with a caption and a header row", () => {
     assert.doesNotMatch(markup, /<ul class="refs"/, kind);
     assert.ok(markup.includes('<table class="tbl refs">'), kind);
     assert.ok(
-      markup.includes(`<caption class="vh">${heading}</caption>`),
-      `${kind} lost the caption that labels the table with the CSS off`,
+      markup.includes(`<caption class="t-label">${count} ${heading}</caption>`),
+      `${kind} lost the counted caption that labels the table`,
     );
     assert.ok(
-      markup.includes(`<th class="name t-label" scope="col">${column}</th>`),
+      markup.includes(`<th class="name vh" scope="col">${column}</th>`),
       kind,
     );
     assert.strictEqual(
@@ -428,38 +428,91 @@ test("an empty list says what would be here and how to make one", () => {
   }
 });
 
-test("a list longer than the read cap says it is showing the first of them", () => {
-  const whole = refsDocument({
-    list: refList("branch", { refs: wideRefs(maxRefs) }),
-  });
+function caption(markup: string): string | undefined {
+  return /<caption class="t-label">([^<]*)<\/caption>/.exec(markup)?.[1];
+}
 
+test("a list longer than the read cap says it shows the first of them", () => {
+  const refs = wideRefs(maxRefs);
+  const whole = refsDocument({ list: refList("branch", { refs }) });
   const cut = refsDocument({
-    list: refList("branch", { refs: wideRefs(maxRefs), more: true }),
+    list: refList("branch", { refs, more: true }),
+  });
+  const tagCut = refsDocument({
+    list: refList("tag", { refs, more: true }),
   });
 
-  assert.doesNotMatch(whole, /Showing the first/);
-  assert.ok(cut.includes(`Showing the first ${maxRefs} branches.`));
-  assert.ok(
-    refsDocument({
-      list: refList("tag", { refs: wideRefs(maxRefs), more: true }),
-    }).includes(`Showing the first ${maxRefs} tags.`),
-  );
+  assert.strictEqual(caption(whole), `${maxRefs} Branches`);
+  assert.strictEqual(caption(cut), `First ${maxRefs} Branches`);
+  assert.strictEqual(caption(tagCut), `First ${maxRefs} Tags`);
+
+  for (const markup of [whole, cut, tagCut]) {
+    assert.doesNotMatch(markup, /class="t-note"|Showing the first/);
+  }
 });
 
-test("a list cut down to one drops the count and says branch", () => {
-  const one = refsDocument({
-    list: refList("branch", { refs: wideRefs(1), more: true }),
-  });
+test("a count of one says branch, and any other count says branches", () => {
+  const counted: [RefList["kind"], number, boolean, string][] = [
+    ["branch", 1, false, "1 Branch"],
+    ["branch", 2, false, "2 Branches"],
+    ["tag", 1, false, "1 Tag"],
+    ["tag", 2, false, "2 Tags"],
+    ["branch", 1, true, "First Branch"],
+    ["branch", 2, true, "First 2 Branches"],
+    ["tag", 1, true, "First Tag"],
+    ["tag", 2, true, "First 2 Tags"],
+  ];
 
-  assert.ok(
-    one.includes("Showing the first branch."),
-    "the notice still counts where the noun alone says it",
+  for (const [kind, shown, more, expected] of counted) {
+    const markup = refsDocument({
+      list: refList(kind, { refs: wideRefs(shown), more }),
+    });
+    assert.strictEqual(caption(markup), expected, `${kind} ${shown} ${more}`);
+  }
+});
+
+type PathItem = { href: string | null; text: string; current: boolean };
+
+function pathItems(markup: string): PathItem[] {
+  const nav =
+    /<div class="page-side">\s*<nav class="list-nav" aria-labelledby="path-label">([\s\S]*?)<\/nav>/.exec(
+      markup,
+    )?.[1];
+  assert.ok(nav, "the ref list carries no Path nav in its sidebar");
+  assert.match(nav, /<p class="t-label" id="path-label">Path<\/p>/);
+  assert.match(nav, /<ol role="list">/);
+
+  return [...nav.matchAll(/<li( aria-current="page")?>([\s\S]*?)<\/li>/g)].map(
+    (found) => ({
+      href: /^<a href="([^"]+)">/.exec(found[2] as string)?.[1] ?? null,
+      text: (found[2] as string).replace(/<[^>]+>/g, ""),
+      current: found[1] !== undefined,
+    }),
   );
-  assert.ok(
-    refsDocument({
-      list: refList("tag", { refs: wideRefs(1), more: true }),
-    }).includes("Showing the first tag."),
-  );
+}
+
+test("the Path is the repo, then the list as the page itself", () => {
+  const cases: [RefList["kind"], string][] = [
+    ["branch", "Branches"],
+    ["tag", "Tags"],
+  ];
+
+  for (const [kind, heading] of cases) {
+    for (const markup of [
+      refsDocument({ kind }),
+      refsDocument({ list: refList(kind, { refs: [] }) }),
+    ]) {
+      assert.deepStrictEqual(pathItems(markup), [
+        { href: "/r/linklater", text: "linklater/", current: false },
+        { href: null, text: heading, current: true },
+      ]);
+      assert.ok(
+        markup.indexOf('class="page-side"') <
+          markup.indexOf('class="page-main"'),
+        `the ${kind} list isn't in the main column after the sidebar`,
+      );
+    }
+  }
 });
 
 test("every state fits the budget as gzip-5 wire bytes", () => {
@@ -499,24 +552,26 @@ test("a page that cannot fit sheds rows and says how many are left", () => {
   assert.ok(shown > 0, "the fit shed every row");
   assert.ok(
     shown > 1,
-    "the fit shed down to one row, so the notice below is singular",
+    "the fit shed down to one row, so the caption below is singular",
   );
   assert.ok(
     shown < refs.length,
     `${refs.length} incompressible rows rendered whole, so the budget was never measured`,
   );
-  assert.ok(
-    markup.includes(`Showing the first ${shown} branches.`),
+  assert.strictEqual(
+    caption(markup),
+    `First ${shown} Branches`,
     `the page shed rows down to ${shown} without saying so`,
   );
+  assert.doesNotMatch(markup, /class="t-note"/);
 
   const whole = refsDocument({
     list: refList("branch", { refs: wideRefs(20) }),
   });
 
-  assert.doesNotMatch(
-    whole,
-    /Showing the first/,
+  assert.strictEqual(
+    caption(whole),
+    "20 Branches",
     "a list that fits claims to be truncated, so the pair proves no contrast",
   );
   assert.strictEqual([...whole.matchAll(/<tr class="row">/g)].length, 20);
@@ -646,7 +701,10 @@ test("the two routes are the two nouns, and the page says which it is", () => {
   const markup = refsDocument({ kind: "tag" });
 
   assert.strictEqual([...markup.matchAll(/<h1[ >]/g)].length, 1);
-  assert.ok(markup.includes('<h1 class="t-item t-item--title">Tags</h1>'));
+  assert.ok(
+    markup.includes('<h1 class="vh">Tags</h1>'),
+    "the list's h1 is visible, or isn't the noun",
+  );
   assert.ok(markup.includes("<title>Tags · linklater · Càrn"));
   assert.ok(
     markup.includes(

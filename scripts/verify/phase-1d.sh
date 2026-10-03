@@ -667,7 +667,7 @@ contract 10 "every BRAND.md token resolves non-empty on :root in both paths" 5 "
 # 11
 # served over real http, not set into about:blank, so the audit measures
 # Carn Sans and Carn Mono rather than whatever the host falls back to.
-contract 11 "zero axe violations across both render paths, gallery included" 151 "" \
+contract 11 "zero axe violations across both render paths, gallery included" 156 "" \
   axe
 
 # 12
